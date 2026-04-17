@@ -2532,8 +2532,8 @@ function SapImportModal({ season, onClose, onImport }) {
     const s = document.createElement('script');
     s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
     s.onload = () => {
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      // Disable worker for iOS/WKWebView compatibility
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = '';
       resolve();
     };
     s.onerror = () => reject(new Error('Failed to load PDF.js'));
@@ -2544,8 +2544,14 @@ function SapImportModal({ season, onClose, onImport }) {
     setError(''); setPreview(null);
     try {
       await loadPdfJs();
-      const buf = await file.arrayBuffer();
-      const pdf = await window.pdfjsLib.getDocument({ data: buf }).promise;
+      // Use FileReader for iOS Safari compatibility (arrayBuffer() unreliable on iOS)
+      const buf = await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload  = e => resolve(e.target.result);
+        fr.onerror = () => reject(new Error('Could not read file'));
+        fr.readAsArrayBuffer(file);
+      });
+      const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
       let fullText = '';
       for (let p = 1; p <= pdf.numPages; p++) {
         const page  = await pdf.getPage(p);
@@ -2705,16 +2711,21 @@ function SapImportModal({ season, onClose, onImport }) {
           </div>
         </div>
 
-        {/* File upload */}
-        <div style={{border:'2px dashed #21262d',borderRadius:12,padding:20,textAlign:'center',
-          marginBottom:16,cursor:'pointer',position:'relative'}}
-          onClick={()=>document.getElementById('csv-file-input').click()}>
-          <input id="csv-file-input" type="file" accept=".csv,.txt,.pdf" onChange={handleFile}
-            style={{position:'absolute',inset:0,opacity:0,cursor:'pointer'}} />
+        {/* File upload — iOS-safe: label wraps input directly, no JS click() needed */}
+        <label htmlFor="csv-file-input" style={{border:'2px dashed #21262d',borderRadius:12,
+          padding:20,textAlign:'center',marginBottom:16,cursor:'pointer',display:'block'}}>
+          <input id="csv-file-input" type="file"
+            accept=".csv,.txt,.pdf,application/pdf,text/csv,text/plain"
+            onChange={handleFile}
+            style={{display:'none'}} />
           <div style={{fontSize:28,marginBottom:8}}>📂</div>
-          <div style={{fontSize:14,fontWeight:600,color:'#e6edf3'}}>Tap to select CSV file</div>
-          <div style={{fontSize:12,color:'#5a6a7a',marginTop:4}}>or paste data below</div>
-        </div>
+          <div style={{fontSize:14,fontWeight:600,color:'#e6edf3'}}>
+            {source === 'sugarcalc_pdf' ? 'Tap to select PDF' : 'Tap to select CSV file'}
+          </div>
+          <div style={{fontSize:12,color:'#5a6a7a',marginTop:4}}>
+            {source === 'sugarcalc_pdf' ? 'SugarCalc Season Report PDF' : 'or paste data below'}
+          </div>
+        </label>
 
         {/* Paste area */}
         <textarea
