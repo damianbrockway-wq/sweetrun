@@ -436,6 +436,46 @@
     }
 
     /* ── QR ── */
+    /* ── NOTIFY SECTION ── */
+    .notify-section {
+      background: linear-gradient(160deg, #0f2318 0%, #07090f 100%);
+      padding: 80px 24px; text-align: center;
+    }
+    .notify-inner { max-width: 520px; margin: 0 auto; }
+    .notify-icon { font-size: 40px; margin-bottom: 16px; }
+    .notify-title {
+      font-size: clamp(24px, 3.5vw, 36px); font-weight: 800;
+      color: #fff; letter-spacing: -0.5px; margin-bottom: 12px;
+    }
+    .notify-sub {
+      font-size: 16px; color: rgba(255,255,255,0.6);
+      line-height: 1.6; margin-bottom: 28px;
+    }
+    .notify-form {
+      display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+    }
+    .notify-input {
+      flex: 1; min-width: 220px; max-width: 300px;
+      background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.15);
+      border-radius: 10px; padding: 14px 16px;
+      font-size: 15px; color: #fff; font-family: inherit;
+      outline: none; transition: border-color 0.2s;
+    }
+    .notify-input::placeholder { color: rgba(255,255,255,0.35); }
+    .notify-input:focus { border-color: var(--teal); }
+    .notify-btn {
+      background: var(--teal); color: #07201a;
+      border: none; border-radius: 10px;
+      padding: 14px 24px; font-size: 15px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .notify-btn:hover { opacity: 0.88; }
+    .notify-fine {
+      font-size: 12px; color: rgba(255,255,255,0.3);
+      margin-top: 12px;
+    }
+
     .qr-section {
       background: var(--green-dark); color: #fff;
       text-align: center; padding: 80px 24px;
@@ -527,7 +567,7 @@
       SweetRun watches your Brix trend and the forecast so you never lose a batch of Golden to buddy sap. The complete maple platform for producers who treat maple like a business.
     </p>
     <div class="hero-cta-group">
-      <a class="btn-primary" href="#pricing">Get SweetRun — $49/season</a>
+      <a class="btn-primary" href="https://buy.stripe.com/7sYfZi3A4f2MbXA3as14400" target="_blank" rel="noopener">Get SweetRun — $49/year</a>
       <a class="btn-secondary" href="#features">See what's inside ↓</a>
     </div>
     <div class="hero-proof">
@@ -980,10 +1020,10 @@
       <p class="section-sub" style="margin:0 auto;">Full access to every feature for the entire maple season. No subscriptions. No data fees. No upsells.</p>
     </div>
     <div class="price-card fade-in">
-      <div class="price-badge">🍁 LAUNCH SPECIAL</div>
-      <div class="price-season">Full Season Access</div>
+      <div class="price-badge">🍁 FULL ACCESS</div>
+      <div class="price-season">Annual Subscription</div>
       <div class="price-amount"><sup>$</sup>49</div>
-      <div class="price-period">one-time per season</div>
+      <div class="price-period">per year · cancel anytime</div>
       <ul class="price-features">
         <li><span>✓</span><span>Sugarbush GPS mapping — tap trees, tanks, sugarhouse, pump houses, junctions</span></li>
         <li><span>✓</span><span>7-day sap run forecast scored 0–99 for your location</span></li>
@@ -1002,30 +1042,8 @@
       <a class="btn-buy" href="https://buy.stripe.com/7sYfZi3A4f2MbXA3as14400" id="buy-btn" target="_blank" rel="noopener">
         Get SweetRun — $49
       </a>
-      <p class="price-guarantee">🔒 Secure payment via Stripe · Instant access after purchase</p>
+      <p class="price-guarantee">🔒 Secure payment via Stripe · Instant access · Cancel anytime</p>
     </div>
-  </div>
-</section>
-
-<!-- QR CODE SECTION -->
-<section class="qr-section" id="qr">
-  <div class="container">
-    <div class="fade-in">
-      <div class="section-label" style="color:var(--amber-light);">At the Convention</div>
-      <h2 class="section-title" style="color:#fff;">Scan to get started.</h2>
-      <p style="color:rgba(255,255,255,0.65);font-size:16px;max-width:480px;margin:0 auto;">
-        Pull out your phone right now. Scan the code, pay once, and have SweetRun ready before the first run day.
-      </p>
-    </div>
-    <div class="qr-box fade-in">
-      <img
-        src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://sweetrun.app&color=1a3d2b&bgcolor=ffffff"
-        alt="QR code for sweetrun.app"
-        width="200" height="200"
-      />
-    </div>
-    <div class="qr-label">Point your camera here</div>
-    <div class="qr-url">sweetrun.app</div>
   </div>
 </section>
 
@@ -1094,6 +1112,23 @@
   </div>
 </section>
 
+<!-- EMAIL CAPTURE -->
+<section class="notify-section">
+  <div class="container">
+    <div class="notify-inner fade-in">
+      <div class="notify-icon">🍁</div>
+      <h2 class="notify-title">Season's over. Be first in line for 2027.</h2>
+      <p class="notify-sub">Drop your email and we'll remind you when the 2027 season opens — before the first run day.</p>
+      <form class="notify-form" action="https://formspree.io/f/REPLACE_WITH_FORM_ID" method="POST" id="notify-form">
+        <input type="email" name="email" placeholder="your@email.com" required class="notify-input" />
+        <button type="submit" class="notify-btn">Remind Me</button>
+      </form>
+      <p class="notify-fine" id="notify-success" style="display:none;color:#2dd4a7;font-weight:600;">✓ You're on the list. We'll be in touch before the 2027 season.</p>
+      <p class="notify-fine">No spam. One email when the season opens.</p>
+    </div>
+  </div>
+</section>
+
 <!-- FOOTER -->
 <footer>
   <p style="margin-bottom:8px;">
@@ -1116,6 +1151,20 @@
     { threshold: 0.12 }
   );
   document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+  // Email capture form — show success message on submit
+  const notifyForm = document.getElementById('notify-form');
+  if (notifyForm) {
+    notifyForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const data = new FormData(notifyForm);
+      try {
+        await fetch(notifyForm.action, { method: 'POST', body: data, headers: { 'Accept': 'application/json' } });
+      } catch(_) {}
+      notifyForm.style.display = 'none';
+      document.getElementById('notify-success').style.display = 'block';
+    });
+  }
 
   // Buy button — live Stripe link, no interception needed
 </script>
