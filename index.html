@@ -1119,7 +1119,10 @@
       <div class="notify-icon">🍁</div>
       <h2 class="notify-title">Season's over. Be first in line for 2027.</h2>
       <p class="notify-sub">Drop your email and we'll remind you when the 2027 season opens — before the first run day.</p>
-      <form class="notify-form" action="https://formspree.io/f/xojrpvyr" method="POST" id="notify-form">
+      <form class="notify-form" id="notify-form">
+        <input type="hidden" name="access_key" value="d91810ec-94aa-49ed-9731-6ba2cd42e106" />
+        <input type="hidden" name="subject" value="SweetRun — Season Notify Signup" />
+        <input type="hidden" name="from_name" value="SweetRun Notify Form" />
         <input type="email" name="email" placeholder="your@email.com" required class="notify-input" />
         <button type="submit" class="notify-btn">Remind Me</button>
       </form>
@@ -1152,17 +1155,27 @@
   );
   document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
-  // Email capture form — show success message on submit
+  // Email capture form — Web3Forms
   const notifyForm = document.getElementById('notify-form');
   if (notifyForm) {
     notifyForm.addEventListener('submit', async e => {
       e.preventDefault();
-      const data = new FormData(notifyForm);
+      const data = Object.fromEntries(new FormData(notifyForm));
       try {
-        await fetch(notifyForm.action, { method: 'POST', body: data, headers: { 'Accept': 'application/json' } });
-      } catch(_) {}
-      notifyForm.style.display = 'none';
-      document.getElementById('notify-success').style.display = 'block';
+        const res = await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const json = await res.json();
+        if (json.success) {
+          notifyForm.style.display = 'none';
+          document.getElementById('notify-success').style.display = 'block';
+        }
+      } catch(_) {
+        notifyForm.style.display = 'none';
+        document.getElementById('notify-success').style.display = 'block';
+      }
     });
   }
 

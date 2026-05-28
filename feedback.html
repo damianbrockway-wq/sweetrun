@@ -126,6 +126,7 @@
 
 <div class="card">
   <form class="form" id="feedbackForm" onsubmit="submitForm(event)">
+    <input type="hidden" name="access_key" value="d91810ec-94aa-49ed-9731-6ba2cd42e106" />
 
     <div class="field">
       <label class="field-label" for="taps">How many taps do you run? <span>(pick one)</span></label>
@@ -192,14 +193,19 @@ async function submitForm(e) {
     _subject: 'SweetRun Feedback — ' + (document.getElementById('name').value || 'Anonymous producer'),
   };
 
+  // Add Web3Forms fields
+  data.access_key = document.querySelector('input[name="access_key"]').value;
+  data.subject = data._subject;
+  data.from_name = data.name || 'Anonymous Producer';
+
   try {
-    const res = await fetch('https://formspree.io/f/mgodpobz', {
+    const res = await fetch('https://api.web3forms.com/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify(data)
     });
     const json = await res.json();
-    if (json.success === 'true' || json.success === true) {
+    if (json.success) {
       form.style.display = 'none';
       document.getElementById('thankyou').style.display = 'block';
     } else {
