@@ -1325,7 +1325,7 @@ async function _downloadBatchLabel(b, batchNum, season, trees, units) {
   // Footer
   c.fillStyle = '#0a1018'; c.fillRect(0, H-40, W, 40);
   c.fillStyle = '#2a3a4a'; c.font = '9px Arial, sans-serif';
-  c.fillText('Data encoded in QR — never stored in the cloud', W/2, H-14);
+  c.fillText('Scan the QR to see this batch’s story', W/2, H-14);
   c.textAlign = 'left';
 
   const a = document.createElement('a');
