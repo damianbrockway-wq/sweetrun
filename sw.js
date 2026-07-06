@@ -8,8 +8,8 @@ self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.map(k => {
-        console.log('[SweetRun root SW] Clearing cache:', k);
+      .then(keys => Promise.all(keys.filter(k => k.startsWith('sugarcalc-')).map(k => {
+        console.log('[SweetRun root SW] Clearing old cache:', k);
         return caches.delete(k);
       })))
       .then(() => self.clients.claim())

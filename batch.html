@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>SweetRun — Batch Provenance</title>
 <meta name="description" content="Maple syrup batch provenance — tracked with SweetRun"/>
+<meta name="robots" content="noindex"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#07090f;color:#c9d1d9;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px 48px}
@@ -71,6 +72,10 @@ const GRADES = {
   vdark:  { name:'Very Dark Strong',color:'#8b4513', bg:'rgba(139,69,19,0.12)'  },
 };
 
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 function parseParams() {
   const p = new URLSearchParams(window.location.search);
   return {
@@ -103,7 +108,7 @@ function ratio(sap, syr) {
 
 function render(q) {
   const grade = GRADES[q.grade] || null;
-  const batchLabel = q.batch ? `Batch #${q.batch}` : 'Batch';
+  const batchLabel = q.batch ? `Batch #${esc(q.batch)}` : 'Batch';
   const dateLabel  = formatDate(q.date);
   const r = ratio(q.sap, q.syrup);
   const u = q.units === 'L' ? 'L' : 'gal';
@@ -129,7 +134,7 @@ function render(q) {
             <div class="brand-sub">Maple Provenance</div>
           </div>
         </div>
-        <div class="batch-pill">${batchLabel}${q.season ? ' · ' + q.season : ''}</div>
+        <div class="batch-pill">${batchLabel}${q.season ? ' · ' + esc(q.season) : ''}</div>
       </div>
     </div>
 
@@ -168,15 +173,15 @@ function render(q) {
     <div class="details">
       ${dateLabel ? `<div class="detail-row">
         <div class="detail-icon" style="background:rgba(45,212,167,0.1)">📅</div>
-        <div class="detail-text">Boiled <strong>${dateLabel}</strong></div>
+        <div class="detail-text">Boiled <strong>${esc(dateLabel)}</strong></div>
       </div>` : ''}
       ${q.loc ? `<div class="detail-row">
         <div class="detail-icon" style="background:rgba(45,212,167,0.1)">📍</div>
-        <div class="detail-text">Sugarbush in <strong>${q.loc}</strong></div>
+        <div class="detail-text">Sugarbush in <strong>${esc(q.loc)}</strong></div>
       </div>` : ''}
       ${q.notes ? `<div class="detail-row">
         <div class="detail-icon" style="background:rgba(255,255,255,0.05)">📝</div>
-        <div class="detail-text">${q.notes}</div>
+        <div class="detail-text">${esc(q.notes)}</div>
       </div>` : ''}
       <div class="detail-row">
         <div class="detail-icon" style="background:rgba(45,212,167,0.08)">🔒</div>
@@ -192,7 +197,7 @@ function render(q) {
       </div>
       <div class="footer-copy">
         Want to track your own sugarbush?<br/>
-        <a href="https://sweetrun.app">sweetrun.app</a> — $49/season
+        <a href="https://sweetrun.app">sweetrun.app</a> — 14 days free, then $49.99/year
       </div>
     </div>
   `;

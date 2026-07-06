@@ -8,6 +8,16 @@
   <meta property="og:title" content="SweetRun — Maple Production Platform" />
   <meta property="og:description" content="Map your sugarbush. Score your sap runs. Know your numbers. Built for producers who treat sugarmaking like a business." />
   <meta property="og:image" content="https://sweetrun.app/og-image.png" />
+  <meta property="og:url" content="https://sweetrun.app/" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="SweetRun — Maple Production Platform" />
+  <meta name="twitter:description" content="Map your sugarbush. Score your sap runs. Know your numbers. Built for producers who treat sugarmaking like a business." />
+  <meta name="twitter:image" content="https://sweetrun.app/og-image.png" />
+  <link rel="canonical" href="https://sweetrun.app/" />
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -600,7 +610,7 @@
     <a href="#grade">Grade Alert</a>
     <a href="#pricing">Pricing</a>
   </div>
-  <a class="nav-cta" href="#pricing">Get Access — $49</a>
+  <a class="nav-cta" href="#pricing">Try Free — 14 Days</a>
 </nav>
 
 <!-- NOTIFY BAR -->
@@ -1044,7 +1054,7 @@
     <div class="fade-in" style="text-align:center;">
       <div class="section-label">The Math</div>
       <h2 class="section-title">It pays for itself before the first run ends.</h2>
-      <p class="section-sub" style="margin:0 auto;">Identifying even one operational improvement — a vacuum leak, over-tapped zone, or wet wood problem — typically saves far more than $49 in a single season.</p>
+      <p class="section-sub" style="margin:0 auto;">Identifying even one operational improvement — a vacuum leak, over-tapped zone, or wet wood problem — typically saves far more than the $49.99/year subscription in a single season.</p>
     </div>
     <div class="roi-grid fade-in">
       <div class="roi-card">
@@ -1228,13 +1238,14 @@
           body: JSON.stringify(data)
         });
         const json = await res.json();
-        if (json.success) {
-          notifyForm.style.display = 'none';
-          document.getElementById('notify-success').style.display = 'block';
-        }
-      } catch(_) {
+        if (!json.success) throw new Error('submit failed');
         notifyForm.style.display = 'none';
         document.getElementById('notify-success').style.display = 'block';
+      } catch(_) {
+        const ok = document.getElementById('notify-success');
+        ok.style.display = 'block';
+        ok.style.color = '#f4a44a';
+        ok.textContent = "Hmm — that didn't go through. Please try again, or email hello@sweetrun.app and I'll add you myself.";
       }
     });
   }
@@ -1264,15 +1275,20 @@
       e.preventDefault();
       const data = Object.fromEntries(new FormData(nbarForm));
       try {
-        await fetch('https://api.web3forms.com/submit', {
+        const res = await fetch('https://api.web3forms.com/submit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify(data)
         });
-      } catch(_) {}
-      nbarForm.style.display = 'none';
-      nbarOk.style.display = 'inline';
-      try { localStorage.setItem('nbar_dismissed', '1'); } catch(_) {}
+        const json = await res.json();
+        if (!json.success) throw new Error('submit failed');
+        nbarForm.style.display = 'none';
+        nbarOk.style.display = 'inline';
+        try { localStorage.setItem('nbar_dismissed', '1'); } catch(_) {}
+      } catch(_) {
+        nbarOk.textContent = "✗ Didn't go through — try again?";
+        nbarOk.style.display = 'inline';
+      }
     });
   }
 </script>

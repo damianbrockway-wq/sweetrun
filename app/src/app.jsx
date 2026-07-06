@@ -2866,7 +2866,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
     });
     const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-    a.download=`sugarcalc-${season}.csv`; a.click();
+    a.download=`sweetrun-${season}.csv`; a.click();
   };
 
   const GRADES = ['—','Golden Delicate','Amber Rich','Dark Robust','Very Dark Strong'];
@@ -7077,7 +7077,7 @@ function SapFreshnessTracker() {
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('SweetRun — Sap Spoilage Alert', {
           body: `Your sap has accumulated ${currentHU.toFixed(0)} heat units. Boil now or risk dumping.`,
-          icon: './apple-touch-icon.png'
+          icon: './icon-512.png'
         });
       }
     }
@@ -9143,7 +9143,7 @@ function App() {
             const msg = `🍁 Ideal sap run ${day} — high ${hi}°F, low ${lo}°F`;
             setNotifBanner(msg);
             if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('SweetRun — Sap Run Alert', { body: msg, icon: './apple-touch-icon.png' });
+              new Notification('SweetRun — Sap Run Alert', { body: msg, icon: './icon-512.png' });
             }
             break;
           }
