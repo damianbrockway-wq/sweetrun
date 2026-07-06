@@ -2,10 +2,71 @@ try {
 const { useState, useEffect } = React;
 
 // ─── localStorage helpers ────────────────────────────────────────────────────
+let SR_LOCKED = false; // set true when trial expired & unlicensed — soft edit-lock
+const SR_LOCK_ALLOW = ['sg_license','sg_trial_start','sg_trial_pinged','sg_email_prompted','sg_sessions','sg_lang','sg_units'];
 const ls = {
   get: (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
-  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+  set: (k, v) => { try { if (SR_LOCKED && !SR_LOCK_ALLOW.includes(k)) return; localStorage.setItem(k, JSON.stringify(v)); } catch {} }
 };
+
+// ─── License & Season Trial ──────────────────────────────────────────────────
+const LICENSE_API = ''; // set to the deployed Worker URL, e.g. 'https://sweetrun-license.<subdomain>.workers.dev' — empty disables pings/lookup
+const LICENSE_PUBKEY = 'GfNHBIKm8enIoOW3yVfFuk7kz34xA3eYKUaWWzNVCzA=';
+const STRIPE_BUY_URL = 'https://buy.stripe.com/dRm3cw9YsdYI7HkbGY14401';
+
+const b64uDec = s => Uint8Array.from(atob(String(s).replace(/-/g,'+').replace(/_/g,'/') + '='.repeat((4 - s.length % 4) % 4)), c => c.charCodeAt(0));
+
+// Returns payload {e,p,i,x} if structurally valid; payload.expired=true if past expiry; null if invalid.
+async function verifyLicense(token) {
+  try {
+    const [p, sig] = String(token).trim().split('.');
+    if (!p || !sig) return null;
+    const payload = JSON.parse(new TextDecoder().decode(b64uDec(p)));
+    if (!payload.e || !payload.x) return null;
+    try {
+      const key = await crypto.subtle.importKey('raw', b64uDec(LICENSE_PUBKEY), { name: 'Ed25519' }, false, ['verify']);
+      const ok = await crypto.subtle.verify('Ed25519', key, b64uDec(sig), new TextEncoder().encode(p));
+      if (!ok) return null;
+    } catch (_) { /* Ed25519 unsupported on old Safari — accept structure + expiry */ }
+    if (new Date(payload.x + 'T23:59:59') < new Date()) return { ...payload, expired: true };
+    return payload;
+  } catch { return null; }
+}
+
+// Season Trial: 14 days — but never ends before Feb 28 for Oct–Jan activations,
+// and during Feb–Apr stays alive until you've logged 3 real sap days (hard cap May 1).
+function trialStatus() {
+  let start = ls.get('sg_trial_start', null);
+  if (!start) { start = new Date().toISOString().slice(0, 10); try { localStorage.setItem('sg_trial_start', JSON.stringify(start)); } catch {} }
+  const s = new Date(start + 'T00:00:00');
+  const now = new Date();
+  let end = s.getTime() + 14 * 86400000;
+  const m = s.getMonth();
+  if (m >= 9)      end = Math.max(end, new Date(s.getFullYear() + 1, 1, 28).getTime()); // Oct–Dec → next Feb 28
+  else if (m === 0) end = Math.max(end, new Date(s.getFullYear(), 1, 28).getTime());     // Jan → this Feb 28
+  if (now.getTime() > end && now.getMonth() >= 1 && now.getMonth() <= 3) {
+    const season = ls.get('sg_season', now.getFullYear());
+    const sapDays = new Set((((ls.get('sg_logs2', {}))[season] || {}).sapCollected || []).map(e => e.date)).size;
+    if (sapDays < 3) end = new Date(now.getFullYear(), 4, 1).getTime(); // alive until May 1
+  }
+  const daysLeft = Math.ceil((end - now.getTime()) / 86400000);
+  return { start, daysLeft, expired: daysLeft <= 0 };
+}
+
+function pingEvent(type, email) {
+  const send = async () => {
+    if (LICENSE_API) {
+      const r = await fetch(LICENSE_API + '/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: type, email }) });
+      if (!r.ok) throw new Error('ping failed');
+    } else if (email) {
+      // Worker not deployed yet — capture leads via Web3Forms so nothing is lost
+      const r = await fetch('https://api.web3forms.com/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ access_key: 'd91810ec-94aa-49ed-9731-6ba2cd42e106', subject: 'SweetRun — Trial signup lead', from_name: 'SweetRun App', message: `${email} started a trial (source: ${type}).` }) });
+      if (!r.ok) throw new Error('ping failed');
+    }
+  };
+  return send();
+}
 
 // ─── Feature Flags ───────────────────────────────────────────────────────────
 const BETA_FEATURES = true; // Set to false to hide experimental features
@@ -9096,6 +9157,69 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
   );
 }
 
+// ─── License / Season Pass modal ─────────────────────────────────────────────
+function LicenseModal({ onClose, lic, onLicenseSaved }) {
+  const [key, setKey] = useState('');
+  const [email, setEmail] = useState('');
+  const [msg, setMsg] = useState(null);
+  const [emailMsg, setEmailMsg] = useState(null);
+  useEffect(() => { ls.set('sg_email_prompted', true); }, []);
+
+  const applyKey = async () => {
+    const payload = await verifyLicense(key);
+    if (!payload) { setMsg({ ok:false, text:"That key doesn't look right — check for missing characters, or email hello@sweetrun.app and I'll sort it out." }); return; }
+    if (payload.expired) { setMsg({ ok:false, text:`This Season Pass expired ${payload.x}. Grab a new one below.` }); return; }
+    SR_LOCKED = false;
+    ls.set('sg_license', key.trim());
+    setMsg({ ok:true, text:`✓ Season Pass active through ${payload.x}. Boil on!` });
+    onLicenseSaved(payload);
+  };
+  const saveEmail = async () => {
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setEmailMsg("That email doesn't look complete."); return; }
+    try { await pingEvent('trial_email', email); setEmailMsg("✓ Got it — you're on the list."); }
+    catch { setEmailMsg("Didn't go through — try again in a bit?"); }
+  };
+
+  const inp = { width:'100%', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:'12px 14px', color:'#e6edf3', fontSize:14, marginBottom:8, boxSizing:'border-box' };
+  return (
+    <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:'#0d1521', border:'1px solid #1e2d3d', borderRadius:16, padding:'22px 20px', width:'100%', maxWidth:420, boxShadow:'0 12px 48px rgba(0,0,0,0.6)', maxHeight:'85vh', overflowY:'auto' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+          <div style={{ fontWeight:800, fontSize:17 }}>🍁 Season Pass</div>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:'#3d5068', cursor:'pointer', padding:4 }}><I.x size={16}/></button>
+        </div>
+        {lic.status === 'licensed' ? (
+          <div style={{ fontSize:13.5, color:'#3fb950', lineHeight:1.6, marginBottom:8 }}>✓ Your Season Pass is active through {lic.until}. Thank you for supporting a one-person project.</div>
+        ) : (
+          <div style={{ fontSize:13, color:'#8a9ab5', lineHeight:1.5, marginBottom:14 }}>
+            {lic.status === 'expired'
+              ? 'Your Season Trial has ended. Your data is safe — viewing and export always work — but new entries need a pass.'
+              : `You're on a free Season Trial (${lic.daysLeft} days left — and it never ends before you've had 3 real sap days). Every feature is unlocked.`}
+          </div>
+        )}
+        {lic.status !== 'licensed' && (
+          <a href={STRIPE_BUY_URL} target="_blank" rel="noopener"
+            style={{ display:'block', textAlign:'center', background:'linear-gradient(135deg,#2dd4a7,#1fbf94)', borderRadius:10, padding:'13px 16px', fontWeight:800, fontSize:14, color:'#07090f', textDecoration:'none', marginBottom:14 }}>
+            Get your Season Pass — $49.99/season
+          </a>
+        )}
+        <div style={{ fontSize:11, fontWeight:800, letterSpacing:'0.1em', textTransform:'uppercase', color:'#3d5068', marginBottom:6 }}>Have a pass key?</div>
+        <textarea value={key} onChange={e=>setKey(e.target.value)} placeholder="Paste your Season Pass key here" rows={2} style={{ ...inp, resize:'vertical', fontFamily:'monospace', fontSize:12 }} />
+        <button onClick={applyKey} style={{ width:'100%', background:'#0f1720', border:'1px solid #2dd4a7', borderRadius:10, padding:'11px 16px', fontWeight:700, fontSize:13.5, color:'#2dd4a7', cursor:'pointer' }}>Activate</button>
+        {msg && <div style={{ marginTop:8, fontSize:12.5, lineHeight:1.5, color: msg.ok ? '#3fb950' : '#f47067' }}>{msg.text}</div>}
+        {lic.status !== 'licensed' && (
+          <div style={{ marginTop:16, paddingTop:14, borderTop:'1px solid #131e2c' }}>
+            <div style={{ fontSize:12.5, color:'#8a9ab5', lineHeight:1.5, marginBottom:8 }}>Want sap-season tips and a heads-up before your trial ends? <span style={{color:'#3d5068'}}>(optional)</span></div>
+            <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@sugarbush.com" style={inp} />
+            <button onClick={saveEmail} style={{ width:'100%', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:'10px 16px', fontWeight:700, fontSize:13, color:'#8a9ab5', cursor:'pointer' }}>Keep me posted</button>
+            {emailMsg && <div style={{ marginTop:6, fontSize:12, color:'#8a9ab5' }}>{emailMsg}</div>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Data & Backup modal ─────────────────────────────────────────────────────
 function BackupModal({ onClose }) {
   const [persisted, setPersisted] = useState(null);
@@ -9187,10 +9311,34 @@ function App() {
   const [notifBanner, setNotifBanner] = useState(null);
   const [lang,      setLang]      = useState(()=>ls.get('sg_lang','en'));
   const [showBackup, setShowBackup] = useState(false);
+  const [showLicense, setShowLicense] = useState(false);
+  const [lic, setLic] = useState({ status: 'checking' });
 
   // Ask the browser to protect localStorage from eviction (Safari 7-day ITP, etc.)
   useEffect(() => {
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
+  }, []);
+
+  // ── License / Season Trial check ──
+  useEffect(() => {
+    (async () => {
+      const sessions = (ls.get('sg_sessions', 0) || 0) + 1;
+      try { localStorage.setItem('sg_sessions', JSON.stringify(sessions)); } catch {}
+      const tok = ls.get('sg_license', null);
+      if (tok) {
+        const p = await verifyLicense(tok);
+        if (p && !p.expired) { SR_LOCKED = false; setLic({ status: 'licensed', until: p.x }); return; }
+      }
+      const t = trialStatus();
+      if (t.expired) {
+        SR_LOCKED = true;
+        setLic({ status: 'expired' });
+      } else {
+        setLic({ status: 'trial', daysLeft: t.daysLeft });
+        if (!ls.get('sg_trial_pinged', false)) pingEvent('trial_start').then(() => ls.set('sg_trial_pinged', true)).catch(() => {});
+        if (sessions === 2 && !ls.get('sg_email_prompted', false)) setShowLicense(true);
+      }
+    })();
   }, []);
 
   useEffect(()=>{ ls.set('sg_units',units);       },[units]);
@@ -9265,6 +9413,15 @@ function App() {
             </div>
           </div>
           <div className="app-header-controls" style={{ display:'flex', alignItems:'center', gap:8 }}>
+            {lic.status !== 'checking' && (
+              <button onClick={()=>setShowLicense(true)} style={{
+                background: lic.status==='licensed' ? 'rgba(63,185,80,0.12)' : lic.status==='expired' ? 'rgba(244,112,103,0.12)' : 'rgba(88,166,255,0.1)',
+                border: `1px solid ${lic.status==='licensed' ? 'rgba(63,185,80,0.35)' : lic.status==='expired' ? 'rgba(244,112,103,0.4)' : 'rgba(88,166,255,0.25)'}`,
+                borderRadius:20, padding:'5px 11px', fontSize:12, fontWeight:700, cursor:'pointer',
+                color: lic.status==='licensed' ? '#3fb950' : lic.status==='expired' ? '#f47067' : '#58a6ff' }}>
+                {lic.status==='licensed' ? '✓ Pass' : lic.status==='expired' ? 'Unlock' : `Trial · ${lic.daysLeft}d`}
+              </button>
+            )}
             <div style={{ background:'rgba(45,212,167,0.1)', border:'1px solid rgba(45,212,167,0.2)', borderRadius:20, padding:'5px 12px', fontSize:12, fontWeight:700, color:'#2dd4a7', letterSpacing:'0.02em' }}>{season}</div>
             <div style={{ display:'flex', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:20, padding:2 }}>
               {['GAL','L'].map(u=>(
@@ -9302,6 +9459,8 @@ function App() {
       </div>
 
       {showBackup && <BackupModal onClose={()=>setShowBackup(false)} />}
+      {showLicense && <LicenseModal lic={lic} onClose={()=>setShowLicense(false)}
+        onLicenseSaved={p=>setLic({ status:'licensed', until:p.x })} />}
 
       {/* ── Main area (banner + content) ── */}
       <div className="app-main" style={{ minWidth:0, flex:1 }}>
@@ -9320,6 +9479,14 @@ function App() {
                 fontWeight:700, fontSize:12, color:'#07090f', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
               Set Up Season →
             </button>
+          </div>
+        )}
+
+        {/* ── Trial-expired banner ── */}
+        {lic.status === 'expired' && (
+          <div style={{ background:'#1f0e0c', border:'1px solid #4a1e1a', padding:'11px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:10 }}>
+            <span style={{ fontSize:13, color:'#f4a44a', lineHeight:1.45 }}>Season Trial ended — your data is safe and export works, but new entries aren't saved.</span>
+            <button onClick={()=>setShowLicense(true)} style={{ background:'#f4a44a', border:'none', borderRadius:10, padding:'8px 14px', fontWeight:800, fontSize:12.5, color:'#07090f', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>Get a Pass</button>
           </div>
         )}
 

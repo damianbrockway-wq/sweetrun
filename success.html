@@ -119,6 +119,15 @@
 
 <div class="card">
 
+  <!-- Season Pass key (shown when Stripe redirects with ?session_id=) -->
+  <div id="pass-key-box" style="display:none;background:#081e0e;border:1px solid #1a4a25;border-radius:14px;padding:16px;margin-bottom:22px;">
+    <div class="section-label" style="margin-bottom:8px;">Your Season Pass key</div>
+    <div id="pass-key" style="font-family:monospace;font-size:11px;word-break:break-all;color:#3fb950;background:#07090f;border-radius:8px;padding:10px;line-height:1.5;"></div>
+    <button id="pass-copy" style="margin-top:10px;width:100%;background:#3fb950;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:13px;color:#07090f;cursor:pointer;">Copy key</button>
+    <p style="font-size:11.5px;color:rgba(255,255,255,0.45);margin-top:10px;line-height:1.6;">Open SweetRun → tap the <strong>Trial</strong> pill at the top → paste this key under "Have a pass key?" We also keep a copy — email hello@sweetrun.app any time to get it resent.</p>
+  </div>
+  <div id="pass-key-wait" style="display:none;font-size:12.5px;color:rgba(255,255,255,0.5);margin-bottom:22px;">Fetching your Season Pass key…</div>
+
   <!-- Step 1: Open the app -->
   <div class="section-label">Step 1 — Open SweetRun</div>
   <a class="btn-open" href="https://sweetrun.app/app/">Open SweetRun →</a>
@@ -183,6 +192,34 @@
 </div>
 
 <script>
+// Season Pass key retrieval — set LICENSE_API to the deployed Worker URL
+const LICENSE_API = ''; // e.g. 'https://sweetrun-license.<subdomain>.workers.dev'
+(async () => {
+  const sid = new URLSearchParams(location.search).get('session_id');
+  if (!sid || !LICENSE_API) return;
+  const waitEl = document.getElementById('pass-key-wait');
+  waitEl.style.display = 'block';
+  for (let attempt = 0; attempt < 6; attempt++) {
+    try {
+      const r = await fetch(`${LICENSE_API}/key?session_id=${encodeURIComponent(sid)}`);
+      if (r.ok) {
+        const { key } = await r.json();
+        waitEl.style.display = 'none';
+        document.getElementById('pass-key').textContent = key;
+        document.getElementById('pass-key-box').style.display = 'block';
+        document.getElementById('pass-copy').onclick = () => {
+          navigator.clipboard.writeText(key).then(() => {
+            document.getElementById('pass-copy').textContent = '✓ Copied';
+          });
+        };
+        return;
+      }
+    } catch (_) {}
+    await new Promise(res => setTimeout(res, 3000)); // webhook may lag checkout by a few seconds
+  }
+  waitEl.textContent = "Your key is on its way — email hello@sweetrun.app if it doesn't arrive.";
+})();
+
 function showPlatform(p) {
   document.querySelectorAll('.platform-steps').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
