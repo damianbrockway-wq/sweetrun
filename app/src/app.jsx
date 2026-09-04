@@ -10,11 +10,20 @@ const _srFail = why => {
   try { window.dispatchEvent(new Event('sr-write-fail')); } catch {}
   return false;
 };
+const _srClear = () => {
+  if (!SR_WRITE_FAIL) return;
+  SR_WRITE_FAIL = null;
+  try { window.dispatchEvent(new Event('sr-write-fail')); } catch {}
+};
 const ls = {
   get: (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set: (k, v) => {
     if (SR_LOCKED && !SR_LOCK_ALLOW.includes(k)) return _srFail('locked');
-    try { localStorage.setItem(k, JSON.stringify(v)); return true; }
+    try {
+      localStorage.setItem(k, JSON.stringify(v));
+      if (SR_WRITE_FAIL === 'quota') _srClear();
+      return true;
+    }
     catch { return _srFail('quota'); }
   }
 };
@@ -9219,7 +9228,7 @@ function LicenseModal({ onClose, lic, onLicenseSaved }) {
     const payload = await verifyLicense(key);
     if (!payload) { setMsg({ ok:false, text:"That key doesn't look right — check for missing characters, or email hello@sweetrun.app and I'll sort it out." }); return; }
     if (payload.expired) { setMsg({ ok:false, text:`This Season Pass expired ${payload.x}. Grab a new one below.` }); return; }
-    SR_LOCKED = false;
+    SR_LOCKED = false; _srClear();
     ls.set('sg_license', key.trim());
     setMsg({ ok:true, text:`✓ Season Pass active through ${payload.x}. Boil on!` });
     onLicenseSaved(payload);
@@ -9388,7 +9397,7 @@ function App() {
       const tok = ls.get('sg_license', null);
       if (tok) {
         const p = await verifyLicense(tok);
-        if (p && !p.expired) { SR_LOCKED = false; setLic({ status: 'licensed', until: p.x }); return; }
+        if (p && !p.expired) { SR_LOCKED = false; _srClear(); setLic({ status: 'licensed', until: p.x }); return; }
       }
       const t = trialStatus();
       if (t.expired) {
