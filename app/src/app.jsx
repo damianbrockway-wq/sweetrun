@@ -4,9 +4,19 @@ const { useState, useEffect } = React;
 // ─── localStorage helpers ────────────────────────────────────────────────────
 let SR_LOCKED = false; // set true when trial expired & unlicensed — soft edit-lock
 const SR_LOCK_ALLOW = ['sg_license','sg_trial_start','sg_trial_pinged','sg_email_prompted','sg_sessions','sg_lang','sg_units'];
+let SR_WRITE_FAIL = null; // null | 'locked' | 'quota'
+const _srFail = why => {
+  SR_WRITE_FAIL = why;
+  try { window.dispatchEvent(new Event('sr-write-fail')); } catch {}
+  return false;
+};
 const ls = {
   get: (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
-  set: (k, v) => { try { if (SR_LOCKED && !SR_LOCK_ALLOW.includes(k)) return; localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+  set: (k, v) => {
+    if (SR_LOCKED && !SR_LOCK_ALLOW.includes(k)) return _srFail('locked');
+    try { localStorage.setItem(k, JSON.stringify(v)); return true; }
+    catch { return _srFail('quota'); }
+  }
 };
 
 // ─── License & Season Trial ──────────────────────────────────────────────────
@@ -672,6 +682,7 @@ const FUELS = [
   { label: 'Firewood (cord)', labelFr: 'Bois de chauffage (corde)', unit: 'cord', unitFr: 'corde', spu: 200 },
   { label: 'Oil (gallon)',    labelFr: 'Huile (gallon)',             unit: 'gal',  unitFr: 'gal',   spu: 10  },
   { label: 'Propane (gallon)',labelFr: 'Propane (gallon)',           unit: 'gal',  unitFr: 'gal',   spu: 7   },
+  { label: 'Natural Gas (ccf)',labelFr: 'Gaz naturel (ccf)',          unit: 'ccf',  unitFr: 'ccf',   spu: 7   },
 ];
 const fuelLabel = (f, lang) => lang === 'fr' ? (f.labelFr || f.label) : f.label;
 const SPOUTS = [
@@ -901,8 +912,8 @@ function FirstSeasonWizard({ onClose, onComplete }) {
       </>}
       <label style={{fontSize:11,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Fuel type</label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-        {[['Firewood (cord)','🪵','Wood-fired'],['Oil (gal)','🛢️','Oil burner'],
-          ['Propane (gal)','🔥','Propane'],['Natural Gas (ccf)','⛽','Gas line']].map(([v,icon,desc])=>(
+        {[['Firewood (cord)','🪵','Wood-fired'],['Oil (gallon)','🛢️','Oil burner'],
+          ['Propane (gallon)','🔥','Propane'],['Natural Gas (ccf)','⛽','Gas line']].map(([v,icon,desc])=>(
           <Opt key={v} val={v} cur={wizFuelType} set={setWizFuelType} accent="#f59e0b" icon={icon} label={v.split(' ')[0]} sub={desc} wide/>
         ))}
       </div>
@@ -924,7 +935,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
             style={{flex:1,background:'#0a1420',border:'1.5px solid #1e2d3d',borderRadius:10,
               padding:'11px 14px',color:'#e2eaf4',fontSize:15,outline:'none'}}/>
         </div>
-        <div style={{fontSize:11,color:'#3d5068',marginTop:4}}>Skip if unknown — update anytime in SweetRun.</div>
+        <div style={{fontSize:11,color:'#3d5068',marginTop:4}}>Whole-season total, for break-even. Your price per cord or gallon is set on the Evap tab.</div>
       </div>
       <div style={{marginBottom:18}}>
         <label style={{fontSize:11,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:8}}>
@@ -4387,15 +4398,18 @@ async function _sbCacheTiles(map, onProgress) {
 
   let done = 0, errors = 0;
   for (const url of urls) {
-    try { await fetch(url); } catch { errors++; }
+    try { const r = await fetch(url); if (!r.ok) errors++; } catch { errors++; }
     done++;
     onProgress(Math.round(done / urls.length * 100), done, urls.length);
   }
-  return { count: Math.round(urls.length / 2), errors };
+  const count = Math.round(urls.length / 2);
+  const saved = Math.max(0, Math.round((urls.length - errors) / 2));
+  return { count, saved, errors };
 }
 
 function LinesTab({ lang='en' }) {
   const [leafletReady, setLeafletReady] = React.useState(!!window.L);
+  const [leafletError, setLeafletError] = React.useState(false);
   const [pins, setPins]           = React.useState(() => ls.get('sg_lines_pins', []));
   const [mode, setMode]           = React.useState('tree');
   const [mapType, setMapType]     = React.useState('satellite');
@@ -4453,7 +4467,9 @@ function LinesTab({ lang='en' }) {
     document.head.appendChild(link);
     const script = document.createElement('script');
     script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.onload = () => setLeafletReady(true);
+    const timer = setTimeout(() => { if (!window.L) setLeafletError(true); }, 8000);
+    script.onload  = () => { clearTimeout(timer); setLeafletReady(true); };
+    script.onerror = () => { clearTimeout(timer); setLeafletError(true); };
     document.body.appendChild(script);
   }, []);
 
@@ -4486,6 +4502,25 @@ function LinesTab({ lang='en' }) {
     }
     // Wire up pin-click callback to show detail panel
     window._sgMapPinClick = (pinId) => { setSelectedPinId(pinId); setShowPinPanel(true); };
+
+    // Tear the map down when the tab unmounts so it can be rebuilt next time
+    return () => {
+      if (gpsWatchRef.current != null) {
+        try { navigator.geolocation.clearWatch(gpsWatchRef.current); } catch {}
+        gpsWatchRef.current = null;
+      }
+      try { if (_lMap) _lMap.remove(); } catch {}
+      _lMap = null;
+      _lMarkers = {};
+      _lRouteLines = [];
+      _lSpotMarkers = [];
+      _lPropertyLayers = [];
+      _lSeasonLayer = null;
+      _lSliderEl = null;
+      _lGpsMarker = null;
+      _lGpsCircle = null;
+      window._sgMapPinClick = null;
+    };
   }, [leafletReady]);
 
   // Toggle satellite/street base layer
@@ -4513,7 +4548,7 @@ function LinesTab({ lang='en' }) {
     if (!_lMap) return;
     const h = e => _dropPin(e.latlng.lat, e.latlng.lng, modeRef.current, pinsRef, setPins);
     _lMap.on('click', h);
-    return () => _lMap.off('click', h);
+    return () => { _lMap?.off('click', h); };
   }, [leafletReady]);
 
   // GPS — drop pin at current location
@@ -4573,9 +4608,15 @@ function LinesTab({ lang='en' }) {
     if (result.error) {
       setCacheMsg('⚠️ ' + result.error);
       setTimeout(() => setCacheMsg(''), 5000);
-    } else {
-      setCacheMsg(`✓ ${result.count} tiles saved — map works offline now`);
+    } else if (result.errors === 0) {
+      setCacheMsg(`✓ ${result.count} tiles saved. Map works offline now.`);
       setTimeout(() => setCacheMsg(''), 5000);
+    } else if (result.saved === 0) {
+      setCacheMsg(`⚠️ 0 of ${result.count} tiles saved. No connection. Try again when you have signal.`);
+      setTimeout(() => setCacheMsg(''), 8000);
+    } else {
+      setCacheMsg(`⚠️ ${result.saved} of ${result.count} tiles saved. Weak signal. Try again to fill the gaps.`);
+      setTimeout(() => setCacheMsg(''), 8000);
     }
   };
 
@@ -4808,6 +4849,8 @@ function LinesTab({ lang='en' }) {
     if (editingId === id) { setEditingId(null); setEditLabel(''); }
   };
   const clearAll = () => {
+    const n = pinsRef.current.length;
+    if (!window.confirm(`Delete all ${n} pins? This cannot be undone.`)) return;
     setPins([]); ls.set('sg_lines_pins', []);
     Object.values(_lMarkers).forEach(m => m.remove()); _lMarkers = {};
     _clearRouteLines(); _clearSpotMarkers();
@@ -4989,7 +5032,11 @@ function LinesTab({ lang='en' }) {
         {/* Map */}
         <div style={{ padding:'8px 0 0' }}>
           {!leafletReady
-            ? <div style={{ height:390, display:'flex', alignItems:'center', justifyContent:'center', color:'#4a5a6a', fontSize:13 }}>Loading map…</div>
+            ? <div style={{ height:390, display:'flex', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'0 24px', color:'#4a5a6a', fontSize:13, lineHeight:1.5 }}>
+                {leafletError
+                  ? 'The map needs a connection the first time it opens. Open this tab once with signal and tap Save offline. Your pin list below still works.'
+                  : 'Loading map…'}
+              </div>
             : <div ref={mapRef} style={{ height:390 }} />
           }
         </div>
@@ -5670,7 +5717,10 @@ function LinesTab({ lang='en' }) {
           )}
 
           {/* Delete */}
-          <button onClick={() => { removePin(selectedPin.id); setShowPinPanel(false); setSelectedPinId(null); }}
+          <button onClick={() => {
+              if (!window.confirm(`Delete "${selectedPin.label || 'this pin'}"?`)) return;
+              removePin(selectedPin.id); setShowPinPanel(false); setSelectedPinId(null);
+            }}
             style={{ width:'100%', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:10, padding:'11px', fontSize:13, fontWeight:700, color:'#f87171', cursor:'pointer' }}>
             Delete Pin
           </button>
@@ -9200,7 +9250,7 @@ function LicenseModal({ onClose, lic, onLicenseSaved }) {
         {lic.status !== 'licensed' && (
           <a href={STRIPE_BUY_URL} target="_blank" rel="noopener"
             style={{ display:'block', textAlign:'center', background:'linear-gradient(135deg,#2dd4a7,#1fbf94)', borderRadius:10, padding:'13px 16px', fontWeight:800, fontSize:14, color:'#07090f', textDecoration:'none', marginBottom:14 }}>
-            Get your Season Pass — $49.99/season
+            Get your Season Pass — $49.99/year
           </a>
         )}
         <div style={{ fontSize:11, fontWeight:800, letterSpacing:'0.1em', textTransform:'uppercase', color:'#3d5068', marginBottom:6 }}>Have a pass key?</div>
@@ -9296,13 +9346,24 @@ function BackupModal({ onClose }) {
 
 function App() {
   const [tab,      setTab]      = useState('sap');
+  const [writeFail, setWriteFail] = useState(null);
+  useEffect(() => {
+    const h = () => setWriteFail(SR_WRITE_FAIL);
+    window.addEventListener('sr-write-fail', h);
+    return () => window.removeEventListener('sr-write-fail', h);
+  }, []);
   const [units,    setUnits]    = useState(()=>ls.get('sg_units','GAL'));
   const [season,   setSeason]   = useState(()=>ls.get('sg_season',new Date().getFullYear()));
   const [sapBrix,  setSapBrix]  = useState(()=>ls.get('sg_brix',2));
   const [trees,    setTrees]    = useState(()=>ls.get('sg_trees',50));
   const [waterBP,  setWaterBP]  = useState(()=>ls.get('sg_bp',212));
   const [evapRate, setEvapRate] = useState(12);
-  const [fuelType, setFuelType] = useState(()=>ls.get('sg_fuel','Firewood (cord)'));
+  const [fuelType, setFuelType] = useState(()=>{
+    const FIX = { 'Oil (gal)':'Oil (gallon)', 'Propane (gal)':'Propane (gallon)' };
+    const f = ls.get('sg_fuel','Firewood (cord)');
+    if (FIX[f]) { ls.set('sg_fuel', FIX[f]); return FIX[f]; }
+    return f;
+  });
   const [fuelCost, setFuelCost] = useState(()=>ls.get('sg_fuelcost',300));
   const [onboard,  setOnboard]  = useState(()=>ls.get('sg_onboarded',false)===false);
   const [showWizard, setShowWizard] = useState(false);
@@ -9336,7 +9397,7 @@ function App() {
       } else {
         setLic({ status: 'trial', daysLeft: t.daysLeft });
         if (!ls.get('sg_trial_pinged', false)) pingEvent('trial_start').then(() => ls.set('sg_trial_pinged', true)).catch(() => {});
-        if (sessions === 2 && !ls.get('sg_email_prompted', false)) setShowLicense(true);
+        if (sessions >= 2 && ls.get('sg_onboarded', false) && !ls.get('sg_email_prompted', false)) setShowLicense(true);
       }
     })();
   }, []);
@@ -9498,15 +9559,28 @@ function App() {
           </div>
         )}
 
+        {/* ── Write-failure bar ── */}
+        {writeFail && (
+          <div role="alert" style={{ background:'#7f1d1d', color:'#fff', padding:'10px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:10 }}>
+            <span style={{ fontSize:13, fontWeight:700, lineHeight:1.45 }}>
+              {writeFail === 'locked'
+                ? 'That entry was not saved. Your Season Trial has ended. Enter a pass key to keep logging.'
+                : 'That entry was not saved. Phone storage is full. Export a backup from Data and Backup, then clear an old season.'}
+            </span>
+            <button onClick={()=>setWriteFail(null)} style={{ background:'none', border:'none', color:'#fca5a5', cursor:'pointer', padding:'0 4px', flexShrink:0 }} aria-label="Dismiss"><I.x size={14}/></button>
+          </div>
+        )}
+
         {/* ── Content ── */}
         <div className="tab-content">
           {(onboard || showWizard) && (
             <FirstSeasonWizard
-              onClose={()=>{ setOnboard(false); setShowWizard(false); }}
+              onClose={()=>{ ls.set('sg_onboarded', true); setOnboard(false); setShowWizard(false); }}
               onComplete={data=>{
                 if(data.trees > 0) { setTrees(data.trees); ls.set('sg_trees', data.trees); }
                 if(data.fuelType) { setFuelType(data.fuelType); ls.set('sg_fuel', data.fuelType); }
-                if(data.fuelCost) { setFuelCost(data.fuelCost); ls.set('sg_fuelcost', data.fuelCost); }
+                // data.fuelCost is a whole-season total; Break-Even reads it from sg_wizard_data.
+                // Evap's per-unit price (sg_fuelcost) is set on the Evap tab, never from here.
                 setOnboard(false); setShowWizard(false);
               }}
             />
