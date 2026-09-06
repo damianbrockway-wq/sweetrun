@@ -839,7 +839,9 @@ function srParseNum(raw) {
   const n = parseFloat(s);
   return isNaN(n) ? null : n;
 }
-function NumInput({ value, onChange, min, max, step = 0.1, placeholder }) {
+// `label` is what a screen reader announces. Every call site passes the same
+// words the sighted user reads above the box, so the two never drift.
+function NumInput({ value, onChange, min, max, step = 0.1, placeholder, label, id }) {
   const [display, setDisplay] = React.useState(value === 0 ? '' : String(value));
   React.useEffect(() => {
     if (document.activeElement && document.activeElement.dataset.numinput === 'true') return;
@@ -856,6 +858,8 @@ function NumInput({ value, onChange, min, max, step = 0.1, placeholder }) {
       type="text"
       inputMode="decimal"
       data-numinput="true"
+      id={id}
+      aria-label={label}
       value={display}
       placeholder={placeholder || (value === 0 ? '0' : '')}
       onChange={e => {
@@ -972,7 +976,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
         <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:8}}>
           How many maple trees do you tap?
         </label>
-        <input type="number" value={treeCount} onChange={e=>setTreeCount(e.target.value)}
+        <input aria-label="How many maple trees do you tap?" type="number" value={treeCount} onChange={e=>setTreeCount(e.target.value)}
           placeholder="e.g. 150" min="1"
           style={{width:'100%',background:'#0a1420',border:'1.5px solid #1e2d3d',borderRadius:10,
             padding:'11px 14px',color:'#e2eaf4',fontSize:16,boxSizing:'border-box',outline:'none'}}/>
@@ -1047,7 +1051,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
         </label>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
           <span style={{color:'#5a6a7a',fontSize:16,flexShrink:0}}>$</span>
-          <input type="number" value={fuelCostVal} onChange={e=>setFuelCostVal(e.target.value)}
+          <input aria-label={`Fuel cost this season in dollars (${wizFuelType})`} type="number" value={fuelCostVal} onChange={e=>setFuelCostVal(e.target.value)}
             placeholder={wizFuelType.includes('Firewood')?'300':'120'} min="0"
             style={{flex:1,background:'#0a1420',border:'1.5px solid #1e2d3d',borderRadius:10,
               padding:'11px 14px',color:'#e2eaf4',fontSize:15,outline:'none'}}/>
@@ -1060,7 +1064,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
         </label>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
           <span style={{color:'#5a6a7a',fontSize:16,flexShrink:0}}>$</span>
-          <input type="number" value={syrupPrice} onChange={e=>setSyrupPrice(e.target.value)}
+          <input aria-label="Syrup selling price per gallon, in dollars" type="number" value={syrupPrice} onChange={e=>setSyrupPrice(e.target.value)}
             placeholder="40" min="0"
             style={{flex:1,background:'#0a1420',border:'1.5px solid #1e2d3d',borderRadius:10,
               padding:'11px 14px',color:'#e2eaf4',fontSize:15,outline:'none'}}/>
@@ -1265,9 +1269,9 @@ function FreezeThawWidget({ lang='en' }) {
       </button>
       <div style={{ textAlign:'center', color:'#3d5068', fontSize:12, marginBottom:8 }}>{t(lang,'ftOr')}</div>
       <div style={{ display:'flex', gap:8 }}>
-        <input type="text" placeholder={t(lang,'wxCityPh')} value={zip}
+        <input aria-label={t(lang,'wxCityPh')} type="text" placeholder={t(lang,'wxCityPh')} value={zip}
           onChange={e => setZip(e.target.value)} onKeyDown={e => e.key==='Enter' && searchZip()} style={{ flex:1 }} />
-        <button onClick={searchZip} style={{ background:'#2dd4a7', border:'none', borderRadius:8, width:44, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+        <button onClick={searchZip} aria-label="Search for this place" title="Search" style={{ background:'#2dd4a7', border:'none', borderRadius:8, width:44, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
           <I.search size={18} color="#0d1117" />
         </button>
       </div>
@@ -1355,7 +1359,7 @@ function SapTab({ sapBrix, setSapBrix, trees, units, lang='en' }) {
           <div><div>{t(lang,'rule86Title')}</div><div style={{ fontSize:12, color:'#5a6a7a', fontWeight:400 }}>{t(lang,'rule86Sub')}</div></div>
         </div>
         <div className="field-label">{t(lang,'sapSugarContent')}</div>
-        <NumInput value={sapBrix} onChange={setSapBrix} min={0.5} max={10} step={0.1} />
+        <NumInput label={t(lang,'sapSugarContent')} value={sapBrix} onChange={setSapBrix} min={0.5} max={10} step={0.1} />
         <div style={{ fontSize:12, color:'#e0a44a', marginTop:5, marginBottom:10 }}>{t(lang,'sharedAllTabs')}</div>
         <div className="result-box orange">
           <div className="two-col">
@@ -1378,8 +1382,8 @@ function SapTab({ sapBrix, setSapBrix, trees, units, lang='en' }) {
           <div><div>{t(lang,'syrupYieldCard')}</div><div style={{ fontSize:12, color:'#5a6a7a', fontWeight:400 }}>{t(lang,'syrupYieldSub')}</div></div>
         </div>
         <div className="two-col" style={{ marginBottom:12 }}>
-          <div><div className="field-label">{t(lang,'sapFieldLabel')} ({u})</div><NumInput value={sapGal} onChange={setSapGal} min={1} max={100000} step={1} /></div>
-          <div><div className="field-label">{t(lang,'sapBrix')}</div><input type="number" value={sapBrix} onChange={e=>setSapBrix(parseFloat(e.target.value)||0)} onFocus={e=>e.target.select()} min={0.5} max={10} step={0.1} /></div>
+          <div><div className="field-label">{t(lang,'sapFieldLabel')} ({u})</div><NumInput label={`${t(lang,'sapFieldLabel')} (${u})`} value={sapGal} onChange={setSapGal} min={1} max={100000} step={1} /></div>
+          <div><div className="field-label">{t(lang,'sapBrix')}</div><input aria-label={t(lang,'sapBrix')} type="number" value={sapBrix} onChange={e=>setSapBrix(parseFloat(e.target.value)||0)} onFocus={e=>e.target.select()} min={0.5} max={10} step={0.1} /></div>
         </div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:16, padding:'10px 0' }}>
           <div style={{ textAlign:'center' }}>
@@ -1616,18 +1620,18 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
           {t(lang,'evapTitle')}
         </div>
         <div className="field-label">{t(lang,'panSize')}</div>
-        <select value={panIdx} onChange={e=>{setPanIdx(+e.target.value);setCustomR('');}} style={{ marginBottom:12 }}>
+        <select aria-label={t(lang,'panSize')} value={panIdx} onChange={e=>{setPanIdx(+e.target.value);setCustomR('');}} style={{ marginBottom:12 }}>
           {PAN_SIZES.map((p,i)=><option key={i} value={i}>{p.label}</option>)}
         </select>
         {isCustomPan && (
           <div className="two-col" style={{ marginBottom:12 }}>
             <div>
               <div className="field-label">Width (ft)</div>
-              <NumInput value={panW} onChange={setPanW} min={1} max={20} step={0.5} placeholder="e.g. 2" />
+              <NumInput label="Width (ft)" value={panW} onChange={setPanW} min={1} max={20} step={0.5} placeholder="e.g. 2" />
             </div>
             <div>
               <div className="field-label">Length (ft)</div>
-              <NumInput value={panH} onChange={setPanH} min={1} max={30} step={0.5} placeholder="e.g. 6" />
+              <NumInput label="Length (ft)" value={panH} onChange={setPanH} min={1} max={30} step={0.5} placeholder="e.g. 6" />
             </div>
           </div>
         )}
@@ -1637,7 +1641,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
           </div>
         )}
         <div className="field-label">{t(lang,'customRate')}</div>
-        <NumInput value={customR} onChange={setCustomR} min={1} max={500} step={1} placeholder={isCustomPan && customCalcR > 0 ? `Leave blank for ~${customCalcR} GPH` : lang==='fr'?`Laisser vide — ~${pan.rate} GPH`:`Leave blank for ~${pan.rate} GPH`} />
+        <NumInput label={t(lang,'customRate')} value={customR} onChange={setCustomR} min={1} max={500} step={1} placeholder={isCustomPan && customCalcR > 0 ? `Leave blank for ~${customCalcR} GPH` : lang==='fr'?`Laisser vide — ~${pan.rate} GPH`:`Leave blank for ~${pan.rate} GPH`} />
         <div className="result-box orange" style={{ marginTop:12 }}>
           <div className="two-col">
             <div><div className="result-label" style={{ color:'#e0a44a' }}>{t(lang,'boilRate')}</div><div className="result-value" style={{ color:'#e0a44a' }}>{rate} GPH</div></div>
@@ -1652,8 +1656,8 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
           {t(lang,'boilTime')}
         </div>
         <div className="two-col" style={{ marginBottom:12 }}>
-          <div><div className="field-label">{t(lang,'sapToBoil')} ({u})</div><NumInput value={sapGal} onChange={setSapGal} min={1} max={100000} step={1} /></div>
-          <div><div className="field-label">{t(lang,'sapBrix')}</div><input type="number" value={sapBrix} onChange={e=>setSapBrix(parseFloat(e.target.value)||0)} onFocus={e=>e.target.select()} min={0.5} max={10} step={0.1} /></div>
+          <div><div className="field-label">{t(lang,'sapToBoil')} ({u})</div><NumInput label={`${t(lang,'sapToBoil')} (${u})`} value={sapGal} onChange={setSapGal} min={1} max={100000} step={1} /></div>
+          <div><div className="field-label">{t(lang,'sapBrix')}</div><input aria-label={t(lang,'sapBrix')} type="number" value={sapBrix} onChange={e=>setSapBrix(parseFloat(e.target.value)||0)} onFocus={e=>e.target.select()} min={0.5} max={10} step={0.1} /></div>
         </div>
         <div className="result-box orange">
           <div className="two-col">
@@ -1669,11 +1673,11 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
           {t(lang,'fuelCost')}
           </div>
         <div className="field-label">{t(lang,'fuelType')}</div>
-        <select value={fuelType} onChange={e=>setFuelType(e.target.value)} style={{ marginBottom:12 }}>
+        <select aria-label={t(lang,'fuelType')} value={fuelType} onChange={e=>setFuelType(e.target.value)} style={{ marginBottom:12 }}>
           {FUELS.map(f=><option key={f.label} value={f.label}>{fuelLabel(f,lang)}</option>)}
         </select>
         <div className="field-label">{t(lang,'costPerUnit')} {fuel.unit} ($)</div>
-        <NumInput value={fuelCost} onChange={setFuelCost} min={1} max={10000} step={1} />
+        <NumInput label={`${t(lang,'costPerUnit')} ${fuel.unit} ($)`} value={fuelCost} onChange={setFuelCost} min={1} max={10000} step={1} />
         <div className="result-box green" style={{ marginTop:12 }}>
           <div className="two-col">
             <div><div className="result-label" style={{ color:'#3fb950' }}>{t(lang,'fuelNeeded')}</div><div className="result-value" style={{ color:'#3fb950' }}>{fmt(uNeeded,2)} {fuel.unit}s</div></div>
@@ -1692,17 +1696,17 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
         <InfoRow label={fuelLabel(fuel,lang)} value={`$${fmt(cost,2)}`} />
         <div className="section-header" style={{ marginTop:10 }}>{t(lang,'labour')}</div>
         <div className="two-col" style={{ marginBottom:10 }}>
-          <div><div className="field-label">{t(lang,'hoursThisSeason')}</div><NumInput value={laborHrs} onChange={setLaborHrs} min={0} max={10000} step={0.5} /></div>
-          <div><div className="field-label">{t(lang,'dollarsPerHr')}</div><NumInput value={laborRate} onChange={setLaborRate} min={0} max={500} step={1} /></div>
+          <div><div className="field-label">{t(lang,'hoursThisSeason')}</div><NumInput label={t(lang,'hoursThisSeason')} value={laborHrs} onChange={setLaborHrs} min={0} max={10000} step={0.5} /></div>
+          <div><div className="field-label">{t(lang,'dollarsPerHr')}</div><NumInput label={t(lang,'dollarsPerHr')} value={laborRate} onChange={setLaborRate} min={0} max={500} step={1} /></div>
         </div>
         <div className="section-header">{t(lang,'supplies')}</div>
         <div className="two-col" style={{ marginBottom:10 }}>
-          <div><div className="field-label">{t(lang,'spoutsLabel')}</div><NumInput value={spoutCost} onChange={setSpoutCost} min={0} step={1} /></div>
-          <div><div className="field-label">{t(lang,'bottlesLabel')}</div><NumInput value={bottleCost} onChange={setBottleCost} min={0} step={1} /></div>
+          <div><div className="field-label">{t(lang,'spoutsLabel')}</div><NumInput label={t(lang,'spoutsLabel')} value={spoutCost} onChange={setSpoutCost} min={0} step={1} /></div>
+          <div><div className="field-label">{t(lang,'bottlesLabel')}</div><NumInput label={t(lang,'bottlesLabel')} value={bottleCost} onChange={setBottleCost} min={0} step={1} /></div>
         </div>
         <div className="two-col" style={{ marginBottom:12 }}>
-          <div><div className="field-label">{t(lang,'filtersLabel')}</div><NumInput value={filterCost} onChange={setFilterCost} min={0} step={1} /></div>
-          <div><div className="field-label">{t(lang,'otherLabel')}</div><NumInput value={otherCost} onChange={setOtherCost} min={0} step={1} /></div>
+          <div><div className="field-label">{t(lang,'filtersLabel')}</div><NumInput label={t(lang,'filtersLabel')} value={filterCost} onChange={setFilterCost} min={0} step={1} /></div>
+          <div><div className="field-label">{t(lang,'otherLabel')}</div><NumInput label={t(lang,'otherLabel')} value={otherCost} onChange={setOtherCost} min={0} step={1} /></div>
         </div>
         {(() => {
           const laborTotal   = laborHrs * laborRate;
@@ -1745,11 +1749,11 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
         <div className="two-col" style={{ marginBottom:12 }}>
           <div>
             <div className="field-label">{t(lang,'marginLabel')}</div>
-            <NumInput value={retailMargin} onChange={setRetailMargin} min={0} max={95} step={1} />
+            <NumInput label={t(lang,'marginLabel')} value={retailMargin} onChange={setRetailMargin} min={0} max={95} step={1} />
           </div>
           <div>
             <div className="field-label">{t(lang,'yourCostPerGal')} <span style={{ color:'#3d5068', fontSize:13 }}>({t(lang,'orEnterManual')})</span></div>
-            <NumInput value={retailCostOverride} onChange={setRetailCostOverride} min={0} step={0.5} placeholder="auto" />
+            <NumInput label={t(lang,'yourCostPerGal')} value={retailCostOverride} onChange={setRetailCostOverride} min={0} step={0.5} placeholder="auto" />
           </div>
         </div>
         {(() => {
@@ -1821,27 +1825,27 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
         {showForm && (
           <div style={{ background:'#0f1720', borderRadius:10, padding:14, marginBottom:12 }}>
             <div className="two-col" style={{ marginBottom:8 }}>
-              <div><div className="field-label">{t(lang,'date')}</div><input type="date" value={bf.date} onChange={e=>setBf(p=>({...p,date:e.target.value}))} /></div>
+              <div><div className="field-label">{t(lang,'date')}</div><input aria-label={t(lang,'date')} type="date" value={bf.date} onChange={e=>setBf(p=>({...p,date:e.target.value}))} /></div>
               <div><div className="field-label">Grade</div>
-                <select value={bf.grade} onChange={e=>setBf(p=>({...p,grade:e.target.value}))} style={{ background:'#0f1720', color:'#c9d1d9', border:'1px solid #2a3a4a', borderRadius:8, padding:'6px 10px', fontSize:14 }}>
+                <select aria-label="Grade" value={bf.grade} onChange={e=>setBf(p=>({...p,grade:e.target.value}))} style={{ background:'#0f1720', color:'#c9d1d9', border:'1px solid #2a3a4a', borderRadius:8, padding:'6px 10px', fontSize:14 }}>
                   {Object.entries(BATCH_GRADES).map(([k,v])=><option key={k} value={k}>{v.name}</option>)}
                 </select>
               </div>
             </div>
             <div className="two-col" style={{ marginBottom:8 }}>
-              <div><div className="field-label">{t(lang,'sapIn')} ({u})</div><NumInput value={bf.sapIn} onChange={v=>setBf(p=>({...p,sapIn:v}))} min={0} step={1} /></div>
-              <div><div className="field-label">{t(lang,'syrupOut')} ({u})</div><NumInput value={bf.syrupOut} onChange={v=>setBf(p=>({...p,syrupOut:v}))} min={0} step={0.1} /></div>
+              <div><div className="field-label">{t(lang,'sapIn')} ({u})</div><NumInput label={`${t(lang,'sapIn')} (${u})`} value={bf.sapIn} onChange={v=>setBf(p=>({...p,sapIn:v}))} min={0} step={1} /></div>
+              <div><div className="field-label">{t(lang,'syrupOut')} ({u})</div><NumInput label={`${t(lang,'syrupOut')} (${u})`} value={bf.syrupOut} onChange={v=>setBf(p=>({...p,syrupOut:v}))} min={0} step={0.1} /></div>
             </div>
             <div className="two-col" style={{ marginBottom:8 }}>
               <div><div className="field-label">Location</div>
                 <div style={{ display:'flex', gap:6 }}>
-                  <input type="text" value={bf.loc} onChange={e=>setBf(p=>({...p,loc:e.target.value}))} placeholder="e.g. Craftsbury, VT" style={{ flex:1 }} />
+                  <input aria-label="Location" type="text" value={bf.loc} onChange={e=>setBf(p=>({...p,loc:e.target.value}))} placeholder="e.g. Craftsbury, VT" style={{ flex:1 }} />
                   <button onClick={gpsLoc} disabled={locLoading} title="Use my location" style={{ background:'rgba(45,212,167,0.1)', border:'1px solid rgba(45,212,167,0.25)', borderRadius:8, padding:'0 10px', fontSize:16, cursor:'pointer', color: locLoading ? '#3d5068' : '#2dd4a7', flexShrink:0 }}>
                     {locLoading ? <I.clock size={15} color="#8a9ab5" /> : <I.mapPin size={15} color="#8a9ab5" />}
                   </button>
                 </div>
               </div>
-              <div><div className="field-label">{t(lang,'notes')}</div><input type="text" value={bf.notes} onChange={e=>setBf(p=>({...p,notes:e.target.value}))} placeholder={t(lang,'optional')} /></div>
+              <div><div className="field-label">{t(lang,'notes')}</div><input aria-label={t(lang,'notes')} type="text" value={bf.notes} onChange={e=>setBf(p=>({...p,notes:e.target.value}))} placeholder={t(lang,'optional')} /></div>
             </div>
             <div className="two-col">
               <button className="btn-secondary" onClick={()=>setShowForm(false)}>{t(lang,'cancel')}</button>
@@ -1873,7 +1877,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
                 style={{ background:'rgba(45,212,167,0.1)', border:'1px solid rgba(45,212,167,0.25)', borderRadius:7, padding:'5px 10px', fontSize:13, fontWeight:700, color:'#2dd4a7', cursor:'pointer', flexShrink:0, letterSpacing:'0.03em', lineHeight:1.3, textAlign:'center' }}>
                 <I.tag size={15} color="#8a9ab5" /><br/>Label
               </button>
-              <button className="delete-btn" onClick={()=>setBatches(p=>p.filter((_,j)=>j!==i))}><I.trash size={15} /></button>
+              <button className="delete-btn" aria-label="Delete this batch" title="Delete batch" onClick={()=>setBatches(p=>p.filter((_,j)=>j!==i))}><I.trash size={15} /></button>
             </div>
           );
         })}
@@ -1907,11 +1911,11 @@ function ROTab({ sapBrix, setSapBrix, evapRate, fuelType, fuelCost, units, lang=
           {t(lang,'roConcentration')}
         </div>
         <div className="two-col" style={{ marginBottom:10 }}>
-          <div><div className="field-label">{t(lang,'inputSap')} ({u})</div><NumInput value={inSap} onChange={setInSap} min={1} max={100000} step={1} /></div>
-          <div><div className="field-label">{t(lang,'sapBrix')}</div><input type="number" value={sapBrix} onChange={e=>setSapBrix(parseFloat(e.target.value)||0)} onFocus={e=>e.target.select()} min={0.5} max={10} step={0.1} /></div>
+          <div><div className="field-label">{t(lang,'inputSap')} ({u})</div><NumInput label={`${t(lang,'inputSap')} (${u})`} value={inSap} onChange={setInSap} min={1} max={100000} step={1} /></div>
+          <div><div className="field-label">{t(lang,'sapBrix')}</div><input aria-label={t(lang,'sapBrix')} type="number" value={sapBrix} onChange={e=>setSapBrix(parseFloat(e.target.value)||0)} onFocus={e=>e.target.select()} min={0.5} max={10} step={0.1} /></div>
         </div>
         <div className="field-label">{t(lang,'targetBrix')}</div>
-        <NumInput value={tgtBrix} onChange={setTgtBrix} min={1} max={20} step={0.5} />
+        <NumInput label={t(lang,'targetBrix')} value={tgtBrix} onChange={setTgtBrix} min={1} max={20} step={0.5} />
         <div className="result-box blue" style={{ marginTop:12 }}>
           <div className="two-col" style={{ marginBottom:8 }}>
             <div><div className="result-label" style={{ color:'#58a6ff' }}>{t(lang,'concentrate')}</div><div className="result-value" style={{ color:'#58a6ff' }}>{conv(conc)} {u}</div><div className="result-sub">{fmt(tgtBrix,1)}° Brix</div></div>
@@ -2004,7 +2008,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           {t(lang,'finishTitle')}
         </div>
         <div className="field-label">{t(lang,'waterBP')}</div>
-        <NumInput value={waterBP} onChange={setWaterBP} min={200} max={215} step={0.1} />
+        <NumInput label={t(lang,'waterBP')} value={waterBP} onChange={setWaterBP} min={200} max={215} step={0.1} />
         <div style={{ fontSize:12, color:'#5a6a7a', marginTop:5, marginBottom:10 }}>{t(lang,'sharedWithBoil')}</div>
         <div className="result-box orange">
           <div className="result-label" style={{ color:'#e0a44a', textAlign:'center' }}>{t(lang,'finishAt')}</div>
@@ -2020,8 +2024,8 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           {t(lang,'densityCheck')}
         </div>
         <div className="two-col" style={{ marginBottom:12 }}>
-          <div><div className="field-label">{t(lang,'syrupBrix')}</div><NumInput value={syBrix} onChange={setSyBrix} min={60} max={75} step={0.1} /></div>
-          <div><div className="field-label">{t(lang,'syrupTemp')}</div><NumInput value={syTemp} onChange={setSyTemp} min={60} max={220} step={1} /></div>
+          <div><div className="field-label">{t(lang,'syrupBrix')}</div><NumInput label={t(lang,'syrupBrix')} value={syBrix} onChange={setSyBrix} min={60} max={75} step={0.1} /></div>
+          <div><div className="field-label">{t(lang,'syrupTemp')}</div><NumInput label={t(lang,'syrupTemp')} value={syTemp} onChange={setSyTemp} min={60} max={220} step={1} /></div>
         </div>
         <div className="result-box orange" style={{ marginBottom:10 }}>
           <div style={{ fontWeight:600, color:'#e0a44a', fontSize:14 }}>{t(lang,'tempCorrection')}: At {syTemp}°F, {corr>=0?'add':'subtract'} {fmt(Math.abs(corr),2)}° to reading</div>
@@ -2046,7 +2050,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           </div>
           <div style={{ background:'#1a0d2b', borderRadius:10, padding:14, border:'1px solid #2f1a4a' }}>
             <div style={{ fontSize:13, fontWeight:600, color:'#c990ff', letterSpacing:'0.08em', marginBottom:6 }}>ENTER BAUMÉ</div>
-            <NumInput value={baumeIn} onChange={setBaumeIn} min={28} max={40} step={0.1} />
+            <NumInput label="Enter degrees Baumé" value={baumeIn} onChange={setBaumeIn} min={28} max={40} step={0.1} />
             <div style={{ color:'#c990ff', fontSize:13, marginTop:6 }}>= {fmt(beToBrix(baumeIn),1)}° Brix</div>
             <div style={{ color:'#748699', fontSize:13, marginTop:6, lineHeight:1.45 }}>{BE_HOT_NOTE}</div>
           </div>
@@ -2067,7 +2071,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           <div style={{ width:22, height:22, borderRadius:'50%', background:'#2dd4a7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#061a14', flexShrink:0 }}>1</div>
           <div style={{ fontSize:13, fontWeight:700, color:'#e6edf3' }}>How many gallons are you filtering right now?</div>
         </div>
-        <NumInput value={gal2f} onChange={setGal2f} min={0} max={1000} step={1} />
+        <NumInput label="Gallons to filter" value={gal2f} onChange={setGal2f} min={0} max={1000} step={1} />
         <div style={{ fontSize:12, color:'#3d5068', marginTop:4, marginBottom:14 }}>Enter the gallons sitting in your finishing pan ready to press</div>
 
         {/* ── Auto recommendation banner ── */}
@@ -2150,8 +2154,8 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
             <div style={{ fontSize:13, fontWeight:700, color:'#e6edf3' }}>Your press setup</div>
           </div>
           <div className="two-col" style={{ marginBottom:16 }}>
-            <div><div className="field-label">Number of plates</div><NumInput value={plates} onChange={setPlates} min={1} max={50} step={1} /></div>
-            <div><div className="field-label">Plate size</div><select value={psKey} onChange={e=>setPsKey(e.target.value)} style={{ width:'100%', padding:'9px 10px', borderRadius:10, background:'#0d1520', border:'1px solid #1e2d3d', color:'#e6edf3', fontSize:14 }}>{Object.keys(PLATE_CUPS).map(k=><option key={k}>{k}</option>)}</select></div>
+            <div><div className="field-label">Number of plates</div><NumInput label="Number of plates" value={plates} onChange={setPlates} min={1} max={50} step={1} /></div>
+            <div><div className="field-label">Plate size</div><select aria-label="Plate size" value={psKey} onChange={e=>setPsKey(e.target.value)} style={{ width:'100%', padding:'9px 10px', borderRadius:10, background:'#0d1520', border:'1px solid #1e2d3d', color:'#e6edf3', fontSize:14 }}>{Object.keys(PLATE_CUPS).map(k=><option key={k}>{k}</option>)}</select></div>
           </div>
         </>)}
 
@@ -2410,15 +2414,15 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
       <div className="card">
         <div className="card-title"><CardIcon bg="#0d2b15" icon="tree" />{t(lang,'tapCalcTitle')}</div>
         <div className="two-col" style={{ marginBottom:10 }}>
-          <div><div className="field-label">{t(lang,'numTrees')}</div><NumInput value={trees} onChange={setTrees} min={1} max={10000} step={1} /></div>
+          <div><div className="field-label">{t(lang,'numTrees')}</div><NumInput label={t(lang,'numTrees')} value={trees} onChange={setTrees} min={1} max={10000} step={1} /></div>
           <div>
             <div className="field-label">{t(lang,'avgTrunkDiam')}</div>
-            <NumInput value={dbh} onChange={setDbh} min={6} max={60} step={1} />
+            <NumInput label={t(lang,'avgTrunkDiam')} value={dbh} onChange={setDbh} min={6} max={60} step={1} />
             <div style={{ fontSize:13, color:'#3d5068', marginTop:3 }}>{t(lang,'dbhHint')}</div>
           </div>
         </div>
         <div className="field-label">{t(lang,'vacSystemQ')}</div>
-        <select value={vacuum} onChange={e=>setVacuum(e.target.value)} style={{ marginBottom:12 }}>
+        <select aria-label={t(lang,'vacSystemQ')} value={vacuum} onChange={e=>setVacuum(e.target.value)} style={{ marginBottom:12 }}>
           {[{k:'gravBuckets'},{k:'lowVac'},{k:'highVac'}].map(v=><option key={v.k} value={t('en',v.k)}>{t(lang,v.k)}</option>)}
         </select>
         <div className="result-box green" style={{ marginBottom:10 }}>
@@ -2448,7 +2452,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
       <div className="card">
         <div className="card-title"><CardIcon bg="#0d1a2b" icon="circle" />{t(lang,'spoutBit')}</div>
         <div className="field-label">{t(lang,'spoutType')}</div>
-        <select value={spoutIdx} onChange={e=>setSpoutIdx(+e.target.value)} style={{ marginBottom:12 }}>
+        <select aria-label={t(lang,'spoutType')} value={spoutIdx} onChange={e=>setSpoutIdx(+e.target.value)} style={{ marginBottom:12 }}>
           {SPOUTS.map((s,i)=><option key={i} value={i}>{s.label}</option>)}
         </select>
         <div className="result-box blue">
@@ -2482,8 +2486,8 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
           <div style={{ marginTop:12 }}>
             <div style={{ background:'#0f1720', borderRadius:10, padding:14, marginBottom:12 }}>
               <div className="two-col" style={{ marginBottom:8 }}>
-                <div><div className="field-label">{t(lang,'treeIdName')}</div><input type="text" value={tnForm.tree} onChange={e=>setTnForm(p=>({...p,tree:e.target.value}))} placeholder={t(lang,'treeIdPh')} /></div>
-                <div><div className="field-label">Date</div><input type="text" value={tnForm.date} onChange={e=>setTnForm(p=>({...p,date:e.target.value}))} /></div>
+                <div><div className="field-label">{t(lang,'treeIdName')}</div><input aria-label={t(lang,'treeIdName')} type="text" value={tnForm.tree} onChange={e=>setTnForm(p=>({...p,tree:e.target.value}))} placeholder={t(lang,'treeIdPh')} /></div>
+                <div><div className="field-label">Date</div><input aria-label="Date" type="text" value={tnForm.date} onChange={e=>setTnForm(p=>({...p,date:e.target.value}))} /></div>
               </div>
               <div style={{ marginBottom:8 }}>
                 <div className="field-label">{t(lang,'obsTag')}</div>
@@ -2495,7 +2499,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
                     </button>
                   ))}
                 </div>
-                <input type="text" value={tnForm.obs} onChange={e=>setTnForm(p=>({...p,obs:e.target.value}))} placeholder={t(lang,'customNote')} />
+                <input aria-label={t(lang,'obsTag')} type="text" value={tnForm.obs} onChange={e=>setTnForm(p=>({...p,obs:e.target.value}))} placeholder={t(lang,'customNote')} />
               </div>
               <div className="two-col">
                 <button className="btn-secondary" onClick={()=>setShowTN(false)}>{t(lang,'cancel')}</button>
@@ -2512,7 +2516,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
                   <div style={{ fontWeight:600, fontSize:14, color:'#3fb950' }}>{n.tree||t(lang,'noId')} <span style={{ color:'#3d5068', fontSize:12, fontWeight:400 }}>{n.date}</span></div>
                   <div style={{ color:'#b0bec8', fontSize:13, marginTop:3 }}>{n.obs}</div>
                 </div>
-                <button className="delete-btn" onClick={()=>setTreeNotes(p=>p.filter(t=>t.id!==n.id))}><I.x size={14} /></button>
+                <button className="delete-btn" aria-label="Delete this tree note" title="Delete note" onClick={()=>setTreeNotes(p=>p.filter(t=>t.id!==n.id))}><I.x size={14} /></button>
               </div>
             ))}
           </div>
@@ -2536,11 +2540,11 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
               <div className="two-col" style={{ marginBottom:8 }}>
                 <div>
                   <div className="field-label">{t(lang,'treeIdRot')}</div>
-                  <input type="text" value={rotForm.tree} onChange={e=>setRotForm(p=>({...p,tree:e.target.value}))} placeholder={t(lang,'treeIdPh')} />
+                  <input aria-label={t(lang,'treeIdRot')} type="text" value={rotForm.tree} onChange={e=>setRotForm(p=>({...p,tree:e.target.value}))} placeholder={t(lang,'treeIdPh')} />
                 </div>
                 <div>
                   <div className="field-label">{t(lang,'year')}</div>
-                  <input type="number" value={rotForm.year} onChange={e=>setRotForm(p=>({...p,year:e.target.value}))} min="2000" max="2100" />
+                  <input aria-label={t(lang,'year')} type="number" value={rotForm.year} onChange={e=>setRotForm(p=>({...p,year:e.target.value}))} min="2000" max="2100" />
                 </div>
               </div>
               <div style={{ marginBottom:8 }}>
@@ -2574,7 +2578,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
                       <span style={{ color:'#a855f7', marginLeft:10 }}>→ {t(lang,'rotDue')}: {t(lang,opp==='N'?'north':opp==='S'?'south':opp==='E'?'east':'west')}</span>
                     </div>
                   </div>
-                  <button className="delete-btn" onClick={()=>setRotEntries(p=>p.filter(r=>r.id!==e.id))}><I.x size={14} /></button>
+                  <button className="delete-btn" aria-label="Delete this rotation entry" title="Delete entry" onClick={()=>setRotEntries(p=>p.filter(r=>r.id!==e.id))}><I.x size={14} /></button>
                 </div>
               );
             })}
@@ -2648,8 +2652,8 @@ function BoilPtTab({ waterBP, setWaterBP, lang='en' }) {
         </button>
         {loc && <div style={{ color:'#2dd4a7', fontSize:13, marginBottom:8, display:'flex', alignItems:'center', gap:6 }}><I.mapPin size={14} color="#2dd4a7" />{loc}</div>}
         <div style={{ display:'flex', gap:8 }}>
-          <input type="text" placeholder={t(lang,'cityZip')} value={zip} onChange={e=>setZip(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchZip()} style={{ flex:1 }} />
-          <button onClick={searchZip} style={{ background:'#e0a44a', border:'none', borderRadius:8, width:44, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+          <input aria-label={t(lang,'side')} type="text" placeholder={t(lang,'cityZip')} value={zip} onChange={e=>setZip(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchZip()} style={{ flex:1 }} />
+          <button onClick={searchZip} aria-label="Search for this place" title="Search" style={{ background:'#e0a44a', border:'none', borderRadius:8, width:44, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
             <I.search size={18} color="#0d1117" />
           </button>
         </div>
@@ -2668,10 +2672,10 @@ function BoilPtTab({ waterBP, setWaterBP, lang='en' }) {
       <div className="card">
         <div className="card-title"><CardIcon bg="#2d1a0d" icon="mountain" />{t(lang,'manualEntry')}</div>
         <div className="field-label">{t(lang,'altitude')}</div>
-        <NumInput value={altIn} onChange={handleAlt} min={0} max={15000} step={100} placeholder="e.g., 1500" />
+        <NumInput label={t(lang,'altitude')} value={altIn} onChange={handleAlt} min={0} max={15000} step={100} placeholder="e.g., 1500" />
         <div style={{ textAlign:'center', color:'#3d5068', fontSize:13, margin:'10px 0' }}>{lang==='fr' ? '— ou —' : '— or —'}</div>
         <div className="field-label">{t(lang,'pressure')}</div>
-        <NumInput value={presIn} onChange={handlePres} min={26} max={32} step={0.01} placeholder="e.g., 29.92" />
+        <NumInput label={t(lang,'pressure')} value={presIn} onChange={handlePres} min={26} max={32} step={0.01} placeholder="e.g., 29.92" />
         {(altIn!==''||presIn!=='') && (
           <div className="result-box orange" style={{ marginTop:12, textAlign:'center' }}>
             <div style={{ fontWeight:700, fontSize:22, color:'#e0a44a' }}>{t(lang,'waterBoilsAt2')} {fmt(bp,1)}°F</div>
@@ -3128,15 +3132,15 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
           <span className="badge" style={{ background:color, color:'#fff' }}>{fmt(tot2,1)} {uLbl}</span>
         </div>
         <div style={{ display:'flex', gap:8 }}>
-          <div style={{ flex:1 }}><NumInput value={val} onChange={setVal} min={0} step={0.1} placeholder={`${t(lang,'units')}…`} /></div>
-          <div style={{ flex:2 }}><input type="text" value={note} onChange={e=>setNote(e.target.value)} placeholder={t(lang,'note')} onKeyDown={e=>e.key==='Enter'&&add()} /></div>
-          <button onClick={add} className="btn-icon" style={{ background:color }}><I.check size={18} color="#fff" /></button>
+          <div style={{ flex:1 }}><NumInput label={`${label} — amount in ${uLbl}`} value={val} onChange={setVal} min={0} step={0.1} placeholder={`${t(lang,'units')}…`} /></div>
+          <div style={{ flex:2 }}><input aria-label={t(lang,'note')} type="text" value={note} onChange={e=>setNote(e.target.value)} placeholder={t(lang,'note')} onKeyDown={e=>e.key==='Enter'&&add()} /></div>
+          <button onClick={add} aria-label={`Add ${label} entry`} title={`Add ${label} entry`} className="btn-icon" style={{ background:color }}><I.check size={18} color="#fff" /></button>
         </div>
         {showBrix && (
           <div style={{ marginTop:8, display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ flex:1 }}>
               <div className="field-label">{t(lang,'sapBrix')} <span style={{ color:'#3d5068', fontWeight:400 }}>({t(lang,'optional')})</span></div>
-              <input type="text" inputMode="decimal" value={brix}
+              <input aria-label={`${t(lang,'sapBrix')} (${t(lang,'optional')})`} type="text" inputMode="decimal" value={brix}
                 onChange={e=>{ const raw=e.target.value; if(!/^[\d.,\s]*$/.test(raw)) return; setBrix(raw); }}
                 onBlur={e=>{ const n=srParseNum(e.target.value); setBrix(n===null?'':String(Math.max(0,Math.min(10,n)))); }}
                 placeholder="e.g. 2.1"
@@ -3147,7 +3151,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
         {showGrade && (
           <div style={{ marginTop:8 }}>
             <div className="field-label">{t(lang,'syrupBrix')} {t(lang,'optional')}</div>
-            <select value={grade} onChange={e=>setGrade(e.target.value)}>
+            <select aria-label={`${t(lang,'syrupBrix')} ${t(lang,'optional')}`} value={grade} onChange={e=>setGrade(e.target.value)}>
               {GRADES.map(g=><option key={g} value={g}>{GRADE_LABELS[g]||g}</option>)}
             </select>
           </div>
@@ -3167,7 +3171,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
               {!activePoint && e.point && (() => { const pt=cpoints.find(p=>p.id===e.point); return pt ? <span style={{ fontSize:12, fontWeight:700, color:pt.color, background:pt.color+'22', borderRadius:5, padding:'1px 6px', marginLeft:5 }}>{pt.name}</span> : null; })()}
               {e.note && <span style={{ color:'#5a6a7a', fontSize:13 }}> · {e.note}</span>}
               {editDateId === e.id ? (
-                <input type="date" autoFocus
+                <input aria-label="Entry date" type="date" autoFocus
                   defaultValue={toISO(e.date)}
                   onChange={ev => updateDate(e.id, ev.target.value)}
                   onBlur={() => setEditDateId(null)}
@@ -3181,7 +3185,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
                 </span>
               )}
             </div>
-            <button className="delete-btn" onClick={()=>updLog(logKey, entries.filter(x=>x.id!==e.id))}><I.x size={15} /></button>
+            <button className="delete-btn" aria-label={`Delete this ${label} entry`} title="Delete entry" onClick={()=>updLog(logKey, entries.filter(x=>x.id!==e.id))}><I.x size={15} /></button>
           </div>
         ))}
       </div>
@@ -3215,15 +3219,15 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               <span style={{ fontSize:28, fontWeight:700 }}>{season}</span>
               <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
-                <button onClick={()=>setSeason(s=>s+1)} style={{ background:'none', border:'none', color:'#5a6a7a', lineHeight:1, padding:'2px 6px' }}><I.chevUp size={14} color="#8b949e" /></button>
-                <button onClick={()=>setSeason(s=>s-1)} style={{ background:'none', border:'none', color:'#5a6a7a', lineHeight:1, padding:'2px 6px' }}><I.chevDown size={14} color="#8b949e" /></button>
+                <button onClick={()=>setSeason(s=>s+1)} aria-label="Next season" title="Next season" style={{ background:'none', border:'none', color:'#5a6a7a', lineHeight:1, padding:'2px 6px' }}><I.chevUp size={14} color="#8b949e" /></button>
+                <button onClick={()=>setSeason(s=>s-1)} aria-label="Previous season" title="Previous season" style={{ background:'none', border:'none', color:'#5a6a7a', lineHeight:1, padding:'2px 6px' }}><I.chevDown size={14} color="#8b949e" /></button>
               </div>
             </div>
           </div>
           <div style={{ background:'#0f1720', borderRadius:10, padding:'8px 14px', display:'flex', alignItems:'center', gap:8 }}>
             <I.tree size={18} color="#3fb950" />
             <span style={{ fontSize:20, fontWeight:700 }}>{trees}</span>
-            <button onClick={()=>{const n=parseInt(prompt('Number of trees:',trees));if(n>0)setTrees(n);}} style={{ background:'none', border:'none', color:'#5a6a7a', display:'flex', padding:2 }}><I.edit size={14} color="#8b949e" /></button>
+            <button onClick={()=>{const n=parseInt(prompt('Number of trees:',trees));if(n>0)setTrees(n);}} aria-label='Edit the number of trees' title='Edit tree count' style={{ background:'none', border:'none', color:'#5a6a7a', display:'flex', padding:2 }}><I.edit size={14} color="#8b949e" /></button>
           </div>
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:8, marginBottom:14 }}>
@@ -3275,7 +3279,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
             ))}
             {cpoints.length < 6 && (
               <div style={{ display:'flex', gap:8, marginTop:10 }}>
-                <input type="text" value={newPtName} onChange={e=>setNewPtName(e.target.value)}
+                <input aria-label="Name of the new collection point" type="text" value={newPtName} onChange={e=>setNewPtName(e.target.value)}
                   onKeyDown={e=>e.key==='Enter'&&addCpoint()}
                   placeholder="e.g. Pumphouse 1, North Woods…"
                   style={{ flex:1 }} />
@@ -3523,31 +3527,31 @@ function EquipTab({ lang='en' }) {
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:14 }}>
               <div>
                 <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>Pump flow (GPM)</div>
-                <input type="number" value={pumpGPM} min={1} max={500} step={1}
+                <input aria-label="Pump flow in gallons per minute" type="number" value={pumpGPM} min={1} max={500} step={1}
                   onChange={e => saveP('sg_pump_gpm', setPumpGPM)(parseFloat(e.target.value)||28)}
                   style={{ width:'100%', boxSizing:'border-box' }} />
               </div>
               <div>
                 <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>Tank size (gal)</div>
-                <input type="number" value={tankGal} min={10} max={10000} step={50}
+                <input aria-label="Tank size in gallons" type="number" value={tankGal} min={10} max={10000} step={50}
                   onChange={e => saveP('sg_pump_tank', setTankGal)(parseFloat(e.target.value)||300)}
                   style={{ width:'100%', boxSizing:'border-box' }} />
               </div>
               <div>
                 <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>Line length (ft)</div>
-                <input type="number" value={lineLen} min={0} max={5000} step={50}
+                <input aria-label="Line length in feet" type="number" value={lineLen} min={0} max={5000} step={50}
                   onChange={e => saveP('sg_pump_line', setLineLen)(parseFloat(e.target.value)||0)}
                   style={{ width:'100%', boxSizing:'border-box' }} />
               </div>
               <div>
                 <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>Vertical lift (ft)</div>
-                <input type="number" value={liftFt} min={0} max={200} step={1}
+                <input aria-label="Vertical lift in feet" type="number" value={liftFt} min={0} max={200} step={1}
                   onChange={e => saveP('sg_pump_lift', setLiftFt)(parseFloat(e.target.value)||0)}
                   style={{ width:'100%', boxSizing:'border-box' }} />
               </div>
               <div>
                 <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>Setup time (min)</div>
-                <input type="number" value={setupMin} min={0} max={30} step={1}
+                <input aria-label="Setup time in minutes" type="number" value={setupMin} min={0} max={30} step={1}
                   onChange={e => saveP('sg_pump_setup', setSetupMin)(parseFloat(e.target.value)||4)}
                   style={{ width:'100%', boxSizing:'border-box' }} />
               </div>
@@ -3620,16 +3624,16 @@ function EquipTab({ lang='en' }) {
       {show && (
         <div className="card">
           <div style={{ fontWeight:600, fontSize:16, marginBottom:14 }}>{t(lang,'newItem')}</div>
-          <div style={{ marginBottom:8 }}><input type="text" placeholder={t(lang,'equipNamePh')} value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} /></div>
+          <div style={{ marginBottom:8 }}><input aria-label={t(lang,'equipNamePh')} type="text" placeholder={t(lang,'equipNamePh')} value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} /></div>
           <div className="two-col" style={{ marginBottom:8 }}>
-            <input type="text" placeholder={t(lang,'equipBrandPh')} value={form.brand} onChange={e=>setForm(p=>({...p,brand:e.target.value}))} />
-            <NumInput value={form.qty} onChange={v=>setForm(p=>({...p,qty:v}))} min={1} max={9999} step={1} placeholder={t(lang,'equipQtyPh')} />
+            <input aria-label={t(lang,'equipBrandPh')} type="text" placeholder={t(lang,'equipBrandPh')} value={form.brand} onChange={e=>setForm(p=>({...p,brand:e.target.value}))} />
+            <NumInput label={t(lang,'equipQtyPh') || 'Quantity'} value={form.qty} onChange={v=>setForm(p=>({...p,qty:v}))} min={1} max={9999} step={1} placeholder={t(lang,'equipQtyPh')} />
           </div>
           <div className="two-col" style={{ marginBottom:8 }}>
-            <input type="text" placeholder={t(lang,'equipYearPh')} value={form.year} onChange={e=>setForm(p=>({...p,year:e.target.value}))} />
-            <select value={form.condition} onChange={e=>setForm(p=>({...p,condition:e.target.value}))}><option value="Good">{t(lang,'condGood')}</option><option value="Fair">{t(lang,'condFair')}</option><option value="Poor">{t(lang,'condPoor')}</option></select>
+            <input aria-label={t(lang,'equipYearPh')} type="text" placeholder={t(lang,'equipYearPh')} value={form.year} onChange={e=>setForm(p=>({...p,year:e.target.value}))} />
+            <select aria-label={t(lang,'condition') || 'Condition'} value={form.condition} onChange={e=>setForm(p=>({...p,condition:e.target.value}))}><option value="Good">{t(lang,'condGood')}</option><option value="Fair">{t(lang,'condFair')}</option><option value="Poor">{t(lang,'condPoor')}</option></select>
           </div>
-          <input type="text" placeholder={t(lang,'notes')} value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))} style={{ marginBottom:12 }} />
+          <input aria-label={t(lang,'notes')} type="text" placeholder={t(lang,'notes')} value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))} style={{ marginBottom:12 }} />
           <div className="two-col">
             <button className="btn-secondary" onClick={()=>setShow(false)}>{t(lang,'cancel')}</button>
             <button className="btn-primary" onClick={addItem}>{t(lang,'add')}</button>
@@ -3655,7 +3659,7 @@ function EquipTab({ lang='en' }) {
             </div>
             {item.notes && <div style={{ color:'#3d5068', fontSize:13 }}>{item.notes}</div>}
           </div>
-          <button className="delete-btn" onClick={()=>setItems(p=>p.filter((_,j)=>j!==i))}><I.trash size={15} /></button>
+          <button className="delete-btn" aria-label="Delete this equipment item" title="Delete item" onClick={()=>setItems(p=>p.filter((_,j)=>j!==i))}><I.trash size={15} /></button>
         </div>
       ))}
     </div>
@@ -3711,12 +3715,12 @@ function TasksTab({ season, lang='en' }) {
             <div key={i} className="checklist-item" onClick={()=>toggle(i)}>
               <div className={`checkbox${chk[i]?' checked':''}`}>{chk[i]&&<I.check size={13} color="#0d1117" />}</div>
               <span style={{ flex:1, fontSize:15, color:chk[i]?'#6e7681':'#e6edf3', textDecoration:chk[i]?'line-through':'none', lineHeight:1.4 }}>{task}</span>
-              {isC && <button onClick={e=>{e.stopPropagation();remT(i-base.length);}} className="delete-btn"><I.x size={15} /></button>}
+              {isC && <button onClick={e=>{e.stopPropagation();remT(i-base.length);}} aria-label="Delete this task" title="Delete task" className="delete-btn"><I.x size={15} /></button>}
             </div>
           );
         })}
         <div style={{ padding:'12px 16px', display:'flex', gap:8, alignItems:'center' }}>
-          <input type="text" placeholder={t(lang,'addCustomTask')} value={newT} onChange={e=>setNewT(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addT()} style={{ flex:1, background:'transparent', border:'none', borderBottom:'1px solid #30363d', borderRadius:0, padding:'6px 0', color:'#e6edf3' }} />
+          <input aria-label={t(lang,'addCustomTask')} type="text" placeholder={t(lang,'addCustomTask')} value={newT} onChange={e=>setNewT(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addT()} style={{ flex:1, background:'transparent', border:'none', borderBottom:'1px solid #30363d', borderRadius:0, padding:'6px 0', color:'#e6edf3' }} />
           {newT && <button onClick={addT} style={{ background:'#2dd4a7', border:'none', borderRadius:8, padding:'6px 14px', fontWeight:600, color:'#0d1117', fontSize:14 }}>Add</button>}
         </div>
       </div>
@@ -3834,8 +3838,8 @@ function SeasonTab({ season, lang='en' }) {
             </button>
             <div style={{ textAlign:'center', color:'#3d5068', fontSize:12, marginBottom:8 }}>{t(lang,'ftOr')}</div>
             <div style={{ display:'flex', gap:8, marginBottom:12 }}>
-              <input type="text" placeholder={t(lang,'cityZip')} value={zip} onChange={e=>setZip(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchZip()} style={{ flex:1 }} />
-              <button onClick={searchZip} style={{ background:'#2dd4a7', border:'none', borderRadius:8, width:44, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><I.search size={18} color="#0d1117" /></button>
+              <input aria-label={t(lang,'cityZip')} type="text" placeholder={t(lang,'cityZip')} value={zip} onChange={e=>setZip(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchZip()} style={{ flex:1 }} />
+              <button onClick={searchZip} aria-label="Search for this place" title="Search" style={{ background:'#2dd4a7', border:'none', borderRadius:8, width:44, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><I.search size={18} color="#0d1117" /></button>
             </div>
           </>
         ) : (
@@ -3848,8 +3852,8 @@ function SeasonTab({ season, lang='en' }) {
         {/* Season start date */}
         <div className="field-label">{t(lang,'startDate')}</div>
         <div style={{ display:'flex', gap:8, marginBottom:12 }}>
-          <input type="date" value={ddStart} onChange={e=>setDdStart(e.target.value)} style={{ flex:1 }} />
-          <button onClick={refresh} style={{ background:'#2dd4a7', border:'none', borderRadius:8, width:44, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><I.search size={18} color="#0d1117" /></button>
+          <input aria-label={t(lang,'startDate')} type="date" value={ddStart} onChange={e=>setDdStart(e.target.value)} style={{ flex:1 }} />
+          <button onClick={refresh} aria-label="Refresh the forecast" title="Refresh" style={{ background:'#2dd4a7', border:'none', borderRadius:8, width:44, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><I.search size={18} color="#0d1117" /></button>
         </div>
 
         {ddLoad && <div style={{ textAlign:'center', color:'#5a6a7a', fontSize:14 }}>{t(lang,'loadingWeather')}</div>}
@@ -3984,9 +3988,9 @@ function SeasonTab({ season, lang='en' }) {
 
         {/* Add reading */}
         <div style={{ display:'flex', gap:8, marginBottom:10 }}>
-          <div style={{ width:100 }}><NumInput value={brixIn} onChange={setBrixIn} min={0.1} max={10} step={0.1} placeholder="°Brix" /></div>
-          <input type="text" value={noteIn} onChange={e=>setNoteIn(e.target.value)} placeholder={t(lang,'note') + ' (' + t(lang,'optional') + ')'} style={{ flex:1 }} onKeyDown={e=>e.key==='Enter'&&addBrix()} />
-          <button onClick={addBrix} className="btn-icon" style={{ background:'#e0a44a' }}><I.check size={18} color="#07090f" /></button>
+          <div style={{ width:100 }}><NumInput label={t(lang,'startDate')} value={brixIn} onChange={setBrixIn} min={0.1} max={10} step={0.1} placeholder="°Brix" /></div>
+          <input aria-label={t(lang,'note') + ' (' + t(lang,'optional') + ')'} type="text" value={noteIn} onChange={e=>setNoteIn(e.target.value)} placeholder={t(lang,'note') + ' (' + t(lang,'optional') + ')'} style={{ flex:1 }} onKeyDown={e=>e.key==='Enter'&&addBrix()} />
+          <button onClick={addBrix} aria-label="Add Brix reading" title="Add Brix reading" className="btn-icon" style={{ background:'#e0a44a' }}><I.check size={18} color="#07090f" /></button>
         </div>
 
         {brixLog.length === 0 && <div style={{ textAlign:'center', color:'#3d5068', fontSize:13, padding:'8px 0' }}>No readings yet — log your first brix reading above.</div>}
@@ -3999,7 +4003,7 @@ function SeasonTab({ season, lang='en' }) {
               {e.note && <span style={{ color:'#5a6a7a', fontSize:13 }}> · {e.note}</span>}
               <span style={{ color:'#3d5068', fontSize:12, marginLeft:8 }}>{e.date}</span>
             </div>
-            <button className="delete-btn" onClick={()=>setBrixLog(p=>p.filter(x=>x.id!==e.id))}><I.x size={14}/></button>
+            <button className="delete-btn" aria-label="Delete this Brix reading" title="Delete reading" onClick={()=>setBrixLog(p=>p.filter(x=>x.id!==e.id))}><I.x size={14}/></button>
           </div>
         ))}
 
@@ -5234,11 +5238,11 @@ function LinesTab({ lang='en' }) {
               Drop <b style={{ color:'#c9d1d9' }}>{_activeCfg?.label || mode}</b> at coordinates:
             </div>
             <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-              <input value={coordLat} onChange={e=>setCoordLat(e.target.value)} placeholder="Lat  45.1234"
+              <input aria-label="Lat  45.1234" value={coordLat} onChange={e=>setCoordLat(e.target.value)} placeholder="Lat  45.1234"
                 style={{ flex:1, background:'rgba(255,255,255,0.06)', border:'none', borderRadius:8,
                   padding:'7px 10px', color:'#c9d1d9', fontSize:12, outline:'none' }}
                 onKeyDown={e=>{if(e.key==='Enter')addByCoords();}} />
-              <input value={coordLon} onChange={e=>setCoordLon(e.target.value)} placeholder="Lon  -72.567"
+              <input aria-label="Lon  -72.567" value={coordLon} onChange={e=>setCoordLon(e.target.value)} placeholder="Lon  -72.567"
                 style={{ flex:1, background:'rgba(255,255,255,0.06)', border:'none', borderRadius:8,
                   padding:'7px 10px', color:'#c9d1d9', fontSize:12, outline:'none' }}
                 onKeyDown={e=>{if(e.key==='Enter')addByCoords();}} />
@@ -5590,7 +5594,7 @@ function LinesTab({ lang='en' }) {
                           <div style={{ fontSize:12, color:'#5a6a7a', marginBottom:2 }}>{label}</div>
                           <div style={{ display:'flex', alignItems:'center', gap:4 }}>
                             <span style={{ color:'#3fb950', fontSize:12 }}>$</span>
-                            <input type="number" defaultValue={matPrices[k]} step="0.01" min="0"
+                            <input aria-label="Main Line Size" type="number" defaultValue={matPrices[k]} step="0.01" min="0"
                               onBlur={e=>updateMatPrice(k, e.target.value)}
                               style={{ flex:1, background:'#0d1520', border:'1px solid #1e2d3d', borderRadius:6, padding:'4px 6px', color:'#c9d1d9', fontSize:12, outline:'none' }} />
                           </div>
@@ -5909,7 +5913,7 @@ function LinesTab({ lang='en' }) {
               {/* Species */}
               <div>
                 <div style={{ fontSize:12, fontWeight:700, color:'#5a6a7a', marginBottom:4 }}>SPECIES</div>
-                <select value={selectedPin.species||'sugar_maple'} onChange={e => updatePinField(selectedPin.id, 'species', e.target.value)}
+                <select aria-label="Tree species" value={selectedPin.species||'sugar_maple'} onChange={e => updatePinField(selectedPin.id, 'species', e.target.value)}
                   style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'none', borderRadius:8, padding:'8px 10px', color:'#c9d1d9', fontSize:12, outline:'none' }}>
                   {Object.entries(_SPECIES_LABELS).map(([k,l]) => <option key={k} value={k}>{l}</option>)}
                 </select>
@@ -5918,7 +5922,7 @@ function LinesTab({ lang='en' }) {
               {/* Health */}
               <div>
                 <div style={{ fontSize:12, fontWeight:700, color:'#4a5a6a', marginBottom:4, letterSpacing:'0.06em' }}>HEALTH</div>
-                <select value={selectedPin.health||'good'} onChange={e => updatePinField(selectedPin.id, 'health', e.target.value)}
+                <select aria-label="Tree health" value={selectedPin.health||'good'} onChange={e => updatePinField(selectedPin.id, 'health', e.target.value)}
                   style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'none', borderRadius:8, padding:'8px 10px', color:'#c9d1d9', fontSize:12, outline:'none' }}>
                   {Object.entries(_HEALTH_LABELS).map(([k,l]) => <option key={k} value={k}>{l}</option>)}
                 </select>
@@ -6253,11 +6257,11 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
             </button>
             <div style={{ textAlign:'center', color:'#3d5068', fontSize:12, marginBottom:8 }}>{t(lang,'wxOr')}</div>
             <div style={{ display:'flex', gap:8 }}>
-              <input type="text" placeholder={t(lang,'wxCityPh')}
+              <input aria-label={t(lang,'wxCityPh')} type="text" placeholder={t(lang,'wxCityPh')}
                 value={query} onChange={e => setQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && searchGeo()}
                 style={{ flex:1 }} />
-              <button onClick={searchGeo}
+              <button onClick={searchGeo} aria-label="Search for this place" title="Search"
                 style={{ background:'#2dd4a7', border:'none', borderRadius:8, width:44, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, cursor:'pointer' }}>
                 {geoLoading ? <span style={{ color:'#0d1117', fontSize:16, fontWeight:700 }}>…</span> : <I.search size={18} color="#0d1117" />}
               </button>
@@ -7199,12 +7203,12 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
         <div style={{display:'flex',gap:8,alignItems:'flex-end'}}>
           <div style={{flex:1}}>
             <div style={{fontSize:12,color:'#5a6a7a',marginBottom:4}}>Night low (°F)</div>
-            <input type="number" value={condLow} onChange={e=>setCondLow(e.target.value)} placeholder="e.g. 28"
+            <input aria-label="e.g. 28" type="number" value={condLow} onChange={e=>setCondLow(e.target.value)} placeholder="e.g. 28"
               style={{width:'100%',boxSizing:'border-box',background:'#131e2c',border:'1px solid #1e2d3d',borderRadius:8,padding:'8px 10px',color:'#c9d1d9',fontSize:13,outline:'none'}}/>
           </div>
           <div style={{flex:1}}>
             <div style={{fontSize:12,color:'#5a6a7a',marginBottom:4}}>Day high (°F)</div>
-            <input type="number" value={condHigh} onChange={e=>setCondHigh(e.target.value)} placeholder="e.g. 42"
+            <input aria-label="e.g. 42" type="number" value={condHigh} onChange={e=>setCondHigh(e.target.value)} placeholder="e.g. 42"
               style={{width:'100%',boxSizing:'border-box',background:'#131e2c',border:'1px solid #1e2d3d',borderRadius:8,padding:'8px 10px',color:'#c9d1d9',fontSize:13,outline:'none'}}/>
           </div>
           {flowScore>0 && (
@@ -7281,6 +7285,7 @@ function BreakevenCalculator({ trees, units }) {
           {prefix && <span style={{color:'#5a6a7a',fontSize:14,flexShrink:0}}>{prefix}</span>}
           <input type="number" value={val||''} onChange={e=>set(parseFloat(e.target.value)||0)}
             onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
+            aria-label={[label, prefix === '$' ? 'in dollars' : null, suffix].filter(Boolean).join(' ')}
             placeholder="0" min="0"
             style={{flex:1,background:'transparent',border:'none',outline:'none',color:'#e2eaf4',fontSize:small?13:15,fontFamily:'inherit'}}/>
           {suffix && <span style={{color:'#5a6a7a',fontSize:13,flexShrink:0}}>{suffix}</span>}
@@ -7794,6 +7799,7 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
             ref={inputRef}
             value={query}
             onChange={e=>{setQuery(e.target.value);setExpandedId(null);}}
+            aria-label="Ask SugarSage a question about maple production"
             placeholder="Ask anything about maple production…"
             style={{flex:1,padding:'14px 52px 14px 18px',fontSize:15,
               border:'1.5px solid #1e2d3d',borderRadius:14,outline:'none',
@@ -7967,6 +7973,7 @@ function TInput({label, val, set, ph, unit, hint}) {
           onChange={e=>set(e.target.value)}
           onFocus={e=>{setFocused(true); e.target.select();}}
           onBlur={()=>setFocused(false)}
+          aria-label={unit ? `${label} in ${unit}` : label}
           placeholder={ph}
           type="text"
           inputMode="decimal"
@@ -8463,7 +8470,7 @@ function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
       <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16,
         background:'#0d1a2b',borderRadius:10,padding:'10px 14px',border:'1px solid #1e2d3d'}}>
         <span style={{fontSize:13,color:'#5a6a7a',whiteSpace:'nowrap'}}>Your retail price per gallon ($)</span>
-        <input type="number" value={pricePerGal}
+        <input aria-label="Your retail price per gallon, in dollars" type="number" value={pricePerGal}
           onChange={e=>{const v=parseFloat(e.target.value)||40; setPricePerGal(v); ls.set('sg_syrup_price',v);}}
           style={{width:70,background:'#07090f',border:'1px solid #1e2d3d',borderRadius:8,
             padding:'6px 10px',color:'#c9d1d9',fontSize:13,outline:'none',textAlign:'center'}}/>
@@ -8728,6 +8735,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
           type="text"
           value={operatorName}
           onChange={e => saveOp(e.target.value)}
+          aria-label={t(lang,'operatorPh')}
           placeholder={t(lang,'operatorPh')}
           style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:10, padding:'8px 12px', color:'#e2eaf4', fontSize:13, boxSizing:'border-box' }}
         />
@@ -9435,22 +9443,22 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
           <div>
             <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:4 }}>Syrup price ($/gal)</div>
-            <input type="number" value={syrupPrice} onChange={e => save('sg_dx_price', setSyrupPrice)(parseFloat(e.target.value)||0)}
+            <input aria-label="Syrup price in dollars per gallon" type="number" value={syrupPrice} onChange={e => save('sg_dx_price', setSyrupPrice)(parseFloat(e.target.value)||0)}
               style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e2eaf4', fontSize:14, fontWeight:600, boxSizing:'border-box' }} />
           </div>
           <div>
             <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:4 }}>Wood cost ($/cord)</div>
-            <input type="number" value={woodCost} onChange={e => save('sg_dx_wood', setWoodCost)(parseFloat(e.target.value)||0)}
+            <input aria-label="Wood cost in dollars per cord" type="number" value={woodCost} onChange={e => save('sg_dx_wood', setWoodCost)(parseFloat(e.target.value)||0)}
               style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e2eaf4', fontSize:14, fontWeight:600, boxSizing:'border-box' }} />
           </div>
           <div>
             <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:4 }}>Labor rate ($/hr)</div>
-            <input type="number" value={laborRate} onChange={e => save('sg_dx_labor', setLaborRate)(parseFloat(e.target.value)||0)}
+            <input aria-label="Labor rate in dollars per hour" type="number" value={laborRate} onChange={e => save('sg_dx_labor', setLaborRate)(parseFloat(e.target.value)||0)}
               style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e2eaf4', fontSize:14, fontWeight:600, boxSizing:'border-box' }} />
           </div>
           <div>
             <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:4 }}>RO output (°Brix)</div>
-            <input type="number" value={roOutBrix} onChange={e => save('sg_dx_robrix', setRoOutBrix)(parseFloat(e.target.value)||0)}
+            <input aria-label="R/O output in degrees Brix, 0 for no R/O" type="number" value={roOutBrix} onChange={e => save('sg_dx_robrix', setRoOutBrix)(parseFloat(e.target.value)||0)}
               style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e2eaf4', fontSize:14, fontWeight:600, boxSizing:'border-box' }}
               placeholder="0 = no RO" />
           </div>
@@ -9590,7 +9598,7 @@ function LicenseModal({ onClose, lic, onLicenseSaved }) {
         {lic.status !== 'licensed' && (
           <div style={{ marginTop:16, paddingTop:14, borderTop:'1px solid #131e2c' }}>
             <div style={{ fontSize:12.5, color:'#8a9ab5', lineHeight:1.5, marginBottom:8 }}>Want sap-season tips and a heads-up before your trial ends? <span style={{color:'#3d5068'}}>(optional)</span></div>
-            <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@sugarbush.com" style={inp} />
+            <input aria-label="you@sugarbush.com" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@sugarbush.com" style={inp} />
             <button onClick={saveEmail} style={{ width:'100%', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:'10px 16px', fontWeight:700, fontSize:13, color:'#8a9ab5', cursor:'pointer' }}>Keep me posted</button>
             {emailMsg && <div style={{ marginTop:6, fontSize:12, color:'#8a9ab5' }}>{emailMsg}</div>}
           </div>
