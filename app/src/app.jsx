@@ -303,7 +303,7 @@ const TR = {
     vacSystemQ:'Vacuum System?', spoutType:'Spout Type',
     drillingBP:'Drilling Best Practices', noTreeNotesYet:'No tree notes yet.',
     treeIdName:'Tree ID / Name', obsTag:'Observation / Tag',
-    estSapSeason:'EST. SAP/SEASON', perTapUnit:'~10 {u}/tap',
+    estSapSeason:'EST. SAP/SEASON', perTapUnit:'~{n} {u}/tap',
     atRatioLbl:'at {n}:1 ratio', tapSingular:'tap', tapPlural:'taps',
     minTreeGuide:'Minimum Tree Size Guide', treesUnit:'trees',
     doNotTap:'Do not tap', tapMarginal:'Marginal', tapStandard:'Standard',
@@ -555,7 +555,7 @@ const TR = {
     vacSystemQ:'Système de vide ?', spoutType:'Type de chalumeau',
     drillingBP:'Meilleures pratiques de perçage', noTreeNotesYet:'Aucune note d\'arbre pour l\'instant.',
     treeIdName:'ID / Nom de l\'arbre', obsTag:'Observation / Étiquette',
-    estSapSeason:'SÈV. EST./SAISON', perTapUnit:'~10 {u}/entaille',
+    estSapSeason:'SÈV. EST./SAISON', perTapUnit:'~{n} {u}/entaille',
     atRatioLbl:'à ratio {n}:1', tapSingular:'entaille', tapPlural:'entailles',
     minTreeGuide:'Guide de taille minimale des arbres', treesUnit:'arbres',
     doNotTap:'Ne pas entailler', tapMarginal:'Marginal', tapStandard:'Standard',
@@ -754,6 +754,43 @@ const POST_TASKS = [
   'Cover and protect evaporator for off-season',
 ];
 
+// ─── Yield model ─────────────────────────────────────────────────────────────
+// ONE set of numbers for gallons of syrup per tap per season. The app used to
+// carry five different sets — the wizard, the Tapping tab, the Log goal, the
+// Recap goal and the Diagnose benchmark all disagreed, by up to 2x on the same
+// sugarbush. Everything now reads from here.
+//
+//   buckets / forest gravity   0.20–0.30   Cornell & Penn State, stated directly
+//                                          ("about one quart of syrup per tap")
+//   gravity 5/16" tubing       0.30–0.45   derived from Childs 2016 (18.4–25.8 gal sap)
+//   3/16" natural vacuum       0.35–0.50   derived from Childs 2016 (21.7–25.5 gal sap)
+//   mechanical vacuum          0.45–0.70   derived from gravity + 13.5 gal sap
+//                                          (UVM Proctor via OSU Extension)
+// The derived rows assume 2.0°Brix sap. USDA NASS puts the US average across all
+// methods at 0.311–0.357 gal/tap, which is the sanity check on any of this.
+// The honest caveat: the normal band is wide. Maine fell 27% year over year while
+// New York rose in the same season, so a producer below the range is not
+// necessarily doing anything wrong.
+const YIELD_MODELS = {
+  buckets: { low: 0.20, high: 0.30, label: 'buckets' },
+  gravity: { low: 0.30, high: 0.45, label: 'gravity tubing' },
+  natural: { low: 0.35, high: 0.50, label: '3/16" natural vacuum' },
+  vacuum:  { low: 0.45, high: 0.70, label: 'mechanical vacuum' },
+};
+const NASS_US_AVG = 0.33;   // USDA NASS, gal syrup per tap, all methods
+function yieldModelFor(systemType, collectionType) {
+  if (systemType === 'vacuum')     return YIELD_MODELS.vacuum;
+  if (systemType === 'natural')    return YIELD_MODELS.natural;
+  if (collectionType === 'buckets')return YIELD_MODELS.buckets;
+  return YIELD_MODELS.gravity;
+}
+// For any tab that does not carry the wizard answers as props.
+function yieldModelSaved() {
+  const w = ls.get('sg_wizard_data', {}) || {};
+  return yieldModelFor(w.systemType, w.collectionType);
+}
+const yieldMidOf = m => (m.low + m.high) / 2;
+
 function tapsPer(dbh) {
   // Tap count is based on tree size only — vacuum increases yield per tap, not tap count
   if (dbh < 10) return 0;
@@ -842,9 +879,10 @@ function FirstSeasonWizard({ onClose, onComplete }) {
   const trees = parseInt(treeCount) || 0;
   const tapsPerTree = trunkSize === 'large' ? 2 : 1;
   const recTaps = trees * tapsPerTree;
-  const yieldLow  = systemType === 'vacuum' ? 0.22 : collectionType === 'mainline' ? 0.18 : 0.14;
-  const yieldHigh = systemType === 'vacuum' ? 0.35 : collectionType === 'mainline' ? 0.28 : 0.22;
-  const yieldMid  = (yieldLow + yieldHigh) / 2;
+  const yModel    = yieldModelFor(systemType, collectionType);
+  const yieldLow  = yModel.low;
+  const yieldHigh = yModel.high;
+  const yieldMid  = yieldMidOf(yModel);
   const syrupLow  = Math.round(recTaps * yieldLow  * 10) / 10;
   const syrupMid  = Math.round(recTaps * yieldMid  * 10) / 10;
   const syrupHigh = Math.round(recTaps * yieldHigh * 10) / 10;
@@ -923,8 +961,8 @@ function FirstSeasonWizard({ onClose, onComplete }) {
       </p>
       <label style={{fontSize:11,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Tap system</label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:18}}>
-        <Opt val="gravity" cur={systemType} set={setSystemType} accent="#58a6ff" icon="🌊" label="Gravity" sub={"Natural flow\n0.14–0.28 gal/tap"}/>
-        <Opt val="vacuum"  cur={systemType} set={setSystemType} accent="#58a6ff" icon="💨" label="Vacuum"  sub={"Pump-assisted\n0.22–0.35 gal/tap"}/>
+        <Opt val="gravity" cur={systemType} set={setSystemType} accent="#58a6ff" icon="🌊" label="Gravity" sub={`Natural flow\n${YIELD_MODELS.gravity.low}–${YIELD_MODELS.gravity.high} gal/tap`}/>
+        <Opt val="vacuum"  cur={systemType} set={setSystemType} accent="#58a6ff" icon="💨" label="Vacuum"  sub={`Pump-assisted\n${YIELD_MODELS.vacuum.low}–${YIELD_MODELS.vacuum.high} gal/tap`}/>
       </div>
       <label style={{fontSize:11,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Collection method</label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
@@ -2313,7 +2351,9 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
   const conv = v => units === 'L' ? (v*3.78541).toFixed(1) : v.toFixed(1);
   const tpt  = tapsPer(dbh);
   const tot  = tpt * trees;
-  const sap  = tot * 10;
+  // was a flat 10 gal of sap per tap, which ignored the tap system completely
+  const tapModel = yieldModelSaved();
+  const sap  = Math.round(tot * yieldMidOf(tapModel) * (86.4 / (parseFloat(sapBrix) || 2)));
   const sy   = syrupY(sap, sapBrix);
   const sp   = SPOUTS[spoutIdx];
   const sizeGuide = (l) => [
@@ -2349,7 +2389,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
         </div>
         <div className="result-box orange">
           <div className="two-col">
-            <div><div className="result-label" style={{ color:'#e0a44a' }}>{t(lang,'estSapSeason')}</div><div className="result-value" style={{ color:'#e0a44a' }}>{conv(sap)} {u}</div><div style={{ color:'#5a6a7a', fontSize:13 }}>{t(lang,'perTapUnit').replace('{u}',u)}</div></div>
+            <div><div className="result-label" style={{ color:'#e0a44a' }}>{t(lang,'estSapSeason')}</div><div className="result-value" style={{ color:'#e0a44a' }}>{conv(sap)} {u}</div><div style={{ color:'#5a6a7a', fontSize:13 }}>{t(lang,'perTapUnit').replace('{u}',u).replace('{n}', tot>0 ? fmt(conv(sap)/tot,1) : '0')}</div></div>
             <div><div className="result-label" style={{ color:'#e0a44a' }}>{t(lang,'estSyrupYield')}</div><div className="result-value" style={{ color:'#e0a44a' }}>{conv(sy)} {u}</div><div style={{ color:'#5a6a7a', fontSize:13 }}>{t(lang,'atRatioLbl').replace('{n}',fmt(rule86(sapBrix),0))}</div></div>
           </div>
         </div>
@@ -2974,7 +3014,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
   };
   const tot  = k => (slog[k]||[]).reduce((s,e)=>s+(parseFloat(e.val)||0),0);
   const sapT = tot('sapCollected'), syT = tot('syrupMade'), roT = tot('sapRO'), evT = tot('sapEvap');
-  const goal = trees*0.25, pct = goal>0 ? Math.min(100,(syT/goal)*100) : 0;
+  const goal = trees * yieldMidOf(yieldModelSaved()), pct = goal>0 ? Math.min(100,(syT/goal)*100) : 0;
   const seasons = Object.keys(logs).map(Number).sort((a,b)=>b-a);
 
   const exportCSV = () => {
@@ -3160,7 +3200,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
           <span style={{ color:'#5a6a7a', fontSize:14 }}>{fmt(syT,1)} / {fmt(goal,1)} {u}</span>
         </div>
         <div className="progress-bar-bg"><div className="progress-bar-fill" style={{ width:`${pct}%`, background:'#2dd4a7' }} /></div>
-        <div style={{ fontSize:12, color:'#5a6a7a', marginTop:6 }}>{t(lang,'benchmark')}: 0.25 {u}/tree × {trees} trees = {fmt(goal,1)} {u} target</div>
+        <div style={{ fontSize:12, color:'#5a6a7a', marginTop:6 }}>{t(lang,'benchmark')}: {yieldMidOf(yieldModelSaved())} {u}/tap × {trees} taps ({yieldModelSaved().label}) = {fmt(goal,1)} {u} target</div>
       </div>
 
       <div style={{ display:'flex', gap:8, marginBottom:14 }}>
@@ -3946,7 +3986,7 @@ function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix }) {
   const tot  = k => ((slog[k]||[]).reduce((s,e)=>s+(parseFloat(e.val)||0),0));
   const sapT = tot('sapCollected'), syT = tot('syrupMade');
   const ratio = syT > 0 ? (sapT/syT).toFixed(1) : '—';
-  const goal  = trees * 0.25;
+  const goal  = trees * yieldMidOf(yieldModelSaved());
 
   // Grade breakdown from syrup entries
   const gradeTotals = {};
@@ -6812,7 +6852,8 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
 
   if (taps>0&&syrupGal>0) {
     const ypp=syrupGal/taps;
-    yieldScore=Math.min(100,Math.round((ypp/0.3)*100));
+    const yM=yieldModelSaved();
+    yieldScore=Math.min(100,Math.round((ypp/yieldMidOf(yM))*100));
     if (ypp>=0.3)       insights.push({type:'success',title:'Strong yield per tap',       body:`${ypp.toFixed(2)} gal/tap — above the 0.25–0.3 industry benchmark. Excellent season.`,action:'Document your tap placement and vacuum settings — replicate this exact setup next year.'});
     else if (ypp>=0.2)  insights.push({type:'neutral',title:'Average yield per tap',       body:`${ypp.toFixed(2)} gal/tap — near industry average. Room to grow.`,                    action:'Upgrade to check-valve spouts and audit vacuum leaks at each lateral connection.'});
     else                insights.push({type:'warn',   title:'Below-average yield per tap', body:`${ypp.toFixed(2)} gal/tap is below the 0.25 benchmark.`,                              action:'Inspect spout health, verify tap placement in fresh white wood, and test vacuum at the tree.'});
@@ -7921,10 +7962,11 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
   let yieldScore = null, yieldLabel = '', yieldColor = '#3d5068';
   if (taps > 0 && syrupGal > 0) {
     const ypp = syrupGal / taps;
-    yieldScore = Math.min(100, Math.round((ypp / 0.30) * 100));
-    if (ypp >= 0.30) { yieldLabel = `${ypp.toFixed(2)} gal/tap — above benchmark`; yieldColor = '#3fb950'; }
-    else if (ypp >= 0.20) { yieldLabel = `${ypp.toFixed(2)} gal/tap — near average`; yieldColor = '#f0883e'; }
-    else { yieldLabel = `${ypp.toFixed(2)} gal/tap — below benchmark`; yieldColor = '#f85149'; }
+    const yM = yieldModelSaved();
+    yieldScore = Math.min(100, Math.round((ypp / yieldMidOf(yM)) * 100));
+    if (ypp >= yM.high) { yieldLabel = `${ypp.toFixed(2)} gal/tap — top of the range for ${yM.label}`; yieldColor = '#3fb950'; }
+    else if (ypp >= yM.low) { yieldLabel = `${ypp.toFixed(2)} gal/tap — inside the ${yM.low}–${yM.high} range for ${yM.label}`; yieldColor = '#3fb950'; }
+    else { yieldLabel = `${ypp.toFixed(2)} gal/tap — below ${yM.low} for ${yM.label}`; yieldColor = '#f0883e'; }
     scores.push({ label:'Yield / Tap', score: yieldScore, weight:30, color: yieldColor, detail: yieldLabel });
   }
 
@@ -8057,8 +8099,9 @@ function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
   if (!taps || !syrupGal) return null;
 
   const theoretical      = 86.4 / brix;                         // theoretical sap:syrup ratio
-  const theorMaxSyrup    = taps * 0.30;                         // benchmark 0.30 gal/tap
-  const theorMaxSyrupLow = taps * 0.25;                         // low benchmark
+  const gModel           = yieldModelSaved();                   // benchmark follows the tap system
+  const theorMaxSyrup    = taps * gModel.high;
+  const theorMaxSyrupLow = taps * gModel.low;
   const gapHigh = Math.max(0, theorMaxSyrup    - syrupGal);
   const gapLow  = Math.max(0, theorMaxSyrupLow - syrupGal);
   const gapMid  = (gapHigh + gapLow) / 2;
@@ -8071,22 +8114,22 @@ function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
   // ── Diagnose root causes ──────────────────────────────────────────────
   const causes = [];
 
-  if (ypp < 0.20) {
+  if (ypp < gModel.low) {
     causes.push({
       severity: 'high',
       title: 'Critical: Low yield per tap',
-      detail: `${ypp.toFixed(2)} gal/tap vs. 0.25–0.30 benchmark. This alone accounts for most of your gap.`,
+      detail: `${ypp.toFixed(2)} gal/tap vs. the ${gModel.low}–${gModel.high} benchmark for ${gModel.label}. This alone accounts for most of your gap.`,
       fixes: [
         { action: 'Check every lateral for micro-leaks at tee connections', cost: '$0', time: '2–4 hrs', impact: 'high' },
         { action: 'Replace standard spouts with check-valve spouts', cost: '~$80–120', time: '1 day', impact: 'high' },
         { action: 'Verify tap holes are in fresh white wood, not scarred tissue', cost: '$0', time: '1 hr', impact: 'medium' },
       ]
     });
-  } else if (ypp < 0.25) {
+  } else if (ypp < yieldMidOf(gModel)) {
     causes.push({
       severity: 'medium',
       title: 'Below-average yield per tap',
-      detail: `${ypp.toFixed(2)} gal/tap is close but leaves ${((0.25 - ypp) * taps).toFixed(0)} gal/season on the table.`,
+      detail: `${ypp.toFixed(2)} gal/tap is inside the ${gModel.low}–${gModel.high} range for ${gModel.label}, but the middle of it would add ${((yieldMidOf(gModel) - ypp) * taps).toFixed(0)} gal/season.`,
       fixes: [
         { action: 'Audit vacuum at 5 random taps with a gauge — look for >2" Hg variance', cost: '$0', time: '1 hr', impact: 'medium' },
         { action: 'Upgrade to check-valve spouts on your lowest-producing laterals', cost: '~$40–80', time: '2 hrs', impact: 'medium' },
@@ -8157,7 +8200,7 @@ function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
         <div style={{background:'#0d1a2b',borderRadius:12,padding:'14px 10px',textAlign:'center',border:'1px solid #58a6ff40'}}>
           <div style={{fontSize:9,color:'#3d5068',fontWeight:700,letterSpacing:'0.08em',marginBottom:6}}>BENCHMARK</div>
           <div style={{fontSize:28,fontWeight:900,color:'#58a6ff',lineHeight:1}}>{theorMaxSyrupLow.toFixed(0)}–{theorMaxSyrup.toFixed(0)}</div>
-          <div style={{fontSize:11,color:'#5a6a7a',marginTop:2}}>at 0.25–0.30/tap</div>
+          <div style={{fontSize:11,color:'#5a6a7a',marginTop:2}}>at {gModel.low}–{gModel.high}/tap · {gModel.label}</div>
         </div>
         <div style={{background:'#0d1a2b',borderRadius:12,padding:'14px 10px',textAlign:'center',
           border:`1px solid ${gapMid > 0 ? '#f0883e40' : '#3fb95040'}`}}>
