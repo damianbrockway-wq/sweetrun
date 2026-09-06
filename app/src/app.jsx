@@ -4107,6 +4107,12 @@ function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix }) {
 // ─── LINES TAB / SUGARBUSH MAP ────────────────────────────────────────────────
 let _lMap = null;
 let _lMarkers = {};
+// Anything a producer typed — a pin label, a name inside an imported KML —
+// goes through this before it reaches a popup or a divIcon. An apostrophe in
+// "Bill's Corner" used to break the chip; a bracket broke the whole popup.
+const _sbEsc = v => String(v == null ? '' : v)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 let _lRouteLines = [];
 let _lSpotMarkers = [];
 let _lPropertyLayers = [];
@@ -4205,8 +4211,8 @@ function _drawRouteLines(results) {
         { color, weight: seg.isToTank ? 5 : 3, opacity: 0.92,
           dashArray: seg.grade < 1.0 ? '8,5' : null }
       ).addTo(_lMap);
-      const fromName = seg.from.label || 'Pin';
-      const toName   = seg.to.label   || 'Pin';
+      const fromName = _sbEsc(seg.from.label || 'Pin');
+      const toName   = _sbEsc(seg.to.label   || 'Pin');
       line.bindPopup(
         `<b>${fromName} → ${toName}</b><br/>` +
         `Grade: <b>${seg.grade.toFixed(2)}%</b><br/>` +
@@ -4242,7 +4248,28 @@ const _SB_SVGS = {
   junction:   '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="4" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="20"/><line x1="4" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="20" y2="12"/></svg>',
   marker:     '<svg width="12" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="5" y1="4" x2="5" y2="22"/><path d="M5 4h12l-3 4 3 4H5"/></svg>',
 };
-const _ML_COLORS = { A:'#3b82f6', B:'#8b5cf6', C:'#ec4899', D:'#f97316' };
+// Mainlines used to be four fixed lines baked into the component. A bush with
+// six mainlines had nowhere to put the other two, and renaming one was not
+// possible at all. They are a saved list now; pins still reference them by the
+// same single-letter id, so existing pin data keeps working untouched.
+const _ML_PALETTE = ['#3b82f6','#8b5cf6','#ec4899','#f97316','#14b8a6','#eab308','#ef4444','#22c55e'];
+const _ML_DEFAULTS = ['A','B','C','D'].map((id,i) => ({ id, label:'Mainline '+id, color:_ML_PALETTE[i] }));
+let _ML_LIST = null;
+function mainlinesSaved() {
+  if (_ML_LIST) return _ML_LIST;
+  const raw = ls.get('sg_mainlines', null);
+  _ML_LIST = (Array.isArray(raw) && raw.length && raw.every(m => m && m.id))
+    ? raw.map(m => ({ id:String(m.id), label:String(m.label || 'Mainline '+m.id), color:m.color || _ML_PALETTE[0] }))
+    : _ML_DEFAULTS.map(m => ({ ...m }));
+  return _ML_LIST;
+}
+function saveMainlines(list) { _ML_LIST = list; ls.set('sg_mainlines', list); }
+function nextMainlineId() {
+  const used = new Set(mainlinesSaved().map(m => m.id));
+  for (const c of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') if (!used.has(c)) return c;
+  return null;
+}
+const _mlColor = id => (mainlinesSaved().find(m => m.id === id) || {}).color || null;
 const _SPECIES_COLORS = { sugar_maple:'#f97316', red_maple:'#ef4444', silver_maple:'#94a3b8', black_maple:'#44403c', other:'#6b7280' };
 const _SPECIES_LABELS = { sugar_maple:'Sugar Maple', red_maple:'Red Maple', silver_maple:'Silver Maple', black_maple:'Black Maple', other:'Other' };
 const _HEALTH_COLORS = { excellent:'#22c55e', good:'#84cc16', fair:'#eab308', poor:'#f97316', dead:'#ef4444' };
@@ -4264,10 +4291,10 @@ function _sbMakeIcon(pin) {
     // ── Horizontal chip label: species dot · code · taps · mainline dot ──
     const sColor  = _SPECIES_COLORS[pin.species || 'sugar_maple'] || '#f97316';
     const hColor  = _HEALTH_COLORS[pin.health   || 'good']        || '#84cc16';
-    const mlColor = pin.mainline ? (_ML_COLORS[pin.mainline] || null) : null;
+    const mlColor = pin.mainline ? _mlColor(pin.mainline) : null;
     const taps    = parseInt(pin.taps) || 0;
     // Shorten: "Tree 1" → "T1", keep max 4 chars
-    const code = pin.label.replace(/^(Tap\s+)?Tree\s*/i,'T').replace(/\s+/g,'').slice(0,5);
+    const code = _sbEsc(String(pin.label || '').replace(/^(Tap\s+)?Tree\s*/i,'T').replace(/\s+/g,'').slice(0,5));
     const mlDot  = mlColor ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${mlColor};flex-shrink:0"></span>` : '';
     const tapPart= taps > 0 ? `<span style="color:#34d399;font-size:8.5px;font-weight:700;${font}">${taps}t</span>` : '';
     return window.L.divIcon({
@@ -4285,7 +4312,7 @@ function _sbMakeIcon(pin) {
 
   if (pin.type === 'tank') {
     // ── Flat badge: bold label on blue ──
-    const short = pin.label.slice(0,12);
+    const short = _sbEsc(String(pin.label || '').slice(0,12));
     return window.L.divIcon({
       className: '',
       html: `<div style="display:inline-flex;align-items:center;gap:5px;background:#1d4ed8;border-radius:7px;padding:4px 10px 4px 8px;box-shadow:0 3px 14px rgba(29,78,216,0.55),0 1px 3px rgba(0,0,0,0.4);border-bottom:2px solid rgba(255,255,255,0.12)">
@@ -4416,7 +4443,50 @@ function _sbParseGPX(text) {
   return { type:'FeatureCollection', features };
 }
 
-function _sbImportPropertyFile(file) {
+// Property boundaries used to live only in _lPropertyLayers, which is wiped
+// every time the Map tab unmounts. An imported boundary vanished on the first
+// tab switch and never appeared in a backup. It is saved now, and redrawn on
+// every map init, which also puts it in the backup for free (the backup sweeps
+// every sg_ key).
+const PROPERTY_KEY = 'sg_property_geo';
+
+function _sbDrawProperty(gj) {
+  if (!_lMap || !window.L || !gj) return 0;
+  _lPropertyLayers.forEach(l => { try { _lMap.removeLayer(l); } catch {} });
+  _lPropertyLayers = [];
+  const palette = ['#f59e0b','#3b82f6','#22c55e','#a855f7','#ef4444'];
+  let ci = 0, drawn = 0;
+  const feats = gj.type === 'FeatureCollection' ? (gj.features || []) : [gj];
+  feats.forEach(f => {
+        if (!f || !f.geometry) return;
+        const geom = f.geometry;
+        let coords = [];
+        if (geom.type === 'Polygon') coords = geom.coordinates[0].map(c => [c[1], c[0]]);
+        else if (geom.type === 'LineString') coords = geom.coordinates.map(c => [c[1], c[0]]);
+        if (coords.length < 2) return;
+        const color = palette[ci++ % palette.length];
+        const layer = window.L[coords.length > 2 ? 'polygon' : 'polyline'](coords, { color, weight:2.5, opacity:.85, fillColor:color, fillOpacity:.07, dashArray:'8,4' }).addTo(_lMap);
+        _lPropertyLayers.push(layer); drawn++;
+        const ctr = layer.getBounds().getCenter();
+        const name = _sbEsc(f.properties?.name || f.properties?.NAME || 'Property');
+        const lbl = window.L.marker(ctr, { icon: window.L.divIcon({ className:'', html:`<div style="font-size:10px;font-weight:700;color:${color};text-shadow:0 0 4px rgba(0,0,0,.9);pointer-events:none">${name}</div>`, iconSize:[0,0], iconAnchor:[0,0] }), interactive:false }).addTo(_lMap);
+        _lPropertyLayers.push(lbl);
+  });
+  return drawn;
+}
+
+function _sbRestoreProperty() {
+  const gj = ls.get(PROPERTY_KEY, null);
+  if (gj) _sbDrawProperty(gj);
+}
+
+function _sbClearProperty() {
+  _lPropertyLayers.forEach(l => { try { _lMap && _lMap.removeLayer(l); } catch {} });
+  _lPropertyLayers = [];
+  ls.set(PROPERTY_KEY, null);
+}
+
+function _sbImportPropertyFile(file, onDone) {
   if (!_lMap || !window.L) return;
   const reader = new FileReader();
   reader.onload = e => {
@@ -4427,28 +4497,15 @@ function _sbImportPropertyFile(file) {
       if (ext === 'geojson' || ext === 'json') gj = JSON.parse(text);
       else if (ext === 'kml') gj = _sbParseKML(text);
       else if (ext === 'gpx') gj = _sbParseGPX(text);
-      if (!gj) return;
-      _lPropertyLayers.forEach(l => { try { _lMap.removeLayer(l); } catch {} });
-      _lPropertyLayers = [];
-      const palette = ['#f59e0b','#3b82f6','#22c55e','#a855f7','#ef4444'];
-      let ci = 0;
-      const feats = gj.type === 'FeatureCollection' ? gj.features : [gj];
-      feats.forEach(f => {
-        if (!f.geometry) return;
-        const geom = f.geometry;
-        let coords = [];
-        if (geom.type === 'Polygon') coords = geom.coordinates[0].map(c => [c[1], c[0]]);
-        else if (geom.type === 'LineString') coords = geom.coordinates.map(c => [c[1], c[0]]);
-        if (coords.length < 2) return;
-        const color = palette[ci++ % palette.length];
-        const layer = window.L[coords.length > 2 ? 'polygon' : 'polyline'](coords, { color, weight:2.5, opacity:.85, fillColor:color, fillOpacity:.07, dashArray:'8,4' }).addTo(_lMap);
-        _lPropertyLayers.push(layer);
-        const ctr = layer.getBounds().getCenter();
-        const name = f.properties?.name || f.properties?.NAME || 'Property';
-        const lbl = window.L.marker(ctr, { icon: window.L.divIcon({ className:'', html:`<div style="font-size:10px;font-weight:700;color:${color};text-shadow:0 0 4px rgba(0,0,0,.9);pointer-events:none">${name}</div>`, iconSize:[0,0], iconAnchor:[0,0] }), interactive:false }).addTo(_lMap);
-        _lPropertyLayers.push(lbl);
-      });
-    } catch(err) { console.warn('Property import error:', err); }
+      if (!gj) { onDone && onDone({ ok:false, text:"Couldn't read that file. SweetRun accepts .kml, .gpx and .geojson." }); return; }
+      const drawn = _sbDrawProperty(gj);
+      if (!drawn) { onDone && onDone({ ok:false, text:'That file had no boundary lines SweetRun could draw.' }); return; }
+      const saved = ls.set(PROPERTY_KEY, gj);
+      onDone && onDone({ ok:true, text:`${drawn} boundar${drawn!==1?'ies':'y'} drawn` + (saved ? ' and saved. It will still be here next time, and it goes into your backup.' : '. It could not be saved to this device, so it will be gone when you leave the tab.') });
+    } catch (err) {
+      console.warn('Property import error:', err);
+      onDone && onDone({ ok:false, text:"Couldn't read that file. SweetRun accepts .kml, .gpx and .geojson." });
+    }
   };
   reader.readAsText(file);
 }
@@ -4528,12 +4585,28 @@ function LinesTab({ lang='en' }) {
   const [mainTab, setMainTab]       = React.useState('map');   // map | trees | mainlines | property
   const [selectedPinId, setSelectedPinId] = React.useState(null);
   const [showPinPanel, setShowPinPanel]   = React.useState(false);
-  const [mainlines] = React.useState([
-    {id:'A', label:'Mainline A', color:'#3b82f6'},
-    {id:'B', label:'Mainline B', color:'#8b5cf6'},
-    {id:'C', label:'Mainline C', color:'#ec4899'},
-    {id:'D', label:'Mainline D', color:'#f97316'},
-  ]);
+  const [elevDraft, setElevDraft]     = React.useState('');
+  const [propMsg, setPropMsg]         = React.useState(null);
+  const [hasProperty, setHasProperty]  = React.useState(() => !!ls.get(PROPERTY_KEY, null));
+  const [mainlines, setMainlines] = React.useState(() => mainlinesSaved());
+  const commitMainlines = list => { saveMainlines(list); setMainlines(list); };
+  const renameMainline  = (id, label) => commitMainlines(mainlines.map(m => m.id === id ? { ...m, label } : m));
+  const addMainline     = () => {
+    const id = nextMainlineId();
+    if (!id) return;
+    commitMainlines([...mainlines, { id, label:'Mainline '+id, color:_ML_PALETTE[mainlines.length % _ML_PALETTE.length] }]);
+  };
+  const deleteMainline  = id => {
+    const n = pinsRef.current.filter(p => p.mainline === id).length;
+    const ml = mainlines.find(m => m.id === id);
+    if (!window.confirm(`Delete ${ml ? ml.label : id}?` + (n ? `\n\n${n} tree${n!==1?'s':''} assigned to it will become unassigned. The trees themselves are kept.` : ''))) return;
+    if (n) {
+      const cleared = pinsRef.current.map(p => p.mainline === id ? { ...p, mainline:null } : p);
+      setPins(cleared); ls.set('sg_lines_pins', cleared); pinsRef.current = cleared;
+      cleared.forEach(p => { if (p.type === 'tree') _sbUpdateMarker(p); });
+    }
+    commitMainlines(mainlines.filter(m => m.id !== id));
+  };
   // Materials estimator
   const [vacSystem, setVacSystem] = React.useState(() => ls.get('sg_vacsystem', false));
   const [mainSize,  setMainSize]  = React.useState(() => ls.get('sg_mainsize', '3/4"'));
@@ -4594,6 +4667,10 @@ function LinesTab({ lang='en' }) {
         pos => _lMap.setView([pos.coords.latitude, pos.coords.longitude], 16), () => {}
       );
     }
+    // A boundary imported in an earlier session is drawn again here, so it
+    // survives tab switches, reloads and a restore from backup.
+    _sbRestoreProperty();
+
     // Wire up pin-click callback to show detail panel
     window._sgMapPinClick = (pinId) => { setSelectedPinId(pinId); setShowPinPanel(true); };
 
@@ -4743,7 +4820,7 @@ function LinesTab({ lang='en' }) {
     setPins(updated); ls.set('sg_lines_pins', updated);
     const pin = updated.find(p => p.id === id);
     if (pin && _lMarkers[id]) _lMarkers[id].setPopupContent(
-      `<b>${pin.label}</b><br/>${pin.lat.toFixed(5)}, ${pin.lon.toFixed(5)}<br/>Elevation: ${pin.elev!=null?pin.elev.toFixed(1)+' ft':'fetching…'}`
+      `<b>${_sbEsc(pin.label)}</b><br/>${pin.lat.toFixed(5)}, ${pin.lon.toFixed(5)}<br/>Elevation: ${pin.elev!=null?pin.elev.toFixed(1)+' ft':'fetching…'}`
     );
     setEditingId(null); setEditLabel('');
   };
@@ -4774,7 +4851,7 @@ function LinesTab({ lang='en' }) {
       if (elevs[i] != null) {
         current = current.map(p => p.id === pin.id ? { ...p, elev: elevs[i] } : p);
         if (_lMarkers[pin.id]) _lMarkers[pin.id].setPopupContent(
-          `<b>${pin.label}</b><br/>${pin.lat.toFixed(5)}, ${pin.lon.toFixed(5)}<br/>Elevation: ${elevs[i].toFixed(1)} ft`
+          `<b>${_sbEsc(pin.label)}</b><br/>${pin.lat.toFixed(5)}, ${pin.lon.toFixed(5)}<br/>Elevation: ${elevs[i].toFixed(1)} ft`
         );
       }
     });
@@ -4806,13 +4883,13 @@ function LinesTab({ lang='en' }) {
       await ensureElevations(allTrees, 'tree pin(s)');
       await ensureElevations(allTanks, 'tank pin(s)');
     } catch(e) {
-      setRouteMsg('❌ Could not fetch elevations — check connection and try again.');
+      setRouteMsg('❌ Could not fetch elevations. With no signal, tap a pin and type its elevation into the Elevation box — a topo map or handheld GPS will give you the number.');
       setAnalyzing(false); setRouteProgress(''); return;
     }
     const trees = pinsRef.current.filter(p => p.type==='tree' && p.elev!=null);
     const tanks = pinsRef.current.filter(p => p.type==='tank' && p.elev!=null);
-    if (!trees.length) { setRouteMsg('❌ Elevation unavailable for trees.'); setAnalyzing(false); setRouteProgress(''); return; }
-    if (!tanks.length) { setRouteMsg('❌ Elevation unavailable for tanks.'); setAnalyzing(false); setRouteProgress(''); return; }
+    if (!trees.length) { setRouteMsg('❌ No tree pin has an elevation yet. Tap a tree and type its elevation, or tap Look up where you have signal.'); setAnalyzing(false); setRouteProgress(''); return; }
+    if (!tanks.length) { setRouteMsg('❌ No tank pin has an elevation yet. Tap a tank and type its elevation, or tap Look up where you have signal.'); setAnalyzing(false); setRouteProgress(''); return; }
 
     // 2. Assign each tree to the tank it flows to best (highest grade to that tank)
     const byTank = {};
@@ -4877,7 +4954,7 @@ function LinesTab({ lang='en' }) {
     setFindingSpots(true); setRouteMsg('Loading…');
     try { await ensureElevations(allTrees, 'tree pin(s)'); } catch {}
     const trees = pinsRef.current.filter(p => p.type==='tree' && p.elev!=null);
-    if (trees.length < 2) { setRouteMsg('❌ Need elevations for at least 2 trees — check connection.'); setFindingSpots(false); return; }
+    if (trees.length < 2) { setRouteMsg('❌ Need elevations on at least 2 trees. Tap a tree and type its elevation, or tap Look up where you have signal.'); setFindingSpots(false); return; }
     setRouteMsg('Sampling terrain grid for tank spots…');
     _clearSpotMarkers(); setTankSpots([]);
     const cLat = trees.reduce((s,p)=>s+p.lat,0)/trees.length;
@@ -4961,6 +5038,13 @@ function LinesTab({ lang='en' }) {
   const readyTanks = tankPins.filter(p => p.elev != null).length;
   const gravityLines = routeResults.filter(r => r.goodFlow).length;
   const selectedPin = pins.find(p => p.id === selectedPinId) || null;
+
+  // Load the open pin's elevation into the input, without stamping on what the
+  // producer is part way through typing.
+  React.useEffect(() => {
+    const p = pinsRef.current.find(x => x.id === selectedPinId);
+    setElevDraft(p && p.elev != null ? String(p.elev) : '');
+  }, [selectedPinId]);
 
   const updatePinField = (id, field, val) => {
     const updated = pinsRef.current.map(p => p.id === id ? { ...p, [field]: val } : p);
@@ -5380,15 +5464,20 @@ function LinesTab({ lang='en' }) {
           {/* ── Materials Estimator ── */}
           {routeResults.length > 0 && (() => {
             const totalTrees2  = routeResults.reduce((s, r) => s + r.trees.length, 0);
+            // Drops, spiles and lateral tees are per TAP, not per tree. An 18"
+            // tree carries two, a 25" three; sizing off the tree count came up
+            // short for every bush with mature timber.
+            const totalTaps2   = routeResults.reduce((s, r) =>
+              s + r.trees.reduce((a, t) => a + Math.max(1, parseInt(t.taps) || 1), 0), 0);
             const lateralFt    = routeResults.reduce((s, r) => s + r.segments.filter(sg=>!sg.isToTank).reduce((a,sg)=>a+sg.dist,0), 0);
             const mainFt       = routeResults.reduce((s, r) => s + r.segments.filter(sg=>sg.isToTank).reduce((a,sg)=>a+sg.dist,0), 0);
-            const dropFt       = totalTrees2 * 3;
-            const numSpiles    = totalTrees2;
-            const numTees      = totalTrees2;
+            const dropFt       = totalTaps2 * 3;
+            const numSpiles    = totalTaps2;
+            const numTees      = totalTaps2;
             const numMainTees  = routeResults.length;
             const latDia       = vacSystem ? '5/16"' : '3/16"';
             const latNote      = vacSystem ? 'vacuum system' : 'gravity — natural siphon effect';
-            const mainRec      = totalTrees2 >= 100 ? '1"' : '3/4"';
+            const mainRec      = totalTaps2 >= 100 ? '1"' : '3/4"';   // sizing follows flow, so taps
             const orderFt = ft => Math.ceil(ft / 100) * 100;
             const latCost    = lateralFt  * matPrices.lateral;
             const mainCost   = mainFt     * matPrices.mainline;
@@ -5425,7 +5514,7 @@ function LinesTab({ lang='en' }) {
                           style={{ flex:1, background:mainSize===sz?'linear-gradient(135deg,#3fb950,#2ea043)':'#131e2c', border:'1px solid '+(mainSize===sz?'#3fb950':'#1e2d3d'), borderRadius:8, padding:'7px 4px', fontSize:12, fontWeight:600, color:mainSize===sz?'#07090f':'#5a6a7a', cursor:'pointer' }}>{sz}</button>
                       ))}
                     </div>
-                    {mainSize !== mainRec && <div style={{ fontSize:10, color:'#f0883e', marginTop:3 }}>⚠ Recommend {mainRec} for {totalTrees2} taps</div>}
+                    {mainSize !== mainRec && <div style={{ fontSize:10, color:'#f0883e', marginTop:3 }}>⚠ Recommend {mainRec} for {totalTaps2} tap{totalTaps2!==1?'s':''}</div>}
                   </div>
                 </div>
 
@@ -5456,6 +5545,7 @@ function LinesTab({ lang='en' }) {
                 )}
 
                 {routeResults.map((r) => {
+                  const rTaps = r.trees.reduce((a,t)=>a+Math.max(1,parseInt(t.taps)||1),0);
                   const rLat  = r.segments.filter(sg=>!sg.isToTank).reduce((a,sg)=>a+sg.dist,0);
                   const rMain = r.segments.filter(sg=>sg.isToTank).reduce((a,sg)=>a+sg.dist,0);
                   return (
@@ -5464,7 +5554,7 @@ function LinesTab({ lang='en' }) {
                         <div style={{ display:'flex', alignItems:'center', gap:6, fontWeight:600, fontSize:13 }}>
                           <I.tank size={13} color="#58a6ff" /> {r.tank.label}
                         </div>
-                        <span style={{ fontSize:11, color:'#5a6a7a' }}>{r.trees.length} taps</span>
+                        <span style={{ fontSize:11, color:'#5a6a7a' }}>{r.trees.length} tree{r.trees.length!==1?'s':''} · {rTaps} tap{rTaps!==1?'s':''}</span>
                       </div>
                       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:4, fontSize:11 }}>
                         <div style={{ background:'#081622', borderRadius:6, padding:'5px 6px' }}>
@@ -5477,7 +5567,7 @@ function LinesTab({ lang='en' }) {
                         </div>
                         <div style={{ background:'#081622', borderRadius:6, padding:'5px 6px' }}>
                           <div style={{ color:'#5a6a7a' }}>drops + tees</div>
-                          <div style={{ fontWeight:700, color:'#e0a44a' }}>{r.trees.length} × each</div>
+                          <div style={{ fontWeight:700, color:'#e0a44a' }}>{rTaps} × each</div>
                         </div>
                       </div>
                     </div>
@@ -5591,9 +5681,12 @@ function LinesTab({ lang='en' }) {
                 {treePins.map(p => {
                   const sColor = _SPECIES_COLORS[p.species] || '#5a6a7a';
                   const hColor = _HEALTH_COLORS[p.health] || '#5a6a7a';
-                  const mlColor = p.mainline ? _ML_COLORS[p.mainline] : null;
+                  const mlColor = p.mainline ? _mlColor(p.mainline) : null;
                   return (
-                    <div key={p.id} style={{ background:'#0f1720', borderRadius:10, padding:'10px 12px', marginBottom:5, border:'1px solid #1e2d3d', display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}
+                    <div key={p.id} role="button" tabIndex={0}
+                      aria-label={`${p.label} — open details`}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedPinId(p.id); setShowPinPanel(true); zoomToPin(p); } }}
+                      style={{ background:'#0f1720', borderRadius:10, padding:'10px 12px', marginBottom:5, border:'1px solid #1e2d3d', display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}
                       onClick={() => { setSelectedPinId(p.id); setShowPinPanel(true); zoomToPin(p); }}>
                       {/* Species circle with health ring */}
                       <div style={{ position:'relative', flexShrink:0 }}>
@@ -5634,14 +5727,22 @@ function LinesTab({ lang='en' }) {
             const mlTaps  = mlTrees.reduce((s, p) => s + (parseInt(p.taps) || 0), 0);
             return (
               <div key={ml.id} className="card" style={{ borderLeft:`3px solid ${ml.color}` }}>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:mlTrees.length?10:0 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <div style={{ width:28, height:28, borderRadius:'50%', background:ml.color+'33', border:`2px solid ${ml.color}`, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, color:ml.color, fontSize:13 }}>{ml.id}</div>
-                    <div>
-                      <div style={{ fontWeight:700, color:'#c9d1d9', fontSize:13 }}>{ml.label}</div>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, marginBottom:mlTrees.length?10:0 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, flex:1, minWidth:0 }}>
+                    <div style={{ width:28, height:28, borderRadius:'50%', background:ml.color+'33', border:`2px solid ${ml.color}`, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, color:ml.color, fontSize:13, flexShrink:0 }}>{ml.id}</div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <input value={ml.label} aria-label={`Name of mainline ${ml.id}`}
+                        onChange={e => renameMainline(ml.id, e.target.value)}
+                        style={{ width:'100%', background:'transparent', border:'none', borderBottom:'1px solid transparent', color:'#c9d1d9', fontWeight:700, fontSize:13, padding:'2px 0', outline:'none', boxSizing:'border-box' }}
+                        onFocus={e => e.target.style.borderBottomColor = ml.color}
+                        onBlur={e => { e.target.style.borderBottomColor = 'transparent'; if (!e.target.value.trim()) renameMainline(ml.id, 'Mainline ' + ml.id); }} />
                       <div style={{ fontSize:11, color:'#5a6a7a' }}>{mlTrees.length} tree{mlTrees.length!==1?'s':''} · {mlTaps} tap{mlTaps!==1?'s':''}</div>
                     </div>
                   </div>
+                  <button onClick={() => deleteMainline(ml.id)} aria-label={`Delete mainline ${ml.id}`} title="Delete this mainline"
+                    style={{ background:'transparent', border:'1px solid #2d3d50', borderRadius:8, color:'#5a6a7a', cursor:'pointer', padding:'7px 9px', flexShrink:0, minHeight:34 }}>
+                    <I.trash size={14} color="#5a6a7a" />
+                  </button>
                 </div>
                 {mlTrees.length > 0 && (
                   <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
@@ -5656,6 +5757,13 @@ function LinesTab({ lang='en' }) {
               </div>
             );
           })}
+
+          <button onClick={addMainline} disabled={!nextMainlineId()}
+            style={{ width:'100%', background:'transparent', border:'1px dashed #2d3d50', borderRadius:12,
+              padding:'13px 16px', color: nextMainlineId() ? '#8a9ab5' : '#3d5068', fontWeight:600, fontSize:13,
+              cursor: nextMainlineId() ? 'pointer' : 'default', marginBottom:8 }}>
+            {nextMainlineId() ? '+ Add a mainline' : 'All 26 mainlines in use'}
+          </button>
 
           {/* Unassigned */}
           {(() => {
@@ -5688,11 +5796,17 @@ function LinesTab({ lang='en' }) {
           <label style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, background:'linear-gradient(135deg,#8b5cf6,#6d28d9)', border:'none', borderRadius:10, padding:'13px', fontSize:14, fontWeight:700, color:'#fff', cursor:'pointer' }}>
             📂 Import Property File
             <input type="file" accept=".kml,.gpx,.geojson,.json" style={{ display:'none' }}
-              onChange={e => { const f = e.target.files[0]; if (f) _sbImportPropertyFile(f); e.target.value=''; }} />
+              onChange={e => { const f = e.target.files[0]; if (f) _sbImportPropertyFile(f, r => { setPropMsg(r); setHasProperty(!!ls.get(PROPERTY_KEY, null)); }); e.target.value=''; }} />
           </label>
-          {_lPropertyLayers.length > 0 && (
-            <button onClick={() => { _lPropertyLayers.forEach(l => { try { _lMap?.removeLayer(l); } catch {} }); _lPropertyLayers.length = 0; }}
-              style={{ width:'100%', marginTop:8, background:'#1a0f0f', border:'1px solid #3d1515', borderRadius:10, padding:'10px', fontSize:13, fontWeight:600, color:'#f85149', cursor:'pointer' }}>
+          {propMsg && (
+            <div role="status" style={{ marginTop:10, fontSize:12.5, lineHeight:1.5, color: propMsg.ok ? '#3fb950' : '#f47067' }}>{propMsg.text}</div>
+          )}
+          {hasProperty && (
+            <button onClick={() => {
+                if (!window.confirm('Remove the imported property boundary from this device?')) return;
+                _sbClearProperty(); setHasProperty(false); setPropMsg(null);
+              }}
+              style={{ width:'100%', marginTop:8, background:'#1a0f0f', border:'1px solid #3d1515', borderRadius:10, padding:'12px', fontSize:13, fontWeight:600, color:'#f85149', cursor:'pointer', minHeight:44 }}>
               ✕ Clear Property Lines
             </button>
           )}
@@ -5772,16 +5886,22 @@ function LinesTab({ lang='en' }) {
               {/* Mainline */}
               <div style={{ gridColumn:'1/-1' }}>
                 <div style={{ fontSize:10, fontWeight:700, color:'#5a6a7a', marginBottom:4 }}>MAINLINE ASSIGNMENT</div>
-                <div style={{ display:'flex', gap:6 }}>
-                  {[{id:'',label:'None'},...mainlines].map(ml => (
-                    <button key={ml.id} onClick={() => updatePinField(selectedPin.id, 'mainline', ml.id)}
-                      style={{ flex:1, background:(selectedPin.mainline||'')===ml.id?(ml.id?_ML_COLORS[ml.id]+'33':'#1e2d3d'):'transparent',
-                        border:`1px solid ${(selectedPin.mainline||'')===ml.id?(ml.id?_ML_COLORS[ml.id]:'#58a6ff'):'#1e2d3d'}`,
-                        borderRadius:8, padding:'7px 4px', fontSize:12, fontWeight:700,
-                        color:(selectedPin.mainline||'')===ml.id?(ml.id?_ML_COLORS[ml.id]:'#58a6ff'):'#5a6a7a', cursor:'pointer' }}>
-                      {ml.id || '—'}
-                    </button>
-                  ))}
+                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                  {[{id:'',label:'None'},...mainlines].map(ml => {
+                    const on  = (selectedPin.mainline||'') === ml.id;
+                    const col = ml.id ? _mlColor(ml.id) : '#58a6ff';
+                    return (
+                      <button key={ml.id} onClick={() => updatePinField(selectedPin.id, 'mainline', ml.id)}
+                        title={ml.label} aria-label={ml.label} aria-pressed={on}
+                        style={{ flex:'1 1 52px', minWidth:52, minHeight:38,
+                          background: on ? col+'33' : 'transparent',
+                          border:`1px solid ${on ? col : '#1e2d3d'}`,
+                          borderRadius:8, padding:'7px 4px', fontSize:13, fontWeight:700,
+                          color: on ? col : '#5a6a7a', cursor:'pointer' }}>
+                        {ml.id || '—'}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -5802,13 +5922,49 @@ function LinesTab({ lang='en' }) {
               style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'none', borderRadius:8, padding:'9px 12px', color:'#c9d1d9', fontSize:12, outline:'none', resize:'vertical', boxSizing:'border-box', fontFamily:'inherit' }} />
           </div>
 
-          {/* Elevation display */}
-          {selectedPin.elev != null && (
-            <div style={{ background:'rgba(255,255,255,0.04)', borderRadius:8, padding:'8px 12px', marginBottom:14, display:'flex', justifyContent:'space-between', fontSize:12 }}>
-              <span style={{ color:'#4a5a6a' }}>Elevation</span>
-              <span style={{ color:'#fbbf24', fontWeight:700 }}>{selectedPin.elev.toFixed(1)} ft</span>
+          {/* Elevation — fetched when there is signal, typed when there isn't.
+              Route grades are useless without it, and the bush is exactly where
+              the phone has no bars. */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:4 }}>
+              <label htmlFor="sr-pin-elev" style={{ fontSize:10, fontWeight:700, color:'#4a5a6a', letterSpacing:'0.06em' }}>ELEVATION (FT)</label>
+              <span style={{ fontSize:10, color: selectedPin.elev != null ? '#5a6a7a' : '#f0883e' }}>
+                {selectedPin.elev != null
+                  ? (selectedPin.elevManual ? 'you entered this' : 'from terrain data')
+                  : 'needed for route grades'}
+              </span>
             </div>
-          )}
+            <div style={{ display:'flex', gap:6 }}>
+              <input id="sr-pin-elev" type="text" inputMode="decimal"
+                value={elevDraft}
+                placeholder={selectedPin.elev != null ? '' : 'e.g. 940'}
+                onChange={e => setElevDraft(e.target.value)}
+                onBlur={() => {
+                  const t = elevDraft.trim();
+                  if (t === '') { if (selectedPin.elev != null) { updatePinField(selectedPin.id, 'elev', null); updatePinField(selectedPin.id, 'elevManual', false); } return; }
+                  const n = srParseNum(t);
+                  if (n == null) { setElevDraft(selectedPin.elev != null ? String(selectedPin.elev) : ''); return; }
+                  const clamped = Math.max(-1400, Math.min(30000, n));
+                  setElevDraft(String(clamped));
+                  updatePinField(selectedPin.id, 'elev', clamped);
+                  updatePinField(selectedPin.id, 'elevManual', true);
+                }}
+                style={{ flex:1, minHeight:40, background:'rgba(255,255,255,0.06)', border:'none', borderRadius:8, padding:'9px 12px', color:'#fbbf24', fontSize:13, fontWeight:700, outline:'none', boxSizing:'border-box' }} />
+              <button onClick={async () => {
+                  setElevDraft('…');
+                  const v = await _fetchElev(selectedPin.lat, selectedPin.lon);
+                  if (v == null) { setElevDraft(selectedPin.elev != null ? String(selectedPin.elev) : ''); setRouteMsg('❌ No elevation from the network. Type it in instead — a topo map or a handheld GPS will give you the number.'); return; }
+                  const r = Math.round(v * 10) / 10;
+                  setElevDraft(String(r));
+                  updatePinField(selectedPin.id, 'elev', r);
+                  updatePinField(selectedPin.id, 'elevManual', false);
+                }}
+                title="Look up elevation for this pin (needs a connection)"
+                style={{ background:'transparent', border:'1px solid #2d3d50', borderRadius:8, color:'#8a9ab5', fontSize:12, fontWeight:600, padding:'0 12px', minHeight:40, cursor:'pointer', whiteSpace:'nowrap' }}>
+                Look up
+              </button>
+            </div>
+          </div>
 
           {/* Delete */}
           <button onClick={() => {
