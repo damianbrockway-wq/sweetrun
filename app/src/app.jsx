@@ -186,6 +186,7 @@ const TR = {
     logTitle:'SEASON OVERVIEW', seasonGoal:'SEASON GOAL',
     benchmark:'Benchmark', sapCollected:'Sap Collected',
     syrupMade:'Syrup Made', sapRO:'Sap Thru R/O', sapEvap:'Sap in Evaporator',
+    fuelUsed:'Fuel Burned', boilHours:'Hours Boiling',
     clearSeason:'Clear all season data', seasonForecast:'Season Forecast',
     seasonComparison:'Season Comparison', noSeasonData:'No season data yet.',
     // Run alerts
@@ -436,6 +437,7 @@ const TR = {
     logTitle:'APERÇU DE LA SAISON', seasonGoal:'OBJECTIF DE SAISON',
     benchmark:'Référence', sapCollected:'Sève récoltée',
     syrupMade:'Sirop produit', sapRO:'Sève par O/I', sapEvap:'Sève à l\'évaporateur',
+    fuelUsed:'Combustible brûlé', boilHours:'Heures d\'ébullition',
     clearSeason:'Effacer toutes les données de la saison',
     seasonForecast:'Prévision de saison', seasonComparison:'Comparaison des saisons',
     noSeasonData:'Aucune donnée de saison.',
@@ -2990,7 +2992,8 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
   const GRADE_LABELS = {'—':'—','Golden Delicate':t(lang,'gradeGolden'),'Amber Rich':t(lang,'gradeAmber'),'Dark Robust':t(lang,'gradeDark'),'Very Dark Strong':t(lang,'gradeVeryDark')};
   const GRADE_COLORS = { 'Golden Delicate':'#f5c842','Amber Rich':'#e0a44a','Dark Robust':'#c47a28','Very Dark Strong':'#8b4513' };
 
-  function LogSection({ label, logKey, color, icon, showGrade=false, showBrix=false, onAdd=null }) {
+  function LogSection({ label, logKey, color, icon, showGrade=false, showBrix=false, onAdd=null, unitLabel=null }) {
+    const uLbl = unitLabel || u;
     const entries        = slog[logKey] || [];
     // Filter displayed entries by active collection point (null = show all)
     const displayEntries = activePoint
@@ -3042,7 +3045,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
               {activePoint && (() => { const pt=cpoints.find(p=>p.id===activePoint); return pt ? <span style={{ fontSize:11, color:pt.color, fontWeight:700, marginLeft:6 }}>· {pt.name}</span> : null; })()}
             </div>
           </div>
-          <span className="badge" style={{ background:color, color:'#fff' }}>{fmt(tot2,1)} {u}</span>
+          <span className="badge" style={{ background:color, color:'#fff' }}>{fmt(tot2,1)} {uLbl}</span>
         </div>
         <div style={{ display:'flex', gap:8 }}>
           <div style={{ flex:1 }}><NumInput value={val} onChange={setVal} min={0} step={0.1} placeholder={`${t(lang,'units')}…`} /></div>
@@ -3053,8 +3056,10 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
           <div style={{ marginTop:8, display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ flex:1 }}>
               <div className="field-label">{t(lang,'sapBrix')} <span style={{ color:'#3d5068', fontWeight:400 }}>({t(lang,'optional')})</span></div>
-              <input type="number" value={brix} onChange={e=>setBrix(e.target.value)}
-                min={0} max={10} step={0.1} placeholder="e.g. 2.1"
+              <input type="text" inputMode="decimal" value={brix}
+                onChange={e=>{ const raw=e.target.value; if(!/^[\d.,\s]*$/.test(raw)) return; setBrix(raw); }}
+                onBlur={e=>{ const n=srParseNum(e.target.value); setBrix(n===null?'':String(Math.max(0,Math.min(10,n)))); }}
+                placeholder="e.g. 2.1"
                 style={{ width:'100%', boxSizing:'border-box' }} />
             </div>
           </div>
@@ -3075,7 +3080,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
         {displayEntries.map((e)=>(
           <div key={e.id} className="log-entry">
             <div style={{ flex:1 }}>
-              <span style={{ fontWeight:600 }}>{fmt(e.val,1)} {u}</span>
+              <span style={{ fontWeight:600 }}>{fmt(e.val,1)} {uLbl}</span>
               {e.brix != null && <span style={{ fontSize:11, fontWeight:600, color:'#2dd4a7', background:'#2dd4a722', borderRadius:6, padding:'1px 7px', marginLeft:6 }}>{e.brix.toFixed(1)}°Bx</span>}
               {e.grade && e.grade !== '—' && <span style={{ fontSize:11, fontWeight:700, color: GRADE_COLORS[e.grade]||'#e0a44a', background:(GRADE_COLORS[e.grade]||'#e0a44a')+'22', borderRadius:6, padding:'1px 7px', marginLeft:6 }}>{GRADE_LABELS[e.grade]||e.grade}</span>}
               {/* Collection point badge — only show in All view to avoid redundancy */}
@@ -3318,6 +3323,10 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
       <LogSection label={t(lang,'syrupMade')}    logKey="syrupMade"    color="#e0a44a" icon="droplet" showGrade={true} />
       <LogSection label={t(lang,'sapRO')}        logKey="sapRO"        color="#58a6ff" icon="filter"  />
       <LogSection label={t(lang,'sapEvap')}      logKey="sapEvap"      color="#f0883e" icon="flame"   />
+      <LogSection label={t(lang,'fuelUsed')}     logKey="fuelUsed"     color="#e0a44a" icon="flame"
+        unitLabel={(FUELS.find(f=>f.label===ls.get('sg_fuel','Firewood (cord)'))||FUELS[0]).unit} />
+      <LogSection label={t(lang,'boilHours')}    logKey="boilHours"    color="#8b949e" icon="clock"
+        unitLabel="hr" />
 
       <div style={{ textAlign:'center', marginBottom:14 }}>
         <button onClick={()=>{if(!window.confirm('Clear all data for '+season+'?'))return;const up={...logs};delete up[season];setLogs(up);ls.set('sg_logs2',up);}} style={{ background:'none', border:'none', color:'#3d5068', fontSize:14, textDecoration:'underline', cursor:'pointer' }}>
@@ -6818,10 +6827,13 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
     else               insights.push({type:'warn',   title:'Evaporation efficiency concern',    body:`${ratio.toFixed(0)}:1 is ${100-eff}% below theoretical for ${brix}°Brix sap.`,          action:'Check flue pan flow rate, evaporator level, and finisher draw-off timing.'});
   }
   if (fuelGal>0&&syrupGal>0) {
+    const fuelDef=FUELS.find(f=>f.label===ls.get('sg_fuel','Firewood (cord)'))||FUELS[0];
+    const fuelU=fuelDef.unit;
     const fr=fuelGal/syrupGal;
-    fuelScore=Math.min(100,Math.round((1.0/fr)*100));
-    if (fr<0.8)   insights.push({type:'success',title:'Fuel-efficient operation',  body:`${fr.toFixed(2)} gal oil/gal syrup — well below the 1.0 industry benchmark.`,  action:'If not already using RO, your evaporator is dialed in. Consider adding a preheater.'});
-    else if(fr>1.5) insights.push({type:'warn', title:'High fuel consumption',     body:`${fr.toFixed(2)} gal oil/gal syrup — above the 1.0 target.`,                   action:'RO preconcentration to 8–10°Brix could cut fuel use 60–70%.'});
+    const bench=(86.4/(parseFloat(sapBrix)||2))/fuelDef.spu;
+    fuelScore=Math.min(100,Math.round((bench/fr)*100));
+    if (fr < bench*0.8)   insights.push({type:'success',title:'Fuel-efficient operation',  body:`${fr.toFixed(2)} ${fuelU}/gal syrup — below the ${bench.toFixed(2)} expected for your fuel.`,  action:'If not already using RO, your evaporator is dialed in. Consider adding a preheater.'});
+    else if(fr > bench*1.5) insights.push({type:'warn', title:'High fuel consumption',     body:`${fr.toFixed(2)} ${fuelU}/gal syrup — above the ${bench.toFixed(2)} expected for your fuel.`,                   action:'RO preconcentration to 8–10°Brix could cut fuel use 60–70%.'});
   }
   if (roGal>0&&sapGal>0) {
     const pct=Math.round((roGal/sapGal)*100);
@@ -7930,11 +7942,13 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
   // 3. Fuel efficiency (20 pts weight)
   let fuelScore = null;
   if (fuelGal > 0 && syrupGal > 0) {
-    const fr = fuelGal / syrupGal;
-    fuelScore = Math.min(100, Math.round((1.0 / fr) * 100));
+    const fuelDef = FUELS.find(f => f.label === ls.get('sg_fuel','Firewood (cord)')) || FUELS[0];
+    const fr    = fuelGal / syrupGal;                       // units of fuel per gal syrup
+    const bench = (86.4 / brix) / fuelDef.spu;              // what that fuel should take
+    fuelScore = Math.min(100, Math.round((bench / fr) * 100));
     const fuelColor = fuelScore >= 90 ? '#3fb950' : fuelScore >= 60 ? '#f0883e' : '#f85149';
     scores.push({ label:'Fuel Efficiency', score: fuelScore, weight:20, color: fuelColor,
-      detail: `${fr.toFixed(2)} units/gal syrup` });
+      detail: `${fr.toFixed(2)} ${fuelDef.unit}/gal syrup · expect ${bench.toFixed(2)}` });
   }
 
   // 4. Ratio accuracy (15 pts weight)
