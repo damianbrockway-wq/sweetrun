@@ -671,24 +671,40 @@ const syrupY   = (sap, b) => b > 0 ? sap / rule86(b) : 0;
 const boilTime = (sap, b, r) => r > 0 && b > 0 ? (sap - syrupY(sap, b)) / r : 0;
 const finTemp  = bp => bp + 7.1;
 const denCorr  = t => (t - 68) * 0.03166;
-const brixToBe = bx => bx * 0.6879;
-const beToBrix = be => be / 0.6879;
+// °Brix ↔ °Baumé for maple SYRUP densities, cold test (60°F).
+// Anchored on the industry reference point 66.9 °Brix = 36.0 °Bé
+// (Leader Evaporator / CDL density tables). The old bx*0.6879 gave 46.0 °Bé
+// at 66.9 Brix, which is not a maple figure at all.
+// Hot test on the same syrup reads ~32.0 °Bé at 211°F — see BE_HOT_NOTE.
+const BE_BRIX_REF = 59.0, BE_AT_REF = 32.0, BE_PER_BRIX = 0.50594;
+const BE_HOT_NOTE = 'Cold test at 60°F. The same syrup reads about 32.0° Bé hot at 211°F.';
+const brixToBe = bx => BE_AT_REF + BE_PER_BRIX * (bx - BE_BRIX_REF);
+const beToBrix = be => BE_BRIX_REF + (be - BE_AT_REF) / BE_PER_BRIX;
 const altToBP  = ft => 212 - ft * 0.0018;
 const presToBP = p => 212 + (p - 29.92) * 1.8;
 const roConc   = (sap, sb, tb) => tb > 0 && sb > 0 ? sap * (sb / tb) : 0;
 
+// Boil rates from UNH Cooperative Extension's published evaporator table.
+// The old figures ran ~0.75 gal/hr per sq ft, which is a flat-pan number applied
+// to flue rigs; real flue evaporators run 2 to 3 gal/hr per sq ft.
+// Every producer's rig differs — the Custom Boil Rate field overrides all of this.
 const PAN_SIZES = [
-  { label: '2×4 ft (~12 GPH)', area: 8,  rate: 12 },
-  { label: '2×6 ft (~18 GPH)', area: 12, rate: 18 },
-  { label: '2×8 ft (~24 GPH)', area: 16, rate: 24 },
-  { label: '3×8 ft (~36 GPH)', area: 24, rate: 36 },
-  { label: '3×10 ft (~45 GPH)',area: 30, rate: 45 },
-  { label: '4×12 ft (~72 GPH)',area: 48, rate: 72 },
-  { label: 'Custom size…',     area: 0,  rate: 0  },
+  { label: '2×4 ft (~16 GPH)',  area: 8,  rate: 16  },
+  { label: '2×6 ft (~25 GPH)',  area: 12, rate: 25  },
+  { label: '2×8 ft (~35 GPH)',  area: 16, rate: 35  },
+  { label: '3×8 ft (~70 GPH)',  area: 24, rate: 70  },
+  { label: '3×10 ft (~85 GPH)', area: 30, rate: 85  },
+  { label: '4×12 ft (~140 GPH)',area: 48, rate: 140 },
+  { label: '4×14 ft (~163 GPH)',area: 56, rate: 163 },
+  { label: '5×16 ft (~232 GPH)',area: 80, rate: 232 },
+  { label: 'Custom size…',      area: 0,  rate: 0   },
 ];
 const CUSTOM_PAN_IDX = PAN_SIZES.length - 1;
 const FUELS = [
-  { label: 'Firewood (cord)', labelFr: 'Bois de chauffage (corde)', unit: 'cord', unitFr: 'corde', spu: 200 },
+  // One cord of seasoned hardwood boils roughly 25 gal of syrup, about 1,000 gal
+  // of 2° sap (USDA Forest Service; North American Maple Syrup Producers Manual).
+  // The old 200 was five times pessimistic.
+  { label: 'Firewood (cord)', labelFr: 'Bois de chauffage (corde)', unit: 'cord', unitFr: 'corde', spu: 1000 },
   { label: 'Oil (gallon)',    labelFr: 'Huile (gallon)',             unit: 'gal',  unitFr: 'gal',   spu: 10  },
   { label: 'Propane (gallon)',labelFr: 'Propane (gallon)',           unit: 'gal',  unitFr: 'gal',   spu: 7   },
   { label: 'Natural Gas (ccf)',labelFr: 'Gaz naturel (ccf)',          unit: 'ccf',  unitFr: 'ccf',   spu: 7   },
@@ -745,29 +761,48 @@ function tapsPer(dbh) {
 }
 
 // ─── Shared UI pieces ─────────────────────────────────────────────────────────
+// Accepts a comma decimal ("2,5" is how a French-Canadian producer types 2.5 —
+// parseFloat used to read that as 25). Rejects letters and a leading minus.
+// Clamps to the field's own min/max on blur.
+function srParseNum(raw) {
+  if (raw == null) return null;
+  const s = String(raw).trim().replace(/\s/g, '').replace(',', '.');
+  if (s === '' || s === '.' || s === '-') return null;
+  if (!/^-?\d*\.?\d*$/.test(s)) return null;
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
 function NumInput({ value, onChange, min, max, step = 0.1, placeholder }) {
   const [display, setDisplay] = React.useState(value === 0 ? '' : String(value));
   React.useEffect(() => {
-    if (document.activeElement && document.activeElement.dataset.nuминput === 'true') return;
+    if (document.activeElement && document.activeElement.dataset.numinput === 'true') return;
     setDisplay(value === 0 ? '' : String(value));
   }, [value]);
+  const clamp = n => {
+    let v = n;
+    if (min != null && v < min) v = min;
+    if (max != null && v > max) v = max;
+    return v;
+  };
   return (
     <input
-      type="number"
+      type="text"
+      inputMode="decimal"
       data-numinput="true"
       value={display}
       placeholder={placeholder || (value === 0 ? '0' : '')}
-      min={min} max={max} step={step}
       onChange={e => {
-        setDisplay(e.target.value);
-        const n = parseFloat(e.target.value);
-        if (!isNaN(n)) onChange(n);
+        const raw = e.target.value;
+        if (!/^-?[\d.,\s]*$/.test(raw)) return;   // ignore letters outright
+        setDisplay(raw);
+        const n = srParseNum(raw);
+        if (n !== null) onChange(clamp(n));
       }}
-      onFocus={e => { if (parseFloat(e.target.value) === 0) { setDisplay(''); } }}
+      onFocus={e => { if (srParseNum(e.target.value) === 0) setDisplay(''); }}
       onBlur={e => {
-        const n = parseFloat(e.target.value);
-        if (isNaN(n) || e.target.value === '') { onChange(0); setDisplay(''); }
-        else { onChange(n); setDisplay(String(n)); }
+        const n = srParseNum(e.target.value);
+        if (n === null) { onChange(0); setDisplay(''); }
+        else { const c = clamp(n); onChange(c); setDisplay(String(c)); }
       }}
     />
   );
@@ -812,7 +847,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
   const syrupMid  = Math.round(recTaps * yieldMid  * 10) / 10;
   const syrupHigh = Math.round(recTaps * yieldHigh * 10) / 10;
   const sapMid    = Math.round(syrupMid * 43);
-  const evapRates = { '2x3':4,'2x4':6,'2x6':10,'2x8':14,'3x8':18,'3x10':25,'4x12':35 };
+  const evapRates = { '2x3':10,'2x4':16,'2x6':25,'2x8':35,'3x8':70,'3x10':85,'4x12':140,'4x14':163,'5x16':232 };
   const evapGph   = evapRates[panSize] || 6;
   const sessions  = hasEvap ? Math.ceil(Math.max(1, sapMid) / (evapGph * 4)) : null;
   const firewood  = wizFuelType.includes('Firewood') ? Math.max(0.1, syrupMid / 30).toFixed(1) : null;
@@ -909,7 +944,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
       {hasEvap && <>
         <label style={{fontSize:11,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Pan size</label>
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(56px,1fr))',gap:6,marginBottom:18}}>
-          {['2x3','2x4','2x6','2x8','3x8','3x10','4x12'].map(sz=>(
+          {['2x3','2x4','2x6','2x8','3x8','3x10','4x12','4x14','5x16'].map(sz=>(
             <button key={sz} onClick={()=>setPanSize(sz)}
               style={{padding:'9px 4px',borderRadius:10,border:`2px solid ${panSize===sz?'#f59e0b':'#1e2d3d'}`,
                 background:panSize===sz?'rgba(245,158,11,0.08)':'#0a1420',cursor:'pointer',transition:'all 0.15s',textAlign:'center'}}>
@@ -1448,7 +1483,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
   const pan        = PAN_SIZES[panIdx];
   const isCustomPan = panIdx === CUSTOM_PAN_IDX;
   const customArea  = isCustomPan ? (parseFloat(panW)||0) * (parseFloat(panH)||0) : 0;
-  const customCalcR = isCustomPan ? Math.round(customArea * 1.5) : 0;
+  const customCalcR = isCustomPan ? Math.round(customArea * 2.5) : 0;   // ~2.5 gal/hr per sq ft, flue rig
   const rate = customR > 0 ? parseFloat(customR) : (isCustomPan ? customCalcR : pan.rate);
   const area = isCustomPan ? customArea : pan.area;
   const eff  = area > 0 ? (rate / area).toFixed(2) : '—';
@@ -1932,8 +1967,9 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           </div>
           <div style={{ background:'#1a0d2b', borderRadius:10, padding:14, border:'1px solid #2f1a4a' }}>
             <div style={{ fontSize:11, fontWeight:600, color:'#c990ff', letterSpacing:'0.08em', marginBottom:6 }}>ENTER BAUMÉ</div>
-            <NumInput value={baumeIn} onChange={setBaumeIn} min={30} max={50} step={0.1} />
+            <NumInput value={baumeIn} onChange={setBaumeIn} min={28} max={40} step={0.1} />
             <div style={{ color:'#c990ff', fontSize:13, marginTop:6 }}>= {fmt(beToBrix(baumeIn),1)}° Brix</div>
+            <div style={{ color:'#748699', fontSize:11, marginTop:6, lineHeight:1.45 }}>{BE_HOT_NOTE}</div>
           </div>
         </div>
       </div>
@@ -6794,7 +6830,10 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
 
   const activeSc=[yieldScore,effScore,fuelScore].filter(s=>s!==null);
   const overall = activeSc.length>0 ? Math.round(activeSc.reduce((a,b)=>a+b,0)/activeSc.length) : 0;
-  const grade = overall>=90?'A':overall>=80?'B':overall>=70?'C':overall>=60?'D':'F';
+  // A season with one entry in it does not get a letter. Two of the three
+  // sub-scores have to be computable before a grade means anything.
+  const graded = activeSc.length >= 2;
+  const grade = !graded ? '—' : overall>=90?'A':overall>=80?'B':overall>=70?'C':overall>=60?'D':'F';
   const gradeColor = overall>=90?'#3fb950':overall>=80?'#58a6ff':overall>=70?'#f0883e':'#f85149';
 
   const bestRun = runLogs.length>0 ? runLogs.reduce((b,e)=>(parseFloat(e.val)||0)>(parseFloat(b.val)||0)?e:b, runLogs[0]) : null;
@@ -7921,7 +7960,9 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
   const weighted    = scores.reduce((s,x) => s + (x.score * x.weight), 0);
   const overall     = totalWeight > 0 ? Math.round(weighted / totalWeight) : 0;
 
-  const grade = overall >= 90 ? 'A' : overall >= 80 ? 'B' : overall >= 70 ? 'C' : overall >= 60 ? 'D' : 'F';
+  // Same rule as Diagnose: no letter until there is enough season to judge.
+  const graded = scores.length >= 3 && syrupGal > 0;
+  const grade = !graded ? '—' : overall >= 90 ? 'A' : overall >= 80 ? 'B' : overall >= 70 ? 'C' : overall >= 60 ? 'D' : 'F';
   const gradeColor = overall >= 90 ? '#3fb950' : overall >= 80 ? '#58a6ff' : overall >= 70 ? '#f0883e' : '#f85149';
 
   const shareText = `My ${season} maple season scored ${overall}/100 (${grade}) on SweetRun · sweetrun.app`;
