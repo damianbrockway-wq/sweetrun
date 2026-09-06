@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>SweetRun — Maple Production Tools</title>
   <meta name="description" content="Maple syrup production calculator — sap yield, evaporation, RO, finishing, tapping, and logging tools." />
   <meta name="theme-color" content="#07090f" />
@@ -15,6 +15,23 @@
   <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
+    /* ── FIELD tokens ─────────────────────────────────────────────────────
+       The design system for SweetRun, in one place. Colours, a five-step
+       type scale that bottoms out at 12px (below that a number is not
+       readable on a phone in a sugarbush), radii, and a 4px spacing step.
+       Inline styles through the app are being migrated onto these; new work
+       should use them rather than a fresh hex or pixel value. */
+    :root {
+      --c-bg:#07090f; --c-surface:#0f1720; --c-inset:#0d1a2b;
+      --c-line:#131e2c; --c-edge:#1e2d3d;
+      --c-text:#e6edf3; --c-dim:#8b949e; --c-muted:#748699;
+      --c-brand:#2dd4a7; --c-flow:#3fb950; --c-output:#e0a44a;
+      --c-info:#58a6ff; --c-danger:#f85149;
+      --t-label:12px; --t-sub:14px; --t-body:16px; --t-title:20px; --t-figure:28px;
+      --r-control:10px; --r-card:16px; --r-pill:999px;
+      --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s6:24px; --s8:32px;
+      --tap:44px;
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: #07090f;
@@ -81,7 +98,7 @@
       box-shadow: 0 0 28px rgba(201,144,255,0.06);
     }
     .result-label {
-      font-size: 10px;
+      font-size: var(--t-label);
       font-weight: 700;
       letter-spacing: 0.11em;
       text-transform: uppercase;
@@ -182,12 +199,12 @@
     .badge {
       background: linear-gradient(135deg, #2dd4a7, #1fbf94);
       color: #07090f;
-      font-size: 11px; font-weight: 800;
+      font-size: 13px; font-weight: 800;
       padding: 3px 10px; border-radius: 20px;
       letter-spacing: 0.02em;
     }
     .section-header {
-      font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+      font-size: var(--t-label); font-weight: 700; letter-spacing: 0.12em;
       text-transform: uppercase; color: #5a6a7a;
       display: flex; align-items: center; gap: 6px; margin-bottom: 10px;
     }
@@ -228,8 +245,8 @@
       border: 1px solid #1a2840;
       border-radius: 11px; margin-bottom: 6px; font-size: 14px;
     }
-    .good-badge  { background: rgba(63,185,80,0.14); color: #3fb950; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 12px; border: 1px solid rgba(63,185,80,0.22); }
-    .freeze-badge { background: rgba(88,166,255,0.12); color: #58a6ff; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 12px; border: 1px solid rgba(88,166,255,0.2); }
+    .good-badge  { background: rgba(63,185,80,0.14); color: #3fb950; font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 12px; border: 1px solid rgba(63,185,80,0.22); }
+    .freeze-badge { background: rgba(88,166,255,0.12); color: #58a6ff; font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 12px; border: 1px solid rgba(88,166,255,0.2); }
     .tip-item {
       display: flex; align-items: flex-start; gap: 11px;
       padding: 11px 14px; background: #0f1720;
@@ -284,9 +301,9 @@
       border: none; border-radius: 11px;
       padding: 8px 11px;
       display: flex; flex-direction: column; align-items: center; gap: 3px;
-      font-weight: 600; font-size: 10px; letter-spacing: 0.02em;
+      font-weight: 600; font-size: var(--t-label); letter-spacing: 0.01em;
       transition: all 0.18s;
-      min-width: 50px;
+      min-width: 54px;
     }
     .tab-btn:hover { color: #7a9ab8; background: rgba(255,255,255,0.04); }
     .tab-btn.active {

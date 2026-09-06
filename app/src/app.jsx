@@ -148,7 +148,7 @@ const TR = {
     densityCheck:'Density Check', syrupBrix:'Syrup °Brix',
     syrupTemp:'Syrup Temp (°F)', tempCorrection:'Temp Correction',
     correctedBrix:'Corrected Brix', legalRange:'Legal range: 66.0° – 68.9° Brix',
-    perfectDensity:'✓ Perfect Density', tooLight:'⚠ Too Light', tooDense:'⚠ Too Dense',
+    perfectDensity:'Perfect Density', tooLight:'Too Light', tooDense:'Too Dense',
     filterPress:'Filter Press — DE Calculator',
     gradeTitle:'Syrup Grades & Reference',
     // Tapping tab
@@ -190,7 +190,7 @@ const TR = {
     clearSeason:'Clear all season data', seasonForecast:'Season Forecast',
     seasonComparison:'Season Comparison', noSeasonData:'No season data yet.',
     // Run alerts
-    runAlertTitle:'🔔 Enable Run Alerts',
+    runAlertTitle:'Enable Run Alerts',
     runAlertDesc:'Get a notification when ideal sap run conditions are forecast',
     enable:'Enable',
     // SapTab
@@ -271,7 +271,7 @@ const TR = {
     ftTitle:'FREEZE / THAW', ftOr:'or',
     badgeIdeal:'Ideal Run', badgeFreezeThaw:'Freeze/Thaw',
     badgeTooWarm:'Too Warm', badgeAllFreeze:'All Freeze',
-    ftWarmStretch:'\u26A0 Warm stretch',
+    ftWarmStretch:'Warm stretch',
     ftLegend:'\u2713 Ideal: hi \u2265 40\u00b0F & lo \u2264 28\u00b0F \u00b7 Freeze/Thaw: crossing 32\u00b0F',
     taskOf:'of', taskDone:'complete',
     gradeGolden:'Golden Delicate', gradeAmber:'Amber Rich',
@@ -293,7 +293,7 @@ const TR = {
     wxCalm:'Calm', wxLightWind:'Light', wxReducesFlow:'Reduces flow',
     wxClearSky:'Clear', wxLightRain:'Light rain', wxHeavyRain:'Heavy (dilutes sap)',
     wxSunny:'Sunny', wxPartlySunny:'Partly sunny', wxOvercast:'Overcast',
-    wxBuddyRiskBadge:'\u26A0 Buddy Risk',
+    wxBuddyRiskBadge:'Buddy Risk',
     wxNoRunDays:'No good run days this week',
     wxNoRunDaysHint:'Check back as the forecast updates daily',
     wxEmptyTitle:'Set your location to see the forecast',
@@ -398,7 +398,7 @@ const TR = {
     densityCheck:'Vérification de la densité', syrupBrix:'°Brix du sirop',
     syrupTemp:'Temp. du sirop (°F)', tempCorrection:'Correction de température',
     correctedBrix:'Brix corrigé', legalRange:'Plage légale : 66,0° – 68,9° Brix',
-    perfectDensity:'✓ Densité parfaite', tooLight:'⚠ Trop léger', tooDense:'⚠ Trop dense',
+    perfectDensity:'Densité parfaite', tooLight:'Trop léger', tooDense:'Trop dense',
     filterPress:'Presse-filtre — Calculateur DE',
     gradeTitle:'Grades et référence',
     // Tapping tab
@@ -442,7 +442,7 @@ const TR = {
     seasonForecast:'Prévision de saison', seasonComparison:'Comparaison des saisons',
     noSeasonData:'Aucune donnée de saison.',
     // Run alerts
-    runAlertTitle:'🔔 Activer les alertes de coulée',
+    runAlertTitle:'Activer les alertes de coulée',
     runAlertDesc:'Recevez une notification quand des conditions idéales de coulée sont prévues',
     enable:'Activer',
     // SapTab
@@ -523,7 +523,7 @@ const TR = {
     ftTitle:'GEL / DÉGEL', ftOr:'ou',
     badgeIdeal:'Coulée idéale', badgeFreezeThaw:'Gel/Dégel',
     badgeTooWarm:'Trop chaud', badgeAllFreeze:'Gel total',
-    ftWarmStretch:'\u26A0 Période chaude',
+    ftWarmStretch:'Période chaude',
     ftLegend:'\u2713 Idéal : max \u2265 40\u00b0F et min \u2264 28\u00b0F \u00b7 Gel/Dégel : croise 32\u00b0F',
     taskOf:'sur', taskDone:'complété',
     gradeGolden:'Doré délicat', gradeAmber:'Ambré riche',
@@ -545,7 +545,7 @@ const TR = {
     wxCalm:'Calme', wxLightWind:'Léger', wxReducesFlow:'Réduit la coulée',
     wxClearSky:'Dégagé', wxLightRain:'Pluie légère', wxHeavyRain:'Forte (dilue la sève)',
     wxSunny:'Ensoleillé', wxPartlySunny:'Partiellement ensoleillé', wxOvercast:'Nuageux',
-    wxBuddyRiskBadge:'\u26A0 Risque sève',
+    wxBuddyRiskBadge:'Risque sève',
     wxNoRunDays:'Pas de bonne coulée cette semaine',
     wxNoRunDaysHint:'Revenez vérifier — les prévisions se mettent à jour chaque jour',
     wxEmptyTitle:'Définissez votre emplacement pour voir les prévisions',
@@ -614,6 +614,34 @@ function Svg({ size = 20, color = 'currentColor', sw = 2, children }) {
   );
 }
 const I = {
+  // ── Round three: drawn to replace the emoji ────────────────────────────────
+  // Same grammar as everything above — 24×24, fill none, 2px stroke, round caps.
+  save:        (p) => <Svg {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></Svg>,
+  bell:        (p) => <Svg {...p}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></Svg>,
+  calendar:    (p) => <Svg {...p}><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Svg>,
+  star:        (p) => <Svg {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></Svg>,
+  trophy:      (p) => <Svg {...p}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M6 2h12v7a6 6 0 0 1-12 0z"/><line x1="12" y1="15" x2="12" y2="19"/><path d="M8 22h8l-1-3H9z"/></Svg>,
+  flask:       (p) => <Svg {...p}><path d="M9 2v6.5L3.8 17.6A2 2 0 0 0 5.5 21h13a2 2 0 0 0 1.7-3.4L15 8.5V2"/><line x1="8" y1="2" x2="16" y2="2"/><line x1="6.6" y1="15" x2="17.4" y2="15"/></Svg>,
+  // A sap bucket: the hard flare and the bail are what a trash can never has.
+  bucket:      (p) => <Svg {...p}><path d="M2.5 7.5h19L18 20a1.5 1.5 0 0 1-1.4 1H7.4A1.5 1.5 0 0 1 6 20z"/><path d="M7.5 7.5a4.5 4.5 0 0 1 9 0"/></Svg>,
+  fuel:        (p) => <Svg {...p}><line x1="3" y1="22" x2="15" y2="22"/><path d="M5 22V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v18"/><line x1="5" y1="10" x2="13" y2="10"/><path d="M16 7h2a2 2 0 0 1 2 2v7a1.5 1.5 0 0 0 3 0v-8l-3-3"/></Svg>,
+  folder:      (p) => <Svg {...p}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></Svg>,
+  tag:         (p) => <Svg {...p}><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></Svg>,
+  wind:        (p) => <Svg {...p}><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/><path d="M17.7 7.2A2.5 2.5 0 1 1 19.5 12H2"/></Svg>,
+  signal:      (p) => <Svg {...p}><line x1="12" y1="20" x2="12" y2="20.01"/><path d="M8.5 16.4a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 14 0"/><path d="M1.5 9.4a15 15 0 0 1 21 0"/></Svg>,
+  eye:         (p) => <Svg {...p}><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></Svg>,
+  sugarhouse:  (p) => <Svg {...p}><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9.5"/><path d="M10.5 8.5c0-1.5 1.5-2 1.5-4"/><path d="M13.5 8c0-1 1-1.5 1-3"/></Svg>,
+  link:        (p) => <Svg {...p}><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></Svg>,
+  alert:       (p) => <Svg {...p}><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></Svg>,
+  firewood:    (p) => <Svg {...p}><circle cx="7.5" cy="15.5" r="4"/><circle cx="16.5" cy="15.5" r="4"/><circle cx="12" cy="7.5" r="4"/></Svg>,
+  import:      (p) => <Svg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></Svg>,
+  upload:      (p) => <Svg {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></Svg>,
+  brain:       (p) => <Svg {...p}><path d="M12 5.5a3 3 0 0 0-5.6-1.5A3 3 0 0 0 4 9.2a3.2 3.2 0 0 0 .6 4.6A3 3 0 0 0 8 19a3 3 0 0 0 4-1.5z"/><path d="M12 5.5a3 3 0 0 1 5.6-1.5A3 3 0 0 1 20 9.2a3.2 3.2 0 0 1-.6 4.6A3 3 0 0 1 16 19a3 3 0 0 1-4-1.5z"/><line x1="12" y1="5.5" x2="12" y2="17.5"/></Svg>,
+  stop:        (p) => <Svg {...p}><rect x="5" y="5" width="14" height="14" rx="2"/></Svg>,
+  play:        (p) => <Svg {...p}><polygon points="6 3 20 12 6 21 6 3"/></Svg>,
+  hammer:      (p) => <Svg {...p}><path d="m15 12-8.4 8.4a2.1 2.1 0 0 1-3-3L12 9"/><path d="M17.6 6.4 14 10l-3-3 3.6-3.6a2 2 0 0 1 2.8 0l.2.2 1.6-1.6 3 3-1.6 1.6.2.2a2 2 0 0 1 0 2.8z"/></Svg>,
+  cloudSun:    (p) => <Svg {...p}><path d="M12 2v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="M2 12h2"/><path d="M8.6 15.5a4 4 0 1 1 4-6.9"/><path d="M15.5 10a4.5 4.5 0 1 1 1.2 8.8H8a3.5 3.5 0 0 1 0-7 4.5 4.5 0 0 1 7.5-1.8z"/></Svg>,
+  cube:        (p) => <Svg {...p}><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.53a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.79 0l-8-4a2 2 0 0 1-1.1-1.8V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22" x2="12" y2="11"/></Svg>,
   // Navigation
   droplet:     (p) => <Svg {...p}><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></Svg>,
   flame:       (p) => <Svg {...p}><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></Svg>,
@@ -636,7 +664,7 @@ const I = {
   trendUp:     (p) => <Svg {...p}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></Svg>,
   percent:     (p) => <Svg {...p}><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></Svg>,
   scale:       (p) => <Svg {...p}><line x1="12" y1="3" x2="12" y2="21"/><path d="M3 8l9-5 9 5"/><polyline points="3 8 7 21"/><polyline points="21 8 17 21"/></Svg>,
-  tree:        (p) => <Svg {...p}><circle cx="12" cy="8" r="6"/><path d="M8 12 Q6 15 5 17"/><path d="M16 12 Q18 15 19 17"/><line x1="12" y1="14" x2="12" y2="22"/><line x1="9" y1="22" x2="15" y2="22"/></Svg>,
+  tree:        (p) => <Svg {...p}><path d="M6.5 13a4 4 0 0 1 .8-6.6 4.2 4.2 0 0 1 7.6-2.2 4 4 0 0 1 5.4 5.3A4 4 0 0 1 17.5 13z"/><line x1="12" y1="12.5" x2="12" y2="21.5"/><path d="M12 17l3-2.5"/><path d="M12 19l-2.6-2.2"/><line x1="8.5" y1="21.5" x2="15.5" y2="21.5"/></Svg>,
   ruler:       (p) => <Svg {...p}><path d="M21.3 8.7l-9-9a1 1 0 0 0-1.4 0l-9 9a1 1 0 0 0 0 1.4l9 9a1 1 0 0 0 1.4 0l9-9a1 1 0 0 0 0-1.4z"/><line x1="7.5" y1="10.5" x2="9" y2="12"/><line x1="10.5" y1="7.5" x2="12" y2="9"/><line x1="13.5" y1="13.5" x2="15" y2="15"/></Svg>,
   circle:      (p) => <Svg {...p}><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></Svg>,
   mountain:    (p) => <Svg {...p}><polygon points="3 20 21 20 12 4"/><polyline points="3 20 8 12 12 16 16 10 21 20"/></Svg>,
@@ -905,10 +933,14 @@ function FirstSeasonWizard({ onClose, onComplete }) {
   };
 
   const stepTitles = ['Your Trees', 'Your System', 'Your Evaporator', 'Costs & Goals', 'Your Season Plan'];
-  const stepIcons  = ['🌳', '🔧', '🔥', '💰', '📋'];
+  const stepIcons  = [I.tree, I.wrench, I.flame, I.dollar, I.clipboard];
   const canNext    = [trees > 0, true, hasEvap !== null, true, true][step];
 
-  const Opt = ({ val, cur, set, accent='#2dd4a7', icon, label, sub, wide }) => (
+  const Opt = ({ val, cur, set, accent='#2dd4a7', icon, Icon, label, sub, wide }) => {
+    const glyph = Icon
+      ? <Icon size={wide ? 21 : 23} color={cur===val ? accent : '#7d8ca3'} />
+      : icon;
+    return (
     <button onClick={()=>set(val)}
       style={{padding: wide ? '12px 14px' : '12px 8px', borderRadius:12,
         border:`2px solid ${cur===val ? accent : '#1e2d3d'}`,
@@ -917,17 +949,18 @@ function FirstSeasonWizard({ onClose, onComplete }) {
         display: wide ? 'flex' : 'block', alignItems: wide ? 'center' : undefined, gap: wide ? 10 : 0,
         width:'100%', minWidth:0, boxSizing:'border-box'}}>
       {wide
-        ? <><span style={{fontSize:20}}>{icon}</span>
+        ? <><span style={{display:'inline-flex',alignItems:'center',fontSize:20,flexShrink:0}}>{glyph}</span>
             <div>
               <div style={{fontSize:12,fontWeight:700,color:cur===val?accent:'#c9d1d9'}}>{label}</div>
-              <div style={{fontSize:10,color:'#5a6a7a'}}>{sub}</div>
+              <div style={{fontSize:12,color:'#5a6a7a'}}>{sub}</div>
             </div></>
-        : <><div style={{fontSize:20,marginBottom:4}}>{icon}</div>
-            <div style={{fontSize:11,fontWeight:700,color:cur===val?accent:'#c9d1d9'}}>{label}</div>
-            {sub && <div style={{fontSize:10,color:'#5a6a7a',marginTop:2,lineHeight:1.3}}>{sub}</div>}</>
+        : <><div style={{fontSize:20,marginBottom:5,display:'flex',justifyContent:'center'}}>{glyph}</div>
+            <div style={{fontSize:13,fontWeight:700,color:cur===val?accent:'#c9d1d9'}}>{label}</div>
+            {sub && <div style={{fontSize:12,color:'#5a6a7a',marginTop:2,lineHeight:1.3}}>{sub}</div>}</>
       }
     </button>
   );
+  };
 
   const steps = [
     // 0 — Trees
@@ -936,7 +969,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
         Let's start with your trees. This helps SweetRun calculate your real production potential.
       </p>
       <div style={{marginBottom:18}}>
-        <label style={{fontSize:11,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:8}}>
+        <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:8}}>
           How many maple trees do you tap?
         </label>
         <input type="number" value={treeCount} onChange={e=>setTreeCount(e.target.value)}
@@ -944,13 +977,13 @@ function FirstSeasonWizard({ onClose, onComplete }) {
           style={{width:'100%',background:'#0a1420',border:'1.5px solid #1e2d3d',borderRadius:10,
             padding:'11px 14px',color:'#e2eaf4',fontSize:16,boxSizing:'border-box',outline:'none'}}/>
       </div>
-      <label style={{fontSize:11,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>
+      <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>
         Average trunk diameter at chest height
       </label>
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,minWidth:0}}>
-        <Opt val="small"  cur={trunkSize} set={setTrunkSize} accent="#2dd4a7" icon="🌱" label='Under 10"' sub="1 tap/tree"/>
-        <Opt val="medium" cur={trunkSize} set={setTrunkSize} accent="#2dd4a7" icon="🌳" label='10–18"'    sub="1–2 taps"/>
-        <Opt val="large"  cur={trunkSize} set={setTrunkSize} accent="#2dd4a7" icon="🌲" label='Over 18"'  sub="2–3 taps"/>
+        <Opt val="small"  cur={trunkSize} set={setTrunkSize} accent="#2dd4a7" Icon={I.leaf} label='Under 10"' sub="1 tap/tree"/>
+        <Opt val="medium" cur={trunkSize} set={setTrunkSize} accent="#2dd4a7" Icon={I.tree} label='10–18"'    sub="1–2 taps"/>
+        <Opt val="large"  cur={trunkSize} set={setTrunkSize} accent="#2dd4a7" Icon={I.mapleLeaf} label='Over 18"'  sub="2–3 taps"/>
       </div>
     </div>,
 
@@ -959,15 +992,15 @@ function FirstSeasonWizard({ onClose, onComplete }) {
       <p style={{fontSize:13,color:'#8a9ab5',marginBottom:18,lineHeight:1.6}}>
         Your system type is the biggest lever on how much sap you collect per tap.
       </p>
-      <label style={{fontSize:11,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Tap system</label>
+      <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Tap system</label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:18}}>
-        <Opt val="gravity" cur={systemType} set={setSystemType} accent="#58a6ff" icon="🌊" label="Gravity" sub={`Natural flow\n${YIELD_MODELS.gravity.low}–${YIELD_MODELS.gravity.high} gal/tap`}/>
-        <Opt val="vacuum"  cur={systemType} set={setSystemType} accent="#58a6ff" icon="💨" label="Vacuum"  sub={`Pump-assisted\n${YIELD_MODELS.vacuum.low}–${YIELD_MODELS.vacuum.high} gal/tap`}/>
+        <Opt val="gravity" cur={systemType} set={setSystemType} accent="#58a6ff" Icon={I.droplet} label="Gravity" sub={`Natural flow\n${YIELD_MODELS.gravity.low}–${YIELD_MODELS.gravity.high} gal/tap`}/>
+        <Opt val="vacuum"  cur={systemType} set={setSystemType} accent="#58a6ff" Icon={I.wind} label="Vacuum"  sub={`Pump-assisted\n${YIELD_MODELS.vacuum.low}–${YIELD_MODELS.vacuum.high} gal/tap`}/>
       </div>
-      <label style={{fontSize:11,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Collection method</label>
+      <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Collection method</label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-        <Opt val="buckets"  cur={collectionType} set={setCollectionType} accent="#a78bfa" icon="🪣" label="Buckets"  sub="Classic, manual"/>
-        <Opt val="mainline" cur={collectionType} set={setCollectionType} accent="#a78bfa" icon="🔗" label="Mainline" sub="Flows to tank"/>
+        <Opt val="buckets"  cur={collectionType} set={setCollectionType} accent="#a78bfa" Icon={I.bucket} label="Buckets"  sub="Classic, manual"/>
+        <Opt val="mainline" cur={collectionType} set={setCollectionType} accent="#a78bfa" Icon={I.link} label="Mainline" sub="Flows to tank"/>
       </div>
     </div>,
 
@@ -976,29 +1009,29 @@ function FirstSeasonWizard({ onClose, onComplete }) {
       <p style={{fontSize:13,color:'#8a9ab5',marginBottom:18,lineHeight:1.6}}>
         Your evaporator size determines how many sessions your season will take.
       </p>
-      <label style={{fontSize:11,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Do you have an evaporator?</label>
+      <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Do you have an evaporator?</label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:18}}>
-        <Opt val={true}  cur={hasEvap} set={setHasEvap} accent="#3fb950" icon="✅" label="Yes, I do"  sub="Ready to boil"/>
-        <Opt val={false} cur={hasEvap} set={setHasEvap} accent="#3fb950" icon="📋" label="Not yet"    sub="Planning ahead"/>
+        <Opt val={true}  cur={hasEvap} set={setHasEvap} accent="#3fb950" Icon={I.check} label="Yes, I do"  sub="Ready to boil"/>
+        <Opt val={false} cur={hasEvap} set={setHasEvap} accent="#3fb950" Icon={I.clipboard} label="Not yet"    sub="Planning ahead"/>
       </div>
       {hasEvap && <>
-        <label style={{fontSize:11,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Pan size</label>
+        <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Pan size</label>
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(56px,1fr))',gap:6,marginBottom:18}}>
           {['2x3','2x4','2x6','2x8','3x8','3x10','4x12','4x14','5x16'].map(sz=>(
             <button key={sz} onClick={()=>setPanSize(sz)}
               style={{padding:'9px 4px',borderRadius:10,border:`2px solid ${panSize===sz?'#f59e0b':'#1e2d3d'}`,
                 background:panSize===sz?'rgba(245,158,11,0.08)':'#0a1420',cursor:'pointer',transition:'all 0.15s',textAlign:'center'}}>
-              <div style={{fontSize:11,fontWeight:700,color:panSize===sz?'#f59e0b':'#c9d1d9'}}>{sz}</div>
-              <div style={{fontSize:9,color:'#5a6a7a',marginTop:2}}>{evapRates[sz]}gph</div>
+              <div style={{fontSize:13,fontWeight:700,color:panSize===sz?'#f59e0b':'#c9d1d9'}}>{sz}</div>
+              <div style={{fontSize:12,color:'#5a6a7a',marginTop:2}}>{evapRates[sz]}gph</div>
             </button>
           ))}
         </div>
       </>}
-      <label style={{fontSize:11,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Fuel type</label>
+      <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Fuel type</label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-        {[['Firewood (cord)','🪵','Wood-fired'],['Oil (gallon)','🛢️','Oil burner'],
-          ['Propane (gallon)','🔥','Propane'],['Natural Gas (ccf)','⛽','Gas line']].map(([v,icon,desc])=>(
-          <Opt key={v} val={v} cur={wizFuelType} set={setWizFuelType} accent="#f59e0b" icon={icon} label={v.split(' ')[0]} sub={desc} wide/>
+        {[['Firewood (cord)',I.firewood,'Wood-fired'],['Oil (gallon)',I.fuel,'Oil burner'],
+          ['Propane (gallon)',I.flame,'Propane'],['Natural Gas (ccf)',I.zap,'Gas line']].map(([v,Ico,desc])=>(
+          <Opt key={v} val={v} cur={wizFuelType} set={setWizFuelType} accent="#f59e0b" Icon={Ico} label={v.split(' ')[0]} sub={desc} wide/>
         ))}
       </div>
     </div>,
@@ -1009,7 +1042,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
         Two numbers that unlock the full financial picture of your operation.
       </p>
       <div style={{marginBottom:18}}>
-        <label style={{fontSize:11,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:8}}>
+        <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:8}}>
           Fuel cost this season ({wizFuelType})
         </label>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
@@ -1019,10 +1052,10 @@ function FirstSeasonWizard({ onClose, onComplete }) {
             style={{flex:1,background:'#0a1420',border:'1.5px solid #1e2d3d',borderRadius:10,
               padding:'11px 14px',color:'#e2eaf4',fontSize:15,outline:'none'}}/>
         </div>
-        <div style={{fontSize:11,color:'#3d5068',marginTop:4}}>Whole-season total, for break-even. Your price per cord or gallon is set on the Evap tab.</div>
+        <div style={{fontSize:13,color:'#3d5068',marginTop:4}}>Whole-season total, for break-even. Your price per cord or gallon is set on the Evap tab.</div>
       </div>
       <div style={{marginBottom:18}}>
-        <label style={{fontSize:11,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:8}}>
+        <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:8}}>
           Syrup selling price (per gallon)
         </label>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
@@ -1032,11 +1065,11 @@ function FirstSeasonWizard({ onClose, onComplete }) {
             style={{flex:1,background:'#0a1420',border:'1.5px solid #1e2d3d',borderRadius:10,
               padding:'11px 14px',color:'#e2eaf4',fontSize:15,outline:'none'}}/>
         </div>
-        <div style={{fontSize:11,color:'#3d5068',marginTop:4}}>Retail bulk maple typically sells $35–$70/gal.</div>
+        <div style={{fontSize:13,color:'#3d5068',marginTop:4}}>Retail bulk maple typically sells $35–$70/gal.</div>
       </div>
       {trees > 0 && (
         <div style={{background:'rgba(63,185,80,0.06)',border:'1px solid rgba(63,185,80,0.2)',borderRadius:12,padding:'14px 16px'}}>
-          <div style={{fontSize:10,fontWeight:700,color:'#3fb950',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:10}}>Revenue Snapshot</div>
+          <div style={{fontSize:12,fontWeight:700,color:'#3fb950',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:10}}>Revenue Snapshot</div>
           <div style={{fontSize:13,color:'#c9d1d9',lineHeight:1.9}}>
             <div>Bad year: <span style={{color:'#f59e0b',fontWeight:700}}>{syrupLow.toFixed(1)} gal → ${(syrupLow * price).toFixed(0)}</span></div>
             <div>Average: <span style={{color:'#2dd4a7',fontWeight:700}}>{syrupMid.toFixed(1)} gal → ${(syrupMid * price).toFixed(0)}</span></div>
@@ -1050,8 +1083,8 @@ function FirstSeasonWizard({ onClose, onComplete }) {
     <div key="s4">
       {trees > 0 ? <>
         <div style={{background:'linear-gradient(135deg,#071a0e,#0a2010)',border:'1px solid #1a4a25',borderRadius:14,padding:'16px 18px',marginBottom:14}}>
-          <div style={{fontSize:10,fontWeight:700,color:'#3fb950',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:12}}>
-            🍁 Your {new Date().getFullYear()} Season Plan
+          <div style={{fontSize:12,fontWeight:700,color:'#3fb950',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:12}}>
+            <I.mapleLeaf size={19} color="#2dd4a7" /> Your {new Date().getFullYear()} Season Plan
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:12}}>
             {[
@@ -1062,7 +1095,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
             ].map(([val,lbl,clr],i)=>(
               <div key={i} style={{textAlign:'center',background:'rgba(0,0,0,0.25)',borderRadius:10,padding:'12px 8px'}}>
                 <div style={{fontSize:24,fontWeight:800,color:clr,lineHeight:1}}>{val}</div>
-                <div style={{fontSize:10,color:'#5a6a7a',marginTop:4}}>{lbl}</div>
+                <div style={{fontSize:12,color:'#5a6a7a',marginTop:4}}>{lbl}</div>
               </div>
             ))}
           </div>
@@ -1070,19 +1103,19 @@ function FirstSeasonWizard({ onClose, onComplete }) {
             <div style={{paddingTop:12,borderTop:'1px solid #1a4a25',display:'flex',gap:20,justifyContent:'center'}}>
               <div style={{textAlign:'center'}}>
                 <span style={{fontSize:18,fontWeight:700,color:'#f59e0b'}}>{sessions}</span>
-                <span style={{fontSize:11,color:'#5a6a7a',display:'block'}}>evap sessions</span>
+                <span style={{fontSize:13,color:'#5a6a7a',display:'block'}}>evap sessions</span>
               </div>
               {firewood && (
                 <div style={{textAlign:'center'}}>
                   <span style={{fontSize:18,fontWeight:700,color:'#e8865a'}}>{firewood}</span>
-                  <span style={{fontSize:11,color:'#5a6a7a',display:'block'}}>cords wood</span>
+                  <span style={{fontSize:13,color:'#5a6a7a',display:'block'}}>cords wood</span>
                 </div>
               )}
             </div>
           )}
         </div>
         <div style={{background:'#0a1420',border:'1px solid #1e2d3d',borderRadius:12,padding:'14px 16px'}}>
-          <div style={{fontSize:10,fontWeight:700,color:'#58a6ff',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:10}}>📅 Season Checklist</div>
+          <div style={{fontSize:12,fontWeight:700,color:'#58a6ff',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:10}}><I.calendar size={13} color="#58a6ff" /> Season Checklist</div>
           {[
             ['Feb · Prep',       'Inspect all equipment, drill bits, spouts, lines. Order supplies now — stock runs out.',  '#2dd4a7'],
             ['Late Feb · Watch', 'Monitor 10-day forecast. Look for 40°F+ days with sub-freezing nights.',                  '#58a6ff'],
@@ -1094,15 +1127,15 @@ function FirstSeasonWizard({ onClose, onComplete }) {
             <div key={i} style={{display:'flex',gap:10,marginBottom:i<arr.length-1?10:0,paddingBottom:i<arr.length-1?10:0,borderBottom:i<arr.length-1?'1px solid #131e2c':'none'}}>
               <div style={{width:7,height:7,borderRadius:'50%',background:clr,marginTop:5,flexShrink:0}}/>
               <div>
-                <div style={{fontSize:11,fontWeight:700,color:'#c9d1d9',marginBottom:2}}>{title}</div>
-                <div style={{fontSize:11,color:'#5a6a7a',lineHeight:1.5}}>{desc}</div>
+                <div style={{fontSize:13,fontWeight:700,color:'#c9d1d9',marginBottom:2}}>{title}</div>
+                <div style={{fontSize:13,color:'#5a6a7a',lineHeight:1.5}}>{desc}</div>
               </div>
             </div>
           ))}
         </div>
       </> : (
         <div style={{textAlign:'center',padding:'40px 20px',color:'#5a6a7a'}}>
-          <div style={{fontSize:48,marginBottom:12}}>🌳</div>
+          <div style={{marginBottom:12,display:'flex',justifyContent:'center'}}><I.tree size={46} color="#2dd4a7" /></div>
           <div style={{fontSize:14,color:'#c9d1d9',marginBottom:6}}>Go back and enter your tree count</div>
           <div style={{fontSize:12}}>to generate your personalized season plan.</div>
         </div>
@@ -1119,8 +1152,11 @@ function FirstSeasonWizard({ onClose, onComplete }) {
         {/* Header */}
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:18}}>
           <div>
-            <div style={{fontSize:10,fontWeight:700,color:'#2dd4a7',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:4}}>
-              {stepIcons[step]} Step {step+1} of {STEPS}
+            <div style={{fontSize:12,fontWeight:700,color:'#2dd4a7',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:4}}>
+              <span style={{display:'inline-flex',alignItems:'center',gap:6}}>
+                {React.createElement(stepIcons[step], { size:14, color:'#2dd4a7' })}
+                Step {step+1} of {STEPS}
+              </span>
             </div>
             <div style={{fontSize:20,fontWeight:800,color:'#e2eaf4'}}>{stepTitles[step]}</div>
           </div>
@@ -1158,7 +1194,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
               style={{flex:2,padding:'13px',borderRadius:12,border:'none',
                 background:'linear-gradient(135deg,#3fb950,#2ea043)',color:'#fff',
                 fontSize:14,fontWeight:700,cursor:'pointer'}}>
-              🍁 Start My Season
+              <I.mapleLeaf size={17} color="#07090f" /> Start My Season
             </button>
           )}
         </div>
@@ -1262,15 +1298,18 @@ function FreezeThawWidget({ lang='en' }) {
                       {tooWarmCount >= 4 ? t(lang,'ftWarmStretch') : 'hi \u2265 40\u00b0F \u00b7 lo \u2264 28\u00b0F'}
                     </div>
                   </div>
-                  <div style={{ fontSize:24 }}>{idealCount>0 ? '🍁' : tooWarmCount>=4?'⚠️':'❄️'}</div>
+                  <div style={{ display:'flex' }}>{idealCount>0
+              ? <I.mapleLeaf size={22} color="#2dd4a7" />
+              : tooWarmCount>=4 ? <I.alert size={22} color="#f0883e" />
+              : <I.snowflake size={22} color="#58a6ff" />}</div>
                 </div>
                 {days.map(({ date, hi, lo, ideal, freezeThaw, tooWarm, allFreeze }) => {
                   const d = new Date(date + 'T12:00:00');
                   const i = days.findIndex(x=>x.date===date);
                   let badge = null;
-                  if (ideal)      badge = <span style={{ background:'rgba(63,185,80,0.15)', color:'#3fb950', fontSize:11, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(63,185,80,0.25)' }}>\u2713 {t(lang,'badgeIdeal')}</span>;
+                  if (ideal)      badge = <span style={{ background:'rgba(63,185,80,0.15)', color:'#3fb950', fontSize:13, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(63,185,80,0.25)' }}>\u2713 {t(lang,'badgeIdeal')}</span>;
                   else if (freezeThaw) badge = <span className="good-badge">{t(lang,'badgeFreezeThaw')}</span>;
-                  else if (tooWarm)    badge = <span style={{ background:'rgba(240,136,62,0.13)', color:'#f0883e', fontSize:11, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(240,136,62,0.22)' }}>{t(lang,'badgeTooWarm')}</span>;
+                  else if (tooWarm)    badge = <span style={{ background:'rgba(240,136,62,0.13)', color:'#f0883e', fontSize:13, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(240,136,62,0.22)' }}>{t(lang,'badgeTooWarm')}</span>;
                   else if (allFreeze)  badge = <span className="freeze-badge">{t(lang,'badgeAllFreeze')}</span>;
                   return (
                     <div key={date} className="weather-day" style={{ borderLeft: ideal?'3px solid #3fb950':tooWarm?'3px solid #f0883e':'3px solid transparent' }}>
@@ -1419,7 +1458,7 @@ async function _downloadBatchLabel(b, batchNum, season, trees, units) {
   hg.addColorStop(0, '#1a3d2b'); hg.addColorStop(1, '#0f2318');
   c.fillStyle = hg; c.fillRect(0, 0, W, 72);
   c.fillStyle = '#fff';
-  c.font = 'bold 22px Arial, sans-serif'; c.fillText('🍁 SweetRun', 20, 42);
+  c.font = 'bold 22px Arial, sans-serif'; c.fillText('SweetRun', 20, 42);
   c.fillStyle = 'rgba(255,255,255,0.45)';
   c.font = '700 9px Arial, sans-serif'; c.fillText('MAPLE PROVENANCE', 20, 58);
   c.fillStyle = '#2dd4a7'; c.font = 'bold 12px Arial, sans-serif';
@@ -1455,9 +1494,9 @@ async function _downloadBatchLabel(b, batchNum, season, trees, units) {
   // Details
   let dy = 202;
   const details = [
-    b.date ? `📅 ${new Date(b.date+'T12:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}` : null,
-    b.loc  ? `📍 ${b.loc}` : null,
-    b.notes ? `📝 ${b.notes}` : null,
+    b.date ? new Date(b.date+'T12:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) : null,
+    b.loc  ? b.loc : null,
+    b.notes ? b.notes : null,
   ].filter(Boolean);
   c.fillStyle = '#8a9ab5'; c.font = '13px Arial, sans-serif';
   details.forEach(d => { c.fillText(d, 20, dy); dy += 24; });
@@ -1682,13 +1721,13 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
                   { l:t(lang,'total'),    v:`$${fmt(totalCost,0)}` },
                 ].map(r=>(
                   <div key={r.l} style={{ textAlign:'center', background:'#081e0e', borderRadius:8, padding:'8px 4px' }}>
-                    <div style={{ fontSize:10, color:'#5a6a7a', fontWeight:600 }}>{r.l}</div>
+                    <div style={{ fontSize:12, color:'#5a6a7a', fontWeight:600 }}>{r.l}</div>
                     <div style={{ fontWeight:700, color:'#3fb950', fontSize:16 }}>{r.v}</div>
                   </div>
                 ))}
               </div>
               <div style={{ textAlign:'center', borderTop:'1px solid #1a4a25', paddingTop:10 }}>
-                <div style={{ fontSize:11, color:'#3fb950', fontWeight:600, letterSpacing:'0.08em', marginBottom:3 }}>{t(lang,'costPerGal').replace('GAL',u2.toUpperCase())}</div>
+                <div style={{ fontSize:13, color:'#3fb950', fontWeight:600, letterSpacing:'0.08em', marginBottom:3 }}>{t(lang,'costPerGal').replace('GAL',u2.toUpperCase())}</div>
                 <div style={{ fontSize:34, fontWeight:800, color:'#3fb950' }}>${fmt(cpg,2)}</div>
                 <div style={{ color:'#5a6a7a', fontSize:12, marginTop:2 }}>{t(lang,'forSap')} {fmt(syrupYield,1)} {u2} {t(lang,'sapSyrup')} — {fmt(sapGal,0)} {u2} {t(lang,'sapSap')}</div>
               </div>
@@ -1709,7 +1748,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
             <NumInput value={retailMargin} onChange={setRetailMargin} min={0} max={95} step={1} />
           </div>
           <div>
-            <div className="field-label">{t(lang,'yourCostPerGal')} <span style={{ color:'#3d5068', fontSize:11 }}>({t(lang,'orEnterManual')})</span></div>
+            <div className="field-label">{t(lang,'yourCostPerGal')} <span style={{ color:'#3d5068', fontSize:13 }}>({t(lang,'orEnterManual')})</span></div>
             <NumInput value={retailCostOverride} onChange={setRetailCostOverride} min={0} step={0.5} placeholder="auto" />
           </div>
         </div>
@@ -1740,10 +1779,10 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
             <>
               <div className="result-box blue" style={{ padding:'10px 14px', marginBottom:14 }}>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:4, marginBottom:6 }}>
-                  <div style={{ color:'#5a6a7a', fontSize:11, fontWeight:600 }}>{t(lang,'bottleSize')}</div>
-                  <div style={{ color:'#5a6a7a', fontSize:11, fontWeight:600, textAlign:'center' }}>{t(lang,'costPerBottle')}</div>
-                  <div style={{ color:'#5a6a7a', fontSize:11, fontWeight:600, textAlign:'center' }}>{t(lang,'retail')}</div>
-                  <div style={{ color:'#5a6a7a', fontSize:11, fontWeight:600, textAlign:'center' }}>{t(lang,'profit')}</div>
+                  <div style={{ color:'#5a6a7a', fontSize:13, fontWeight:600 }}>{t(lang,'bottleSize')}</div>
+                  <div style={{ color:'#5a6a7a', fontSize:13, fontWeight:600, textAlign:'center' }}>{t(lang,'costPerBottle')}</div>
+                  <div style={{ color:'#5a6a7a', fontSize:13, fontWeight:600, textAlign:'center' }}>{t(lang,'retail')}</div>
+                  <div style={{ color:'#5a6a7a', fontSize:13, fontWeight:600, textAlign:'center' }}>{t(lang,'profit')}</div>
                 </div>
                 {BOTTLE_SIZES.map(bs=>{
                   const bottleCpg  = cpg * bs.gal;
@@ -1760,7 +1799,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
                 })}
               </div>
               <div style={{ background:'#0f1720', borderRadius:10, padding:'10px 14px' }}>
-                <div style={{ fontSize:11, color:'#5a6a7a', fontWeight:600, letterSpacing:'0.08em', marginBottom:8 }}>{t(lang,'usdaBenchmark')}</div>
+                <div style={{ fontSize:13, color:'#5a6a7a', fontWeight:600, letterSpacing:'0.08em', marginBottom:8 }}>{t(lang,'usdaBenchmark')}</div>
                 {USDA_GRADES.map(g=>(
                   <div key={g.grade} style={{ display:'flex', justifyContent:'space-between', borderTop:'1px solid #1e2d3d', padding:'6px 0', fontSize:13 }}>
                     <span style={{ color:'#8b949e' }}>{g.grade}</span>
@@ -1798,7 +1837,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
                 <div style={{ display:'flex', gap:6 }}>
                   <input type="text" value={bf.loc} onChange={e=>setBf(p=>({...p,loc:e.target.value}))} placeholder="e.g. Craftsbury, VT" style={{ flex:1 }} />
                   <button onClick={gpsLoc} disabled={locLoading} title="Use my location" style={{ background:'rgba(45,212,167,0.1)', border:'1px solid rgba(45,212,167,0.25)', borderRadius:8, padding:'0 10px', fontSize:16, cursor:'pointer', color: locLoading ? '#3d5068' : '#2dd4a7', flexShrink:0 }}>
-                    {locLoading ? '⏳' : '📍'}
+                    {locLoading ? <I.clock size={15} color="#8a9ab5" /> : <I.mapPin size={15} color="#8a9ab5" />}
                   </button>
                 </div>
               </div>
@@ -1814,8 +1853,8 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
           <div style={{ textAlign:'center', color:'#3d5068', padding:'16px 0', fontSize:14 }}>{t(lang,'noBatchesLong')}</div>
         )}
         {batches.length>0 && (
-          <div style={{ fontSize:11, color:'#3d5068', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
-            <span>🏷️</span>
+          <div style={{ fontSize:13, color:'#3d5068', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
+            <I.tag size={15} color="#8a9ab5" />
             <span>Tap <strong style={{color:'#2dd4a7'}}>Label</strong> on any batch to download a printable provenance label with a QR code.</span>
           </div>
         )}
@@ -1831,8 +1870,8 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
               <button
                 onClick={()=>_downloadBatchLabel(b, i+1, season, trees, units)}
                 title="Download provenance label PNG"
-                style={{ background:'rgba(45,212,167,0.1)', border:'1px solid rgba(45,212,167,0.25)', borderRadius:7, padding:'5px 10px', fontSize:11, fontWeight:700, color:'#2dd4a7', cursor:'pointer', flexShrink:0, letterSpacing:'0.03em', lineHeight:1.3, textAlign:'center' }}>
-                🏷️<br/>Label
+                style={{ background:'rgba(45,212,167,0.1)', border:'1px solid rgba(45,212,167,0.25)', borderRadius:7, padding:'5px 10px', fontSize:13, fontWeight:700, color:'#2dd4a7', cursor:'pointer', flexShrink:0, letterSpacing:'0.03em', lineHeight:1.3, textAlign:'center' }}>
+                <I.tag size={15} color="#8a9ab5" /><br/>Label
               </button>
               <button className="delete-btn" onClick={()=>setBatches(p=>p.filter((_,j)=>j!==i))}><I.trash size={15} /></button>
             </div>
@@ -2001,15 +2040,15 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
         </div>
         <div className="two-col">
           <div style={{ background:'#0d1a2b', borderRadius:10, padding:14, border:'1px solid #1a304a' }}>
-            <div style={{ fontSize:11, fontWeight:600, color:'#58a6ff', letterSpacing:'0.08em', marginBottom:6 }}>FROM BRIX</div>
+            <div style={{ fontSize:13, fontWeight:600, color:'#58a6ff', letterSpacing:'0.08em', marginBottom:6 }}>FROM BRIX</div>
             <div style={{ fontSize:26, fontWeight:700 }}>{fmt(syBrix,1)}°</div>
             <div style={{ color:'#58a6ff', fontWeight:600, marginTop:4 }}>= {fmt(brixToBe(syBrix),1)}° Bé</div>
           </div>
           <div style={{ background:'#1a0d2b', borderRadius:10, padding:14, border:'1px solid #2f1a4a' }}>
-            <div style={{ fontSize:11, fontWeight:600, color:'#c990ff', letterSpacing:'0.08em', marginBottom:6 }}>ENTER BAUMÉ</div>
+            <div style={{ fontSize:13, fontWeight:600, color:'#c990ff', letterSpacing:'0.08em', marginBottom:6 }}>ENTER BAUMÉ</div>
             <NumInput value={baumeIn} onChange={setBaumeIn} min={28} max={40} step={0.1} />
             <div style={{ color:'#c990ff', fontSize:13, marginTop:6 }}>= {fmt(beToBrix(baumeIn),1)}° Brix</div>
-            <div style={{ color:'#748699', fontSize:11, marginTop:6, lineHeight:1.45 }}>{BE_HOT_NOTE}</div>
+            <div style={{ color:'#748699', fontSize:13, marginTop:6, lineHeight:1.45 }}>{BE_HOT_NOTE}</div>
           </div>
         </div>
       </div>
@@ -2025,7 +2064,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
 
         {/* ── STEP 1: Gallons ── */}
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
-          <div style={{ width:22, height:22, borderRadius:'50%', background:'#2dd4a7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, color:'#061a14', flexShrink:0 }}>1</div>
+          <div style={{ width:22, height:22, borderRadius:'50%', background:'#2dd4a7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#061a14', flexShrink:0 }}>1</div>
           <div style={{ fontSize:13, fontWeight:700, color:'#e6edf3' }}>How many gallons are you filtering right now?</div>
         </div>
         <NumInput value={gal2f} onChange={setGal2f} min={0} max={1000} step={1} />
@@ -2039,7 +2078,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           const rColor  = isLarge ? '#58a6ff' : '#2dd4a7';
           const rBg     = isLarge ? 'rgba(88,166,255,0.08)' : 'rgba(45,212,167,0.08)';
           const rBorder = isLarge ? 'rgba(88,166,255,0.22)' : 'rgba(45,212,167,0.22)';
-          const rIcon   = isLarge ? '🔵' : '🟢';
+          const rDot    = isLarge ? '#58a6ff' : '#3fb950';
           const rTitle  = isSmall ? 'Small batch — use Straight Mix (no precharge needed)'
                         : isMed   ? 'Medium batch — Straight Mix works great; Precharge optional'
                         :           'Large batch — Precharge recommended for best results';
@@ -2048,7 +2087,8 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
                         :           'Over 25 gallons: precharging the plates first pays off. You\'ll get better efficiency, consistent flow, and cleaner syrup from the very first drop.';
           return (
             <div style={{ background:rBg, border:`1px solid ${rBorder}`, borderRadius:12, padding:'12px 14px', marginBottom:16 }}>
-              <div style={{ fontWeight:700, color:rColor, fontSize:13, marginBottom:4 }}>{rIcon} {rTitle}</div>
+              <div style={{ fontWeight:700, color:rColor, fontSize:13, marginBottom:4, display:'flex', alignItems:'center', gap:6 }}>
+                <span style={{ width:8, height:8, borderRadius:'50%', background:rDot, flexShrink:0 }} />{rTitle}</div>
               <div style={{ fontSize:12, color:'#8b949e', lineHeight:1.5 }}>{rDesc}</div>
             </div>
           );
@@ -2056,7 +2096,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
 
         {/* ── STEP 2: Method ── */}
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-          <div style={{ width:22, height:22, borderRadius:'50%', background:'#2dd4a7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, color:'#061a14', flexShrink:0 }}>2</div>
+          <div style={{ width:22, height:22, borderRadius:'50%', background:'#2dd4a7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#061a14', flexShrink:0 }}>2</div>
           <div style={{ fontSize:13, fontWeight:700, color:'#e6edf3' }}>Choose your method</div>
         </div>
         <div style={{ display:'flex', gap:8, marginBottom:16 }}>
@@ -2073,9 +2113,9 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
                 background: isSel ? m.bg : 'transparent',
                 cursor:'pointer', textAlign:'left', transition:'all 0.15s', position:'relative'
               }}>
-                {isRec && <div style={{ position:'absolute', top:6, right:8, fontSize:9, fontWeight:800, color:m.color, letterSpacing:'0.06em', opacity:0.8 }}>★ RECOMMENDED</div>}
+                {isRec && <div style={{ position:'absolute', top:6, right:8, fontSize:12, fontWeight:800, color:m.color, letterSpacing:'0.06em', opacity:0.8, display:'flex', alignItems:'center', gap:4 }}><I.star size={10} color={m.color} />RECOMMENDED</div>}
                 <div style={{ fontSize:13, fontWeight:700, color: isSel ? m.color : '#8b949e', marginBottom:3, paddingRight:isRec?52:0 }}>{m.label}</div>
-                <div style={{ fontSize:11, color:'#3d5068', lineHeight:1.4 }}>{m.sub}</div>
+                <div style={{ fontSize:13, color:'#3d5068', lineHeight:1.4 }}>{m.sub}</div>
               </button>
             );
           })}
@@ -2083,7 +2123,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
 
         {/* ── STEP 3: Syrup color ── */}
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-          <div style={{ width:22, height:22, borderRadius:'50%', background:'#2dd4a7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, color:'#061a14', flexShrink:0 }}>3</div>
+          <div style={{ width:22, height:22, borderRadius:'50%', background:'#2dd4a7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#061a14', flexShrink:0 }}>3</div>
           <div style={{ fontSize:13, fontWeight:700, color:'#e6edf3' }}>What does your syrup look like?</div>
         </div>
         <div style={{ display:'flex', gap:8, marginBottom:16 }}>
@@ -2098,7 +2138,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
               cursor:'pointer', textAlign:'left', transition:'all 0.15s'
             }}>
               <div style={{ fontSize:13, fontWeight:700, color: szn===s.id ? s.color : '#8b949e', marginBottom:3 }}>{s.label}</div>
-              <div style={{ fontSize:11, color:'#3d5068', lineHeight:1.4 }}>{s.sub}</div>
+              <div style={{ fontSize:13, color:'#3d5068', lineHeight:1.4 }}>{s.sub}</div>
             </button>
           ))}
         </div>
@@ -2106,7 +2146,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
         {/* ── STEP 4: Press setup (precharge only) ── */}
         {deMode === 'precoat' && (<>
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-            <div style={{ width:22, height:22, borderRadius:'50%', background:'#2dd4a7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, color:'#061a14', flexShrink:0 }}>4</div>
+            <div style={{ width:22, height:22, borderRadius:'50%', background:'#2dd4a7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#061a14', flexShrink:0 }}>4</div>
             <div style={{ fontSize:13, fontWeight:700, color:'#e6edf3' }}>Your press setup</div>
           </div>
           <div className="two-col" style={{ marginBottom:16 }}>
@@ -2118,26 +2158,26 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
         {/* ── BIG RESULT ── */}
         {gal2f > 0 ? (
           <div style={{ background:'linear-gradient(135deg,#081f17 0%,#061512 100%)', border:'1px solid rgba(45,212,167,0.3)', borderRadius:16, padding:'20px 16px', textAlign:'center', marginBottom:16 }}>
-            <div style={{ fontSize:11, letterSpacing:'0.12em', color:'#2dd4a7', fontWeight:700, marginBottom:6 }}>YOU NEED</div>
+            <div style={{ fontSize:13, letterSpacing:'0.12em', color:'#2dd4a7', fontWeight:700, marginBottom:6 }}>YOU NEED</div>
             <div style={{ fontSize:52, fontWeight:800, color:'#2dd4a7', lineHeight:1, marginBottom:4 }}>{fmt(cups,1)}</div>
             <div style={{ fontSize:16, color:'#2dd4a7', opacity:0.7, marginBottom:12 }}>cups of DE</div>
             <div style={{ display:'flex', gap:0, justifyContent:'center' }}>
               <div style={{ padding:'8px 20px', borderRight:'1px solid #131e2c' }}>
-                <div style={{ fontSize:10, color:'#3d5068', letterSpacing:'0.08em', marginBottom:2 }}>TABLESPOONS</div>
+                <div style={{ fontSize:12, color:'#3d5068', letterSpacing:'0.08em', marginBottom:2 }}>TABLESPOONS</div>
                 <div style={{ fontWeight:700, color:'#8b949e', fontSize:16 }}>{Math.round(cups*16)}</div>
               </div>
               <div style={{ padding:'8px 20px', borderRight:'1px solid #131e2c' }}>
-                <div style={{ fontSize:10, color:'#3d5068', letterSpacing:'0.08em', marginBottom:2 }}>OUNCES</div>
+                <div style={{ fontSize:12, color:'#3d5068', letterSpacing:'0.08em', marginBottom:2 }}>OUNCES</div>
                 <div style={{ fontWeight:700, color:'#8b949e', fontSize:16 }}>{fmt(oz,1)}</div>
               </div>
               <div style={{ padding:'8px 20px' }}>
-                <div style={{ fontSize:10, color:'#3d5068', letterSpacing:'0.08em', marginBottom:2 }}>POUNDS</div>
+                <div style={{ fontSize:12, color:'#3d5068', letterSpacing:'0.08em', marginBottom:2 }}>POUNDS</div>
                 <div style={{ fontWeight:700, color:'#8b949e', fontSize:16 }}>{fmt(lbs,2)}</div>
               </div>
             </div>
             {szn === 'late' && (
               <div style={{ marginTop:10, fontSize:12, color:'#e0a44a', background:'rgba(224,164,74,0.1)', borderRadius:8, padding:'5px 12px', display:'inline-block' }}>
-                ⚠ Late-season rate applied — dark syrup needs more DE
+                <I.alert size={13} color="currentColor" /> Late-season rate applied — dark syrup needs more DE
               </div>
             )}
           </div>
@@ -2153,7 +2193,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
         </div>
         {deMode === 'straight' && (
           <div style={{ background:'rgba(88,166,255,0.08)', border:'1px solid rgba(88,166,255,0.22)', borderRadius:12, padding:'12px 14px', marginBottom:14 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:'#58a6ff', marginBottom:4 }}>👀 Heads up before you start</div>
+            <div style={{ fontSize:12, fontWeight:700, color:'#58a6ff', marginBottom:4 }}><I.eye size={13} color="#58a6ff" /> Heads up before you start</div>
             <div style={{ fontSize:12, color:'#8b949e', lineHeight:1.6 }}>
               The first syrup out of the press <strong style={{ color:'#e6edf3' }}>will be cloudy</strong> — this is completely normal. The DE is still building up a cake on the plates. Have a small pot or cup ready at the spout and keep running it back into your pot until the syrup comes out clear. On a small batch like yours this might take {gal2f <= 5 ? 'just a cup or two' : 'a quart or so'} — don't collect anything until it's running clear.
             </div>
@@ -2175,7 +2215,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           { step:'Watch your pressure gauge', detail:'Stop at 40 PSI — plates are full. Rinse the press and repeat the precharge if you have more syrup to run.' },
         ]).map((item,i) => (
           <div key={i} style={{ display:'flex', gap:12, marginBottom:12, alignItems:'flex-start' }}>
-            <div style={{ width:24, height:24, borderRadius:'50%', background:'#131e2c', border:'1px solid #1e2d3d', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'#5a6a7a', flexShrink:0, marginTop:1 }}>{i+1}</div>
+            <div style={{ width:24, height:24, borderRadius:'50%', background:'#131e2c', border:'1px solid #1e2d3d', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'#5a6a7a', flexShrink:0, marginTop:1 }}>{i+1}</div>
             <div>
               <div style={{ fontSize:13, fontWeight:600, color:'#e6edf3', marginBottom:3 }}>{item.step}</div>
               <div style={{ fontSize:12, color:'#5a6a7a', lineHeight:1.5 }}>{item.detail}</div>
@@ -2192,7 +2232,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           { prob:'Syrup tastes or smells like DE', fix:'You\'ve used way too much. This is rare with filter-press grade DE. Reduce by half next time. Make sure you\'re using food-grade filter DE, not pool filter DE.' },
         ].map((item,i) => (
           <div key={i} style={{ background:'#0d1520', borderRadius:10, padding:'10px 14px', marginBottom:8, border:'1px solid #1a2840' }}>
-            <div style={{ fontSize:12, fontWeight:700, color:'#f0883e', marginBottom:3 }}>⚡ {item.prob}</div>
+            <div style={{ fontSize:12, fontWeight:700, color:'#f0883e', marginBottom:3 }}><I.zap size={13} color="#f0883e" /> {item.prob}</div>
             <div style={{ fontSize:12, color:'#5a6a7a', lineHeight:1.5 }}>{item.fix}</div>
           </div>
         ))}
@@ -2210,7 +2250,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           <div key={g.l} style={{ background:g.bg, borderRadius:10, padding:'11px 14px', border:`1px solid ${g.border}`, marginBottom:7 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <div style={{ fontWeight:700, color:g.color, fontSize:15 }}>{g.l}</div>
-              <div style={{ background:g.color+'22', borderRadius:8, padding:'2px 9px', fontSize:11, fontWeight:700, color:g.color }}>{g.brix} Brix</div>
+              <div style={{ background:g.color+'22', borderRadius:8, padding:'2px 9px', fontSize:13, fontWeight:700, color:g.color }}>{g.brix} Brix</div>
             </div>
             <div style={{ color:'#5a6a7a', fontSize:12, marginTop:4 }}>Light transmittance {g.light} · {g.note}</div>
           </div>
@@ -2285,7 +2325,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
               <div style={{ fontWeight:700, fontSize:14, color:'#e6edf3' }}>{c.name}</div>
               <div style={{ fontWeight:900, fontSize:22, color:c.color }}>{fmt(waterBP + c.offset, 1)}°F</div>
             </div>
-            <div style={{ fontSize:11, color:'#3d5068', marginBottom:3 }}>
+            <div style={{ fontSize:13, color:'#3d5068', marginBottom:3 }}>
               BP + {c.offset}°F &nbsp;·&nbsp; {fmt((waterBP + c.offset - 32)*5/9, 1)}°C
             </div>
             <div style={{ fontSize:12, color:'#5a6a7a', lineHeight:1.5 }}>{c.desc}</div>
@@ -2294,7 +2334,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
 
         {/* Molded candy process tip */}
         <div style={{ background:'rgba(45,212,167,0.06)', border:'1px solid rgba(45,212,167,0.18)', borderRadius:10, padding:'12px 14px', marginTop:4 }}>
-          <div style={{ fontWeight:700, fontSize:13, color:'#2dd4a7', marginBottom:6 }}>🍬 Molded Candy Step-by-Step</div>
+          <div style={{ fontWeight:700, fontSize:13, color:'#2dd4a7', marginBottom:6 }}><I.droplet size={13} color="#2dd4a7" /> Molded Candy Step-by-Step</div>
           {[
             { s:'Heat syrup', d:`Bring to ${fmt(waterBP + 34, 1)}°F (BP + 34°F). Use a heavy pot — syrup foams up significantly.` },
             { s:'Stop the boil', d:'Remove from heat immediately when temp is reached. Do not stir yet.' },
@@ -2304,13 +2344,13 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
             { s:'Cool & release', d:'Let sit 5–10 min until firm. Pop out of molds and enjoy. Store in a cool, dry place.' },
           ].map((item, i) => (
             <div key={i} style={{ display:'flex', gap:10, marginBottom:8 }}>
-              <div style={{ flexShrink:0, width:20, height:20, borderRadius:'50%', background:'rgba(45,212,167,0.15)', border:'1px solid rgba(45,212,167,0.3)', color:'#2dd4a7', fontSize:10, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', marginTop:1 }}>{i+1}</div>
+              <div style={{ flexShrink:0, width:20, height:20, borderRadius:'50%', background:'rgba(45,212,167,0.15)', border:'1px solid rgba(45,212,167,0.3)', color:'#2dd4a7', fontSize:12, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', marginTop:1 }}>{i+1}</div>
               <div style={{ fontSize:13, color:'rgba(255,255,255,0.7)', lineHeight:1.5 }}><strong style={{ color:'#c9d1d9' }}>{item.s} — </strong>{item.d}</div>
             </div>
           ))}
         </div>
 
-        <div style={{ fontSize:11, color:'#3d5068', marginTop:10, lineHeight:1.7 }}>
+        <div style={{ fontSize:13, color:'#3d5068', marginTop:10, lineHeight:1.7 }}>
           <span style={{ color:'#5a6a7a', fontWeight:600 }}>All temps above auto-adjust for your altitude.</span> Update your water boiling point at the top of this tab if you move to a different elevation.
         </div>
       </div>
@@ -2374,7 +2414,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
           <div>
             <div className="field-label">{t(lang,'avgTrunkDiam')}</div>
             <NumInput value={dbh} onChange={setDbh} min={6} max={60} step={1} />
-            <div style={{ fontSize:11, color:'#3d5068', marginTop:3 }}>{t(lang,'dbhHint')}</div>
+            <div style={{ fontSize:13, color:'#3d5068', marginTop:3 }}>{t(lang,'dbhHint')}</div>
           </div>
         </div>
         <div className="field-label">{t(lang,'vacSystemQ')}</div>
@@ -2832,7 +2872,7 @@ function SapImportModal({ season, onClose, onImport }) {
         {/* Header */}
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
           <div>
-            <div style={{fontSize:18,fontWeight:700,color:'#fff'}}>📡 Import Season Data</div>
+            <div style={{fontSize:18,fontWeight:700,color:'#fff'}}><I.import size={17} color="#fff" /> Import Season Data</div>
             <div style={{fontSize:12,color:'#5a6a7a',marginTop:2}}>SugarCalc PDF · SapSpy · SapTrac · CSV</div>
           </div>
           <button onClick={onClose} style={{background:'none',border:'none',color:'#5a6a7a',
@@ -2854,7 +2894,7 @@ function SapImportModal({ season, onClose, onImport }) {
               </button>
             ))}
           </div>
-          <div style={{fontSize:11,color:'#3d5068',marginTop:6}}>
+          <div style={{fontSize:13,color:'#3d5068',marginTop:6}}>
             {SOURCES.find(s=>s.id===source)?.hint}
           </div>
         </div>
@@ -2866,7 +2906,7 @@ function SapImportModal({ season, onClose, onImport }) {
             accept=".csv,.txt,.pdf,application/pdf,text/csv,text/plain"
             onChange={handleFile}
             style={{display:'none'}} />
-          <div style={{fontSize:28,marginBottom:8}}>📂</div>
+          <div style={{marginBottom:8,display:'flex',justifyContent:'center'}}><I.folder size={28} color="#58a6ff" /></div>
           <div style={{fontSize:14,fontWeight:600,color:'#e6edf3'}}>
             {source === 'sugarcalc_pdf' ? 'Tap to select PDF' : 'Tap to select CSV file'}
           </div>
@@ -2890,7 +2930,7 @@ function SapImportModal({ season, onClose, onImport }) {
         {error && (
           <div style={{background:'#2d1010',border:'1px solid #f85149',borderRadius:8,
             padding:'10px 14px',fontSize:13,color:'#f85149',marginBottom:12}}>
-            ⚠️ {error}
+            <I.alert size={14} color="currentColor" /> {error}
           </div>
         )}
 
@@ -2901,14 +2941,14 @@ function SapImportModal({ season, onClose, onImport }) {
             {preview.isPDF && (
               <div style={{background:'rgba(63,185,80,0.08)',border:'1px solid rgba(63,185,80,0.25)',
                 borderRadius:8,padding:'8px 12px',marginBottom:12,display:'flex',alignItems:'center',gap:8}}>
-                <span style={{fontSize:14}}>📄</span>
+                <I.clipboard size={14} color="#8a9ab5" />
                 <div style={{fontSize:12,color:'#3fb950',fontWeight:600}}>
                   SugarCalc PDF · {preview.rows.length} entries · Season {preview.detectedYear}
                 </div>
               </div>
             )}
             <div style={{fontSize:13,fontWeight:700,color:'#3fb950',marginBottom:12}}>
-              ✅ Ready to import — {preview.rows.length} rows detected
+              <I.check size={14} color="currentColor" /> Ready to import — {preview.rows.length} rows detected
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:8,marginBottom:12}}>
               {[
@@ -2919,7 +2959,7 @@ function SapImportModal({ season, onClose, onImport }) {
               ].map(x=>(
                 <div key={x.label} style={{textAlign:'center',background:'#161b22',borderRadius:8,padding:'10px 6px'}}>
                   <div style={{fontSize:16,fontWeight:700,color:x.color}}>{x.val}</div>
-                  <div style={{fontSize:10,color:'#5a6a7a',marginTop:2}}>{x.label}</div>
+                  <div style={{fontSize:12,color:'#5a6a7a',marginTop:2}}>{x.label}</div>
                 </div>
               ))}
             </div>
@@ -2941,7 +2981,7 @@ function SapImportModal({ season, onClose, onImport }) {
                 </div>
               ))}
               {preview.rows.length > (preview.isPDF ? 8 : 5) && (
-                <div style={{padding:'6px 12px',fontSize:11,color:'#3d5068',textAlign:'center'}}>
+                <div style={{padding:'6px 12px',fontSize:13,color:'#3d5068',textAlign:'center'}}>
                   + {preview.rows.length - (preview.isPDF ? 8 : 5)} more entries…
                 </div>
               )}
@@ -3082,7 +3122,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
             <div className="card-icon" style={{ background:color+'33', width:36, height:36 }}>{Ic2?<Ic2 size={18} color={color}/>:null}</div>
             <div>
               <span style={{ fontWeight:600, fontSize:16 }}>{label}</span>
-              {activePoint && (() => { const pt=cpoints.find(p=>p.id===activePoint); return pt ? <span style={{ fontSize:11, color:pt.color, fontWeight:700, marginLeft:6 }}>· {pt.name}</span> : null; })()}
+              {activePoint && (() => { const pt=cpoints.find(p=>p.id===activePoint); return pt ? <span style={{ fontSize:13, color:pt.color, fontWeight:700, marginLeft:6 }}>· {pt.name}</span> : null; })()}
             </div>
           </div>
           <span className="badge" style={{ background:color, color:'#fff' }}>{fmt(tot2,1)} {uLbl}</span>
@@ -3121,10 +3161,10 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
           <div key={e.id} className="log-entry">
             <div style={{ flex:1 }}>
               <span style={{ fontWeight:600 }}>{fmt(e.val,1)} {uLbl}</span>
-              {e.brix != null && <span style={{ fontSize:11, fontWeight:600, color:'#2dd4a7', background:'#2dd4a722', borderRadius:6, padding:'1px 7px', marginLeft:6 }}>{e.brix.toFixed(1)}°Bx</span>}
-              {e.grade && e.grade !== '—' && <span style={{ fontSize:11, fontWeight:700, color: GRADE_COLORS[e.grade]||'#e0a44a', background:(GRADE_COLORS[e.grade]||'#e0a44a')+'22', borderRadius:6, padding:'1px 7px', marginLeft:6 }}>{GRADE_LABELS[e.grade]||e.grade}</span>}
+              {e.brix != null && <span style={{ fontSize:13, fontWeight:600, color:'#2dd4a7', background:'#2dd4a722', borderRadius:6, padding:'1px 7px', marginLeft:6 }}>{e.brix.toFixed(1)}°Bx</span>}
+              {e.grade && e.grade !== '—' && <span style={{ fontSize:13, fontWeight:700, color: GRADE_COLORS[e.grade]||'#e0a44a', background:(GRADE_COLORS[e.grade]||'#e0a44a')+'22', borderRadius:6, padding:'1px 7px', marginLeft:6 }}>{GRADE_LABELS[e.grade]||e.grade}</span>}
               {/* Collection point badge — only show in All view to avoid redundancy */}
-              {!activePoint && e.point && (() => { const pt=cpoints.find(p=>p.id===e.point); return pt ? <span style={{ fontSize:10, fontWeight:700, color:pt.color, background:pt.color+'22', borderRadius:5, padding:'1px 6px', marginLeft:5 }}>{pt.name}</span> : null; })()}
+              {!activePoint && e.point && (() => { const pt=cpoints.find(p=>p.id===e.point); return pt ? <span style={{ fontSize:12, fontWeight:700, color:pt.color, background:pt.color+'22', borderRadius:5, padding:'1px 6px', marginLeft:5 }}>{pt.name}</span> : null; })()}
               {e.note && <span style={{ color:'#5a6a7a', fontSize:13 }}> · {e.note}</span>}
               {editDateId === e.id ? (
                 <input type="date" autoFocus
@@ -3171,7 +3211,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
       <div className="card">
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
           <div>
-            <div style={{ fontSize:11, color:'#2dd4a7', fontWeight:600, letterSpacing:'0.1em', marginBottom:4 }}>{t(lang,'logTitle')}</div>
+            <div style={{ fontSize:13, color:'#2dd4a7', fontWeight:600, letterSpacing:'0.1em', marginBottom:4 }}>{t(lang,'logTitle')}</div>
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               <span style={{ fontSize:28, fontWeight:700 }}>{season}</span>
               <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
@@ -3190,8 +3230,8 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
           {[{l:'SAP',c:'#2dd4a7',v:sapT},{l:'SYRUP',c:'#e0a44a',v:syT},{l:'R/O',c:'#58a6ff',v:roT},{l:'EVAPORATOR',c:'#f0883e',v:evT}].map(s=>(
             <div key={s.l} style={{ background:'linear-gradient(160deg,#121c28,#0d1520)', border:'1px solid #1a2840', borderRadius:10, padding:'10px 6px', textAlign:'center' }}>
               <div style={{ fontSize:18, fontWeight:700, color:s.c }}>{fmt(s.v,1)}</div>
-              <div style={{ fontSize:10, color:'#5a6a7a', fontWeight:600 }}>{s.l}</div>
-              <div style={{ fontSize:10, color:'#3d5068' }}>{u}</div>
+              <div style={{ fontSize:12, color:'#5a6a7a', fontWeight:600 }}>{s.l}</div>
+              <div style={{ fontSize:12, color:'#3d5068' }}>{u}</div>
             </div>
           ))}
         </div>
@@ -3286,7 +3326,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
                 style={{ accentColor:'#58a6ff', width:17, height:17 }} />
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:'#58a6ff' }}>R/O</div>
-                {roT > 0 && <div style={{ fontSize:11, color:'#f0883e', marginTop:1 }}>{fmt(roT,1)} gal already logged — will add to it</div>}
+                {roT > 0 && <div style={{ fontSize:13, color:'#f0883e', marginTop:1 }}>{fmt(roT,1)} gal already logged — will add to it</div>}
               </div>
             </label>
             <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
@@ -3294,7 +3334,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
                 style={{ accentColor:'#f0883e', width:17, height:17 }} />
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:'#f0883e' }}>Evaporator</div>
-                {evT > 0 && <div style={{ fontSize:11, color:'#f0883e', marginTop:1 }}>{fmt(evT,1)} gal already logged — will add to it</div>}
+                {evT > 0 && <div style={{ fontSize:13, color:'#f0883e', marginTop:1 }}>{fmt(evT,1)} gal already logged — will add to it</div>}
               </div>
             </label>
           </div>
@@ -3482,31 +3522,31 @@ function EquipTab({ lang='en' }) {
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:14 }}>
               <div>
-                <div style={{ fontSize:11, color:'#5a6a7a', marginBottom:3 }}>Pump flow (GPM)</div>
+                <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>Pump flow (GPM)</div>
                 <input type="number" value={pumpGPM} min={1} max={500} step={1}
                   onChange={e => saveP('sg_pump_gpm', setPumpGPM)(parseFloat(e.target.value)||28)}
                   style={{ width:'100%', boxSizing:'border-box' }} />
               </div>
               <div>
-                <div style={{ fontSize:11, color:'#5a6a7a', marginBottom:3 }}>Tank size (gal)</div>
+                <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>Tank size (gal)</div>
                 <input type="number" value={tankGal} min={10} max={10000} step={50}
                   onChange={e => saveP('sg_pump_tank', setTankGal)(parseFloat(e.target.value)||300)}
                   style={{ width:'100%', boxSizing:'border-box' }} />
               </div>
               <div>
-                <div style={{ fontSize:11, color:'#5a6a7a', marginBottom:3 }}>Line length (ft)</div>
+                <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>Line length (ft)</div>
                 <input type="number" value={lineLen} min={0} max={5000} step={50}
                   onChange={e => saveP('sg_pump_line', setLineLen)(parseFloat(e.target.value)||0)}
                   style={{ width:'100%', boxSizing:'border-box' }} />
               </div>
               <div>
-                <div style={{ fontSize:11, color:'#5a6a7a', marginBottom:3 }}>Vertical lift (ft)</div>
+                <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>Vertical lift (ft)</div>
                 <input type="number" value={liftFt} min={0} max={200} step={1}
                   onChange={e => saveP('sg_pump_lift', setLiftFt)(parseFloat(e.target.value)||0)}
                   style={{ width:'100%', boxSizing:'border-box' }} />
               </div>
               <div>
-                <div style={{ fontSize:11, color:'#5a6a7a', marginBottom:3 }}>Setup time (min)</div>
+                <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>Setup time (min)</div>
                 <input type="number" value={setupMin} min={0} max={30} step={1}
                   onChange={e => saveP('sg_pump_setup', setSetupMin)(parseFloat(e.target.value)||4)}
                   style={{ width:'100%', boxSizing:'border-box' }} />
@@ -3524,14 +3564,14 @@ function EquipTab({ lang='en' }) {
             <div style={{ background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:12, padding:'12px 14px' }}>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
                 <div style={{ textAlign:'center' }}>
-                  <div style={{ fontSize:11, color:'#3d5068', marginBottom:2 }}>Theoretical</div>
+                  <div style={{ fontSize:13, color:'#3d5068', marginBottom:2 }}>Theoretical</div>
                   <div style={{ fontSize:22, fontWeight:800, color:'#8a9ab0' }}>{baseTotal.toFixed(0)} <span style={{ fontSize:13, fontWeight:400 }}>min</span></div>
-                  <div style={{ fontSize:11, color:'#3d5068' }}>{baseFillMin.toFixed(0)} fill + {setupMin} setup</div>
+                  <div style={{ fontSize:13, color:'#3d5068' }}>{baseFillMin.toFixed(0)} fill + {setupMin} setup</div>
                 </div>
                 <div style={{ textAlign:'center' }}>
-                  <div style={{ fontSize:11, color:'#2dd4a7', marginBottom:2, fontWeight:600 }}>Realistic</div>
+                  <div style={{ fontSize:13, color:'#2dd4a7', marginBottom:2, fontWeight:600 }}>Realistic</div>
                   <div style={{ fontSize:22, fontWeight:800, color:'#2dd4a7' }}>{realisticTotal.toFixed(0)} <span style={{ fontSize:13, fontWeight:400 }}>min</span></div>
-                  <div style={{ fontSize:11, color:'#3d5068' }}>{realFillMin.toFixed(0)} fill + {setupMin} setup{extraMin > 0.5 ? ` (+${extraMin.toFixed(0)} friction)` : ''}</div>
+                  <div style={{ fontSize:13, color:'#3d5068' }}>{realFillMin.toFixed(0)} fill + {setupMin} setup{extraMin > 0.5 ? ` (+${extraMin.toFixed(0)} friction)` : ''}</div>
                 </div>
               </div>
 
@@ -3549,7 +3589,7 @@ function EquipTab({ lang='en' }) {
                     <span style={{ fontSize:13, color:'#8a9ab0' }}>Avg gal/haul</span>
                     <span style={{ fontWeight:700, fontSize:14, color:'#e2eaf4' }}>{(sapT / numHauls).toFixed(0)} gal</span>
                   </div>
-                  <div style={{ fontSize:11, color:'#3d5068', marginTop:8, lineHeight:1.5 }}>
+                  <div style={{ fontSize:13, color:'#3d5068', marginTop:8, lineHeight:1.5 }}>
                     Based on {sapT.toFixed(0)} gal logged · hauling at 90% tank capacity ({(tankGal * 0.9).toFixed(0)} gal)
                   </div>
                 </div>
@@ -3821,19 +3861,19 @@ function SeasonTab({ season, lang='en' }) {
             <div className="result-box green">
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
                 <div style={{ textAlign:'center' }}>
-                  <div style={{ fontSize:10, color:'#5a6a7a', fontWeight:600 }}>{t(lang,'totalDD')}</div>
+                  <div style={{ fontSize:12, color:'#5a6a7a', fontWeight:600 }}>{t(lang,'totalDD')}</div>
                   <div style={{ fontSize:32, fontWeight:800, color:'#3fb950' }}>{Math.round(cumDD)}</div>
-                  <div style={{ fontSize:11, color:'#5a6a7a' }}>{t(lang,'sinceTapDay')}</div>
+                  <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'sinceTapDay')}</div>
                 </div>
                 <div style={{ textAlign:'center' }}>
-                  <div style={{ fontSize:10, color:'#5a6a7a', fontWeight:600 }}>{t(lang,'days')}</div>
+                  <div style={{ fontSize:12, color:'#5a6a7a', fontWeight:600 }}>{t(lang,'days')}</div>
                   <div style={{ fontSize:32, fontWeight:800, color:'#3fb950' }}>{dailyDD.length}</div>
-                  <div style={{ fontSize:11, color:'#5a6a7a' }}>{t(lang,'inSeason')}</div>
+                  <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'inSeason')}</div>
                 </div>
                 <div style={{ textAlign:'center' }}>
-                  <div style={{ fontSize:10, color:'#5a6a7a', fontWeight:600 }}>{t(lang,'avgDay')}</div>
+                  <div style={{ fontSize:12, color:'#5a6a7a', fontWeight:600 }}>{t(lang,'avgDay')}</div>
                   <div style={{ fontSize:32, fontWeight:800, color:'#3fb950' }}>{(cumDD/dailyDD.length).toFixed(1)}</div>
-                  <div style={{ fontSize:11, color:'#5a6a7a' }}>{t(lang,'ddPerDay')}</div>
+                  <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'ddPerDay')}</div>
                 </div>
               </div>
             </div>
@@ -3870,7 +3910,7 @@ function SeasonTab({ season, lang='en' }) {
               </div>
               {showDays && (
                 <div style={{ marginTop:8, maxHeight:220, overflowY:'auto' }}>
-                  <div style={{ display:'grid', gridTemplateColumns:'auto 1fr 1fr 1fr 1fr', gap:4, fontSize:11, fontWeight:600, color:'#5a6a7a', padding:'4px 6px', marginBottom:2 }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'auto 1fr 1fr 1fr 1fr', gap:4, fontSize:13, fontWeight:600, color:'#5a6a7a', padding:'4px 6px', marginBottom:2 }}>
                     <span>Date</span><span style={{ textAlign:'right' }}>Hi</span><span style={{ textAlign:'right' }}>Lo</span><span style={{ textAlign:'right' }}>DD</span><span style={{ textAlign:'right' }}>Total</span>
                   </div>
                   {dailyDD.slice().reverse().map(d => (
@@ -3897,7 +3937,7 @@ function SeasonTab({ season, lang='en' }) {
 
         {buddyWarn && (
           <div style={{ background:'#2b1505', border:'1px solid #8b3a10', borderRadius:10, padding:'10px 14px', marginBottom:12, display:'flex', gap:10, alignItems:'center' }}>
-            <span style={{ fontSize:20 }}>⚠️</span>
+            <I.alert size={20} color="#f0883e" />
             <div>
               <div style={{ fontWeight:700, color:'#f0883e' }}>{t(lang,'buddyTitle')}</div>
               <div style={{ fontSize:12, color:'#5a6a7a' }}>Brix dropped to {lastB}° — down from peak of {peak}°. Check clarity and taste.</div>
@@ -3914,7 +3954,7 @@ function SeasonTab({ season, lang='en' }) {
                 const y = SH - ((v - bMin) / bRange) * (SH - 10) - 2;
                 return <g key={i}>
                   <line x1="0" y1={y} x2={Math.max(SW, brixLog.length*32)} y2={y} stroke="#1a2840" strokeWidth="1" strokeDasharray="4,4"/>
-                  <text x="2" y={y-2} fontSize="9" fill="#3d5068">{v.toFixed(1)}°</text>
+                  <text x="2" y={y-2} fontSize="12" fill="#3d5068">{v.toFixed(1)}°</text>
                 </g>;
               })}
               {/* Line */}
@@ -3936,7 +3976,7 @@ function SeasonTab({ season, lang='en' }) {
               {brixLog.map((e,i) => {
                 if (brixLog.length > 8 && i % Math.ceil(brixLog.length/6) !== 0 && i !== brixLog.length-1) return null;
                 const x = (i / Math.max(brixLog.length-1,1)) * (Math.max(SW, brixLog.length*32) - 20) + 10;
-                return <text key={'l'+e.id} x={x} y={SH+16} fontSize="9" fill="#5a6a7a" textAnchor="middle">{e.date.split('/').slice(0,2).join('/')}</text>;
+                return <text key={'l'+e.id} x={x} y={SH+16} fontSize="12" fill="#5a6a7a" textAnchor="middle">{e.date.split('/').slice(0,2).join('/')}</text>;
               })}
             </svg>
           </div>
@@ -3966,8 +4006,8 @@ function SeasonTab({ season, lang='en' }) {
         {brixLog.length >= 2 && (
           <div style={{ marginTop:8 }} className="result-box orange">
             <div className="two-col">
-              <div><div style={{ fontSize:11, color:'#5a6a7a' }}>{t(lang,'peakBrix')}</div><div style={{ fontWeight:700, color:'#e0a44a', fontSize:20 }}>{peak.toFixed(1)}°</div></div>
-              <div><div style={{ fontSize:11, color:'#5a6a7a' }}>{t(lang,'latestBrix')}</div><div style={{ fontWeight:700, color: buddyWarn?'#f0883e':'#e0a44a', fontSize:20 }}>{lastB.toFixed(1)}°</div></div>
+              <div><div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'peakBrix')}</div><div style={{ fontWeight:700, color:'#e0a44a', fontSize:20 }}>{peak.toFixed(1)}°</div></div>
+              <div><div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'latestBrix')}</div><div style={{ fontWeight:700, color: buddyWarn?'#f0883e':'#e0a44a', fontSize:20 }}>{lastB.toFixed(1)}°</div></div>
             </div>
           </div>
         )}
@@ -4275,12 +4315,12 @@ const _SPECIES_LABELS = { sugar_maple:'Sugar Maple', red_maple:'Red Maple', silv
 const _HEALTH_COLORS = { excellent:'#22c55e', good:'#84cc16', fair:'#eab308', poor:'#f97316', dead:'#ef4444' };
 const _HEALTH_LABELS = { excellent:'Excellent', good:'Good', fair:'Fair', poor:'Poor', dead:'Dead' };
 const _PIN_TYPE_CFG = [
-  { id:'tree',       label:'Tap Tree',    emoji:'🍁', bg:'#2ea043', radius:'50%',  size:30 },
-  { id:'tank',       label:'Tank',        emoji:'💧', bg:'#1f6feb', radius:'6px',  size:34 },
-  { id:'sugarhouse', label:'Sugarhouse',  emoji:'🏚', bg:'#f59e0b', radius:'6px',  size:30 },
-  { id:'pump',       label:'Pump House',  emoji:'⚙️', bg:'#f97316', radius:'50%', size:28 },
-  { id:'junction',   label:'Junction',    emoji:'◉',  bg:'#8b5cf6', radius:'50%', size:28 },
-  { id:'marker',     label:'Waypoint',    emoji:'📍', bg:'#ef4444', radius:'50%', size:26 },
+  { id:'tree',       label:'Tap Tree',    Icon:I.mapleLeaf,  bg:'#2ea043', radius:'50%',  size:30 },
+  { id:'tank',       label:'Tank',        Icon:I.tank,       bg:'#1f6feb', radius:'6px',  size:34 },
+  { id:'sugarhouse', label:'Sugarhouse',  Icon:I.sugarhouse, bg:'#f59e0b', radius:'6px',  size:30 },
+  { id:'pump',       label:'Pump House',  Icon:I.settings,   bg:'#f97316', radius:'50%', size:28 },
+  { id:'junction',   label:'Junction',    Icon:I.network,    bg:'#8b5cf6', radius:'50%', size:28 },
+  { id:'marker',     label:'Waypoint',    Icon:I.mapPin,     bg:'#ef4444', radius:'50%', size:26 },
 ];
 
 function _sbMakeIcon(pin) {
@@ -4396,7 +4436,7 @@ function _sbApplySeasonLayer(map, mode) {
     const container = map.getContainer();
     const slider = document.createElement('div');
     slider.style.cssText = 'position:absolute;top:0;left:50%;height:100%;z-index:800;cursor:ew-resize;user-select:none;pointer-events:all';
-    slider.innerHTML = '<div style="position:absolute;top:0;left:-1.5px;width:3px;height:100%;background:rgba(255,255,255,0.85)"></div><div style="position:absolute;top:50%;left:-32px;transform:translateY(-50%);background:rgba(0,0,0,0.65);color:#fff;border-radius:16px;padding:5px 8px;font-size:11px;font-weight:700;white-space:nowrap;border:1px solid rgba(255,255,255,0.25);pointer-events:none">☀‖❄</div>';
+    slider.innerHTML = '<div style="position:absolute;top:0;left:-1.5px;width:3px;height:100%;background:rgba(255,255,255,0.85)"></div><div style="position:absolute;top:50%;left:-32px;transform:translateY(-50%);background:rgba(0,0,0,0.65);color:#fff;border-radius:16px;padding:5px 8px;font-size:11px;font-weight:700;white-space:nowrap;border:1px solid rgba(255,255,255,0.25);pointer-events:none">LEAF ON &nbsp;\u27FA&nbsp; LEAF OFF</div>';
     container.appendChild(slider);
     _lSliderEl = slider;
     let dragging = false;
@@ -4777,16 +4817,16 @@ function LinesTab({ lang='en' }) {
     });
     setCaching(false);
     if (result.error) {
-      setCacheMsg('⚠️ ' + result.error);
+      setCacheMsg('! ' + result.error);
       setTimeout(() => setCacheMsg(''), 5000);
     } else if (result.errors === 0) {
       setCacheMsg(`✓ ${result.count} tiles saved. Map works offline now.`);
       setTimeout(() => setCacheMsg(''), 5000);
     } else if (result.saved === 0) {
-      setCacheMsg(`⚠️ 0 of ${result.count} tiles saved. No connection. Try again when you have signal.`);
+      setCacheMsg(`! 0 of ${result.count} tiles saved. No connection. Try again when you have signal.`);
       setTimeout(() => setCacheMsg(''), 8000);
     } else {
-      setCacheMsg(`⚠️ ${result.saved} of ${result.count} tiles saved. Weak signal. Try again to fill the gaps.`);
+      setCacheMsg(`! ${result.saved} of ${result.count} tiles saved. Weak signal. Try again to fill the gaps.`);
       setTimeout(() => setCacheMsg(''), 8000);
     }
   };
@@ -4796,7 +4836,7 @@ function LinesTab({ lang='en' }) {
     const lat = parseFloat(coordLat);
     const lon = parseFloat(coordLon);
     if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-      setRouteMsg('❌ Invalid coordinates. Use decimal degrees (e.g. 45.1234, -72.5678)');
+      setRouteMsg('Invalid coordinates. Use decimal degrees (e.g. 45.1234, -72.5678)');
       return;
     }
     _dropPin(lat, lon, mode, pinsRef, setPins);
@@ -4873,8 +4913,8 @@ function LinesTab({ lang='en' }) {
     // ────────────────────────────────────────────────────────────────────────
     const allTrees = pinsRef.current.filter(p => p.type==='tree');
     const allTanks = pinsRef.current.filter(p => p.type==='tank');
-    if (!allTrees.length) { setRouteMsg('❌ Place at least 1 tree pin on the map first.'); return; }
-    if (!allTanks.length) { setRouteMsg('❌ Place at least 1 tank pin on the map first.'); return; }
+    if (!allTrees.length) { setRouteMsg('Place at least 1 tree pin on the map first.'); return; }
+    if (!allTanks.length) { setRouteMsg('Place at least 1 tank pin on the map first.'); return; }
 
     setRouteMsg(''); setRouteProgress(''); setAnalyzing(true); setRouteResults([]); _clearRouteLines();
 
@@ -4883,13 +4923,13 @@ function LinesTab({ lang='en' }) {
       await ensureElevations(allTrees, 'tree pin(s)');
       await ensureElevations(allTanks, 'tank pin(s)');
     } catch(e) {
-      setRouteMsg('❌ Could not fetch elevations. With no signal, tap a pin and type its elevation into the Elevation box — a topo map or handheld GPS will give you the number.');
+      setRouteMsg('Could not fetch elevations. With no signal, tap a pin and type its elevation into the Elevation box — a topo map or handheld GPS will give you the number.');
       setAnalyzing(false); setRouteProgress(''); return;
     }
     const trees = pinsRef.current.filter(p => p.type==='tree' && p.elev!=null);
     const tanks = pinsRef.current.filter(p => p.type==='tank' && p.elev!=null);
-    if (!trees.length) { setRouteMsg('❌ No tree pin has an elevation yet. Tap a tree and type its elevation, or tap Look up where you have signal.'); setAnalyzing(false); setRouteProgress(''); return; }
-    if (!tanks.length) { setRouteMsg('❌ No tank pin has an elevation yet. Tap a tank and type its elevation, or tap Look up where you have signal.'); setAnalyzing(false); setRouteProgress(''); return; }
+    if (!trees.length) { setRouteMsg('No tree pin has an elevation yet. Tap a tree and type its elevation, or tap Look up where you have signal.'); setAnalyzing(false); setRouteProgress(''); return; }
+    if (!tanks.length) { setRouteMsg('No tank pin has an elevation yet. Tap a tank and type its elevation, or tap Look up where you have signal.'); setAnalyzing(false); setRouteProgress(''); return; }
 
     // 2. Assign each tree to the tank it flows to best (highest grade to that tank)
     const byTank = {};
@@ -4943,18 +4983,18 @@ function LinesTab({ lang='en' }) {
     setRouteResults(results);
     _drawRouteLines(results);
     setRouteProgress('');
-    if (!results.length) setRouteMsg('⚠ No routes — verify pins have elevations loaded.');
+    if (!results.length) setRouteMsg('No routes — verify pins have elevations loaded.');
     setAnalyzing(false);
   };
 
   // Suggest collection tank spots — scored by gravity-flow potential
   const findTankSpots = async () => {
     const allTrees = pinsRef.current.filter(p => p.type==='tree');
-    if (allTrees.length < 2) { setRouteMsg('❌ Place at least 2 trees on the map first.'); return; }
+    if (allTrees.length < 2) { setRouteMsg('Place at least 2 trees on the map first.'); return; }
     setFindingSpots(true); setRouteMsg('Loading…');
     try { await ensureElevations(allTrees, 'tree pin(s)'); } catch {}
     const trees = pinsRef.current.filter(p => p.type==='tree' && p.elev!=null);
-    if (trees.length < 2) { setRouteMsg('❌ Need elevations on at least 2 trees. Tap a tree and type its elevation, or tap Look up where you have signal.'); setFindingSpots(false); return; }
+    if (trees.length < 2) { setRouteMsg('Need elevations on at least 2 trees. Tap a tree and type its elevation, or tap Look up where you have signal.'); setFindingSpots(false); return; }
     setRouteMsg('Sampling terrain grid for tank spots…');
     _clearSpotMarkers(); setTankSpots([]);
     const cLat = trees.reduce((s,p)=>s+p.lat,0)/trees.length;
@@ -4967,12 +5007,12 @@ function LinesTab({ lang='en' }) {
     try {
       setRouteMsg('Fetching elevation grid (49 points)…');
       elevs = await _fetchElevBatch(gridPts);
-    } catch { setRouteMsg('❌ Elevation fetch failed. Check connection.'); setFindingSpots(false); return; }
+    } catch { setRouteMsg('Elevation fetch failed. Check connection.'); setFindingSpots(false); return; }
     const candidates = gridPts
       .map((pt, i) => ({ ...pt, elev: elevs[i] }))
       .filter(c => c.elev != null && c.elev < avgTreeElev - 5);
     if (!candidates.length) {
-      setRouteMsg('⚠ No lower spots found — terrain may be too flat. Consider vacuum assist.');
+      setRouteMsg('No lower spots found — terrain may be too flat. Consider vacuum assist.');
       setFindingSpots(false); return;
     }
     const scored = candidates.map(c => {
@@ -5058,7 +5098,7 @@ function LinesTab({ lang='en' }) {
   const _MODE_TABS = [
     { id:'tree',       Icon:I.mapleLeaf, label:'Tap Tree',   color:'#2dd4a7' },
     { id:'tank',       Icon:I.tank,      label:'Tank',       color:'#3b82f6' },
-    { id:'sugarhouse', Icon:I.home,      label:'Sugarhouse', color:'#f59e0b' },
+    { id:'sugarhouse', Icon:I.sugarhouse,label:'Sugarhouse', color:'#f59e0b' },
     { id:'pump',       Icon:I.settings,  label:'Pump',       color:'#f97316' },
     { id:'junction',   Icon:I.crosshair, label:'Junction',   color:'#8b5cf6' },
     { id:'marker',     Icon:I.mapPin,    label:'Waypoint',   color:'#ef4444' },
@@ -5077,11 +5117,11 @@ function LinesTab({ lang='en' }) {
           borderRadius:12, padding:'10px 14px', marginBottom:10,
           display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:10 }}>
           <div>
-            <div style={{ fontSize:11, fontWeight:800, color:'#fbbf24', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:3 }}>
-              β Beta Feature
+            <div style={{ fontSize:13, fontWeight:800, color:'#fbbf24', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:3 }}>
+              Beta Feature
             </div>
-            <div style={{ fontSize:11, color:'#8a9ab5', lineHeight:1.5 }}>
-              Sugarbush mapping is actively being improved. GPS accuracy varies under canopy (5–15 m typical). Route analysis and elevation data require internet. Tap <b style={{color:'#c9d1d9'}}>💾 Save offline</b> while connected to cache the map for field use.
+            <div style={{ fontSize:13, color:'#8a9ab5', lineHeight:1.5 }}>
+              Sugarbush mapping is actively being improved. GPS accuracy varies under canopy (5–15 m typical). Route analysis and elevation data require internet. Tap <b style={{color:'#c9d1d9'}}>Save offline</b> while connected to cache the map for field use.
             </div>
           </div>
           <button onClick={dismissBeta}
@@ -5099,7 +5139,7 @@ function LinesTab({ lang='en' }) {
                 background: active ? `linear-gradient(135deg,${color},${color}bb)` : 'transparent',
                 border:'none', borderRadius:11, padding:'8px 5px',
                 display:'flex', flexDirection:'column', alignItems:'center', gap:4,
-                fontWeight:600, fontSize:10, letterSpacing:'0.02em',
+                fontWeight:600, fontSize:12, letterSpacing:'0.02em',
                 color: active ? '#07090f' : '#3d5068',
                 cursor:'pointer', transition:'all 0.18s',
                 boxShadow: active ? `0 3px 16px ${color}44` : 'none' }}>
@@ -5120,7 +5160,7 @@ function LinesTab({ lang='en' }) {
             {[{v:'satellite',l:'Sat'},{v:'street',l:'Street'}].map(o => (
               <button key={o.v} onClick={() => setMapType(o.v)}
                 style={{ background:mapType===o.v?'rgba(255,255,255,0.12)':'transparent', border:'none', borderRadius:999,
-                  padding:'5px 11px', fontSize:11, fontWeight:600, color:mapType===o.v?'#e2e8f0':'#4a5a6a', cursor:'pointer' }}>
+                  padding:'5px 11px', fontSize:13, fontWeight:600, color:mapType===o.v?'#e2e8f0':'#4a5a6a', cursor:'pointer' }}>
                 {o.l}
               </button>
             ))}
@@ -5128,12 +5168,14 @@ function LinesTab({ lang='en' }) {
 
           {/* Season pill */}
           <div style={{ display:'flex', background:'rgba(255,255,255,0.06)', borderRadius:999, padding:2, flex:1 }}>
-            {[{v:'off',l:'Live'},{v:'naip',l:'☀'},{v:'clarity',l:'❄'},{v:'compare',l:'⟺'}].map(o => (
+            {[{v:'off',l:'Live'},{v:'naip',Ico:I.sun},{v:'clarity',Ico:I.snowflake},{v:'compare',l:'⟺'}].map(o => (
               <button key={o.v} onClick={() => setSeasonMode(o.v)}
                 style={{ flex:1, background:seasonMode===o.v?'rgba(59,130,246,0.35)':'transparent', border:'none', borderRadius:999,
-                  padding:'5px 6px', fontSize:11, fontWeight:700,
-                  color:seasonMode===o.v?'#93c5fd':'#4a5a6a', cursor:'pointer', whiteSpace:'nowrap' }}>
-                {o.l}
+                  padding:'5px 6px', fontSize:13, fontWeight:700,
+                  color:seasonMode===o.v?'#93c5fd':'#4a5a6a', cursor:'pointer', whiteSpace:'nowrap',
+                  display:'flex', alignItems:'center', justifyContent:'center', minHeight:26 }}
+                aria-label={o.v==='naip' ? 'Leaf-on imagery' : o.v==='clarity' ? 'Leaf-off imagery' : o.v==='compare' ? 'Compare' : 'Live imagery'}>
+                {o.Ico ? <o.Ico size={14} color={seasonMode===o.v?'#93c5fd':'#4a5a6a'} /> : o.l}
               </button>
             ))}
           </div>
@@ -5141,7 +5183,7 @@ function LinesTab({ lang='en' }) {
           {/* GPS drop */}
           <button onClick={markGPS} disabled={gpsLoading}
             style={{ background:gpsLoading?'rgba(255,255,255,0.05)':'rgba(88,166,255,0.18)', border:'none', borderRadius:999,
-              padding:'5px 10px', fontSize:11, fontWeight:700, color:gpsLoading?'#4a5a6a':'#58a6ff',
+              padding:'5px 10px', fontSize:13, fontWeight:700, color:gpsLoading?'#4a5a6a':'#58a6ff',
               whiteSpace:'nowrap', opacity:gpsLoading?0.5:1 }}>
             {gpsLoading ? '…' : '⊕ GPS'}
           </button>
@@ -5149,14 +5191,14 @@ function LinesTab({ lang='en' }) {
           {/* Track toggle */}
           <button onClick={gpsTracking ? stopTracking : startTracking}
             style={{ background:gpsTracking?'rgba(239,68,68,0.18)':'rgba(255,255,255,0.06)', border:'none', borderRadius:999,
-              padding:'5px 10px', fontSize:11, fontWeight:700, color:gpsTracking?'#f87171':'#4a5a6a', whiteSpace:'nowrap' }}>
-            {gpsTracking ? '⏹ Stop' : '▶ Track'}
+              padding:'5px 10px', fontSize:13, fontWeight:700, color:gpsTracking?'#f87171':'#4a5a6a', whiteSpace:'nowrap' }}>
+            {gpsTracking ? <><I.circle size={12} color="currentColor" /> Stop</> : <><I.crosshair size={12} color="currentColor" /> Track</>}
           </button>
 
           {/* XY */}
           <button onClick={() => setShowCoordPanel(v => !v)}
             style={{ background:showCoordPanel?'rgba(88,166,255,0.2)':'rgba(255,255,255,0.06)', border:'none', borderRadius:999,
-              padding:'5px 10px', fontSize:11, fontWeight:700, color:showCoordPanel?'#58a6ff':'#4a5a6a' }}>
+              padding:'5px 10px', fontSize:13, fontWeight:700, color:showCoordPanel?'#58a6ff':'#4a5a6a' }}>
             XY
           </button>
 
@@ -5164,10 +5206,10 @@ function LinesTab({ lang='en' }) {
           <button onClick={saveOffline} disabled={caching || !leafletReady}
             title="Download visible map tiles so this area works offline"
             style={{ background:caching?'rgba(45,212,167,0.08)':'rgba(45,212,167,0.14)', border:'none', borderRadius:999,
-              padding:'5px 10px', fontSize:11, fontWeight:700,
+              padding:'5px 10px', fontSize:13, fontWeight:700,
               color:caching?'#4a5a6a':'#2dd4a7', whiteSpace:'nowrap',
               opacity:(caching||!leafletReady)?0.5:1, cursor:caching?'default':'pointer' }}>
-            {caching ? `💾 ${cachePct}%` : '💾 Save offline'}
+            <><I.save size={13} color="currentColor" /> {caching ? `${cachePct}%` : 'Save offline'}</>
           </button>
 
         </div>
@@ -5175,7 +5217,7 @@ function LinesTab({ lang='en' }) {
         {/* Cache progress / confirmation */}
         {cacheMsg ? (
           <div style={{ margin:'6px 12px 0', background:'rgba(45,212,167,0.08)', border:'1px solid rgba(45,212,167,0.2)',
-            borderRadius:8, padding:'6px 12px', fontSize:11, color:'#2dd4a7', display:'flex', alignItems:'center', gap:8 }}>
+            borderRadius:8, padding:'6px 12px', fontSize:13, color:'#2dd4a7', display:'flex', alignItems:'center', gap:8 }}>
             {caching && (
               <div style={{ flex:1, height:3, background:'rgba(45,212,167,0.15)', borderRadius:2, overflow:'hidden' }}>
                 <div style={{ height:'100%', width:`${cachePct}%`, background:'#2dd4a7', borderRadius:2, transition:'width 0.2s' }} />
@@ -5188,7 +5230,7 @@ function LinesTab({ lang='en' }) {
         {/* Coordinate entry */}
         {showCoordPanel && (
           <div style={{ margin:'8px 12px 0', background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'10px 12px' }}>
-            <div style={{ fontSize:11, color:'#4a5a6a', marginBottom:6 }}>
+            <div style={{ fontSize:13, color:'#4a5a6a', marginBottom:6 }}>
               Drop <b style={{ color:'#c9d1d9' }}>{_activeCfg?.label || mode}</b> at coordinates:
             </div>
             <div style={{ display:'flex', gap:6, alignItems:'center' }}>
@@ -5223,34 +5265,41 @@ function LinesTab({ lang='en' }) {
         <div style={{ margin:'0 10px 10px', padding:'10px 12px', background:'rgba(45,212,167,0.05)', border:'1px solid rgba(45,212,167,0.15)', borderRadius:10 }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
             <div>
-              <div style={{ fontSize:11, fontWeight:700, color:'#2dd4a7', marginBottom:2 }}>📶 Save Map for Offline</div>
-              <div style={{ fontSize:10, color:'#5a6a7a', lineHeight:1.4 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:'#2dd4a7', marginBottom:2 }}><I.signal size={14} color="#2dd4a7" /> Save Map for Offline</div>
+              <div style={{ fontSize:12, color:'#5a6a7a', lineHeight:1.4 }}>
                 Zoom to your sugarbush, then tap Save. Works on next visit without cell service.
               </div>
             </div>
             <button onClick={saveOffline} disabled={caching || !leafletReady}
               style={{ background:caching?'rgba(45,212,167,0.08)':'rgba(45,212,167,0.18)',
                 border:'1px solid rgba(45,212,167,0.3)', borderRadius:8,
-                padding:'7px 13px', fontSize:11, fontWeight:700, color:caching?'#4a5a6a':'#2dd4a7',
+                padding:'7px 13px', fontSize:13, fontWeight:700, color:caching?'#4a5a6a':'#2dd4a7',
                 whiteSpace:'nowrap', flexShrink:0,
                 opacity:(caching||!leafletReady)?0.5:1, cursor:caching?'default':'pointer' }}>
               {caching ? `${cachePct}%` : 'Save'}
             </button>
           </div>
           {cacheMsg && (
-            <div style={{ marginTop:8, fontSize:10, color: cacheMsg.startsWith('✓') ? '#2dd4a7' : cacheMsg.startsWith('⚠') ? '#f4a44a' : '#8a9ab5' }}>
+            <div role="status" style={{ marginTop:8, fontSize:12, lineHeight:1.45,
+              color: cacheMsg.startsWith('✓') ? '#2dd4a7' : cacheMsg.startsWith('!') ? '#f4a44a' : '#8a9ab5' }}>
               {caching && (
                 <div style={{ height:2, background:'rgba(45,212,167,0.15)', borderRadius:1, marginBottom:5, overflow:'hidden' }}>
                   <div style={{ height:'100%', width:`${cachePct}%`, background:'#2dd4a7', borderRadius:1, transition:'width 0.2s' }} />
                 </div>
               )}
-              {cacheMsg}
+              <span style={{ display:'flex', alignItems:'flex-start', gap:7 }}>
+                <span style={{ flexShrink:0, marginTop:1 }}>
+                  {cacheMsg.startsWith('✓') ? <I.check size={14} color="#2dd4a7" />
+                    : cacheMsg.startsWith('!') ? <I.alert size={14} color="#f4a44a" /> : null}
+                </span>
+                <span>{cacheMsg.replace(/^[✓!]\s*/, '')}</span>
+              </span>
             </div>
           )}
         </div>
 
         {/* Stats + action strip */}
-        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 10px 10px', fontSize:11, color:'#4a5a6a' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 10px 10px', fontSize:13, color:'#4a5a6a' }}>
           {/* Counts */}
           <div style={{ display:'flex', alignItems:'center', gap:6, flex:1, flexWrap:'wrap' }}>
             {treePins.length > 0 && (
@@ -5278,7 +5327,7 @@ function LinesTab({ lang='en' }) {
               </span>
             )}
             {(readyTrees < treePins.length || readyTanks < tankPins.length) && (
-              <span style={{ color:'#f59e0b' }}>⏳</span>
+              <I.clock size={14} color="#f59e0b" />
             )}
           </div>
 
@@ -5286,7 +5335,7 @@ function LinesTab({ lang='en' }) {
           <button onClick={() => { if (pins.length) removePin(pins[pins.length - 1].id); }}
             disabled={pins.length === 0}
             style={{ background:'rgba(255,255,255,0.07)', border:'none', borderRadius:8,
-              padding:'5px 11px', fontSize:11, fontWeight:700,
+              padding:'5px 11px', fontSize:13, fontWeight:700,
               color:pins.length?'#8b949e':'#2d3d50', cursor:pins.length?'pointer':'default',
               display:'flex', alignItems:'center', gap:4 }}>
             ↩ Undo
@@ -5295,7 +5344,7 @@ function LinesTab({ lang='en' }) {
           {/* Clear all */}
           <button onClick={clearAll} disabled={pins.length === 0}
             style={{ background:'rgba(239,68,68,0.1)', border:'none', borderRadius:8,
-              padding:'5px 11px', fontSize:11, fontWeight:700,
+              padding:'5px 11px', fontSize:13, fontWeight:700,
               color:pins.length?'#f87171':'#2d3d50', cursor:pins.length?'pointer':'default' }}>
             Clear All
           </button>
@@ -5306,13 +5355,13 @@ function LinesTab({ lang='en' }) {
       <div style={{ display:'flex', gap:2, background:'rgba(255,255,255,0.04)', borderRadius:12, padding:3, marginBottom:10 }}>
         {[
           {id:'map',       l:'Map Tools'},
-          {id:'trees',     l:'🍁 Trees'},
+          {id:'trees',     l:'Trees'},
           {id:'mainlines', l:'Mainlines'},
           {id:'property',  l:'Property'},
         ].map(t => (
           <button key={t.id} onClick={() => setMainTab(t.id)}
             style={{ flex:1, background:mainTab===t.id?'rgba(255,255,255,0.1)':'transparent',
-              border:'none', borderRadius:9, padding:'8px 4px', fontSize:11, fontWeight:700,
+              border:'none', borderRadius:9, padding:'8px 4px', fontSize:13, fontWeight:700,
               color:mainTab===t.id?'#e2e8f0':'#4a5a6a', cursor:'pointer', transition:'all .15s' }}>
             {t.l}
           </button>
@@ -5336,7 +5385,7 @@ function LinesTab({ lang='en' }) {
                 border:'none', borderRadius:10, padding:'13px', fontSize:13, fontWeight:700,
                 color:'#07090f', cursor:'pointer', opacity:treePins.length<2?0.4:1,
                 display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-              {findingSpots ? '…' : '★'} Tank Spots
+              {findingSpots ? '…' : <I.star size={13} color="currentColor" />} Tank Spots
             </button>
           </div>
 
@@ -5345,7 +5394,14 @@ function LinesTab({ lang='en' }) {
             <div style={{ background:'rgba(63,185,80,0.1)', border:'1px solid #2ea043', borderRadius:10, padding:'8px 14px', marginBottom:8, fontSize:12, color:'#3fb950' }}>{routeProgress}</div>
           )}
           {routeMsg && (
-            <div style={{ background:'rgba(248,81,73,0.1)', border:'1px solid #f85149', borderRadius:10, padding:'10px 14px', marginBottom:8, fontSize:13, color:'#f85149' }}>{routeMsg}</div>
+            <div role="status" style={{ background: /…$/.test(routeMsg) ? 'rgba(88,166,255,0.08)' : 'rgba(248,81,73,0.1)',
+              border:`1px solid ${/…$/.test(routeMsg) ? '#58a6ff' : '#f85149'}`, borderRadius:10, padding:'10px 14px', marginBottom:8,
+              fontSize:13, color: /…$/.test(routeMsg) ? '#58a6ff' : '#f85149', display:'flex', alignItems:'flex-start', gap:8, lineHeight:1.45 }}>
+              <span style={{ flexShrink:0, marginTop:1 }}>
+                {/…$/.test(routeMsg) ? <I.clock size={15} color="#58a6ff" /> : <I.alert size={15} color="#f85149" />}
+              </span>
+              <span>{routeMsg}</span>
+            </div>
           )}
 
           {/* Route results */}
@@ -5361,7 +5417,7 @@ function LinesTab({ lang='en' }) {
 
               {routeResults.map((r, ri) => {
                 const col = _gradeColor(r.overallGrade);
-                const statusIcon = r.goodFlow ? '✓' : r.overallGrade < 0 ? '⚠' : r.minGrade < 0.5 ? '⚠' : '↗';
+                const statusIcon = r.goodFlow ? '✓' : r.overallGrade < 0 ? '!' : r.minGrade < 0.5 ? '!' : '↗';
                 const statusText = r.overallGrade < 0    ? 'Uphill — no gravity flow'
                   : r.minGrade < 0.5  ? 'Too flat — sap pools. Vacuum needed.'
                   : r.minGrade < 1.0  ? 'Marginal — vacuum assist recommended'
@@ -5378,10 +5434,10 @@ function LinesTab({ lang='en' }) {
                       <div style={{ display:'flex', alignItems:'center', gap:7, flex:1, minWidth:0 }}>
                         <I.tank size={15} color="#58a6ff" />
                         <span style={{ fontWeight:700, fontSize:14, color:'#c9d1d9' }}>{r.tank.label}</span>
-                        <span style={{ fontSize:11, color:'#5a6a7a', flexShrink:0 }}>· {r.trees.length} tree{r.trees.length!==1?'s':''}</span>
+                        <span style={{ fontSize:13, color:'#5a6a7a', flexShrink:0 }}>· {r.trees.length} tree{r.trees.length!==1?'s':''}</span>
                       </div>
                       <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-                        <span style={{ fontSize:10, color:'#5a6a7a' }}>overall</span>
+                        <span style={{ fontSize:12, color:'#5a6a7a' }}>overall</span>
                         <span style={{ fontWeight:800, color:col, fontSize:18 }}>{r.overallGrade.toFixed(1)}%</span>
                       </div>
                     </div>
@@ -5399,14 +5455,14 @@ function LinesTab({ lang='en' }) {
                                 <div style={{ width:30, height:30, borderRadius:isTank?6:'50%', background:nc+'22', border:`2px solid ${nc}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
                                   {isTank ? <I.tank size={13} color={nc} /> : <I.tree size={13} color={nc} />}
                                 </div>
-                                <span style={{ fontSize:9, color:'#8b949e', maxWidth:52, textAlign:'center', lineHeight:1.2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{node.label}</span>
-                                <span style={{ fontSize:9, color:'#5a6a7a' }}>{node.elev!=null ? node.elev.toFixed(0)+'ft' : '—'}</span>
+                                <span style={{ fontSize:12, color:'#8b949e', maxWidth:52, textAlign:'center', lineHeight:1.2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{node.label}</span>
+                                <span style={{ fontSize:12, color:'#5a6a7a' }}>{node.elev!=null ? node.elev.toFixed(0)+'ft' : '—'}</span>
                               </div>
                               {seg && (
                                 <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:'0 0 auto', padding:'0 1px', marginTop:-12 }}>
-                                  <span style={{ fontSize:10, fontWeight:700, color:_gradeColor(seg.grade) }}>{seg.grade.toFixed(1)}%</span>
+                                  <span style={{ fontSize:12, fontWeight:700, color:_gradeColor(seg.grade) }}>{seg.grade.toFixed(1)}%</span>
                                   <div style={{ height:3, width:44, background:_gradeColor(seg.grade), borderRadius:2, opacity:0.9 }} />
-                                  <span style={{ fontSize:8, color:'#3d5068' }}>
+                                  <span style={{ fontSize:12, color:'#3d5068' }}>
                                     {seg.dist < 5280 ? seg.dist.toFixed(0)+'ft' : (seg.dist/5280).toFixed(2)+'mi'}
                                   </span>
                                 </div>
@@ -5426,7 +5482,7 @@ function LinesTab({ lang='en' }) {
                         { l:'LINE LEN', v:r.totalDist<5280?r.totalDist.toFixed(0)+' ft':(r.totalDist/5280).toFixed(2)+' mi', c:'#c9d1d9' },
                       ].map(item => (
                         <div key={item.l} style={{ textAlign:'center', background:'#081622', borderRadius:6, padding:'5px 2px' }}>
-                          <div style={{ fontSize:9, color:'#5a6a7a', fontWeight:600, letterSpacing:'0.04em' }}>{item.l}</div>
+                          <div style={{ fontSize:12, color:'#5a6a7a', fontWeight:600, letterSpacing:'0.04em' }}>{item.l}</div>
                           <div style={{ fontWeight:700, color:item.c, fontSize:12, marginTop:2 }}>{item.v}</div>
                         </div>
                       ))}
@@ -5438,7 +5494,7 @@ function LinesTab({ lang='en' }) {
                     {r.badSegs.length > 0 && (
                       <div style={{ marginTop:4 }}>
                         {r.badSegs.map((s, bi) => (
-                          <div key={bi} style={{ fontSize:11, color:'#f0883e', display:'flex', alignItems:'center', gap:5, marginTop:2 }}>
+                          <div key={bi} style={{ fontSize:13, color:'#f0883e', display:'flex', alignItems:'center', gap:5, marginTop:2 }}>
                             <span style={{ background:'#f0883e22', borderRadius:4, padding:'1px 5px', fontWeight:700 }}>{s.grade.toFixed(2)}%</span>
                             {s.from.label} → {s.to.label}
                             <span style={{ color:'#5a6a7a' }}>({s.dist.toFixed(0)} ft, {Math.abs(s.drop).toFixed(1)} ft drop)</span>
@@ -5451,7 +5507,7 @@ function LinesTab({ lang='en' }) {
               })}
 
               {/* Legend */}
-              <div style={{ background:'#081622', borderRadius:8, padding:'8px 12px', fontSize:11, color:'#5a6a7a', display:'flex', flexWrap:'wrap', gap:'8px 16px', alignItems:'center' }}>
+              <div style={{ background:'#081622', borderRadius:8, padding:'8px 12px', fontSize:13, color:'#5a6a7a', display:'flex', flexWrap:'wrap', gap:'8px 16px', alignItems:'center' }}>
                 <span style={{ color:'#8b949e', fontWeight:600 }}>Grade key:</span>
                 <span><span style={{ color:'#f85149', fontWeight:700 }}>━</span> &lt;0.5% flat</span>
                 <span><span style={{ color:'#f0883e', fontWeight:700 }}>━</span> 0.5–1% marginal</span>
@@ -5514,7 +5570,7 @@ function LinesTab({ lang='en' }) {
                           style={{ flex:1, background:mainSize===sz?'linear-gradient(135deg,#3fb950,#2ea043)':'#131e2c', border:'1px solid '+(mainSize===sz?'#3fb950':'#1e2d3d'), borderRadius:8, padding:'7px 4px', fontSize:12, fontWeight:600, color:mainSize===sz?'#07090f':'#5a6a7a', cursor:'pointer' }}>{sz}</button>
                       ))}
                     </div>
-                    {mainSize !== mainRec && <div style={{ fontSize:10, color:'#f0883e', marginTop:3 }}>⚠ Recommend {mainRec} for {totalTaps2} tap{totalTaps2!==1?'s':''}</div>}
+                    {mainSize !== mainRec && <div style={{ fontSize:12, color:'#f0883e', marginTop:3, display:'flex', alignItems:'center', gap:5 }}><I.alert size={12} color="#f0883e" /> Recommend {mainRec} for {totalTaps2} tap{totalTaps2!==1?'s':''}</div>}
                   </div>
                 </div>
 
@@ -5531,7 +5587,7 @@ function LinesTab({ lang='en' }) {
                         ['mainTee',  'Main line tee (each)'],
                       ].map(([k, label]) => (
                         <div key={k}>
-                          <div style={{ fontSize:10, color:'#5a6a7a', marginBottom:2 }}>{label}</div>
+                          <div style={{ fontSize:12, color:'#5a6a7a', marginBottom:2 }}>{label}</div>
                           <div style={{ display:'flex', alignItems:'center', gap:4 }}>
                             <span style={{ color:'#3fb950', fontSize:12 }}>$</span>
                             <input type="number" defaultValue={matPrices[k]} step="0.01" min="0"
@@ -5554,9 +5610,9 @@ function LinesTab({ lang='en' }) {
                         <div style={{ display:'flex', alignItems:'center', gap:6, fontWeight:600, fontSize:13 }}>
                           <I.tank size={13} color="#58a6ff" /> {r.tank.label}
                         </div>
-                        <span style={{ fontSize:11, color:'#5a6a7a' }}>{r.trees.length} tree{r.trees.length!==1?'s':''} · {rTaps} tap{rTaps!==1?'s':''}</span>
+                        <span style={{ fontSize:13, color:'#5a6a7a' }}>{r.trees.length} tree{r.trees.length!==1?'s':''} · {rTaps} tap{rTaps!==1?'s':''}</span>
                       </div>
-                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:4, fontSize:11 }}>
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:4, fontSize:13 }}>
                         <div style={{ background:'#081622', borderRadius:6, padding:'5px 6px' }}>
                           <div style={{ color:'#5a6a7a' }}>{latDia} lateral</div>
                           <div style={{ fontWeight:700, color:'#58a6ff' }}>{rLat.toFixed(0)} ft</div>
@@ -5575,7 +5631,7 @@ function LinesTab({ lang='en' }) {
                 })}
 
                 <div style={{ background:'#0d2b15', borderRadius:10, padding:'12px 14px', border:'1px solid #1a4a25', marginTop:4 }}>
-                  <div style={{ fontWeight:700, fontSize:13, color:'#3fb950', marginBottom:10 }}>📦 Order List</div>
+                  <div style={{ fontWeight:700, fontSize:13, color:'#3fb950', marginBottom:10 }}><I.package size={14} color="#3fb950" /> Order List</div>
                   {[
                     { item:`${latDia} lateral tubing`, qty:`${lateralFt.toFixed(0)} ft`, order:`${orderFt(lateralFt)} ft`, cost:latCost, color:'#58a6ff' },
                     { item:`${mainSize} main line`,     qty:`${mainFt.toFixed(0)} ft`,    order:`${orderFt(mainFt)} ft`,   cost:mainCost,  color:'#3fb950' },
@@ -5587,7 +5643,7 @@ function LinesTab({ lang='en' }) {
                     <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'5px 0', borderBottom:'1px solid #1a4a25' }}>
                       <div>
                         <div style={{ fontSize:13, color:row.color, fontWeight:500 }}>{row.item}</div>
-                        <div style={{ fontSize:10, color:'#3d5068' }}>Measured: {row.qty} · Order: {row.order}</div>
+                        <div style={{ fontSize:12, color:'#3d5068' }}>Measured: {row.qty} · Order: {row.order}</div>
                       </div>
                       <div style={{ fontSize:14, fontWeight:700, color:'#3fb950', flexShrink:0, marginLeft:8 }}>${row.cost.toFixed(2)}</div>
                     </div>
@@ -5595,7 +5651,7 @@ function LinesTab({ lang='en' }) {
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:10 }}>
                     <div>
                       <div style={{ fontWeight:700, color:'#3fb950', fontSize:15 }}>Est. Total</div>
-                      <div style={{ fontSize:11, color:'#5a6a7a' }}>Material cost only · {latNote}</div>
+                      <div style={{ fontSize:13, color:'#5a6a7a' }}>Material cost only · {latNote}</div>
                     </div>
                     <div style={{ fontSize:22, fontWeight:800, color:'#3fb950' }}>${total.toFixed(2)}</div>
                   </div>
@@ -5611,19 +5667,19 @@ function LinesTab({ lang='en' }) {
                 <div className="card-title" style={{ marginBottom:0 }}><CardIcon bg="#1a1500" icon="mapPin" />Tank Spots</div>
                 <button className="btn-secondary" style={{ padding:'5px 12px', fontSize:12 }} onClick={clearSpots}>Clear</button>
               </div>
-              <div style={{ fontSize:11, color:'#5a6a7a', marginBottom:8 }}>Suggested collection points — ranked by gravity-flow score.</div>
+              <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:8 }}>Suggested collection points — ranked by gravity-flow score.</div>
               {tankSpots.map((s,i) => (
                 <div key={i} style={{ background:'#0f1720', borderRadius:10, padding:'10px 14px', marginBottom:6, border:'1px solid #2d2000' }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                     <div>
-                      <div style={{ fontWeight:600, color:'#e6b800', fontSize:13 }}>★ Spot {i+1}</div>
-                      <div style={{ fontSize:11, color:'#5a6a7a', marginTop:2 }}>
+                      <div style={{ fontWeight:600, color:'#e6b800', fontSize:13, display:'flex', alignItems:'center', gap:5 }}><I.star size={13} color="#e6b800" /> Spot {i+1}</div>
+                      <div style={{ fontSize:13, color:'#5a6a7a', marginTop:2 }}>
                         {s.lat.toFixed(5)}, {s.lon.toFixed(5)} · {s.treesAbove}/{treePins.filter(p=>p.elev!=null).length} trees ≥1% grade
                       </div>
                     </div>
                     <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
                       <div style={{ fontWeight:700, color:'#e0a44a', fontSize:15 }}>{s.elev.toFixed(1)} ft</div>
-                      <button onClick={()=>placeSpotAsTank(s)} style={{ background:'linear-gradient(135deg,#58a6ff,#1f6feb)', border:'none', borderRadius:7, padding:'4px 10px', fontSize:11, fontWeight:700, color:'#fff', cursor:'pointer', whiteSpace:'nowrap' }}>+ Place as Tank</button>
+                      <button onClick={()=>placeSpotAsTank(s)} style={{ background:'linear-gradient(135deg,#58a6ff,#1f6feb)', border:'none', borderRadius:7, padding:'4px 10px', fontSize:13, fontWeight:700, color:'#fff', cursor:'pointer', whiteSpace:'nowrap' }}>+ Place as Tank</button>
                     </div>
                   </div>
                 </div>
@@ -5639,7 +5695,7 @@ function LinesTab({ lang='en' }) {
           {treePins.length === 0 ? (
             <div className="card">
               <div className="empty-state">
-                <div className="empty-icon">🍁</div>
+                <div className="empty-icon" style={{display:'flex',justifyContent:'center'}}><I.mapleLeaf size={40} color="#2dd4a7" /></div>
                 <div className="empty-title">No trees yet</div>
                 Tap the map in Tap Tree mode to add your first tree.
               </div>
@@ -5655,7 +5711,7 @@ function LinesTab({ lang='en' }) {
                     return (
                       <div key={k} style={{ background:'#0f1720', borderRadius:8, padding:'8px 4px', textAlign:'center', border:`1px solid ${_HEALTH_COLORS[k]}44` }}>
                         <div style={{ fontSize:16, fontWeight:800, color:_HEALTH_COLORS[k] }}>{cnt}</div>
-                        <div style={{ fontSize:9, color:'#5a6a7a', marginTop:2 }}>{l}</div>
+                        <div style={{ fontSize:12, color:'#5a6a7a', marginTop:2 }}>{l}</div>
                       </div>
                     );
                   })}
@@ -5667,7 +5723,7 @@ function LinesTab({ lang='en' }) {
                     const cnt = treePins.filter(p => p.species === k).length;
                     if (cnt === 0) return null;
                     return (
-                      <span key={k} style={{ background:_SPECIES_COLORS[k]+'22', border:`1px solid ${_SPECIES_COLORS[k]}55`, borderRadius:6, padding:'3px 8px', fontSize:11, color:_SPECIES_COLORS[k], fontWeight:600 }}>
+                      <span key={k} style={{ background:_SPECIES_COLORS[k]+'22', border:`1px solid ${_SPECIES_COLORS[k]}55`, borderRadius:6, padding:'3px 8px', fontSize:13, color:_SPECIES_COLORS[k], fontWeight:600 }}>
                         {l} ({cnt})
                       </span>
                     );
@@ -5690,9 +5746,9 @@ function LinesTab({ lang='en' }) {
                       onClick={() => { setSelectedPinId(p.id); setShowPinPanel(true); zoomToPin(p); }}>
                       {/* Species circle with health ring */}
                       <div style={{ position:'relative', flexShrink:0 }}>
-                        <div style={{ width:36, height:36, borderRadius:'50%', background:sColor+'33', border:`3px solid ${hColor}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>🍁</div>
+                        <div style={{ width:36, height:36, borderRadius:'50%', background:sColor+'33', border:`3px solid ${hColor}`, display:'flex', alignItems:'center', justifyContent:'center' }}><I.mapleLeaf size={17} color={sColor} /></div>
                         {mlColor && (
-                          <div style={{ position:'absolute', bottom:-3, right:-3, width:14, height:14, borderRadius:'50%', background:mlColor, border:'1.5px solid #0a1420', display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, fontWeight:800, color:'#fff' }}>
+                          <div style={{ position:'absolute', bottom:-3, right:-3, width:14, height:14, borderRadius:'50%', background:mlColor, border:'1.5px solid #0a1420', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, color:'#fff' }}>
                             {p.mainline}
                           </div>
                         )}
@@ -5700,9 +5756,9 @@ function LinesTab({ lang='en' }) {
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ fontWeight:700, fontSize:13, color:'#c9d1d9', display:'flex', alignItems:'center', gap:6 }}>
                           {p.label}
-                          <span style={{ fontSize:10, color:sColor, background:sColor+'22', borderRadius:4, padding:'1px 5px' }}>{_SPECIES_LABELS[p.species]||'Unknown'}</span>
+                          <span style={{ fontSize:12, color:sColor, background:sColor+'22', borderRadius:4, padding:'1px 5px' }}>{_SPECIES_LABELS[p.species]||'Unknown'}</span>
                         </div>
-                        <div style={{ fontSize:11, color:'#5a6a7a', marginTop:2, display:'flex', gap:8, flexWrap:'wrap' }}>
+                        <div style={{ fontSize:13, color:'#5a6a7a', marginTop:2, display:'flex', gap:8, flexWrap:'wrap' }}>
                           {p.dbh && <span>DBH: {p.dbh}"</span>}
                           {p.taps && <span>Taps: {p.taps}</span>}
                           {p.elev != null && <span style={{ color:'#e0a44a' }}>↑ {p.elev.toFixed(0)} ft</span>}
@@ -5736,7 +5792,7 @@ function LinesTab({ lang='en' }) {
                         style={{ width:'100%', background:'transparent', border:'none', borderBottom:'1px solid transparent', color:'#c9d1d9', fontWeight:700, fontSize:13, padding:'2px 0', outline:'none', boxSizing:'border-box' }}
                         onFocus={e => e.target.style.borderBottomColor = ml.color}
                         onBlur={e => { e.target.style.borderBottomColor = 'transparent'; if (!e.target.value.trim()) renameMainline(ml.id, 'Mainline ' + ml.id); }} />
-                      <div style={{ fontSize:11, color:'#5a6a7a' }}>{mlTrees.length} tree{mlTrees.length!==1?'s':''} · {mlTaps} tap{mlTaps!==1?'s':''}</div>
+                      <div style={{ fontSize:13, color:'#5a6a7a' }}>{mlTrees.length} tree{mlTrees.length!==1?'s':''} · {mlTaps} tap{mlTaps!==1?'s':''}</div>
                     </div>
                   </div>
                   <button onClick={() => deleteMainline(ml.id)} aria-label={`Delete mainline ${ml.id}`} title="Delete this mainline"
@@ -5748,7 +5804,7 @@ function LinesTab({ lang='en' }) {
                   <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
                     {mlTrees.map(p => (
                       <button key={p.id} onClick={() => { setSelectedPinId(p.id); setShowPinPanel(true); zoomToPin(p); }}
-                        style={{ background:ml.color+'22', border:`1px solid ${ml.color}55`, borderRadius:6, padding:'3px 9px', fontSize:11, color:ml.color, cursor:'pointer', fontWeight:600 }}>
+                        style={{ background:ml.color+'22', border:`1px solid ${ml.color}55`, borderRadius:6, padding:'3px 9px', fontSize:13, color:ml.color, cursor:'pointer', fontWeight:600 }}>
                         {p.label}
                       </button>
                     ))}
@@ -5775,7 +5831,7 @@ function LinesTab({ lang='en' }) {
                 <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
                   {unassigned.map(p => (
                     <button key={p.id} onClick={() => { setSelectedPinId(p.id); setShowPinPanel(true); zoomToPin(p); }}
-                      style={{ background:'#1e2d3d', border:'1px solid #2d3d50', borderRadius:6, padding:'3px 9px', fontSize:11, color:'#8b949e', cursor:'pointer' }}>
+                      style={{ background:'#1e2d3d', border:'1px solid #2d3d50', borderRadius:6, padding:'3px 9px', fontSize:13, color:'#8b949e', cursor:'pointer' }}>
                       {p.label}
                     </button>
                   ))}
@@ -5794,7 +5850,7 @@ function LinesTab({ lang='en' }) {
             Import your property boundary from a GPS app or GIS export. Supported formats: KML (Google Earth), GPX, GeoJSON.
           </div>
           <label style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, background:'linear-gradient(135deg,#8b5cf6,#6d28d9)', border:'none', borderRadius:10, padding:'13px', fontSize:14, fontWeight:700, color:'#fff', cursor:'pointer' }}>
-            📂 Import Property File
+            <I.folder size={17} color="#fff" /> Import Property File
             <input type="file" accept=".kml,.gpx,.geojson,.json" style={{ display:'none' }}
               onChange={e => { const f = e.target.files[0]; if (f) _sbImportPropertyFile(f, r => { setPropMsg(r); setHasProperty(!!ls.get(PROPERTY_KEY, null)); }); e.target.value=''; }} />
           </label>
@@ -5810,7 +5866,7 @@ function LinesTab({ lang='en' }) {
               ✕ Clear Property Lines
             </button>
           )}
-          <div style={{ marginTop:12, fontSize:11, color:'#3d5068', lineHeight:1.6 }}>
+          <div style={{ marginTop:12, fontSize:13, color:'#3d5068', lineHeight:1.6 }}>
             Tip: In Google Earth, right-click your polygon → Save place as → KML.
             In onX Hunt or CalTopo, export as GeoJSON.
           </div>
@@ -5826,14 +5882,17 @@ function LinesTab({ lang='en' }) {
           {/* Header */}
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ fontSize:20 }}>{_PIN_TYPE_CFG.find(c=>c.id===selectedPin.type)?.emoji||'📍'}</span>
+              <span style={{ display:'inline-flex', alignItems:'center' }}>
+                {React.createElement((_PIN_TYPE_CFG.find(c=>c.id===selectedPin.type)||{}).Icon || I.mapPin,
+                  { size:20, color:(_PIN_TYPE_CFG.find(c=>c.id===selectedPin.type)||{}).bg || '#ef4444' })}
+              </span>
               <div>
                 <div style={{ fontWeight:800, fontSize:16, color:'#c9d1d9' }}>{selectedPin.label}</div>
-                <div style={{ fontSize:11, color:'#5a6a7a', display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+                <div style={{ fontSize:13, color:'#5a6a7a', display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
                   <span>{selectedPin.lat.toFixed(5)}, {selectedPin.lon.toFixed(5)}</span>
                   {selectedPin.accuracy != null && (
                     <span style={{
-                      fontWeight:700, fontSize:10, borderRadius:4, padding:'1px 5px',
+                      fontWeight:700, fontSize:12, borderRadius:4, padding:'1px 5px',
                       background: selectedPin.accuracy <= 5 ? 'rgba(45,212,167,0.15)' : selectedPin.accuracy <= 15 ? 'rgba(244,164,74,0.15)' : 'rgba(248,113,113,0.15)',
                       color:       selectedPin.accuracy <= 5 ? '#2dd4a7'              : selectedPin.accuracy <= 15 ? '#f4a44a'              : '#f87171',
                     }}>± {selectedPin.accuracy} m</span>
@@ -5849,7 +5908,7 @@ function LinesTab({ lang='en' }) {
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:12 }}>
               {/* Species */}
               <div>
-                <div style={{ fontSize:10, fontWeight:700, color:'#5a6a7a', marginBottom:4 }}>SPECIES</div>
+                <div style={{ fontSize:12, fontWeight:700, color:'#5a6a7a', marginBottom:4 }}>SPECIES</div>
                 <select value={selectedPin.species||'sugar_maple'} onChange={e => updatePinField(selectedPin.id, 'species', e.target.value)}
                   style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'none', borderRadius:8, padding:'8px 10px', color:'#c9d1d9', fontSize:12, outline:'none' }}>
                   {Object.entries(_SPECIES_LABELS).map(([k,l]) => <option key={k} value={k}>{l}</option>)}
@@ -5858,7 +5917,7 @@ function LinesTab({ lang='en' }) {
 
               {/* Health */}
               <div>
-                <div style={{ fontSize:10, fontWeight:700, color:'#4a5a6a', marginBottom:4, letterSpacing:'0.06em' }}>HEALTH</div>
+                <div style={{ fontSize:12, fontWeight:700, color:'#4a5a6a', marginBottom:4, letterSpacing:'0.06em' }}>HEALTH</div>
                 <select value={selectedPin.health||'good'} onChange={e => updatePinField(selectedPin.id, 'health', e.target.value)}
                   style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'none', borderRadius:8, padding:'8px 10px', color:'#c9d1d9', fontSize:12, outline:'none' }}>
                   {Object.entries(_HEALTH_LABELS).map(([k,l]) => <option key={k} value={k}>{l}</option>)}
@@ -5867,7 +5926,7 @@ function LinesTab({ lang='en' }) {
 
               {/* DBH */}
               <div>
-                <div style={{ fontSize:10, fontWeight:700, color:'#5a6a7a', marginBottom:4 }}>DBH (inches)</div>
+                <div style={{ fontSize:12, fontWeight:700, color:'#5a6a7a', marginBottom:4 }}>DBH (inches)</div>
                 <input type="number" min="1" max="60" step="0.5"
                   value={selectedPin.dbh||''} placeholder="e.g. 14"
                   onChange={e => updatePinField(selectedPin.id, 'dbh', e.target.value)}
@@ -5876,7 +5935,7 @@ function LinesTab({ lang='en' }) {
 
               {/* Taps */}
               <div>
-                <div style={{ fontSize:10, fontWeight:700, color:'#4a5a6a', marginBottom:4, letterSpacing:'0.06em' }}>TAP COUNT</div>
+                <div style={{ fontSize:12, fontWeight:700, color:'#4a5a6a', marginBottom:4, letterSpacing:'0.06em' }}>TAP COUNT</div>
                 <input type="number" min="0" max="4" step="1"
                   value={selectedPin.taps||''} placeholder="0–4"
                   onChange={e => updatePinField(selectedPin.id, 'taps', e.target.value)}
@@ -5885,7 +5944,7 @@ function LinesTab({ lang='en' }) {
 
               {/* Mainline */}
               <div style={{ gridColumn:'1/-1' }}>
-                <div style={{ fontSize:10, fontWeight:700, color:'#5a6a7a', marginBottom:4 }}>MAINLINE ASSIGNMENT</div>
+                <div style={{ fontSize:12, fontWeight:700, color:'#5a6a7a', marginBottom:4 }}>MAINLINE ASSIGNMENT</div>
                 <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                   {[{id:'',label:'None'},...mainlines].map(ml => {
                     const on  = (selectedPin.mainline||'') === ml.id;
@@ -5909,14 +5968,14 @@ function LinesTab({ lang='en' }) {
 
           {/* Label (rename) */}
           <div style={{ marginBottom:10 }}>
-            <div style={{ fontSize:10, fontWeight:700, color:'#4a5a6a', marginBottom:4, letterSpacing:'0.06em' }}>LABEL</div>
+            <div style={{ fontSize:12, fontWeight:700, color:'#4a5a6a', marginBottom:4, letterSpacing:'0.06em' }}>LABEL</div>
             <input value={selectedPin.label} onChange={e => updatePinField(selectedPin.id, 'label', e.target.value)}
               style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'none', borderRadius:8, padding:'9px 12px', color:'#e2e8f0', fontSize:13, outline:'none', boxSizing:'border-box', fontWeight:600 }} />
           </div>
 
           {/* Notes */}
           <div style={{ marginBottom:14 }}>
-            <div style={{ fontSize:10, fontWeight:700, color:'#4a5a6a', marginBottom:4, letterSpacing:'0.06em' }}>NOTES</div>
+            <div style={{ fontSize:12, fontWeight:700, color:'#4a5a6a', marginBottom:4, letterSpacing:'0.06em' }}>NOTES</div>
             <textarea value={selectedPin.notes||''} onChange={e => updatePinField(selectedPin.id, 'notes', e.target.value)}
               placeholder="Add notes…" rows={2}
               style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'none', borderRadius:8, padding:'9px 12px', color:'#c9d1d9', fontSize:12, outline:'none', resize:'vertical', boxSizing:'border-box', fontFamily:'inherit' }} />
@@ -5927,8 +5986,8 @@ function LinesTab({ lang='en' }) {
               the phone has no bars. */}
           <div style={{ marginBottom:14 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:4 }}>
-              <label htmlFor="sr-pin-elev" style={{ fontSize:10, fontWeight:700, color:'#4a5a6a', letterSpacing:'0.06em' }}>ELEVATION (FT)</label>
-              <span style={{ fontSize:10, color: selectedPin.elev != null ? '#5a6a7a' : '#f0883e' }}>
+              <label htmlFor="sr-pin-elev" style={{ fontSize:12, fontWeight:700, color:'#4a5a6a', letterSpacing:'0.06em' }}>ELEVATION (FT)</label>
+              <span style={{ fontSize:12, color: selectedPin.elev != null ? '#5a6a7a' : '#f0883e' }}>
                 {selectedPin.elev != null
                   ? (selectedPin.elevManual ? 'you entered this' : 'from terrain data')
                   : 'needed for route grades'}
@@ -5953,7 +6012,7 @@ function LinesTab({ lang='en' }) {
               <button onClick={async () => {
                   setElevDraft('…');
                   const v = await _fetchElev(selectedPin.lat, selectedPin.lon);
-                  if (v == null) { setElevDraft(selectedPin.elev != null ? String(selectedPin.elev) : ''); setRouteMsg('❌ No elevation from the network. Type it in instead — a topo map or a handheld GPS will give you the number.'); return; }
+                  if (v == null) { setElevDraft(selectedPin.elev != null ? String(selectedPin.elev) : ''); setRouteMsg('No elevation from the network. Type it in instead — a topo map or a handheld GPS will give you the number.'); return; }
                   const r = Math.round(v * 10) / 10;
                   setElevDraft(String(r));
                   updatePinField(selectedPin.id, 'elev', r);
@@ -5987,9 +6046,9 @@ class AppErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div style={{ padding:20, background:'#1a0000', border:'2px solid #f85149', borderRadius:12, margin:20, color:'#ff6b6b' }}>
-          <h2 style={{ color:'#f85149', marginBottom:10 }}>⚠ App Error</h2>
+          <h2 style={{ color:'#f85149', marginBottom:10, display:'flex', alignItems:'center', gap:8 }}><I.alert size={20} color="#f85149" /> App Error</h2>
           <pre style={{ whiteSpace:'pre-wrap', fontSize:12, color:'#ccc' }}>{String(this.state.error)}</pre>
-          <pre style={{ whiteSpace:'pre-wrap', fontSize:11, color:'#888', marginTop:10 }}>{this.state.error?.stack}</pre>
+          <pre style={{ whiteSpace:'pre-wrap', fontSize:13, color:'#888', marginTop:10 }}>{this.state.error?.stack}</pre>
         </div>
       );
     }
@@ -6249,12 +6308,14 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                   : t(lang,'wxNoRunDaysHint')}
               </div>
             </div>
-            <div style={{ fontSize:28 }}>{goodDays > 0 ? '\uD83C\uDF41' : '\u2744\uFE0F'}</div>
+            <div style={{ display:'flex' }}>{goodDays > 0
+              ? <I.mapleLeaf size={26} color="#2dd4a7" />
+              : <I.snowflake size={26} color="#58a6ff" />}</div>
           </div>
 
           {/* 7-day score bar strip */}
           <div className="card" style={{ padding:'14px 12px' }}>
-            <div style={{ fontSize:11, fontWeight:700, color:'#5a6a7a', letterSpacing:'0.08em', marginBottom:12 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:'#5a6a7a', letterSpacing:'0.08em', marginBottom:12 }}>
               {t(lang,'wxSapForecast')}
             </div>
             <div style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:4 }}>
@@ -6266,7 +6327,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                     background: selDay === i ? scoreBg(day.score) : 'transparent',
                     borderColor: selDay === i ? scoreColor(day.score) : '#21262d'
                   }}>
-                  <span style={{ fontSize:11, fontWeight:700, color: selDay === i ? '#e6edf3' : '#8b949e' }}>
+                  <span style={{ fontSize:13, fontWeight:700, color: selDay === i ? '#e6edf3' : '#8b949e' }}>
                     {day.dayLabel}
                   </span>
                   <div style={{ width:22, height:64, background:'#21262d', borderRadius:11, position:'relative', overflow:'hidden', margin:'2px 0' }}>
@@ -6282,15 +6343,15 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                   <span style={{ fontSize:12, fontWeight:700, color: scoreColor(day.score) }}>
                     {day.score > 0 ? day.score : '\u2014'}
                   </span>
-                  <span style={{ fontSize:10, color:'#f0883e', fontWeight:600 }}>{day.hiF}\u00b0</span>
-                  <span style={{ fontSize:10, color:'#58a6ff' }}>{day.loF}\u00b0</span>
+                  <span style={{ fontSize:12, color:'#f0883e', fontWeight:600 }}>{day.hiF}\u00b0</span>
+                  <span style={{ fontSize:12, color:'#58a6ff' }}>{day.loF}\u00b0</span>
                 </button>
               ))}
             </div>
             {/* Legend */}
             <div style={{ display:'flex', flexWrap:'wrap', gap:'5px 12px', marginTop:10, paddingTop:10, borderTop:'1px solid #21262d' }}>
               {[[`#3fb950`,t(lang,'scoreLeg80')],[`#7cc950`,t(lang,'scoreLeg62')],[`#d4a017`,t(lang,'scoreLeg44')],[`#3d5068`,t(lang,'scoreLegNo')]].map(([c, lbl]) => (
-                <div key={lbl} style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'#8b949e' }}>
+                <div key={lbl} style={{ display:'flex', alignItems:'center', gap:5, fontSize:13, color:'#8b949e' }}>
                   <div style={{ width:10, height:10, borderRadius:3, background:c, flexShrink:0 }} />
                   {lbl}
                 </div>
@@ -6309,7 +6370,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                       {({'Excellent':t(lang,'qualExcellent'),'Good':t(lang,'qualGood'),'Fair':t(lang,'qualFair'),'Poor':t(lang,'qualPoor'),'No Flow':t(lang,'qualNoFlow')}[sel.quality]||sel.quality)} ({sel.score}/100)
                     </span>
                     {sel.buddyRisk && (
-                      <span style={{ fontSize:11, color:'#f0883e', fontWeight:700, background:'rgba(240,136,62,0.12)', border:'1px solid rgba(240,136,62,0.3)', borderRadius:8, padding:'2px 8px' }}>
+                      <span style={{ fontSize:13, color:'#f0883e', fontWeight:700, background:'rgba(240,136,62,0.12)', border:'1px solid rgba(240,136,62,0.3)', borderRadius:8, padding:'2px 8px' }}>
                         {t(lang,'wxBuddyRiskBadge')}
                       </span>
                     )}
@@ -6320,38 +6381,40 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                   <div style={{ fontSize:17, fontWeight:700, color:'#58a6ff' }}>{sel.loF}\u00b0F</div>
                 </div>
               </div>
-              <div style={{ fontSize:11, fontWeight:700, color:'#5a6a7a', letterSpacing:'0.08em', marginBottom:6 }}>{t(lang,'wxScoringFactors')}</div>
+              <div style={{ fontSize:13, fontWeight:700, color:'#5a6a7a', letterSpacing:'0.08em', marginBottom:6 }}>{t(lang,'wxScoringFactors')}</div>
               {[
-                { icon:'\u2744\uFE0F', label:t(lang,'wxNightFreeze'), val:sel.loF+'\u00b0F',
+                { Icon:I.snowflake, tint:'#58a6ff', label:t(lang,'wxNightFreeze'), val:sel.loF+'\u00b0F',
                   note: sel.loF >= 18 && sel.loF <= 28 ? t(lang,'wxIdealRange') : sel.loF < 18 ? t(lang,'wxVeryCold') : sel.loF < 32 ? t(lang,'wxLightFreeze') : t(lang,'wxNoFreeze') },
-                { icon:'\u2600\uFE0F', label:t(lang,'wxDayThaw'),    val:sel.hiF+'\u00b0F',
+                { Icon:I.sun, tint:'#e0a44a', label:t(lang,'wxDayThaw'),    val:sel.hiF+'\u00b0F',
                   note: sel.hiF >= 40 && sel.hiF < 46 ? t(lang,'wxIdealRange') : sel.hiF >= 50 ? t(lang,'wxBuddyRunRisk') : sel.hiF >= 33 ? t(lang,'wxMarginalThaw') : t(lang,'wxNoThaw') },
-                { icon:'\uD83D\uDCCA', label:t(lang,'wxDtSwing'), val:(sel.hiF-sel.loF)+'\u00b0F',
+                { Icon:I.barChart, tint:'#2dd4a7', label:t(lang,'wxDtSwing'), val:(sel.hiF-sel.loF)+'\u00b0F',
                   note: (sel.hiF-sel.loF) >= 25 ? t(lang,'wxExcellent') : (sel.hiF-sel.loF) >= 18 ? t(lang,'wxGood') : t(lang,'wxLimited') },
-                { icon:'\uD83D\uDCA8', label:t(lang,'wxWind'),       val:sel.windMph+' mph',
+                { Icon:I.wind, tint:'#8b949e', label:t(lang,'wxWind'),       val:sel.windMph+' mph',
                   note: sel.windMph <= 10 ? t(lang,'wxCalm') : sel.windMph <= 20 ? t(lang,'wxLightWind') : t(lang,'wxReducesFlow') },
-                { icon:'\uD83C\uDF27', label:t(lang,'wxPrecip'),     val:sel.precipIn+'"',
+                { Icon:I.droplet, tint:'#58a6ff', label:t(lang,'wxPrecip'),     val:sel.precipIn+'"',
                   note: sel.precipIn < 0.05 ? t(lang,'wxClearSky') : sel.precipIn < 0.2 ? t(lang,'wxLightRain') : t(lang,'wxHeavyRain') },
-                { icon:'\uD83C\uDF24', label:t(lang,'wxSunshine'),   val:((sel.sunSec||0)/3600).toFixed(1)+'h',
+                { Icon:I.cloudSun, tint:'#e0a44a', label:t(lang,'wxSunshine'),   val:((sel.sunSec||0)/3600).toFixed(1)+'h',
                   note: (sel.sunSec||0)/3600 >= 7 ? t(lang,'wxSunny') : (sel.sunSec||0)/3600 >= 4 ? t(lang,'wxPartlySunny') : t(lang,'wxOvercast') }
               ].map(row => (
                 <div key={row.label} className="wx-factor-row">
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <span style={{ fontSize:14 }}>{row.icon}</span>
+                    <span style={{ display:'inline-flex', alignItems:'center', width:16 }}>
+                      {React.createElement(row.Icon, { size:15, color:row.tint })}
+                    </span>
                     <span style={{ fontSize:13, color:'#8b949e' }}>{row.label}</span>
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                     <span style={{ fontSize:13, fontWeight:600, color:'#e6edf3' }}>{row.val}</span>
-                    <span style={{ fontSize:11, color:'#5a6a7a', minWidth:80, textAlign:'right' }}>{row.note}</span>
+                    <span style={{ fontSize:13, color:'#5a6a7a', minWidth:80, textAlign:'right' }}>{row.note}</span>
                   </div>
                 </div>
               ))}
               {sel.buddyRisk && (
                 <div style={{ marginTop:12, background:'rgba(240,136,62,0.08)', border:'1px solid rgba(240,136,62,0.2)', borderRadius:8, padding:'9px 12px', fontSize:12, color:'#f0883e', lineHeight:1.5 }}>
-                  <strong>\u26A0 Buddy Run:</strong> High temps above 50\u00b0F can trigger bud break, turning sap bitter and ending the season. Taste your sap and watch the trees closely.
+                  <strong><I.alert size={13} color="currentColor" /> Buddy Run:</strong> High temps above 50\u00b0F can trigger bud break, turning sap bitter and ending the season. Taste your sap and watch the trees closely.
                 </div>
               )}
-              <div style={{ marginTop:10, fontSize:11, color:'#3d5068', lineHeight:1.6 }}>
+              <div style={{ marginTop:10, fontSize:13, color:'#3d5068', lineHeight:1.6 }}>
                 Model based on Acer saccharum physiology (Cornell/UVM Proctor research). Factors: freeze depth, thaw quality, \u0394T swing, sunshine, wind, precipitation, run streak. Individual sugarbush conditions vary.
               </div>
             </div>
@@ -6368,9 +6431,9 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
               const tooWarm    = day.hiF > 50 && day.loF > 32;
               const allFreeze  = day.hiF < 32;
               let badge = null;
-              if      (ideal)      badge = <span style={{ background:'rgba(63,185,80,0.15)', color:'#3fb950', fontSize:11, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(63,185,80,0.25)' }}>{t(lang,'badgeIdeal')}</span>;
+              if      (ideal)      badge = <span style={{ background:'rgba(63,185,80,0.15)', color:'#3fb950', fontSize:13, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(63,185,80,0.25)' }}>{t(lang,'badgeIdeal')}</span>;
               else if (freezeThaw) badge = <span className="good-badge">{t(lang,'badgeFreezeThaw')}</span>;
-              else if (tooWarm)    badge = <span style={{ background:'rgba(240,136,62,0.13)', color:'#f0883e', fontSize:11, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(240,136,62,0.22)' }}>{t(lang,'badgeTooWarm')}</span>;
+              else if (tooWarm)    badge = <span style={{ background:'rgba(240,136,62,0.13)', color:'#f0883e', fontSize:13, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(240,136,62,0.22)' }}>{t(lang,'badgeTooWarm')}</span>;
               else if (allFreeze)  badge = <span className="freeze-badge">{t(lang,'badgeAllFreeze')}</span>;
               return (
                 <div key={day.date} className="weather-day" style={{ borderLeft: ideal?'3px solid #3fb950':tooWarm?'3px solid #f0883e':'3px solid transparent' }}>
@@ -6401,20 +6464,20 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
       {/* ── Empty state ── */}
       {!loading && !wxData && (
         <div className="card" style={{ textAlign:'center', padding:'28px 14px' }}>
-          <div style={{ fontSize:42, marginBottom:12 }}>🌡️</div>
+          <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><I.thermometer size={40} color="#e0a44a" /></div>
           <div style={{ fontWeight:700, fontSize:16, marginBottom:8 }}>{t(lang,'wxEmptyTitle')}</div>
           <div style={{ color:'#5a6a7a', fontSize:13, lineHeight:1.7, marginBottom:16 }}>
             SweetRun pulls the 7-day forecast from Open-Meteo and scores each day for sap flow potential based on freeze-thaw cycles, temperature swing, sunshine, wind, and precipitation.
           </div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:8, justifyContent:'center' }}>
             {[
-              ['\u2744\uFE0F','Ideal freeze: 18\u201328\u00b0F'],
-              ['\u2600\uFE0F','Ideal thaw: 40\u201346\u00b0F'],
-              ['\uD83D\uDCCA','\u0394T swing \u2265 25\u00b0F = excellent'],
-              ['\uD83D\uDCA8','High wind reduces flow']
-            ].map(([ic, tx]) => (
+              [I.snowflake,'#58a6ff','Ideal freeze: 18\u201328\u00b0F'],
+              [I.sun,'#e0a44a','Ideal thaw: 40\u201346\u00b0F'],
+              [I.barChart,'#2dd4a7','\u0394T swing \u2265 25\u00b0F = excellent'],
+              [I.wind,'#8b949e','High wind reduces flow']
+            ].map(([Ico, tint, tx]) => (
               <div key={tx} style={{ background:'#161b22', border:'1px solid #21262d', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#8b949e', display:'flex', alignItems:'center', gap:6 }}>
-                {ic} {tx}
+                <Ico size={13} color={tint} /> {tx}
               </div>
             ))}
           </div>
@@ -6857,26 +6920,26 @@ function ssSearch(query, ctx) {
 }
 
 const SS_CATS = [
-  { id:'all',          label:'All Topics',       icon:'🍁' },
-  { id:'biology',      label:'Sap Biology',      icon:'🌳' },
-  { id:'tapping',      label:'Tapping',          icon:'🔨' },
-  { id:'vacuum',       label:'Vacuum & Tubing',  icon:'💨' },
-  { id:'ro',           label:'Reverse Osmosis',  icon:'💧' },
-  { id:'evaporation',  label:'Evaporation',      icon:'🔥' },
-  { id:'finishing',    label:'Finishing & Grade', icon:'🏆' },
-  { id:'weather',      label:'Weather & Climate', icon:'🌤️' },
-  { id:'tree_health',  label:'Tree Health',      icon:'🌿' },
-  { id:'business',     label:'Business & Econ',  icon:'📊' },
-  { id:'lines',        label:'Lines & Collection',icon:'〰️' },
-  { id:'troubleshooting',label:'Troubleshoot',   icon:'🔧' },
+  { id:'all',            label:'All Topics',        Icon:I.mapleLeaf },
+  { id:'biology',        label:'Sap Biology',       Icon:I.tree },
+  { id:'tapping',        label:'Tapping',           Icon:I.hammer },
+  { id:'vacuum',         label:'Vacuum & Tubing',   Icon:I.wind },
+  { id:'ro',             label:'Reverse Osmosis',   Icon:I.filter },
+  { id:'evaporation',    label:'Evaporation',       Icon:I.flame },
+  { id:'finishing',      label:'Finishing & Grade', Icon:I.trophy },
+  { id:'weather',        label:'Weather & Climate', Icon:I.cloudSun },
+  { id:'tree_health',    label:'Tree Health',       Icon:I.leaf },
+  { id:'business',       label:'Business & Econ',   Icon:I.barChart },
+  { id:'lines',          label:'Lines & Collection',Icon:I.network },
+  { id:'troubleshooting',label:'Troubleshoot',      Icon:I.wrench },
 ];
 
 function SubScoreBar({ label, score, color }) {
   return (
     <div className="sage-fadein">
       <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
-        <span style={{fontSize:10,color:'#5a6a7a',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.06em'}}>{label}</span>
-        <span style={{fontSize:10,color,fontWeight:800}}>{score}%</span>
+        <span style={{fontSize:12,color:'#5a6a7a',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.06em'}}>{label}</span>
+        <span style={{fontSize:12,color,fontWeight:800}}>{score}%</span>
       </div>
       <div style={{height:5,background:'#1e2d3d',borderRadius:3,overflow:'hidden'}}>
         <div style={{height:'100%',width:`${score}%`,background:color,borderRadius:3,boxShadow:`0 0 8px ${color}50`,transition:'width 0.8s ease'}} />
@@ -6894,15 +6957,15 @@ function InsightRow({ ins }) {
       onClick={()=>setOpen(v=>!v)}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <span style={{fontSize:11,fontWeight:900,color:borderColor,width:14,textAlign:'center',lineHeight:1}}>{icon}</span>
+          <span style={{fontSize:13,fontWeight:900,color:borderColor,width:14,textAlign:'center',lineHeight:1}}>{icon}</span>
           <span style={{fontSize:13,fontWeight:600,color:'#c9d1d9'}}>{ins.title}</span>
         </div>
-        <span style={{fontSize:10,color:'#3d5068',marginLeft:8}}>{open?'▲':'▼'}</span>
+        <span style={{fontSize:12,color:'#3d5068',marginLeft:8}}>{open?'▲':'▼'}</span>
       </div>
-      <div style={{fontSize:11,color:'#5a6a7a',marginTop:3,marginLeft:22,lineHeight:1.5}}>{ins.body}</div>
+      <div style={{fontSize:13,color:'#5a6a7a',marginTop:3,marginLeft:22,lineHeight:1.5}}>{ins.body}</div>
       {open && (
         <div style={{marginTop:8,marginLeft:22,background:'#0d1a2b',borderRadius:6,padding:'8px 10px',border:`1px solid ${borderColor}30`}}>
-          <div style={{fontSize:10,color:borderColor,fontWeight:700,letterSpacing:'0.06em',marginBottom:3}}>WHAT TO DO</div>
+          <div style={{fontSize:12,color:borderColor,fontWeight:700,letterSpacing:'0.06em',marginBottom:3}}>WHAT TO DO</div>
           <div style={{fontSize:12,color:'#8b949e',lineHeight:1.6}}>{ins.action}</div>
         </div>
       )}
@@ -6943,8 +7006,8 @@ function BrixSparkline({ data }) {
       </svg>
       <div style={{textAlign:'right',flexShrink:0,minWidth:52}}>
         <div style={{fontSize:22,fontWeight:900,color:trendColor,lineHeight:1}}>{trend}</div>
-        <div style={{fontSize:11,fontWeight:700,color:trendColor}}>{trendLabel}</div>
-        <div style={{fontSize:10,color:'#5a6a7a'}}>{last}° Brix</div>
+        <div style={{fontSize:13,fontWeight:700,color:trendColor}}>{trendLabel}</div>
+        <div style={{fontSize:12,color:'#5a6a7a'}}>{last}° Brix</div>
       </div>
     </div>
   );
@@ -6978,10 +7041,10 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
     <div style={{background:'#0d1a2b',border:'1px solid #1e2d3d',borderRadius:16,padding:'20px 24px',marginBottom:20}}>
       <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
         <div style={{width:8,height:8,borderRadius:'50%',background:'#3d5068'}}/>
-        <span style={{fontSize:11,fontWeight:700,letterSpacing:'0.1em',color:'#3d5068'}}>SEASON INTELLIGENCE</span>
+        <span style={{fontSize:13,fontWeight:700,letterSpacing:'0.1em',color:'#3d5068'}}>SEASON INTELLIGENCE</span>
       </div>
       <div style={{textAlign:'center',padding:'20px 0'}}>
-        <div style={{fontSize:36,marginBottom:10}}>🧠</div>
+        <div style={{marginBottom:10,display:'flex',justifyContent:'center'}}><I.brain size={34} color="#2dd4a7" /></div>
         <div style={{fontSize:14,fontWeight:600,color:'#8b949e'}}>Awaiting season data</div>
         <div style={{fontSize:12,color:'#3d5068',marginTop:4,lineHeight:1.6}}>Log taps, sap, and syrup in the Log tab<br/>to activate intelligence.</div>
       </div>
@@ -6992,7 +7055,7 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
     <div style={{background:'#0d1a2b',border:'1px solid #1e2d3d',borderRadius:16,padding:'20px 24px',marginBottom:20}}>
       <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
         <div className="sage-pulse" style={{width:8,height:8,borderRadius:'50%',background:'#3fb950'}}/>
-        <span style={{fontSize:11,fontWeight:700,letterSpacing:'0.1em',color:'#3fb950'}}>ANALYZING SEASON DATA…</span>
+        <span style={{fontSize:13,fontWeight:700,letterSpacing:'0.1em',color:'#3fb950'}}>ANALYZING SEASON DATA…</span>
       </div>
       {[75,55,85,65].map((w,i)=>(
         <div key={i} style={{height:13,background:'#1e2d3d',borderRadius:6,marginBottom:9,overflow:'hidden'}}>
@@ -7079,12 +7142,12 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
           <div className="sage-pulse" style={{width:8,height:8,borderRadius:'50%',background:'#3fb950'}}/>
-          <span style={{fontSize:11,fontWeight:700,letterSpacing:'0.1em',color:'#3fb950'}}>SEASON INTELLIGENCE</span>
-          <span style={{fontSize:11,color:'#3d5068'}}>· {season}</span>
+          <span style={{fontSize:13,fontWeight:700,letterSpacing:'0.1em',color:'#3fb950'}}>SEASON INTELLIGENCE</span>
+          <span style={{fontSize:13,color:'#3d5068'}}>· {season}</span>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:6,background:'#07090f',borderRadius:20,padding:'3px 10px',border:'1px solid #1e2d3d'}}>
           <div style={{width:6,height:6,borderRadius:'50%',background:confColor}}/>
-          <span style={{fontSize:9,color:'#5a6a7a',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em'}}>{confidence} confidence · {dataPoints} signals</span>
+          <span style={{fontSize:12,color:'#5a6a7a',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em'}}>{confidence} confidence · {dataPoints} signals</span>
         </div>
       </div>
 
@@ -7092,8 +7155,8 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
       <div style={{display:'flex',gap:14,marginBottom:16,alignItems:'stretch'}}>
         <div style={{background:'#07090f',borderRadius:12,padding:'14px 18px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minWidth:76,border:`1.5px solid ${gradeColor}50`,flexShrink:0}}>
           <div style={{fontSize:46,fontWeight:900,color:gradeColor,lineHeight:1,textShadow:`0 0 24px ${gradeColor}80`}}>{grade}</div>
-          <div style={{fontSize:9,color:'#3d5068',fontWeight:700,letterSpacing:'0.1em',marginTop:4,textTransform:'uppercase'}}>Season Score</div>
-          <div style={{fontSize:11,color:gradeColor,fontWeight:700,marginTop:2}}>{overall}%</div>
+          <div style={{fontSize:12,color:'#3d5068',fontWeight:700,letterSpacing:'0.1em',marginTop:4,textTransform:'uppercase'}}>Season Score</div>
+          <div style={{fontSize:13,color:gradeColor,fontWeight:700,marginTop:2}}>{overall}%</div>
         </div>
         <div style={{flex:1,display:'flex',flexDirection:'column',gap:9,justifyContent:'center'}}>
           {yieldScore!==null && <SubScoreBar label="Yield / Tap" score={yieldScore} color="#3fb950"/>}
@@ -7114,40 +7177,40 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
       {bestRun&&parseFloat(bestRun.val)>0 && (
         <div style={{background:'#07090f',border:'1px solid #1e2d3d',borderRadius:10,padding:'10px 14px',marginBottom:12,display:'flex',justifyContent:'space-between',alignItems:'center'}} className="sage-fadein">
           <div>
-            <div style={{fontSize:9,color:'#3d5068',fontWeight:700,letterSpacing:'0.1em',marginBottom:2}}>BEST RUN THIS SEASON</div>
+            <div style={{fontSize:12,color:'#3d5068',fontWeight:700,letterSpacing:'0.1em',marginBottom:2}}>BEST RUN THIS SEASON</div>
             <div style={{fontSize:16,fontWeight:800,color:'#c9d1d9'}}>{parseFloat(bestRun.val).toFixed(1)} gal sap</div>
-            <div style={{fontSize:11,color:'#5a6a7a'}}>{bestRun.date||'Date not logged'}</div>
+            <div style={{fontSize:13,color:'#5a6a7a'}}>{bestRun.date||'Date not logged'}</div>
           </div>
-          <div style={{fontSize:28}}>🏆</div>
+          <div style={{display:'flex'}}><I.trophy size={28} color="#e0a44a" /></div>
         </div>
       )}
 
       {/* ── brix sparkline ── */}
       {sparkData.length>=3 && (
         <div style={{background:'#07090f',border:'1px solid #1e2d3d',borderRadius:10,padding:'10px 14px',marginBottom:12}} className="sage-fadein">
-          <div style={{fontSize:9,color:'#3d5068',fontWeight:700,letterSpacing:'0.1em',marginBottom:8}}>BRIX TREND THIS SEASON</div>
+          <div style={{fontSize:12,color:'#3d5068',fontWeight:700,letterSpacing:'0.1em',marginBottom:8}}>BRIX TREND THIS SEASON</div>
           <BrixSparkline data={sparkData}/>
         </div>
       )}
 
       {/* ── flow forecast ── */}
       <div style={{background:'#07090f',border:'1px solid #1e2d3d',borderRadius:10,padding:'12px 14px',marginBottom:12}}>
-        <div style={{fontSize:9,color:'#3d5068',fontWeight:700,letterSpacing:'0.1em',marginBottom:10}}>TODAY'S FLOW FORECAST</div>
+        <div style={{fontSize:12,color:'#3d5068',fontWeight:700,letterSpacing:'0.1em',marginBottom:10}}>TODAY'S FLOW FORECAST</div>
         <div style={{display:'flex',gap:8,alignItems:'flex-end'}}>
           <div style={{flex:1}}>
-            <div style={{fontSize:10,color:'#5a6a7a',marginBottom:4}}>Night low (°F)</div>
+            <div style={{fontSize:12,color:'#5a6a7a',marginBottom:4}}>Night low (°F)</div>
             <input type="number" value={condLow} onChange={e=>setCondLow(e.target.value)} placeholder="e.g. 28"
               style={{width:'100%',boxSizing:'border-box',background:'#131e2c',border:'1px solid #1e2d3d',borderRadius:8,padding:'8px 10px',color:'#c9d1d9',fontSize:13,outline:'none'}}/>
           </div>
           <div style={{flex:1}}>
-            <div style={{fontSize:10,color:'#5a6a7a',marginBottom:4}}>Day high (°F)</div>
+            <div style={{fontSize:12,color:'#5a6a7a',marginBottom:4}}>Day high (°F)</div>
             <input type="number" value={condHigh} onChange={e=>setCondHigh(e.target.value)} placeholder="e.g. 42"
               style={{width:'100%',boxSizing:'border-box',background:'#131e2c',border:'1px solid #1e2d3d',borderRadius:8,padding:'8px 10px',color:'#c9d1d9',fontSize:13,outline:'none'}}/>
           </div>
           {flowScore>0 && (
             <div style={{textAlign:'center',minWidth:58,paddingBottom:2}}>
               <div style={{fontSize:24,fontWeight:900,color:flowColor,lineHeight:1}}>{flowScore}%</div>
-              <div style={{fontSize:9,color:flowColor,fontWeight:700,letterSpacing:'0.05em'}}>FLOW</div>
+              <div style={{fontSize:12,color:flowColor,fontWeight:700,letterSpacing:'0.05em'}}>FLOW</div>
             </div>
           )}
         </div>
@@ -7157,15 +7220,15 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
               <div style={{height:'100%',width:`${flowScore}%`,background:flowColor,borderRadius:3,transition:'width 0.6s ease'}}/>
             </div>
             <div style={{fontSize:12,fontWeight:700,color:flowColor}}>{flowLabel}</div>
-            <div style={{fontSize:11,color:'#3d5068',marginTop:3}}>Based on freeze-thaw science: best flow requires overnight freeze (≤32°F) + daytime thaw (36–50°F).</div>
+            <div style={{fontSize:13,color:'#3d5068',marginTop:3}}>Based on freeze-thaw science: best flow requires overnight freeze (≤32°F) + daytime thaw (36–50°F).</div>
           </div>
         )}
-        {flowScore===0 && <div style={{fontSize:11,color:'#3d5068',marginTop:6}}>Enter tonight's low and tomorrow's high to get a flow prediction.</div>}
+        {flowScore===0 && <div style={{fontSize:13,color:'#3d5068',marginTop:6}}>Enter tonight's low and tomorrow's high to get a flow prediction.</div>}
       </div>
 
       {/* ── tip of the month ── */}
       <div style={{borderLeft:'3px solid #58a6ff',background:'#07090f',borderRadius:'0 10px 10px 0',padding:'10px 14px'}}>
-        <div style={{fontSize:9,color:'#58a6ff',fontWeight:700,letterSpacing:'0.1em',marginBottom:4}}>TIP OF THE MONTH</div>
+        <div style={{fontSize:12,color:'#58a6ff',fontWeight:700,letterSpacing:'0.1em',marginBottom:4}}>TIP OF THE MONTH</div>
         <div style={{fontSize:12,color:'#8b949e',lineHeight:1.65}}>{tip}</div>
       </div>
     </div>
@@ -7213,14 +7276,14 @@ function BreakevenCalculator({ trees, units }) {
     const [focused, setFocused] = React.useState(false);
     return (
       <div style={{marginBottom:12}}>
-        <div style={{fontSize:10,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:5}}>{label}</div>
+        <div style={{fontSize:12,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:5}}>{label}</div>
         <div style={{display:'flex',alignItems:'center',gap:6,background:'#0a1420',border:`1.5px solid ${focused?'#3fb950':'#1e2d3d'}`,borderRadius:9,padding:'8px 12px',transition:'border-color 0.15s'}}>
           {prefix && <span style={{color:'#5a6a7a',fontSize:14,flexShrink:0}}>{prefix}</span>}
           <input type="number" value={val||''} onChange={e=>set(parseFloat(e.target.value)||0)}
             onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
             placeholder="0" min="0"
             style={{flex:1,background:'transparent',border:'none',outline:'none',color:'#e2eaf4',fontSize:small?13:15,fontFamily:'inherit'}}/>
-          {suffix && <span style={{color:'#5a6a7a',fontSize:11,flexShrink:0}}>{suffix}</span>}
+          {suffix && <span style={{color:'#5a6a7a',fontSize:13,flexShrink:0}}>{suffix}</span>}
         </div>
       </div>
     );
@@ -7233,11 +7296,11 @@ function BreakevenCalculator({ trees, units }) {
       {/* Header */}
       <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
         <div style={{width:32,height:32,borderRadius:8,background:'rgba(88,166,255,0.1)',border:'1px solid rgba(88,166,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-          <span style={{fontSize:16}}>💰</span>
+          <I.dollar size={16} color="#e0a44a" />
         </div>
         <div>
           <div style={{fontSize:14,fontWeight:800,color:'#e2eaf4',lineHeight:1.2}}>Break-Even Calculator</div>
-          <div style={{fontSize:11,color:'#5a6a7a',marginTop:2}}>How much do you need to make to cover costs?</div>
+          <div style={{fontSize:13,color:'#5a6a7a',marginTop:2}}>How much do you need to make to cover costs?</div>
         </div>
       </div>
 
@@ -7252,13 +7315,13 @@ function BreakevenCalculator({ trees, units }) {
       {/* Labor toggle */}
       <div style={{marginBottom:16}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-          <div style={{fontSize:10,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em'}}>Labor Cost</div>
+          <div style={{fontSize:12,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em'}}>Labor Cost</div>
           <button onClick={()=>setHobby(v=>!v)}
             style={{display:'flex',alignItems:'center',gap:6,background:'none',border:'none',cursor:'pointer',padding:0}}>
             <div style={{width:32,height:18,borderRadius:9,background:hobby?'#3fb950':'#1e2d3d',transition:'background 0.2s',position:'relative',flexShrink:0}}>
               <div style={{position:'absolute',top:2,left:hobby?14:2,width:14,height:14,borderRadius:'50%',background:'#fff',transition:'left 0.2s'}}/>
             </div>
-            <span style={{fontSize:11,color:hobby?'#3fb950':'#5a6a7a',fontWeight:600}}>{hobby?'Hobby ($0)':'Paid labor'}</span>
+            <span style={{fontSize:13,color:hobby?'#3fb950':'#5a6a7a',fontWeight:600}}>{hobby?'Hobby ($0)':'Paid labor'}</span>
           </button>
         </div>
         {!hobby && (
@@ -7278,7 +7341,7 @@ function BreakevenCalculator({ trees, units }) {
           <div style={{textAlign:'center',color:'#5a6a7a',fontSize:13}}>Enter your costs above to calculate break-even.</div>
         ) : (
           <>
-            <div style={{fontSize:11,fontWeight:700,color:'#58a6ff',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:8}}>Your Break-Even Point</div>
+            <div style={{fontSize:13,fontWeight:700,color:'#58a6ff',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:8}}>Your Break-Even Point</div>
             <div style={{fontSize:13,color:'#c9d1d9',lineHeight:1.9}}>
               <span style={{color:'#58a6ff',fontWeight:800,fontSize:22}}>{bevPerTap.toFixed(2)}</span>
               <span style={{color:'#5a6a7a',fontSize:13}}> gal/tap needed  ·  </span>
@@ -7294,7 +7357,7 @@ function BreakevenCalculator({ trees, units }) {
       </div>
 
       {/* Scenario bars */}
-      <div style={{fontSize:10,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:10}}>Season Scenarios</div>
+      <div style={{fontSize:12,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:10}}>Season Scenarios</div>
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
         {scenarios.map(({label,yld,color,bgc})=>{
           const syrupGal  = t * yld;
@@ -7321,8 +7384,8 @@ function BreakevenCalculator({ trees, units }) {
                 )}
               </div>
               <div style={{display:'flex',justifyContent:'space-between',marginTop:4}}>
-                <span style={{fontSize:10,color:'#5a6a7a'}}>{yld.toFixed(2)} gal/tap · {syrupGal.toFixed(1)} gal total</span>
-                <span style={{fontSize:10,color:above?'#3fb950':'#f85149',fontWeight:600}}>
+                <span style={{fontSize:12,color:'#5a6a7a'}}>{yld.toFixed(2)} gal/tap · {syrupGal.toFixed(1)} gal total</span>
+                <span style={{fontSize:12,color:above?'#3fb950':'#f85149',fontWeight:600}}>
                   {totalCost===0?'':above?'Above break-even ✓':'Below break-even'}
                 </span>
               </div>
@@ -7332,7 +7395,7 @@ function BreakevenCalculator({ trees, units }) {
       </div>
       {totalCost > 0 && bevPerTap > 0.30 && (
         <div style={{marginTop:12,background:'rgba(248,81,73,0.06)',border:'1px solid rgba(248,81,73,0.2)',borderRadius:8,padding:'10px 12px',fontSize:12,color:'#f85149',lineHeight:1.5}}>
-          ⚠️ Your break-even ({bevPerTap.toFixed(2)} gal/tap) is above the great-year benchmark. Consider reducing costs or increasing your selling price.
+          <I.alert size={13} color="currentColor" /> Your break-even ({bevPerTap.toFixed(2)} gal/tap) is above the great-year benchmark. Consider reducing costs or increasing your selling price.
         </div>
       )}
     </div>
@@ -7416,7 +7479,8 @@ function SapFreshnessTracker() {
   // Status colour
   const pct = Math.min(100, (currentHU / CRITICAL_HU) * 100);
   const gaugeColor = pct < 40 ? '#3fb950' : pct < 70 ? '#f59e0b' : '#f85149';
-  const statusLabel = pct < 40 ? '🟢 Fresh' : pct < 70 ? '🟡 Boil Soon' : '🔴 Boil Now';
+  const statusLabel = pct < 40 ? 'Fresh' : pct < 70 ? 'Boil Soon' : 'Boil Now';
+  const statusDot   = pct < 40 ? '#3fb950' : pct < 70 ? '#e0a44a' : '#f85149';
 
   const fmtEta = (ts) => {
     if (!ts) return null;
@@ -7460,20 +7524,22 @@ function SapFreshnessTracker() {
         border:'1px solid #5c2d00',borderRadius:open?'12px 12px 0 0':12,
         padding:'12px 16px',cursor:'pointer'}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <span style={{fontSize:18}}>🧪</span>
+          <I.flask size={18} color="#2dd4a7" />
           <div style={{textAlign:'left'}}>
             <div style={{fontSize:13,fontWeight:800,color:'#f0883e'}}>Sap Freshness Tracker</div>
-            <div style={{fontSize:11,color:'#8a6040'}}>Degree-hour spoilage predictor</div>
+            <div style={{fontSize:13,color:'#8a6040'}}>Degree-hour spoilage predictor</div>
           </div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
           {status === 'tracking' && (
-            <span style={{fontSize:11,fontWeight:700,color:gaugeColor,background:`${gaugeColor}18`,
-              border:`1px solid ${gaugeColor}40`,borderRadius:6,padding:'2px 8px'}}>
+            <span style={{fontSize:13,fontWeight:700,color:gaugeColor,background:`${gaugeColor}18`,
+              border:`1px solid ${gaugeColor}40`,borderRadius:6,padding:'2px 8px',
+              display:'inline-flex',alignItems:'center',gap:6}}>
+              <span style={{width:7,height:7,borderRadius:'50%',background:statusDot,flexShrink:0}} />
               {statusLabel}
             </span>
           )}
-          <span style={{color:'#5a6a7a',fontSize:11}}>{open?'▲':'▼'}</span>
+          <span style={{color:'#5a6a7a',fontSize:13}}>{open?'▲':'▼'}</span>
         </div>
       </button>
 
@@ -7499,7 +7565,7 @@ function SapFreshnessTracker() {
               <button onClick={startTracking}
                 style={{background:'#f0883e',border:'none',borderRadius:10,padding:'12px 28px',
                   fontWeight:800,fontSize:14,color:'#07090f',cursor:'pointer'}}>
-                🧊 Start Freshness Timer
+                <I.snowflake size={16} color="#07090f" /> Start Freshness Timer
               </button>
             </div>
           )}
@@ -7507,7 +7573,7 @@ function SapFreshnessTracker() {
           {/* Done states */}
           {(status === 'boiled' || status === 'dumped') && (
             <div style={{textAlign:'center',padding:'14px 0'}}>
-              <div style={{fontSize:28,marginBottom:8}}>{status==='boiled'?'✅':'🗑️'}</div>
+              <div style={{marginBottom:8,display:'flex',justifyContent:'center'}}>{status==='boiled' ? <I.check size={28} color="#3fb950" /> : <I.trash size={26} color="#8b949e" />}</div>
               <div style={{fontSize:14,fontWeight:700,color: status==='boiled'?'#3fb950':'#f85149',marginBottom:4}}>
                 {status==='boiled'?'Marked as Boiled — great work!':'Marked as Dumped'}
               </div>
@@ -7541,7 +7607,8 @@ function SapFreshnessTracker() {
                   {/* Gauge */}
                   <div style={{marginBottom:16}}>
                     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-                      <span style={{fontSize:13,fontWeight:700,color:gaugeColor}}>{statusLabel}</span>
+                      <span style={{fontSize:13,fontWeight:700,color:gaugeColor,display:'inline-flex',alignItems:'center',gap:6}}>
+                        <span style={{width:7,height:7,borderRadius:'50%',background:statusDot,flexShrink:0}} />{statusLabel}</span>
                       <span style={{fontSize:12,color:'#5a6a7a'}}>
                         {currentHU.toFixed(0)} / {CRITICAL_HU} heat units
                       </span>
@@ -7554,7 +7621,7 @@ function SapFreshnessTracker() {
                       <div style={{position:'absolute',left:`${(WARN_HU/CRITICAL_HU)*100}%`,
                         top:0,bottom:0,width:2,background:'rgba(255,255,255,0.3)'}}/>
                     </div>
-                    <div style={{display:'flex',justifyContent:'space-between',marginTop:4,fontSize:10,color:'#3d5068'}}>
+                    <div style={{display:'flex',justifyContent:'space-between',marginTop:4,fontSize:12,color:'#3d5068'}}>
                       <span>Fresh</span><span>Warn</span><span>Critical</span>
                     </div>
                   </div>
@@ -7568,26 +7635,26 @@ function SapFreshnessTracker() {
                     ].map(([lbl,val,clr])=>(
                       <div key={lbl} style={{background:'#0d1a2b',borderRadius:8,padding:'10px 8px',textAlign:'center'}}>
                         <div style={{fontSize:18,fontWeight:800,color:clr,lineHeight:1}}>{val}</div>
-                        <div style={{fontSize:10,color:'#5a6a7a',marginTop:3}}>{lbl}</div>
+                        <div style={{fontSize:12,color:'#5a6a7a',marginTop:3}}>{lbl}</div>
                       </div>
                     ))}
                   </div>
 
                   {/* Predictions */}
                   <div style={{background:'#0d1a2b',borderRadius:10,padding:'12px 14px',marginBottom:14}}>
-                    <div style={{fontSize:10,fontWeight:700,color:'#f0883e',textTransform:'uppercase',
+                    <div style={{fontSize:12,fontWeight:700,color:'#f0883e',textTransform:'uppercase',
                       letterSpacing:'0.08em',marginBottom:10}}>Forecast</div>
                     {currentHU < WARN_HU && warnEta && (
                       <div style={{display:'flex',justifyContent:'space-between',
                         fontSize:12,color:'#c9d1d9',marginBottom:6}}>
-                        <span>⚡ Boil-soon threshold</span>
+                        <span style={{display:'inline-flex',alignItems:'center',gap:6}}><I.zap size={13} color="#f0883e" /> Boil-soon threshold</span>
                         <span style={{color:'#f59e0b',fontWeight:700}}>{fmtEta(warnEta)}</span>
                       </div>
                     )}
                     {critEta && (
                       <div style={{display:'flex',justifyContent:'space-between',
                         fontSize:12,color:'#c9d1d9',marginBottom:6}}>
-                        <span>🚨 Critical — boil or dump</span>
+                        <span style={{display:'inline-flex',alignItems:'center',gap:6}}><I.alert size={13} color="#f85149" /> Critical — boil or dump</span>
                         <span style={{color:'#f85149',fontWeight:700}}>{fmtEta(critEta)}</span>
                       </div>
                     )}
@@ -7599,7 +7666,7 @@ function SapFreshnessTracker() {
                     {bestBoilStart && (
                       <div style={{display:'flex',justifyContent:'space-between',
                         fontSize:12,color:'#c9d1d9',marginTop:6,paddingTop:6,borderTop:'1px solid #1e2d3d'}}>
-                        <span>❄️ Best boil window</span>
+                        <span style={{display:'inline-flex',alignItems:'center',gap:6}}><I.snowflake size={13} color="#58a6ff" /> Best boil window</span>
                         <span style={{color:'#58a6ff',fontWeight:700}}>{fmtEta(bestBoilStart)}</span>
                       </div>
                     )}
@@ -7610,7 +7677,7 @@ function SapFreshnessTracker() {
                     <div style={{background:'rgba(248,81,73,0.1)',border:'1px solid rgba(248,81,73,0.35)',
                       borderRadius:10,padding:'12px 14px',marginBottom:14,textAlign:'center'}}>
                       <div style={{fontSize:14,fontWeight:800,color:'#f85149',marginBottom:4}}>
-                        🚨 Boil Now or Dump
+                        <I.alert size={16} color="#f85149" /> Boil Now or Dump
                       </div>
                       <div style={{fontSize:12,color:'#c9d1d9',lineHeight:1.5}}>
                         Your sap has accumulated {currentHU.toFixed(0)} degree-hours of heat stress.
@@ -7634,7 +7701,7 @@ function SapFreshnessTracker() {
                     <button onClick={markDumped}
                       style={{padding:'10px 8px',borderRadius:9,border:'1px solid #f85149',
                         background:'transparent',color:'#f85149',fontSize:12,cursor:'pointer',fontWeight:600}}>
-                      🗑 Dumped
+                      <I.trash size={15} color="#8b949e" /> Dumped
                     </button>
                   </div>
                 </>
@@ -7711,7 +7778,7 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
 
       {/* ── Hero header ── */}
       <div style={{textAlign:'center',padding:'32px 16px 24px',borderBottom:'1px solid #1e2d3d',marginBottom:0}}>
-        <div style={{fontSize:13,color:'#3fb950',fontWeight:700,letterSpacing:'0.18em',textTransform:'uppercase',marginBottom:10}}>🍁 Maple Intelligence</div>
+        <div style={{fontSize:13,color:'#3fb950',fontWeight:700,letterSpacing:'0.18em',textTransform:'uppercase',marginBottom:10}}><I.mapleLeaf size={14} color="#3fb950" /> Maple Intelligence</div>
         <div style={{fontSize:36,fontWeight:900,color:'#c9d1d9',letterSpacing:'-1px',lineHeight:1,marginBottom:14}}>SugarSage</div>
         <div style={{
           fontSize:16,color:'#5a6a7a',fontWeight:400,minHeight:24,
@@ -7772,7 +7839,7 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
           const active = activeCat===id;
           return (
             <button key={id} onClick={()=>{setActiveCat(id);setExpandedId(null);}}
-              style={{padding:'5px 14px',borderRadius:20,fontSize:11,fontWeight:600,cursor:'pointer',
+              style={{padding:'5px 14px',borderRadius:20,fontSize:13,fontWeight:600,cursor:'pointer',
                 whiteSpace:'nowrap',flexShrink:0,
                 border:`1px solid ${active?'#3fb950':'#1e2d3d'}`,
                 background: active?'#3fb950':'transparent',
@@ -7794,7 +7861,7 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
           <div style={{width:6,height:6,borderRadius:'50%',background:'#3fb950',boxShadow:'0 0 6px #3fb95080'}}/>
           <span style={{fontSize:12,fontWeight:700,color:'#5a6a7a',letterSpacing:'0.06em',textTransform:'uppercase'}}>Your Season Dashboard</span>
         </div>
-        <span style={{fontSize:11,color:'#3d5068'}}>{showSeason?'Hide ▲':'Show ▼'}</span>
+        <span style={{fontSize:13,color:'#3d5068'}}>{showSeason?'Hide ▲':'Show ▼'}</span>
       </button>
       {showSeason && (
         <div style={{border:'1px solid #1e2d3d',borderTop:'none',borderRadius:'0 0 10px 10px',marginBottom:16,overflow:'hidden'}}>
@@ -7854,7 +7921,7 @@ function SageCard({ entry, expanded, onToggle }) {
           cursor:'pointer',display:'flex',alignItems:'flex-start',gap:10}}>
         <div style={{flex:1}}>
           <div style={{marginBottom:4}}>
-            <span style={{fontSize:10,fontWeight:700,color,textTransform:'uppercase',letterSpacing:'0.06em'}}>
+            <span style={{fontSize:12,fontWeight:700,color,textTransform:'uppercase',letterSpacing:'0.06em'}}>
               {catLabel}
             </span>
           </div>
@@ -7866,7 +7933,7 @@ function SageCard({ entry, expanded, onToggle }) {
             </div>
           )}
         </div>
-        <span style={{fontSize:11,color:'#3d5068',marginTop:2,flexShrink:0,marginLeft:8}}>
+        <span style={{fontSize:13,color:'#3d5068',marginTop:2,flexShrink:0,marginLeft:8}}>
           {expanded ? '▲' : '▼'}
         </span>
       </button>
@@ -7875,11 +7942,11 @@ function SageCard({ entry, expanded, onToggle }) {
           <p style={{fontSize:13,lineHeight:1.8,color:'#8b949e',margin:'12px 0 14px'}}>{entry.a}</p>
           {entry.tip && (
             <div style={{borderLeft:`2px solid ${color}`,paddingLeft:12,marginBottom:12}}>
-              <div style={{fontSize:10,fontWeight:700,color,letterSpacing:'0.08em',marginBottom:4,textTransform:'uppercase'}}>Pro tip</div>
+              <div style={{fontSize:12,fontWeight:700,color,letterSpacing:'0.08em',marginBottom:4,textTransform:'uppercase'}}>Pro tip</div>
               <div style={{fontSize:12,color:'#8b949e',lineHeight:1.65}}>{entry.tip}</div>
             </div>
           )}
-          <div style={{fontSize:10,color:'#3d5068',lineHeight:1.5,borderTop:'1px solid #1e2d3d',paddingTop:10,marginTop:4}}>
+          <div style={{fontSize:12,color:'#3d5068',lineHeight:1.5,borderTop:'1px solid #1e2d3d',paddingTop:10,marginTop:4}}>
             <span style={{color:'#5a6a7a',fontWeight:600}}>Source: </span>{entry.src}
           </div>
         </div>
@@ -7893,7 +7960,7 @@ function TInput({label, val, set, ph, unit, hint}) {
   const [focused, setFocused] = React.useState(false);
   return (
     <div style={{marginBottom:14}}>
-      <div style={{fontSize:11,fontWeight:700,color:'#5a6a7a',marginBottom:5,textTransform:'uppercase',letterSpacing:'0.06em'}}>{label}</div>
+      <div style={{fontSize:13,fontWeight:700,color:'#5a6a7a',marginBottom:5,textTransform:'uppercase',letterSpacing:'0.06em'}}>{label}</div>
       <div style={{display:'flex',alignItems:'center',gap:8}}>
         <input
           value={val}
@@ -7908,7 +7975,7 @@ function TInput({label, val, set, ph, unit, hint}) {
             background:'#07090f',color:'#c9d1d9',transition:'border-color 0.15s'}}/>
         {unit && <span style={{fontSize:12,color:'#3d5068',whiteSpace:'nowrap',minWidth:40}}>{unit}</span>}
       </div>
-      {hint && <div style={{fontSize:11,color:'#3d5068',marginTop:3,lineHeight:1.4}}>{hint}</div>}
+      {hint && <div style={{fontSize:13,color:'#3d5068',marginTop:3,lineHeight:1.4}}>{hint}</div>}
     </div>
   );
 }
@@ -7962,18 +8029,18 @@ function TubingTab({ trees }) {
         <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:6}}>
           <div style={{width:42,height:42,background:'linear-gradient(135deg,#0d1a2b,#1e3a5f)',borderRadius:10,
             display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,
-            border:'1px solid #1e3a5f',flexShrink:0}}>🔧</div>
+            border:'1px solid #1e3a5f',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><I.wrench size={19} color="#58a6ff" /></div>
           <div>
             <div style={{fontSize:20,fontWeight:800,color:'#c9d1d9',letterSpacing:'-0.5px'}}>Tubing Calculator</div>
-            <div style={{fontSize:11,color:'#3d5068',marginTop:1}}>Mainline sizing · Vacuum analysis · Materials estimator</div>
+            <div style={{fontSize:13,color:'#3d5068',marginTop:1}}>Mainline sizing · Vacuum analysis · Materials estimator</div>
           </div>
         </div>
-        <div style={{fontSize:11,color:'#3d5068',marginTop:2}}>Based on Cornell Maple Program & UVM Proctor research guidelines</div>
+        <div style={{fontSize:13,color:'#3d5068',marginTop:2}}>Based on Cornell Maple Program & UVM Proctor research guidelines</div>
       </div>
 
       {/* Inputs */}
       <div style={{background:'#0d1a2b',border:'1px solid #1e2d3d',borderRadius:16,padding:20,marginBottom:14}}>
-        <div style={{fontSize:12,fontWeight:700,color:'#5a6a7a',marginBottom:14,textTransform:'uppercase',letterSpacing:'0.08em'}}>📐 Your System</div>
+        <div style={{fontSize:12,fontWeight:700,color:'#5a6a7a',marginBottom:14,textTransform:'uppercase',letterSpacing:'0.08em'}}><I.ruler size={13} color="#5a6a7a" /> Your System</div>
         <TInput label="Total Taps"             val={taps}      set={setTaps}      ph="e.g. 500"  unit="taps"    hint="Total taps in this tubing system"/>
         <TInput label="Mainline Length"         val={mainLen}   set={setMainLen}   ph="e.g. 2000" unit="ft"      hint="From vacuum pump to farthest tap"/>
         <TInput label="Average Downhill Grade"  val={grade}     set={setGrade}     ph="e.g. 8"    unit="% slope" hint="Slope toward collection tank — provides natural vacuum assist"/>
@@ -7986,7 +8053,7 @@ function TubingTab({ trees }) {
         {/* Mainline recommendation */}
         <div style={{background:'#0d1a2b',border:`1.5px solid ${calc.msColor}40`,borderLeft:`4px solid ${calc.msColor}`,
           borderRadius:'0 14px 14px 0',padding:20,marginBottom:14}} className="sage-fadein">
-          <div style={{fontSize:10,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',marginBottom:12}}>RECOMMENDED MAINLINE SIZE</div>
+          <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',marginBottom:12}}>RECOMMENDED MAINLINE SIZE</div>
           <div style={{display:'flex',alignItems:'center',gap:18}}>
             <div style={{width:72,height:72,borderRadius:'50%',
               background:`${calc.msColor}15`,border:`3px solid ${calc.msColor}`,
@@ -8003,7 +8070,7 @@ function TubingTab({ trees }) {
 
         {/* Vacuum analysis */}
         <div style={{background:'#0d1a2b',border:'1px solid #1e2d3d',borderRadius:14,padding:20,marginBottom:14}} className="sage-fadein">
-          <div style={{fontSize:10,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',marginBottom:14}}>VACUUM ANALYSIS</div>
+          <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',marginBottom:14}}>VACUUM ANALYSIS</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:14}}>
             {[
               {label:'Target at Tap', val:`${targetVac}"`,      color:'#58a6ff'},
@@ -8012,7 +8079,7 @@ function TubingTab({ trees }) {
             ].map(x=>(
               <div key={x.label} style={{textAlign:'center',background:'#07090f',borderRadius:10,padding:'12px 6px',border:`1px solid ${x.color}25`}}>
                 <div style={{fontSize:24,fontWeight:900,color:x.color,textShadow:`0 0 12px ${x.color}40`}}>{x.val}</div>
-                <div style={{fontSize:10,color:'#5a6a7a',marginTop:4,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em'}}>{x.label}</div>
+                <div style={{fontSize:12,color:'#5a6a7a',marginTop:4,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em'}}>{x.label}</div>
               </div>
             ))}
           </div>
@@ -8027,7 +8094,7 @@ function TubingTab({ trees }) {
           </div>
           {parseFloat(calc.vacPump)>27 && (
             <div style={{marginTop:10,padding:'9px 12px',background:'#1a0a0a',borderLeft:'3px solid #f85149',borderRadius:'0 8px 8px 0',fontSize:12,color:'#f85149',lineHeight:1.5}}>
-              ⚠ Pump requirement is high — consider upgrading mainline diameter or adding a mid-line pump.
+              <I.alert size={13} color="currentColor" /> Pump requirement is high — consider upgrading mainline diameter or adding a mid-line pump.
             </div>
           )}
           {parseFloat(calc.vacGain)>2 && (
@@ -8040,23 +8107,23 @@ function TubingTab({ trees }) {
         {/* Laterals + Pump */}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}>
           <div style={{background:'#0d1a2b',border:'1px solid #1e2d3d',borderRadius:14,padding:18}} className="sage-fadein">
-            <div style={{fontSize:10,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',marginBottom:10}}>LATERAL LINES</div>
+            <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',marginBottom:10}}>LATERAL LINES</div>
             <div style={{fontSize:32,fontWeight:900,color:'#c9d1d9',lineHeight:1}}>{calc.numLat}</div>
-            <div style={{fontSize:11,color:'#5a6a7a',marginTop:2,marginBottom:8}}>lateral runs</div>
+            <div style={{fontSize:13,color:'#5a6a7a',marginTop:2,marginBottom:8}}>lateral runs</div>
             <div style={{fontSize:20,fontWeight:800,color:'#8b949e'}}>{parseInt(calc.latFtTot).toLocaleString()} ft</div>
-            <div style={{fontSize:11,color:'#5a6a7a'}}>total lateral footage</div>
+            <div style={{fontSize:13,color:'#5a6a7a'}}>total lateral footage</div>
           </div>
           <div style={{background:'#0d1a2b',border:'1px solid #1e2d3d',borderRadius:14,padding:18}} className="sage-fadein">
-            <div style={{fontSize:10,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',marginBottom:10}}>VACUUM PUMP</div>
-            <div style={{fontSize:28,marginBottom:6}}>💨</div>
+            <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',marginBottom:10}}>VACUUM PUMP</div>
+            <div style={{marginBottom:6,display:'flex',justifyContent:'center'}}><I.wind size={28} color="#58a6ff" /></div>
             <div style={{fontSize:13,fontWeight:700,color:'#c9d1d9',lineHeight:1.4}}>{calc.pump}</div>
-            <div style={{fontSize:11,color:'#5a6a7a',marginTop:4}}>{calc.cfm} CFM needed</div>
+            <div style={{fontSize:13,color:'#5a6a7a',marginTop:4}}>{calc.cfm} CFM needed</div>
           </div>
         </div>
 
         {/* Materials */}
         <div style={{background:'#0d1a2b',border:'1px solid #1e2d3d',borderRadius:14,padding:20}} className="sage-fadein">
-          <div style={{fontSize:10,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',marginBottom:14}}>MATERIALS ESTIMATE</div>
+          <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',marginBottom:14}}>MATERIALS ESTIMATE</div>
           {[
             { item:`Mainline tubing (${calc.ms})`, qty:`${calc.mainFt.toLocaleString()} ft`,  note:'Includes 10% waste',   color:'#58a6ff' },
             { item:'Lateral tubing (5/16")',        qty:`${calc.latFt.toLocaleString()} ft`,   note:'Includes 10% waste',   color:'#3fb950' },
@@ -8068,19 +8135,19 @@ function TubingTab({ trees }) {
               padding:'10px 0',borderBottom:i<4?'1px solid #1e2d3d':'none'}}>
               <div>
                 <div style={{fontSize:13,fontWeight:600,color:'#c9d1d9'}}>{r.item}</div>
-                <div style={{fontSize:11,color:'#3d5068'}}>{r.note}</div>
+                <div style={{fontSize:13,color:'#3d5068'}}>{r.note}</div>
               </div>
               <div style={{fontSize:16,fontWeight:800,color:r.color}}>{r.qty}</div>
             </div>
           ))}
-          <div style={{marginTop:12,fontSize:11,color:'#3d5068',lineHeight:1.65,borderTop:'1px solid #1e2d3d',paddingTop:10}}>
+          <div style={{marginTop:12,fontSize:13,color:'#3d5068',lineHeight:1.65,borderTop:'1px solid #1e2d3d',paddingTop:10}}>
             Cornell Maple Program guidelines · 8 ft average tree spacing assumed · Consult your dealer for exact quantities.
           </div>
         </div>
 
       </>) : (
         <div style={{textAlign:'center',padding:'40px 20px'}}>
-          <div style={{fontSize:44,marginBottom:12}}>🔧</div>
+          <div style={{marginBottom:12,display:'flex',justifyContent:'center'}}><I.wrench size={42} color="#58a6ff" /></div>
           <div style={{fontSize:15,fontWeight:700,color:'#8b949e',marginBottom:6}}>Enter your system details above</div>
           <div style={{fontSize:12,color:'#3d5068',lineHeight:1.65,marginBottom:20}}>
             Mainline size, vacuum analysis, pump sizing, and materials list will appear instantly.
@@ -8194,7 +8261,7 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
       <div style={{position:'absolute',top:-30,right:-20,width:140,height:140,borderRadius:'50%',
         background:gradeColor,opacity:0.06,filter:'blur(30px)',pointerEvents:'none'}}/>
 
-      <div style={{fontSize:10,fontWeight:700,color:'#3d5068',letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:14}}>
+      <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:14}}>
         SweetRun Score — {season} Season
       </div>
 
@@ -8207,7 +8274,7 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
           <div style={{fontSize:52,fontWeight:900,color:gradeColor,lineHeight:1,
             textShadow:`0 0 30px ${gradeColor}70`}}>{grade}</div>
           <div style={{fontSize:28,fontWeight:800,color:gradeColor,lineHeight:1,marginTop:4}}>{overall}</div>
-          <div style={{fontSize:9,color:'#3d5068',fontWeight:700,letterSpacing:'0.1em',marginTop:2}}>OUT OF 100</div>
+          <div style={{fontSize:12,color:'#3d5068',fontWeight:700,letterSpacing:'0.1em',marginTop:2}}>OUT OF 100</div>
         </div>
 
         {/* Score bars */}
@@ -8215,10 +8282,10 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
           {scores.map((s,i) => (
             <div key={i}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:3}}>
-                <span style={{fontSize:10,color:'#5a6a7a',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em'}}>{s.label}</span>
+                <span style={{fontSize:12,color:'#5a6a7a',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em'}}>{s.label}</span>
                 <div style={{display:'flex',alignItems:'center',gap:6}}>
-                  <span style={{fontSize:10,color:'#3d5068'}}>{s.detail}</span>
-                  <span style={{fontSize:11,fontWeight:800,color:s.color,minWidth:28,textAlign:'right'}}>{s.score}</span>
+                  <span style={{fontSize:12,color:'#3d5068'}}>{s.detail}</span>
+                  <span style={{fontSize:13,fontWeight:800,color:s.color,minWidth:28,textAlign:'right'}}>{s.score}</span>
                 </div>
               </div>
               <div style={{height:5,background:'#1e2d3d',borderRadius:3,overflow:'hidden'}}>
@@ -8233,10 +8300,10 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
       {/* Share row */}
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',
         borderTop:'1px solid #1e2d3d',paddingTop:12,gap:12}}>
-        <div style={{fontSize:11,color:'#3d5068',flex:1,lineHeight:1.5}}>{shareText}</div>
+        <div style={{fontSize:13,color:'#3d5068',flex:1,lineHeight:1.5}}>{shareText}</div>
         <button onClick={copyShare}
           style={{background: copied?'#3fb950':'#0d1a2b',border:`1px solid ${copied?'#3fb950':'#1e2d3d'}`,
-            borderRadius:8,padding:'7px 14px',fontSize:11,fontWeight:700,
+            borderRadius:8,padding:'7px 14px',fontSize:13,fontWeight:700,
             color: copied?'#07090f':'#5a6a7a',cursor:'pointer',whiteSpace:'nowrap',
             transition:'all 0.2s',flexShrink:0}}>
           {copied ? 'Copied!' : 'Share Score'}
@@ -8342,32 +8409,32 @@ function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
 
   return (
     <div style={{background:'#07090f',border:'1px solid #1e2d3d',borderRadius:16,padding:'20px',marginBottom:14}}>
-      <div style={{fontSize:10,fontWeight:700,color:'#3d5068',letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:16}}>
+      <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:16}}>
         Yield Gap Analyzer — {season} Season
       </div>
 
       {/* Gap visual */}
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:16}}>
         <div style={{background:'#0d1a2b',borderRadius:12,padding:'14px 10px',textAlign:'center',border:'1px solid #3fb95040'}}>
-          <div style={{fontSize:9,color:'#3d5068',fontWeight:700,letterSpacing:'0.08em',marginBottom:6}}>YOU MADE</div>
+          <div style={{fontSize:12,color:'#3d5068',fontWeight:700,letterSpacing:'0.08em',marginBottom:6}}>YOU MADE</div>
           <div style={{fontSize:28,fontWeight:900,color:'#3fb950',lineHeight:1}}>{syrupGal.toFixed(1)}</div>
-          <div style={{fontSize:11,color:'#5a6a7a',marginTop:2}}>gallons</div>
+          <div style={{fontSize:13,color:'#5a6a7a',marginTop:2}}>gallons</div>
         </div>
         <div style={{background:'#0d1a2b',borderRadius:12,padding:'14px 10px',textAlign:'center',border:'1px solid #58a6ff40'}}>
-          <div style={{fontSize:9,color:'#3d5068',fontWeight:700,letterSpacing:'0.08em',marginBottom:6}}>BENCHMARK</div>
+          <div style={{fontSize:12,color:'#3d5068',fontWeight:700,letterSpacing:'0.08em',marginBottom:6}}>BENCHMARK</div>
           <div style={{fontSize:28,fontWeight:900,color:'#58a6ff',lineHeight:1}}>{theorMaxSyrupLow.toFixed(0)}–{theorMaxSyrup.toFixed(0)}</div>
-          <div style={{fontSize:11,color:'#5a6a7a',marginTop:2}}>at {gModel.low}–{gModel.high}/tap · {gModel.label}</div>
+          <div style={{fontSize:13,color:'#5a6a7a',marginTop:2}}>at {gModel.low}–{gModel.high}/tap · {gModel.label}</div>
         </div>
         <div style={{background:'#0d1a2b',borderRadius:12,padding:'14px 10px',textAlign:'center',
           border:`1px solid ${gapMid > 0 ? '#f0883e40' : '#3fb95040'}`}}>
-          <div style={{fontSize:9,color:'#3d5068',fontWeight:700,letterSpacing:'0.08em',marginBottom:6}}>
+          <div style={{fontSize:12,color:'#3d5068',fontWeight:700,letterSpacing:'0.08em',marginBottom:6}}>
             {gapMid > 0 ? 'GAP' : 'SURPLUS'}
           </div>
           <div style={{fontSize:28,fontWeight:900,lineHeight:1,
             color: gapMid > 0 ? '#f0883e' : '#3fb950'}}>
             {gapMid > 0 ? `~${gapMid.toFixed(0)}` : `+${Math.abs(gapLow).toFixed(0)}`}
           </div>
-          <div style={{fontSize:11,color:'#5a6a7a',marginTop:2}}>gallons</div>
+          <div style={{fontSize:13,color:'#5a6a7a',marginTop:2}}>gallons</div>
         </div>
       </div>
 
@@ -8380,14 +8447,14 @@ function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
             <div style={{fontSize:12,fontWeight:700,color:'#f0883e',marginBottom:3}}>
               That gap costs approximately
             </div>
-            <div style={{fontSize:11,color:'#5a6a7a',lineHeight:1.5}}>
+            <div style={{fontSize:13,color:'#5a6a7a',lineHeight:1.5}}>
               Based on ${pricePerGal}/gal retail · adjust below
             </div>
           </div>
           <div style={{textAlign:'right',flexShrink:0}}>
             <div style={{fontSize:32,fontWeight:900,color:'#f0883e',
               textShadow:'0 0 20px #f0883e60'}}>${Math.round(dollarGap).toLocaleString()}</div>
-            <div style={{fontSize:10,color:'#3d5068',marginTop:2}}>per season</div>
+            <div style={{fontSize:12,color:'#3d5068',marginTop:2}}>per season</div>
           </div>
         </div>
       )}
@@ -8395,7 +8462,7 @@ function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
       {/* Price input */}
       <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16,
         background:'#0d1a2b',borderRadius:10,padding:'10px 14px',border:'1px solid #1e2d3d'}}>
-        <span style={{fontSize:11,color:'#5a6a7a',whiteSpace:'nowrap'}}>Your retail price per gallon ($)</span>
+        <span style={{fontSize:13,color:'#5a6a7a',whiteSpace:'nowrap'}}>Your retail price per gallon ($)</span>
         <input type="number" value={pricePerGal}
           onChange={e=>{const v=parseFloat(e.target.value)||40; setPricePerGal(v); ls.set('sg_syrup_price',v);}}
           style={{width:70,background:'#07090f',border:'1px solid #1e2d3d',borderRadius:8,
@@ -8405,7 +8472,7 @@ function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
       {/* Gap bar */}
       {gapMid > 0 && (
         <div style={{marginBottom:16}}>
-          <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:'#3d5068',marginBottom:4}}>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'#3d5068',marginBottom:4}}>
             <span>0 gal</span>
             <span>Benchmark {theorMaxSyrup.toFixed(0)} gal</span>
           </div>
@@ -8417,7 +8484,7 @@ function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
               background:'repeating-linear-gradient(90deg,transparent,transparent 6px,#f0883e30 6px,#f0883e30 8px)',
               borderRight:'2px solid #f0883e'}}/>
           </div>
-          <div style={{display:'flex',gap:16,marginTop:6,fontSize:10}}>
+          <div style={{display:'flex',gap:16,marginTop:6,fontSize:12}}>
             <span style={{color:'#3fb950'}}>■ Your yield ({syrupGal.toFixed(1)} gal)</span>
             <span style={{color:'#f0883e'}}>■ Gap ({gapHigh.toFixed(0)} gal potential)</span>
           </div>
@@ -8425,7 +8492,7 @@ function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
       )}
 
       {/* Root cause analysis */}
-      <div style={{fontSize:10,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:10}}>
+      <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:10}}>
         Root Cause Analysis
       </div>
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
@@ -8447,13 +8514,13 @@ function CauseCard({ cause, sevColor }) {
           display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8}}>
         <div>
           <div style={{fontSize:12,fontWeight:700,color,marginBottom:3}}>{cause.title}</div>
-          <div style={{fontSize:11,color:'#5a6a7a',lineHeight:1.5}}>{cause.detail}</div>
+          <div style={{fontSize:13,color:'#5a6a7a',lineHeight:1.5}}>{cause.detail}</div>
         </div>
-        <span style={{fontSize:10,color:'#3d5068',flexShrink:0,marginTop:2}}>{open?'▲':'▼'}</span>
+        <span style={{fontSize:12,color:'#3d5068',flexShrink:0,marginTop:2}}>{open?'▲':'▼'}</span>
       </button>
       {open && (
         <div style={{padding:'0 14px 12px',borderTop:'1px solid #1e2d3d'}}>
-          <div style={{fontSize:9,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',textTransform:'uppercase',margin:'10px 0 8px'}}>
+          <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',textTransform:'uppercase',margin:'10px 0 8px'}}>
             Fix Priority
           </div>
           {cause.fixes.map((fix,j) => (
@@ -8461,13 +8528,13 @@ function CauseCard({ cause, sevColor }) {
               borderBottom: j < cause.fixes.length-1 ? '1px solid #131e2c' : 'none'}}>
               <div style={{flex:1}}>
                 <div style={{fontSize:12,color:'#c9d1d9',lineHeight:1.5,marginBottom:4}}>{fix.action}</div>
-                <div style={{display:'flex',gap:12,fontSize:10,color:'#3d5068'}}>
+                <div style={{display:'flex',gap:12,fontSize:12,color:'#3d5068'}}>
                   <span>Cost: <span style={{color:'#8b949e'}}>{fix.cost}</span></span>
                   <span>Time: <span style={{color:'#8b949e'}}>{fix.time}</span></span>
                 </div>
               </div>
               <div style={{flexShrink:0,textAlign:'right'}}>
-                <div style={{fontSize:9,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em',
+                <div style={{fontSize:12,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em',
                   color: fix.impact==='very high'?'#3fb950':fix.impact==='high'?'#58a6ff':fix.impact==='medium'?'#f0883e':'#3d5068'}}>
                   {fix.impact} impact
                 </div>
@@ -8559,16 +8626,16 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
                 fill={isBest ? '#2dd4a7' : 'rgba(45,212,167,0.35)'}
                 rx={barW > 4 ? 2 : 0} />
               {isBest && (
-                <text x={x + barW/2} y={y - 3} fontSize="9" fill="#2dd4a7"
+                <text x={x + barW/2} y={y - 3} fontSize="12" fill="#2dd4a7"
                   textAnchor="middle" fontWeight="700">{e.val.toFixed(0)}</text>
               )}
             </g>
           );
         })}
         {/* Axis label */}
-        <text x={PAD} y={H+14} fontSize="9" fill="#3d5068">{firstDate}</text>
+        <text x={PAD} y={H+14} fontSize="12" fill="#3d5068">{firstDate}</text>
         {lastDate !== firstDate && (
-          <text x={W-PAD} y={H+14} fontSize="9" fill="#3d5068" textAnchor="end">{lastDate}</text>
+          <text x={W-PAD} y={H+14} fontSize="12" fill="#3d5068" textAnchor="end">{lastDate}</text>
         )}
       </svg>
     );
@@ -8600,14 +8667,14 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
   const Stat = ({ val, lbl, sub, accent='#2dd4a7' }) => (
     <div className="recap-stat-card" style={{ background:'#0d1a2b', border:'1px solid #1a304a', borderRadius:12, padding:'12px 10px', textAlign:'center' }}>
       <div className="recap-stat-val" style={{ fontSize:22, fontWeight:800, color:accent, lineHeight:1.1 }}>{val}</div>
-      <div className="recap-stat-lbl" style={{ fontSize:11, color:'#8a9ab0', fontWeight:600, marginTop:2 }}>{lbl}</div>
-      {sub && <div style={{ fontSize:10, color:'#3d5068', marginTop:2 }}>{sub}</div>}
+      <div className="recap-stat-lbl" style={{ fontSize:13, color:'#8a9ab0', fontWeight:600, marginTop:2 }}>{lbl}</div>
+      {sub && <div style={{ fontSize:12, color:'#3d5068', marginTop:2 }}>{sub}</div>}
     </div>
   );
 
   const Sec = ({ title, children, icon }) => (
     <div className="recap-section" style={{ background:'#0d1a2b', border:'1px solid #1a304a', borderRadius:14, padding:'14px 16px', marginBottom:12 }}>
-      <div style={{ fontSize:11, fontWeight:700, color:'#3d5068', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:10, display:'flex', alignItems:'center', gap:6 }}>
+      <div style={{ fontSize:13, fontWeight:700, color:'#3d5068', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:10, display:'flex', alignItems:'center', gap:6 }}>
         {icon}{title}
       </div>
       {children}
@@ -8634,7 +8701,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
       {/* ── Print header (only visible on print) ── */}
       <div style={{ display:'none' }} className="recap-print-header">
         <div style={{ textAlign:'center', marginBottom:20 }}>
-          <div style={{ fontSize:26, fontWeight:800 }}>🍁 {season} Maple Season Recap</div>
+          <div style={{ fontSize:26, fontWeight:800 }}><I.mapleLeaf size={24} color="#2dd4a7" /> {season} Maple Season Recap</div>
           {operatorName && <div style={{ fontSize:15, color:'#444', marginTop:4 }}>{operatorName}</div>}
           <div style={{ fontSize:12, color:'#666', marginTop:2 }}>Generated by SweetRun · sweetrun.app</div>
         </div>
@@ -8668,7 +8735,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
 
       {!hasData && (
         <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.25)', borderRadius:12, padding:'14px 16px', fontSize:13, color:'#f59e0b', lineHeight:1.5, marginBottom:16 }}>
-          ⚠️ {t(lang,'noDataMsgRecap').replace('{year}',season)}
+          <I.alert size={14} color="currentColor" /> {t(lang,'noDataMsgRecap').replace('{year}',season)}
         </div>
       )}
 
@@ -8694,7 +8761,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
       {(slog.sapCollected||[]).length > 1 && (
         <Sec title={t(lang,'sapCollByRun')} icon={<I.droplet size={12} color="#2dd4a7"/>}>
           <SapChart />
-          <div style={{ fontSize:11, color:'#3d5068', marginTop:6 }}>
+          <div style={{ fontSize:13, color:'#3d5068', marginTop:6 }}>
             {t(lang,'peakRunNote')}
           </div>
         </Sec>
@@ -8729,17 +8796,17 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
           <div style={{ display:'flex', gap:12, justifyContent:'space-between', marginBottom:8 }}>
             <div style={{ textAlign:'center', flex:1 }}>
               <div style={{ fontSize:18, fontWeight:800, color: actualRatio <= theorRatio*1.12 ? '#2dd4a7' : '#f59e0b' }}>{actualRatio.toFixed(1)}:1</div>
-              <div style={{ fontSize:11, color:'#5a6a7a' }}>{t(lang,'actualRatioShort')}</div>
+              <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'actualRatioShort')}</div>
             </div>
             <div style={{ textAlign:'center', flex:1 }}>
               <div style={{ fontSize:18, fontWeight:800, color:'#8a9ab0' }}>{theorRatio.toFixed(1)}:1</div>
-              <div style={{ fontSize:11, color:'#5a6a7a' }}>{t(lang,'rule86Lbl')} ({sapBrix}°Brix)</div>
+              <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'rule86Lbl')} ({sapBrix}°Brix)</div>
             </div>
             <div style={{ textAlign:'center', flex:1 }}>
               <div style={{ fontSize:18, fontWeight:800, color: actualRatio <= theorRatio*1.12 ? '#2dd4a7' : '#f59e0b' }}>
                 {actualRatio > 0 ? ((actualRatio - theorRatio)/theorRatio*100).toFixed(0) : '—'}%
               </div>
-              <div style={{ fontSize:11, color:'#5a6a7a' }}>{t(lang,'vsTheoretical')}</div>
+              <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'vsTheoretical')}</div>
             </div>
           </div>
           {actualRatio > theorRatio * 1.15 && (
@@ -8785,7 +8852,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
                 <div style={{ width: BAR_W, height:'100%', background: color, borderRadius:4, display:'flex', alignItems:'center', justifyContent:'flex-end', paddingRight:4 }}>
                 </div>
               </div>
-              {secondary && <div style={{ fontSize:11, color:'#3d5068', marginTop:2, textAlign:'right' }}>{secondary}</div>}
+              {secondary && <div style={{ fontSize:13, color:'#3d5068', marginTop:2, textAlign:'right' }}>{secondary}</div>}
             </div>
           );
         };
@@ -8801,19 +8868,19 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
               {showROInputs && (
                 <div style={{ marginTop:10, display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
                   <div>
-                    <div style={{ fontSize:11, color:'#5a6a7a', marginBottom:3 }}>{t(lang,'evapRateInput')}</div>
+                    <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>{t(lang,'evapRateInput')}</div>
                     <input type="number" value={recapEvapRate} min={1} max={500} step={5}
                       onChange={e => saveR('sg_recap_evap', setRecapEvapRate)(parseFloat(e.target.value)||50)}
                       style={{ width:'100%', boxSizing:'border-box', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'6px 10px', color:'#e2eaf4', fontSize:13 }} />
                   </div>
                   <div>
-                    <div style={{ fontSize:11, color:'#5a6a7a', marginBottom:3 }}>{t(lang,'woodBurnInput')}</div>
+                    <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>{t(lang,'woodBurnInput')}</div>
                     <input type="number" value={burnLbsHr} min={5} max={100} step={1}
                       onChange={e => saveR('sg_recap_burn', setBurnLbsHr)(parseFloat(e.target.value)||23)}
                       style={{ width:'100%', boxSizing:'border-box', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'6px 10px', color:'#e2eaf4', fontSize:13 }} />
                   </div>
                   <div>
-                    <div style={{ fontSize:11, color:'#5a6a7a', marginBottom:3 }}>{t(lang,'roBrixInput')}</div>
+                    <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>{t(lang,'roBrixInput')}</div>
                     <input type="number" value={recapRoBrix} min={1} max={20} step={0.5}
                       onChange={e => saveR('sg_dx_robrix', setRecapRoBrix)(parseFloat(e.target.value)||8)}
                       style={{ width:'100%', boxSizing:'border-box', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'6px 10px', color:'#e2eaf4', fontSize:13 }} />
@@ -8829,13 +8896,13 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
             </div>
 
             {/* Boil time bars */}
-            <div style={{ fontSize:11, fontWeight:700, color:'#3d5068', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:6 }}>{t(lang,'boilTimeLbl')}</div>
+            <div style={{ fontSize:13, fontWeight:700, color:'#3d5068', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:6 }}>{t(lang,'boilTimeLbl')}</div>
             <Bar label={t(lang,'straightBoilLbl')} value={straightHrs} max={maxHrs} color="#f85149" unit="hrs" />
             <Bar label={hasPreheater?t(lang,'withROPreLbl'):t(lang,'withROLbl')} value={roHrs} max={maxHrs} color="#58a6ff" unit="hrs"
               secondary={roGal > 0 ? t(lang,'roConcentratedNote').replace('{ro}',roGal.toFixed(0)).replace('{conc}',roConc.toFixed(0)) : t(lang,'noRODataNote')} />
 
             {/* Wood bars */}
-            <div style={{ fontSize:11, fontWeight:700, color:'#3d5068', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:6, marginTop:14 }}>{t(lang,'woodUsedLbl')}</div>
+            <div style={{ fontSize:13, fontWeight:700, color:'#3d5068', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:6, marginTop:14 }}>{t(lang,'woodUsedLbl')}</div>
             <Bar label={t(lang,'straightBoilLbl')} value={straightWood} max={maxWood} color="#f85149" unit="lbs" />
             <Bar label={hasPreheater?t(lang,'withROPreLbl'):t(lang,'withROLbl')} value={roWood} max={maxWood} color="#58a6ff" unit="lbs" />
 
@@ -8844,17 +8911,17 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
               <div style={{ background:'rgba(45,212,167,0.08)', border:'1px solid rgba(45,212,167,0.25)', borderRadius:10, padding:'10px 14px', marginTop:14, display:'flex', gap:20, justifyContent:'center' }}>
                 <div style={{ textAlign:'center' }}>
                   <div style={{ fontSize:20, fontWeight:800, color:'#2dd4a7' }}>{savedHrs.toFixed(0)} hrs</div>
-                  <div style={{ fontSize:11, color:'#5a6a7a' }}>{t(lang,'savedBoilingLbl')}</div>
+                  <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'savedBoilingLbl')}</div>
                 </div>
                 <div style={{ width:1, background:'rgba(255,255,255,0.08)' }} />
                 <div style={{ textAlign:'center' }}>
                   <div style={{ fontSize:20, fontWeight:800, color:'#2dd4a7' }}>{savedWood >= 1000 ? (savedWood/1000).toFixed(1)+'k' : savedWood.toFixed(0)} lbs</div>
-                  <div style={{ fontSize:11, color:'#5a6a7a' }}>{t(lang,'woodSavedLbl')}</div>
+                  <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'woodSavedLbl')}</div>
                 </div>
                 <div style={{ width:1, background:'rgba(255,255,255,0.08)' }} />
                 <div style={{ textAlign:'center' }}>
                   <div style={{ fontSize:20, fontWeight:800, color:'#2dd4a7' }}>{(savedWood/2000).toFixed(2)}</div>
-                  <div style={{ fontSize:11, color:'#5a6a7a' }}>{t(lang,'cordsSavedLbl')}</div>
+                  <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'cordsSavedLbl')}</div>
                 </div>
               </div>
             )}
@@ -8892,7 +8959,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
                     <div style={{ fontSize:12, color:'#5a6a7a', marginTop:2 }}>{ptRuns} {t(lang,'runsLbl')} · {t(lang,'ratioLbl')} {ptRatio}</div>
                   </div>
                   <div style={{ textAlign:'right' }}>
-                    <div style={{ fontWeight:700, fontSize:15, color:pt.color }}>{ptSap.toFixed(1)} <span style={{ fontSize:11, fontWeight:400 }}>{uLbl2} {t(lang,'sapShort')}</span></div>
+                    <div style={{ fontWeight:700, fontSize:15, color:pt.color }}>{ptSap.toFixed(1)} <span style={{ fontSize:13, fontWeight:400 }}>{uLbl2} {t(lang,'sapShort')}</span></div>
                     {ptSyrup > 0 && <div style={{ fontSize:12, color:'#8a9ab0' }}>{ptSyrup.toFixed(1)} {uLbl2} {t(lang,'syrupShort')}</div>}
                   </div>
                 </div>
@@ -8921,7 +8988,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
       })()}
 
       {/* ── Footer / attribution ── */}
-      <div style={{ textAlign:'center', marginTop:20, color:'#2d3d4d', fontSize:11 }}>
+      <div style={{ textAlign:'center', marginTop:20, color:'#2d3d4d', fontSize:13 }}>
         Generated by SweetRun · {new Date().toLocaleDateString()}
       </div>
     </div>
@@ -9307,11 +9374,11 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
               <div style={{ fontWeight:700, fontSize:14, color:'#e2eaf4', lineHeight:1.3 }}>{f.title}</div>
               <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
                 {f.roi > 0 && (
-                  <span style={{ background:'rgba(45,212,167,0.15)', border:'1px solid rgba(45,212,167,0.3)', borderRadius:10, padding:'2px 8px', fontSize:11, fontWeight:700, color:'#2dd4a7' }}>
+                  <span style={{ background:'rgba(45,212,167,0.15)', border:'1px solid rgba(45,212,167,0.3)', borderRadius:10, padding:'2px 8px', fontSize:13, fontWeight:700, color:'#2dd4a7' }}>
                     ${f.roi >= 1000 ? (f.roi/1000).toFixed(1)+'k' : f.roi.toFixed(0)} ROI
                   </span>
                 )}
-                <span style={{ background:'rgba(255,255,255,0.06)', borderRadius:8, padding:'2px 8px', fontSize:11, color:'#5a6a7a', fontWeight:600 }}>{s.label}</span>
+                <span style={{ background:'rgba(255,255,255,0.06)', borderRadius:8, padding:'2px 8px', fontSize:13, color:'#5a6a7a', fontWeight:600 }}>{s.label}</span>
                 <I.chevDown size={14} color="#3d5068" style={{ transform: open ? 'rotate(180deg)' : 'none', transition:'0.18s' }} />
               </div>
             </div>
@@ -9328,7 +9395,7 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
             )}
             {f.payback && (
               <div style={{ fontSize:12, color:'#f59e0b', fontWeight:600, marginBottom:10 }}>
-                💰 {f.payback}
+                <I.dollar size={14} color="#3fb950" /> {f.payback}
               </div>
             )}
             {f.effort && (
@@ -9338,7 +9405,7 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
             )}
             {f.details && f.details.length > 0 && (
               <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', paddingTop:10, marginTop:4 }}>
-                <div style={{ fontSize:11, fontWeight:700, color:'#3d5068', marginBottom:6, letterSpacing:'0.05em', textTransform:'uppercase' }}>Details & Sources</div>
+                <div style={{ fontSize:13, fontWeight:700, color:'#3d5068', marginBottom:6, letterSpacing:'0.05em', textTransform:'uppercase' }}>Details & Sources</div>
                 {f.details.map((d, i) => (
                   <div key={i} style={{ fontSize:12, color:'#6a7a8a', lineHeight:1.5, marginBottom:3, paddingLeft:8, borderLeft:'2px solid rgba(255,255,255,0.06)' }}>{d}</div>
                 ))}
@@ -9367,29 +9434,29 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
         <div style={{ fontSize:12, fontWeight:700, color:'#3d5068', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:12 }}>Operation Inputs</div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
           <div>
-            <div style={{ fontSize:11, color:'#5a6a7a', marginBottom:4 }}>Syrup price ($/gal)</div>
+            <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:4 }}>Syrup price ($/gal)</div>
             <input type="number" value={syrupPrice} onChange={e => save('sg_dx_price', setSyrupPrice)(parseFloat(e.target.value)||0)}
               style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e2eaf4', fontSize:14, fontWeight:600, boxSizing:'border-box' }} />
           </div>
           <div>
-            <div style={{ fontSize:11, color:'#5a6a7a', marginBottom:4 }}>Wood cost ($/cord)</div>
+            <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:4 }}>Wood cost ($/cord)</div>
             <input type="number" value={woodCost} onChange={e => save('sg_dx_wood', setWoodCost)(parseFloat(e.target.value)||0)}
               style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e2eaf4', fontSize:14, fontWeight:600, boxSizing:'border-box' }} />
           </div>
           <div>
-            <div style={{ fontSize:11, color:'#5a6a7a', marginBottom:4 }}>Labor rate ($/hr)</div>
+            <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:4 }}>Labor rate ($/hr)</div>
             <input type="number" value={laborRate} onChange={e => save('sg_dx_labor', setLaborRate)(parseFloat(e.target.value)||0)}
               style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e2eaf4', fontSize:14, fontWeight:600, boxSizing:'border-box' }} />
           </div>
           <div>
-            <div style={{ fontSize:11, color:'#5a6a7a', marginBottom:4 }}>RO output (°Brix)</div>
+            <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:4 }}>RO output (°Brix)</div>
             <input type="number" value={roOutBrix} onChange={e => save('sg_dx_robrix', setRoOutBrix)(parseFloat(e.target.value)||0)}
               style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e2eaf4', fontSize:14, fontWeight:600, boxSizing:'border-box' }}
               placeholder="0 = no RO" />
           </div>
         </div>
         <div style={{ marginTop:10 }}>
-          <div style={{ fontSize:11, color:'#5a6a7a', marginBottom:4 }}>Vacuum system</div>
+          <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:4 }}>Vacuum system</div>
           <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
             {[['gravity','Gravity'],['vac15','15" Vacuum'],['high','High Vac (25"+)']].map(([val,lbl]) => (
               <button key={val} onClick={() => save('sg_dx_vac', setVacLevel)(val)}
@@ -9404,7 +9471,7 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
       {/* ── Run button ── */}
       {!hasLogs && (
         <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.25)', borderRadius:12, padding:'12px 16px', marginBottom:14, fontSize:13, color:'#f59e0b', lineHeight:1.5 }}>
-          ⚠️ No {season} log data found. Add sap and syrup entries in the Log tab first for a full diagnosis.
+          <I.alert size={14} color="currentColor" /> No {season} log data found. Add sap and syrup entries in the Log tab first for a full diagnosis.
         </div>
       )}
 
@@ -9427,7 +9494,7 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
               return (
                 <div key={sev} style={{ background:s.bg, border:`1px solid ${s.border}`, borderRadius:10, padding:'8px 6px', textAlign:'center' }}>
                   <div style={{ fontSize:20, fontWeight:800, color:s.dot }}>{count}</div>
-                  <div style={{ fontSize:10, color:'#5a6a7a', fontWeight:600, lineHeight:1.3 }}>{s.label}</div>
+                  <div style={{ fontSize:12, color:'#5a6a7a', fontWeight:600, lineHeight:1.3 }}>{s.label}</div>
                 </div>
               );
             })}
@@ -9448,20 +9515,20 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
               <div style={{ fontSize:26, fontWeight:800, color:'#2dd4a7' }}>
                 ${findings.reduce((s, f) => s + (f.roi || 0), 0).toLocaleString('en-US', { maximumFractionDigits:0 })}
               </div>
-              <div style={{ fontSize:11, color:'#3d5068', marginTop:4 }}>estimated annual improvement potential</div>
+              <div style={{ fontSize:13, color:'#3d5068', marginTop:4 }}>estimated annual improvement potential</div>
             </div>
           )}
 
           {/* Benchmarks footer */}
           <div style={{ marginTop:18, padding:'12px 14px', background:'#080f18', border:'1px solid #131e2c', borderRadius:12 }}>
-            <div style={{ fontSize:10, fontWeight:700, color:'#2d3d4d', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:8 }}>Benchmark Sources</div>
+            <div style={{ fontSize:12, fontWeight:700, color:'#2d3d4d', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:8 }}>Benchmark Sources</div>
             {[
               'UVM Proctor Maple Research Center — Vermont maple production data',
               'Cornell Maple Program — RO, sugaring efficiency, and industry guides',
               'Maine Maple Producers Association (MPA) — tapping and operation guides',
               'USDA NASS — Annual Maple Syrup Production Survey',
             ].map((s, i) => (
-              <div key={i} style={{ fontSize:11, color:'#3d5068', lineHeight:1.5, marginBottom:2 }}>• {s}</div>
+              <div key={i} style={{ fontSize:13, color:'#3d5068', lineHeight:1.5, marginBottom:2 }}>• {s}</div>
             ))}
           </div>
         </>
@@ -9498,7 +9565,7 @@ function LicenseModal({ onClose, lic, onLicenseSaved }) {
     <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
       <div onClick={e=>e.stopPropagation()} style={{ background:'#0d1521', border:'1px solid #1e2d3d', borderRadius:16, padding:'22px 20px', width:'100%', maxWidth:420, boxShadow:'0 12px 48px rgba(0,0,0,0.6)', maxHeight:'85vh', overflowY:'auto' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
-          <div style={{ fontWeight:800, fontSize:17 }}>🍁 Season Pass</div>
+          <div style={{ fontWeight:800, fontSize:17 }}><I.mapleLeaf size={18} color="#2dd4a7" /> Season Pass</div>
           <button onClick={onClose} style={{ background:'none', border:'none', color:'#3d5068', cursor:'pointer', padding:4 }}><I.x size={16}/></button>
         </div>
         {lic.status === 'licensed' ? (
@@ -9516,7 +9583,7 @@ function LicenseModal({ onClose, lic, onLicenseSaved }) {
             Get your Season Pass — $49.99/year
           </a>
         )}
-        <div style={{ fontSize:11, fontWeight:800, letterSpacing:'0.1em', textTransform:'uppercase', color:'#3d5068', marginBottom:6 }}>Have a pass key?</div>
+        <div style={{ fontSize:13, fontWeight:800, letterSpacing:'0.1em', textTransform:'uppercase', color:'#3d5068', marginBottom:6 }}>Have a pass key?</div>
         <textarea value={key} onChange={e=>setKey(e.target.value)} placeholder="Paste your Season Pass key here" rows={2} style={{ ...inp, resize:'vertical', fontFamily:'monospace', fontSize:12 }} />
         <button onClick={applyKey} style={{ width:'100%', background:'#0f1720', border:'1px solid #2dd4a7', borderRadius:10, padding:'11px 16px', fontWeight:700, fontSize:13.5, color:'#2dd4a7', cursor:'pointer' }}>Activate</button>
         {msg && <div style={{ marginTop:8, fontSize:12.5, lineHeight:1.5, color: msg.ok ? '#3fb950' : '#f47067' }}>{msg.text}</div>}
@@ -9581,7 +9648,7 @@ function BackupModal({ onClose }) {
     <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
       <div onClick={e=>e.stopPropagation()} style={{ background:'#0d1521', border:'1px solid #1e2d3d', borderRadius:16, padding:'22px 20px', width:'100%', maxWidth:420, boxShadow:'0 12px 48px rgba(0,0,0,0.6)' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
-          <div style={{ fontWeight:800, fontSize:17 }}>💾 Data &amp; Backup</div>
+          <div style={{ fontWeight:800, fontSize:17 }}><I.save size={18} color="#2dd4a7" /> Data &amp; Backup</div>
           <button onClick={onClose} style={{ background:'none', border:'none', color:'#3d5068', cursor:'pointer', padding:4 }}><I.x size={16}/></button>
         </div>
         <div style={{ fontSize:13, color:'#8a9ab5', lineHeight:1.5, marginBottom:14 }}>
@@ -9589,14 +9656,14 @@ function BackupModal({ onClose }) {
         </div>
         {persisted === false && (
           <div style={{ background:'rgba(244,164,74,0.08)', border:'1px solid rgba(244,164,74,0.3)', borderRadius:10, padding:'10px 12px', fontSize:12, color:'#f4a44a', lineHeight:1.5, marginBottom:14 }}>
-            ⚠ Your browser hasn't guaranteed persistent storage. If you use SweetRun in a browser tab (not installed to your home screen) and don't open it for a while, the browser may erase your data. Install the app and keep backups.
+            <I.alert size={13} color="currentColor" /> Your browser hasn't guaranteed persistent storage. If you use SweetRun in a browser tab (not installed to your home screen) and don't open it for a while, the browser may erase your data. Install the app and keep backups.
           </div>
         )}
         <button onClick={doExport} style={{ width:'100%', background:'linear-gradient(135deg,#2dd4a7,#1fbf94)', border:'none', borderRadius:10, padding:'12px 16px', fontWeight:700, fontSize:14, color:'#07090f', cursor:'pointer', marginBottom:10 }}>
           ⬇ Download backup (.json)
         </button>
         <label style={{ display:'block', width:'100%', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:'12px 16px', fontWeight:700, fontSize:14, color:'#8a9ab5', cursor:'pointer', textAlign:'center' }}>
-          ⬆ Restore from backup…
+          <I.upload size={15} color="#8a9ab5" /> Restore from backup…
           <input type="file" accept=".json,application/json" onChange={doImport} style={{ display:'none' }} />
         </label>
         {msg && (
@@ -9692,7 +9759,7 @@ function App() {
           const ideal = hi >= 40 && lo <= 28;
           if (ideal) {
             const day = i === 1 ? 'tomorrow' : 'in 2 days';
-            const msg = `🍁 Ideal sap run ${day} — high ${hi}°F, low ${lo}°F`;
+            const msg = `Ideal sap run ${day} — high ${hi}°F, low ${lo}°F`;
             setNotifBanner(msg);
             if ('Notification' in window && Notification.permission === 'granted') {
               new Notification('SweetRun — Sap Run Alert', { body: msg, icon: './icon-512.png' });
@@ -9712,14 +9779,14 @@ function App() {
     { id:'boilpt',  Icon:I.mapPin,      label:t(lang,'tabBoilPt')  },
     { id:'season',  Icon:I.trendUp,     label:t(lang,'tabSeason')  },
     { id:'recap',   Icon:I.mapleLeaf,   label:'Season Recap'       },
-    { id:'tubing',    Icon:I.wrench,    label:'Tubing 🔧'          },
-    { id:'sugarsage', Icon:I.leaf,      label:'SugarSage 🍁'       },
+    { id:'tubing',    Icon:I.wrench,    label:'Tubing'             },
+    { id:'sugarsage', Icon:I.leaf,      label:'SugarSage'          },
     { id:'log',     Icon:I.package,     label:t(lang,'tabLog')     },
     { id:'equip',   Icon:I.wrench,      label:t(lang,'tabEquip')   },
     { id:'tasks',   Icon:I.clipboard,   label:t(lang,'tabTasks')   },
     { id:'weather', Icon:I.snowflake,   label:'Weather'            },
     ...(BETA_FEATURES ? [{ id:'lines',    Icon:I.tree, label:'Map β'       }] : []),
-    ...(BETA_FEATURES ? [{ id:'diagnose', Icon:I.zap,  label:'Diagnose 🧪' }] : []),
+    ...(BETA_FEATURES ? [{ id:'diagnose', Icon:I.flask, label:'Diagnose' }] : []),
   ];
 
   return (
@@ -9733,7 +9800,7 @@ function App() {
             </div>
             <div>
               <div style={{ fontWeight:800, fontSize:21, letterSpacing:'-0.6px', lineHeight:1.1, marginBottom:3 }}>SweetRun</div>
-              <div style={{ fontSize:10, color:'#2dd4a7', fontWeight:700, letterSpacing:'0.12em', opacity:0.9 }}>{t(lang,'appSub')}</div>
+              <div style={{ fontSize:12, color:'#2dd4a7', fontWeight:700, letterSpacing:'0.12em', opacity:0.9 }}>{t(lang,'appSub')}</div>
             </div>
           </div>
           <div className="app-header-controls" style={{ display:'flex', alignItems:'center', gap:8 }}>
@@ -9793,8 +9860,8 @@ function App() {
           <div style={{ background:'linear-gradient(135deg,#071a0e,#0d2b15)', border:'1px solid #2d6a4f',
             borderRadius:0, padding:'12px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
             <div>
-              <div style={{ fontSize:11, fontWeight:700, color:'#3fb950', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:2 }}>
-                🌳 First Season?
+              <div style={{ fontSize:13, fontWeight:700, color:'#3fb950', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:2 }}>
+                <I.tree size={16} color="#2dd4a7" /> First Season?
               </div>
               <div style={{ fontSize:13, color:'#8a9ab5' }}>Get a personalized season plan in 2 minutes.</div>
             </div>
