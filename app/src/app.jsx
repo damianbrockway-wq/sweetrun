@@ -105,7 +105,7 @@ const TR = {
     // Tabs
     tabSap:'Sap', tabEvap:'Evap', tabRO:'R/O', tabFinish:'Finish',
     tabTapping:'Tapping', tabBoilPt:'Boil Pt', tabSeason:'Season',
-    tabLog:'Log', tabEquip:'Equip', tabTasks:'Tasks',
+    tabLog:'Entries', tabEquip:'Equip', tabTasks:'Tasks',
     // Common buttons / labels
     save:'Save', cancel:'Cancel', add:'Add', export:'Export',
     csvExport:'CSV', pdfReport:'PDF Report', clear:'Clear',
@@ -355,7 +355,7 @@ const TR = {
     // Tabs
     tabSap:'Sève', tabEvap:'Évap', tabRO:'O/I', tabFinish:'Finition',
     tabTapping:'Entaillage', tabBoilPt:'Pt Éb.', tabSeason:'Saison',
-    tabLog:'Journal', tabEquip:'Équip.', tabTasks:'Tâches',
+    tabLog:'Entrées', tabEquip:'Équip.', tabTasks:'Tâches',
     // Common
     save:'Enregistrer', cancel:'Annuler', add:'Ajouter', export:'Exporter',
     csvExport:'CSV', pdfReport:'Rapport PDF', clear:'Effacer',
@@ -843,7 +843,7 @@ function srParseNum(raw) {
 }
 // `label` is what a screen reader announces. Every call site passes the same
 // words the sighted user reads above the box, so the two never drift.
-function NumInput({ value, onChange, min, max, step = 0.1, placeholder, label, id }) {
+function NumInput({ value, onChange, min, max, step = 0.1, placeholder, label, id, autoFocus = false }) {
   const [display, setDisplay] = React.useState(value === 0 ? '' : String(value));
   React.useEffect(() => {
     if (document.activeElement && document.activeElement.dataset.numinput === 'true') return;
@@ -861,6 +861,7 @@ function NumInput({ value, onChange, min, max, step = 0.1, placeholder, label, i
       inputMode="decimal"
       data-numinput="true"
       id={id}
+      autoFocus={autoFocus}
       aria-label={label}
       value={display}
       placeholder={placeholder || (value === 0 ? '0' : '')}
@@ -883,7 +884,7 @@ function NumInput({ value, onChange, min, max, step = 0.1, placeholder, label, i
 function CardIcon({ bg, icon }) {
   // One well for every card title: inset fill, dim icon. The per-card tint was decoration.
   const Ic = I[icon];
-  return <div className="card-icon">{Ic ? <Ic size={20} color="#8b949e" /> : null}</div>;
+  return <div className="card-icon">{Ic ? <Ic size={20} color="#7f92a6" /> : null}</div>;
 }
 function TipItem({ children }) {
   return <div className="tip-item"><div className="tip-dot" /><span>{children}</span></div>;
@@ -972,7 +973,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
   const steps = [
     // 0 — Trees
     <div key="s0">
-      <p style={{fontSize:13,color:'#8b949e',marginBottom:18,lineHeight:1.6}}>
+      <p style={{fontSize:13,color:'#7f92a6',marginBottom:18,lineHeight:1.6}}>
         Let's start with your trees. This helps SweetRun calculate your real production potential.
       </p>
       <div style={{marginBottom:18}}>
@@ -996,7 +997,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
 
     // 1 — System
     <div key="s1">
-      <p style={{fontSize:13,color:'#8b949e',marginBottom:18,lineHeight:1.6}}>
+      <p style={{fontSize:13,color:'#7f92a6',marginBottom:18,lineHeight:1.6}}>
         Your system type is the biggest lever on how much sap you collect per tap.
       </p>
       <label style={{fontSize:13,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Tap system</label>
@@ -1013,7 +1014,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
 
     // 2 — Evaporator
     <div key="s2">
-      <p style={{fontSize:13,color:'#8b949e',marginBottom:18,lineHeight:1.6}}>
+      <p style={{fontSize:13,color:'#7f92a6',marginBottom:18,lineHeight:1.6}}>
         Your evaporator size determines how many sessions your season will take.
       </p>
       <label style={{fontSize:13,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Do you have an evaporator?</label>
@@ -1045,7 +1046,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
 
     // 3 — Costs
     <div key="s3">
-      <p style={{fontSize:13,color:'#8b949e',marginBottom:18,lineHeight:1.6}}>
+      <p style={{fontSize:13,color:'#7f92a6',marginBottom:18,lineHeight:1.6}}>
         Two numbers that unlock the full financial picture of your operation.
       </p>
       <div style={{marginBottom:18}}>
@@ -1142,7 +1143,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
         </div>
       </> : (
         <div style={{textAlign:'center',padding:'28px 20px',color:'#7f92a6'}}>
-          <div style={{fontSize:14,color:'#e6edf3',marginBottom:6,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}><I.tree size={20} color="#8b949e" /> Go back and enter your tree count</div>
+          <div style={{fontSize:14,color:'#e6edf3',marginBottom:6,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}><I.tree size={20} color="#7f92a6" /> Go back and enter your tree count</div>
           <div style={{fontSize:12}}>to generate your personalized season plan.</div>
         </div>
       )}
@@ -1181,7 +1182,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
           {step > 0 && (
             <button onClick={goBack}
               style={{flex:1,padding:'13px',borderRadius:12,border:'1px solid #1e2d3d',
-                background:'transparent',color:'#8b949e',fontSize:14,fontWeight:600,cursor:'pointer'}}>
+                background:'transparent',color:'#7f92a6',fontSize:14,fontWeight:600,cursor:'pointer'}}>
               ← Back
             </button>
           )}
@@ -1265,7 +1266,7 @@ function FreezeThawWidget({ lang='en' }) {
         <I.snowflake size={14} color="#58a6ff" /> {t(lang,'ftTitle')} <I.sun size={14} color="#e0a44a" />
       </div>
       <button className="btn-secondary" style={{ marginBottom:10 }} onClick={useGPS}>
-        <I.mapPin size={16} color="#8b949e" /> {t(lang,'useGPS')}
+        <I.mapPin size={16} color="#7f92a6" /> {t(lang,'useGPS')}
       </button>
       <div style={{ textAlign:'center', color:'#7f92a6', fontSize:12, marginBottom:8 }}>{t(lang,'ftOr')}</div>
       <div style={{ display:'flex', gap:8 }}>
@@ -1382,16 +1383,8 @@ function SapTab({ sapBrix, setSapBrix, trees, units, lang='en' }) {
           <div><div className="field-label">{t(lang,'sapBrix')}</div><input aria-label={t(lang,'sapBrix')} type="number" value={sapBrix} onChange={e=>setSapBrix(parseFloat(e.target.value)||0)} onFocus={e=>e.target.select()} min={0.5} max={10} step={0.1} /></div>
         </div>
         <div className="result-box" style={{ marginTop:0 }}>
-          <div className="two-col" style={{ alignItems:'baseline' }}>
-            <div>
-              <div className="result-label">{t(lang,'sapSap')}</div>
-              <div className="result-value" style={{ fontSize:20, fontWeight:700 }}>{fmt(units==='L'?sapGal*3.78541:sapGal,0)}<span className="unit">{u}</span></div>
-            </div>
-            <div>
-              <div className="result-label">{t(lang,'sapSyrup')}</div>
-              <div className="result-value" style={{ fontSize:20, fontWeight:700 }}>{fmt(units==='L'?sy*3.78541:sy,1)}<span className="unit">{u}</span></div>
-            </div>
-          </div>
+          <div className="result-label">{t(lang,'sapSyrup')}</div>
+          <div className="result-value">{fmt(units==='L'?sy*3.78541:sy,1)}<span className="unit">{u}</span></div>
           {trees > 0 && (
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginTop:10, paddingTop:10, borderTop:'1px solid #131e2c' }}>
               <span style={{ color:'#7f92a6', fontSize:13 }}>{lang==='fr' ? 'Par entaille' : 'Per tap'} ({fmt(trees,0)} {lang==='fr' ? 'entailles' : 'taps'})</span>
@@ -1499,7 +1492,7 @@ async function _downloadBatchLabel(b, batchNum, season, trees, units) {
     b.loc  ? b.loc : null,
     b.notes ? b.notes : null,
   ].filter(Boolean);
-  c.fillStyle = '#8b949e'; c.font = '13px Arial, sans-serif';
+  c.fillStyle = '#7f92a6'; c.font = '13px Arial, sans-serif';
   details.forEach(d => { c.fillText(d, 20, dy); dy += 24; });
 
   // QR
@@ -1792,7 +1785,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
                   return (
                     <div key={bs.label} style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:4, padding:'7px 0', borderTop:'1px solid #1e2d3d' }}>
                       <div style={{ fontWeight:600, fontSize:13 }}>{bs.label}</div>
-                      <div style={{ textAlign:'center', color:'#8b949e', fontSize:13 }}>${fmt(bottleCpg,2)}</div>
+                      <div style={{ textAlign:'center', color:'#7f92a6', fontSize:13 }}>${fmt(bottleCpg,2)}</div>
                       <div style={{ textAlign:'center', color:'#58a6ff', fontWeight:700, fontSize:14 }}>${fmt(retailP,2)}</div>
                       <div style={{ textAlign:'center', color:'#3fb950', fontSize:13 }}>${fmt(profitP,2)}</div>
                     </div>
@@ -1803,7 +1796,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
                 <div style={{ fontSize:13, color:'#7f92a6', fontWeight:600, letterSpacing:'0.08em', marginBottom:8 }}>{t(lang,'usdaBenchmark')}</div>
                 {USDA_GRADES.map(g=>(
                   <div key={g.grade} style={{ display:'flex', justifyContent:'space-between', borderTop:'1px solid #1e2d3d', padding:'6px 0', fontSize:13 }}>
-                    <span style={{ color:'#8b949e' }}>{g.grade}</span>
+                    <span style={{ color:'#7f92a6' }}>{g.grade}</span>
                     <span style={{ color:'#e0a44a', fontWeight:600 }}>${g.price}/gal</span>
                   </div>
                 ))}
@@ -1838,7 +1831,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
                 <div style={{ display:'flex', gap:6 }}>
                   <input aria-label="Location" type="text" value={bf.loc} onChange={e=>setBf(p=>({...p,loc:e.target.value}))} placeholder="e.g. Craftsbury, VT" style={{ flex:1 }} />
                   <button onClick={gpsLoc} disabled={locLoading} title="Use my location" style={{ background:'rgba(45,212,167,0.1)', border:'1px solid rgba(45,212,167,0.25)', borderRadius:8, padding:'0 10px', fontSize:16, cursor:'pointer', color: locLoading ? '#7f92a6' : '#2dd4a7', flexShrink:0 }}>
-                    {locLoading ? <I.clock size={15} color="#8b949e" /> : <I.mapPin size={15} color="#8b949e" />}
+                    {locLoading ? <I.clock size={15} color="#7f92a6" /> : <I.mapPin size={15} color="#7f92a6" />}
                   </button>
                 </div>
               </div>
@@ -1855,7 +1848,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
         )}
         {batches.length>0 && (
           <div style={{ fontSize:13, color:'#7f92a6', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
-            <I.tag size={15} color="#8b949e" />
+            <I.tag size={15} color="#7f92a6" />
             <span>Tap <strong style={{color:'#2dd4a7'}}>Label</strong> on any batch to download a printable provenance label with a QR code.</span>
           </div>
         )}
@@ -1872,7 +1865,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
                 onClick={()=>_downloadBatchLabel(b, i+1, season, trees, units)}
                 title="Download provenance label PNG"
                 style={{ background:'rgba(45,212,167,0.1)', border:'1px solid rgba(45,212,167,0.25)', borderRadius:7, padding:'5px 10px', fontSize:13, fontWeight:700, color:'#2dd4a7', cursor:'pointer', flexShrink:0, letterSpacing:'0.03em', lineHeight:1.3, textAlign:'center' }}>
-                <I.tag size={15} color="#8b949e" /><br/>Label
+                <I.tag size={15} color="#7f92a6" /><br/>Label
               </button>
               <button className="delete-btn" aria-label="Delete this batch" title="Delete batch" onClick={()=>setBatches(p=>p.filter((_,j)=>j!==i))}><I.trash size={15} /></button>
             </div>
@@ -2090,7 +2083,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
             <div style={{ background:rBg, border:`1px solid ${rBorder}`, borderRadius:12, padding:'12px 14px', marginBottom:16 }}>
               <div style={{ fontWeight:700, color:rColor, fontSize:13, marginBottom:4, display:'flex', alignItems:'center', gap:6 }}>
                 <span style={{ width:8, height:8, borderRadius:'50%', background:rDot, flexShrink:0 }} />{rTitle}</div>
-              <div style={{ fontSize:12, color:'#8b949e', lineHeight:1.5 }}>{rDesc}</div>
+              <div style={{ fontSize:12, color:'#7f92a6', lineHeight:1.5 }}>{rDesc}</div>
             </div>
           );
         })()}
@@ -2115,7 +2108,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
                 cursor:'pointer', textAlign:'left', transition:'all 0.15s', position:'relative'
               }}>
                 {isRec && <div style={{ position:'absolute', top:6, right:8, fontSize:12, fontWeight:800, color:m.color, letterSpacing:'0.06em', opacity:0.8, display:'flex', alignItems:'center', gap:4 }}><I.star size={10} color={m.color} />RECOMMENDED</div>}
-                <div style={{ fontSize:13, fontWeight:700, color: isSel ? m.color : '#8b949e', marginBottom:3, paddingRight:isRec?52:0 }}>{m.label}</div>
+                <div style={{ fontSize:13, fontWeight:700, color: isSel ? m.color : '#7f92a6', marginBottom:3, paddingRight:isRec?52:0 }}>{m.label}</div>
                 <div style={{ fontSize:13, color:'#7f92a6', lineHeight:1.4 }}>{m.sub}</div>
               </button>
             );
@@ -2138,7 +2131,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
               background: szn===s.id ? s.bg : 'transparent',
               cursor:'pointer', textAlign:'left', transition:'all 0.15s'
             }}>
-              <div style={{ fontSize:13, fontWeight:700, color: szn===s.id ? s.color : '#8b949e', marginBottom:3 }}>{s.label}</div>
+              <div style={{ fontSize:13, fontWeight:700, color: szn===s.id ? s.color : '#7f92a6', marginBottom:3 }}>{s.label}</div>
               <div style={{ fontSize:13, color:'#7f92a6', lineHeight:1.4 }}>{s.sub}</div>
             </button>
           ))}
@@ -2165,15 +2158,15 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
             <div style={{ display:'flex', gap:0, justifyContent:'center' }}>
               <div style={{ padding:'8px 20px', borderRight:'1px solid #131e2c' }}>
                 <div style={{ fontSize:12, color:'#7f92a6', letterSpacing:'0.08em', marginBottom:2 }}>TABLESPOONS</div>
-                <div style={{ fontWeight:700, color:'#8b949e', fontSize:16 }}>{Math.round(cups*16)}</div>
+                <div style={{ fontWeight:700, color:'#7f92a6', fontSize:16 }}>{Math.round(cups*16)}</div>
               </div>
               <div style={{ padding:'8px 20px', borderRight:'1px solid #131e2c' }}>
                 <div style={{ fontSize:12, color:'#7f92a6', letterSpacing:'0.08em', marginBottom:2 }}>OUNCES</div>
-                <div style={{ fontWeight:700, color:'#8b949e', fontSize:16 }}>{fmt(oz,1)}</div>
+                <div style={{ fontWeight:700, color:'#7f92a6', fontSize:16 }}>{fmt(oz,1)}</div>
               </div>
               <div style={{ padding:'8px 20px' }}>
                 <div style={{ fontSize:12, color:'#7f92a6', letterSpacing:'0.08em', marginBottom:2 }}>POUNDS</div>
-                <div style={{ fontWeight:700, color:'#8b949e', fontSize:16 }}>{fmt(lbs,2)}</div>
+                <div style={{ fontWeight:700, color:'#7f92a6', fontSize:16 }}>{fmt(lbs,2)}</div>
               </div>
             </div>
             {szn === 'late' && (
@@ -2195,7 +2188,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
         {deMode === 'straight' && (
           <div style={{ background:'rgba(88,166,255,0.08)', border:'1px solid rgba(88,166,255,0.22)', borderRadius:12, padding:'12px 14px', marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:700, color:'#58a6ff', marginBottom:4 }}><I.eye size={13} color="#58a6ff" /> Heads up before you start</div>
-            <div style={{ fontSize:12, color:'#8b949e', lineHeight:1.6 }}>
+            <div style={{ fontSize:12, color:'#7f92a6', lineHeight:1.6 }}>
               The first syrup out of the press <strong style={{ color:'#e6edf3' }}>will be cloudy</strong> — this is completely normal. The DE is still building up a cake on the plates. Have a small pot or cup ready at the spout and keep running it back into your pot until the syrup comes out clear. On a small batch like yours this might take {gal2f <= 5 ? 'just a cup or two' : 'a quart or so'} — don't collect anything until it's running clear.
             </div>
           </div>
@@ -2282,7 +2275,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
 
         <div style={{ background:'#0f1720', borderRadius:10, padding:'12px 14px', marginBottom:10, border:'1px solid #1e2d3d' }}>
           <div style={{ fontWeight:600, color:'#c9d1d9', fontSize:14, marginBottom:8 }}>Why this range matters</div>
-          <div style={{ fontSize:13, color:'#8b949e', lineHeight:1.7 }}>
+          <div style={{ fontSize:13, color:'#7f92a6', lineHeight:1.7 }}>
             <span style={{ color:'#3fb950', fontWeight:600 }}>Above 180°F</span> — hot enough to sterilize the container and create a vacuum seal as the syrup cools.<br/>
             <span style={{ color:'#e0a44a', fontWeight:600 }}>Below 190°F</span> — avoids driving off moisture that would push syrup above legal density, and prevents forming new niter (calcium malate crystals) that re-form above ~190°F even in already-filtered syrup.
           </div>
@@ -2299,7 +2292,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
         ))}
 
         <div style={{ background:'#081622', borderRadius:8, padding:'10px 12px', marginTop:8, fontSize:12, color:'#7f92a6', lineHeight:1.7 }}>
-          <span style={{ color:'#8b949e', fontWeight:600 }}>Container yield guide: </span>
+          <span style={{ color:'#7f92a6', fontWeight:600 }}>Container yield guide: </span>
           250 mL ≈ 0.066 gal · 500 mL ≈ 0.132 gal · 1 L ≈ 0.264 gal · 1 qt ≈ 0.25 gal · ½ gal ≈ 0.5 gal · 1 gal jug = 1 gal
         </div>
       </div>
@@ -2477,7 +2470,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
               <div style={{ fontSize:12, color:'#7f92a6' }}>{treeNotes.length} {treeNotes.length!==1?t(lang,'notesRecorded'):t(lang,'noteRecorded')}</div>
             </div>
           </div>
-          {showTN ? <I.chevUp size={16} color="#8b949e" /> : <I.chevDown size={16} color="#8b949e" />}
+          {showTN ? <I.chevUp size={16} color="#7f92a6" /> : <I.chevDown size={16} color="#7f92a6" />}
         </div>
         {showTN && (
           <div style={{ marginTop:12 }}>
@@ -2491,7 +2484,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
                 <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:8 }}>
                   {HEALTH_TAGS(lang).map(tag=>(
                     <button key={t} onClick={()=>setTnForm(p=>({...p,obs:p.obs?p.obs+', '+tag:tag}))}
-                      style={{ background:'#131e2c', border:'1px solid #1e2d3d', borderRadius:8, padding:'4px 10px', fontSize:12, color:'#8b949e', cursor:'pointer' }}>
+                      style={{ background:'#131e2c', border:'1px solid #1e2d3d', borderRadius:8, padding:'4px 10px', fontSize:12, color:'#7f92a6', cursor:'pointer' }}>
                       {tag}
                     </button>
                   ))}
@@ -2504,7 +2497,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
               </div>
             </div>
             <button className="btn-secondary" style={{ marginBottom:12 }} onClick={()=>setShowTN(true)}>
-              <I.edit size={16} color="#8b949e" /> {t(lang,'addNote')}
+              <I.edit size={16} color="#7f92a6" /> {t(lang,'addNote')}
             </button>
             {treeNotes.length===0 && <div style={{ textAlign:'center', color:'#7f92a6', fontSize:13, padding:'6px 0' }}>{t(lang,'noTreeNotesYet')}</div>}
             {treeNotes.slice().reverse().map((n,i)=>(
@@ -2529,7 +2522,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
               <div style={{ fontSize:12, color:'#7f92a6' }}>{t(lang,'tapRotDesc')}</div>
             </div>
           </div>
-          {showRot ? <I.chevUp size={16} color="#8b949e" /> : <I.chevDown size={16} color="#8b949e" />}
+          {showRot ? <I.chevUp size={16} color="#7f92a6" /> : <I.chevDown size={16} color="#7f92a6" />}
         </div>
         {showRot && (
           <div style={{ marginTop:14 }}>
@@ -2549,7 +2542,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
                 <div style={{ display:'flex', gap:8 }}>
                   {['N','S','E','W'].map(s=>(
                     <button key={s} onClick={()=>setRotForm(p=>({...p,side:s}))}
-                      style={{ flex:1, background:rotForm.side===s?'#2dd4a7':'#131e2c', border:`1px solid ${rotForm.side===s?'#a855f7':'#1e2d3d'}`, borderRadius:8, padding:'8px 4px', fontSize:14, fontWeight:700, color:rotForm.side===s?'#fff':'#8b949e', cursor:'pointer' }}>
+                      style={{ flex:1, background:rotForm.side===s?'#2dd4a7':'#131e2c', border:`1px solid ${rotForm.side===s?'#a855f7':'#1e2d3d'}`, borderRadius:8, padding:'8px 4px', fontSize:14, fontWeight:700, color:rotForm.side===s?'#fff':'#7f92a6', cursor:'pointer' }}>
                       {t(lang,s==='N'?'north':s==='S'?'south':s==='E'?'east':'west')}
                     </button>
                   ))}
@@ -2882,7 +2875,7 @@ function SapImportModal({ season, onClose, onImport }) {
 
         {/* Source selector */}
         <div style={{marginBottom:16}}>
-          <div style={{fontSize:12,fontWeight:600,color:'#8b949e',marginBottom:8}}>DATA SOURCE</div>
+          <div style={{fontSize:12,fontWeight:600,color:'#7f92a6',marginBottom:8}}>DATA SOURCE</div>
           <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
             {SOURCES.map(s=>(
               <button key={s.id} onClick={()=>setSource(s.id)}
@@ -2890,7 +2883,7 @@ function SapImportModal({ season, onClose, onImport }) {
                   border:'1.5px solid',
                   borderColor: source===s.id ? '#58a6ff' : '#1e2d3d',
                   background: source===s.id ? '#0d1117' : '#161b22',
-                  color: source===s.id ? '#58a6ff' : '#8b949e'}}>
+                  color: source===s.id ? '#58a6ff' : '#7f92a6'}}>
                 {s.label}
               </button>
             ))}
@@ -2942,7 +2935,7 @@ function SapImportModal({ season, onClose, onImport }) {
             {preview.isPDF && (
               <div style={{background:'rgba(63,185,80,0.08)',border:'1px solid rgba(63,185,80,0.25)',
                 borderRadius:8,padding:'8px 12px',marginBottom:12,display:'flex',alignItems:'center',gap:8}}>
-                <I.clipboard size={14} color="#8b949e" />
+                <I.clipboard size={14} color="#7f92a6" />
                 <div style={{fontSize:12,color:'#3fb950',fontWeight:600}}>
                   SugarCalc PDF · {preview.rows.length} entries · Season {preview.detectedYear}
                 </div>
@@ -2967,7 +2960,7 @@ function SapImportModal({ season, onClose, onImport }) {
             <div style={{maxHeight:160,overflowY:'auto',borderRadius:8,border:'1px solid #1e2d3d'}}>
               {(preview.isPDF ? preview.rows.slice(0,8) : preview.rows.slice(0,5)).map((r,i)=>(
                 <div key={i} style={{display:'flex',justifyContent:'space-between',
-                  padding:'7px 12px',borderBottom:'1px solid #161b22',fontSize:12,color:'#8b949e'}}>
+                  padding:'7px 12px',borderBottom:'1px solid #161b22',fontSize:12,color:'#7f92a6'}}>
                   <span>{r.date}</span>
                   {preview.isPDF
                     ? <span style={{color: r.cat==='sap'?'#58a6ff':r.cat==='syrup'?'#3fb950':r.cat==='ro'?'#a78bfa':'#e0a44a'}}>
@@ -2994,7 +2987,7 @@ function SapImportModal({ season, onClose, onImport }) {
         <div style={{display:'flex',gap:10}}>
           <button onClick={onClose}
             style={{flex:1,padding:'13px',borderRadius:12,border:'1.5px solid #1e2d3d',
-              background:'#161b22',color:'#8b949e',fontSize:15,cursor:'pointer',fontWeight:500}}>
+              background:'#161b22',color:'#7f92a6',fontSize:15,cursor:'pointer',fontWeight:500}}>
             Cancel
           </button>
           <button onClick={doImport} disabled={!preview || !!error}
@@ -3120,7 +3113,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
       <div className="card">
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <div className="card-icon">{Ic2?<Ic2 size={20} color="#8b949e"/>:null}</div>
+            <div className="card-icon">{Ic2?<Ic2 size={20} color="#7f92a6"/>:null}</div>
             <div>
               <span style={{ fontWeight:700, fontSize:16 }}>{label}</span>
               {activePoint && (() => { const pt=cpoints.find(p=>p.id===activePoint); return pt ? <span style={{ fontSize:13, color:pt.color, fontWeight:700, marginLeft:6 }}>· {pt.name}</span> : null; })()}
@@ -3197,14 +3190,80 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
     );
   }
 
+  // ── The record, flattened: every entry of every kind, newest first ──
+  const KINDS = [
+    { k:'sapCollected', l: lang==='fr' ? 'Sève'      : 'Sap',   long:t(lang,'sapCollected'), unit:u,        dp:0, brix:true },
+    { k:'syrupMade',    l: lang==='fr' ? 'Sirop'     : 'Syrup', long:t(lang,'syrupMade'),    unit:u,        dp:1, grade:true, brix:true },
+    { k:'sapRO',        l:'R/O',                               long:t(lang,'sapRO'),        unit:u,        dp:0 },
+    { k:'sapEvap',      l: lang==='fr' ? 'Évap'      : 'Evap',  long:t(lang,'sapEvap'),      unit:u,        dp:0 },
+    { k:'fuelUsed',     l: lang==='fr' ? 'Combust.'  : 'Fuel',  long:t(lang,'fuelUsed'),     unit:(FUELS.find(f=>f.label===ls.get('sg_fuel','Firewood (cord)'))||FUELS[0]).unit, dp:1 },
+    { k:'boilHours',    l: lang==='fr' ? 'Heures'    : 'Hours', long:t(lang,'boilHours'),    unit:'hr',     dp:1 },
+  ];
+  const kindOf = k => KINDS.find(x => x.k === k) || KINDS[0];
+  // "Sap Collected" is the section title the CSV and PDF importers know; the list speaks in sentence case.
+  const sentence = str => str.charAt(0) + str.slice(1).replace(/ ([A-Z])(?=[a-z])/g, m => m.toLowerCase());
+  const allEntries = KINDS.flatMap(K => (slog[K.k] || []).map(e => ({ ...e, kind:K.k })))
+    .filter(e => !activePoint || e.point === activePoint)
+    .sort((a, b) => (new Date(b.date) - new Date(a.date)) || ((b.id||0) - (a.id||0)));
+  const shortDate = ds => { const d = new Date(ds); return isNaN(d) ? ds : d.toLocaleDateString(lang==='fr' ? 'fr-CA' : 'en-US', { month:'short', day:'numeric' }); };
+
+  // The sheet
+  const [showSheet, setShowSheet] = useState(false);
+  const [sheetKind, setSheetKind] = useState(() => ls.get('sg_log_last_kind', 'sapCollected'));
+  const openSheet = () => { setEditing(null); setSheetKind(ls.get('sg_log_last_kind', 'sapCollected')); setShowSheet(true); };
+  const saveEntry = (kind, entry) => {
+    updLog(kind, [...(slog[kind] || []), entry]);
+    ls.set('sg_log_last_kind', kind);
+    // Auto-copy sap collected into R/O and/or the evaporator, exactly as the old section did:
+    // a functional update so both targets are written atomically.
+    if (kind === 'sapCollected' && (autoCopy.ro || autoCopy.evap)) {
+      const amount = entry.val, date = entry.date;
+      setLogs(prevLogs => {
+        const prevSlog = prevLogs[season] || empty;
+        const updates  = { ...prevSlog };
+        if (autoCopy.ro)   updates.sapRO   = [...(prevSlog.sapRO  ||[]), { id:Date.now(),   date, val:amount, note:'← auto from sap collected' }];
+        if (autoCopy.evap) updates.sapEvap = [...(prevSlog.sapEvap||[]), { id:Date.now()+1, date, val:amount, note:'← auto from sap collected' }];
+        const up = { ...prevLogs, [season]: updates };
+        ls.set('sg_logs2', up);
+        return up;
+      });
+    }
+  };
+  const deleteEntry = (kind, id) => updLog(kind, (slog[kind] || []).filter(x => x.id !== id));
+  const updateEntry = (kind, id, changes) => updLog(kind, (slog[kind] || []).map(x => x.id===id ? {...x, ...changes} : x));
+  const [editing, setEditing] = useState(null);   // the entry a tapped row opened in the sheet, or null for a new one
+  const GRADE_CODES = { 'Golden Delicate':'GD', 'Amber Rich':'AR', 'Dark Robust':'DR', 'Very Dark Strong':'VD' };
+
+  // The verdict: yield per tap so far against the producer's own benchmark
+  const yModel = yieldModelSaved();
+  const perTap = trees > 0 && syT > 0 ? syT / trees : null;
+  const standing = perTap == null ? null : perTap >= yModel.high ? 'above the range' : perTap >= yModel.low ? 'inside the range' : 'below the range';
+  const [showMore, setShowMore] = useState(false);
+  const tracking = ls.get('sg_fresh_status', 'idle') === 'tracking';
+
   return (
-    <div>
+    <div style={{ paddingBottom: allEntries.length > 8 ? 84 : 0 }}>
 
       {showImport && <SapImportModal season={season} onClose={()=>setShowImport(false)} onImport={updated=>{setLogs(updated);}} />}
 
+      {/* ── Season totals: the Today figure treatment, the signature on Syrup ── */}
+      <div className="stat3" style={{ padding:'2px 0 10px', borderBottom:'1px solid #131e2c' }}>
+        <div className="eyebrow">{lang==='fr' ? 'Sirop' : 'Syrup'}</div><div className="eyebrow">{lang==='fr' ? 'Sève' : 'Sap'}</div><div className="eyebrow">R/O</div>
+        <div className="fig lead"><span className="v">{fmt(syT,1)}</span><span className="u">{u}</span></div>
+        <div className="fig"><span className="v">{fmt(sapT,0)}</span><span className="u">{u}</span></div>
+        <div className="fig"><span className="v">{fmt(roT,0)}</span><span className="u">{u}</span></div>
+      </div>
+      <div style={{ fontSize:13, color:'#7f92a6', lineHeight:1.5, padding:'10px 0 0' }}>
+        {standing
+          ? <><b style={{ color:'#e6edf3' }}>{fmt(units==='L' ? perTap*3.78541 : perTap,2)} {u}/tap</b> so far · {fmt(trees,0)} taps</>
+          : <>No syrup logged yet · {fmt(trees,0)} taps</>}
+      </div>
+
+      {tracking && <div style={{ marginTop:12 }}><SapFreshnessTracker /></div>}
+
       {/* ── Collection Point filter pills (only shown when points are defined) ── */}
       {cpoints.length > 0 && (
-        <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12, padding:'2px 0' }}>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap', margin:'12px 0 4px', padding:'2px 0' }}>
           <button onClick={()=>setActivePoint(null)}
             style={{ background: activePoint===null ? '#2dd4a7' : '#0f1720', border:`1px solid ${activePoint===null ? '#2dd4a7' : '#1e2d3d'}`, borderRadius:20, padding:'5px 14px', color: activePoint===null ? '#07090f' : '#7f92a6', fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>
             All
@@ -3219,70 +3278,54 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
         </div>
       )}
 
-      <LogSection label={t(lang,'sapCollected')} logKey="sapCollected" color="#2dd4a7" icon="package" showBrix={true} dp={0}
-        onAdd={(amount, date, note) => {
-          if (!autoCopy.ro && !autoCopy.evap) return;
-          // Use functional updater so both RO + Evap are written atomically
-          // (avoids stale-closure overwrite when both boxes are checked)
-          setLogs(prevLogs => {
-            const prevSlog = prevLogs[season] || empty;
-            const updates  = { ...prevSlog };
-            if (autoCopy.ro)   updates.sapRO   = [...(prevSlog.sapRO  ||[]), { id:Date.now(),   date, val:amount, note:'← auto from sap collected' }];
-            if (autoCopy.evap) updates.sapEvap = [...(prevSlog.sapEvap||[]), { id:Date.now()+1, date, val:amount, note:'← auto from sap collected' }];
-            const up = { ...prevLogs, [season]: updates };
-            ls.set('sg_logs2', up);
-            return up;
-          });
-        }}
-      />
-      <LogSection label={t(lang,'syrupMade')}    logKey="syrupMade"    color="#e0a44a" icon="droplet" showGrade={true} />
-      <LogSection label={t(lang,'sapRO')}        logKey="sapRO"        color="#58a6ff" icon="filter"  dp={0} />
-      <LogSection label={t(lang,'sapEvap')}      logKey="sapEvap"      color="#e0a44a" icon="flame"   dp={0} />
-      <LogSection label={t(lang,'fuelUsed')}     logKey="fuelUsed"     color="#e0a44a" icon="flame"
-        unitLabel={(FUELS.find(f=>f.label===ls.get('sg_fuel','Firewood (cord)'))||FUELS[0]).unit} />
-      <LogSection label={t(lang,'boilHours')}    logKey="boilHours"    color="#8b949e" icon="clock"
-        unitLabel="hr" />
 
-      <div className="card">
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
-          <div>
-            <div style={{ fontSize:12, color:'#7f92a6', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:4 }}>{t(lang,'logTitle')}</div>
-            <div style={{ fontSize:20, fontWeight:700 }}>{season}</div>
-          </div>
-          <div style={{ background:'#0d1a2b', borderRadius:10, padding:'8px 14px', display:'flex', alignItems:'center', gap:8 }}>
-            <I.tree size={18} color="#8b949e" />
-            <span style={{ fontSize:16, fontWeight:700 }}>{fmt(trees,0)} <span style={{ fontWeight:500, color:'#7f92a6', fontSize:13 }}>taps</span></span>
-            <button onClick={()=>{const n=parseInt(prompt('Number of taps:',trees));if(n>0)setTrees(n);}} aria-label='Edit the number of taps' title='Edit tap count' style={{ background:'none', border:'none', color:'#7f92a6', display:'flex', padding:2 }}><I.edit size={14} color="#8b949e" /></button>
-          </div>
+      {/* ── Entries, newest first, on hairlines ── */}
+      <div className="eyebrow" style={{ margin:'16px 0 4px' }}>{lang==='fr' ? 'Entrées' : 'Entries'}</div>
+      {allEntries.length === 0 && (
+        <div style={{ fontSize:14, color:'#7f92a6', padding:'14px 2px', lineHeight:1.5 }}>{activePoint ? 'No entries for this collection point yet.' : t(lang,'noEntries')}</div>
+      )}
+      {allEntries.map(e => { const K = kindOf(e.kind); const pt = e.point && !activePoint ? cpoints.find(p=>p.id===e.point) : null; return (
+        <button key={e.kind+e.id} className="log-row" onClick={()=>{ setEditing(e); setSheetKind(e.kind); setShowSheet(true); }}
+          aria-label={`${sentence(K.long)}, ${fmt(e.val, K.dp)} ${K.unit}, ${e.date}. Tap to change or delete.`}>
+          <span className="log-date">{shortDate(e.date)}</span>
+          <span className="log-kind">
+            <span>{sentence(K.long)}</span>
+            {e.grade && e.grade !== '—' && <span className="log-chip amber" title={GRADE_LABELS[e.grade]||e.grade} aria-label={GRADE_LABELS[e.grade]||e.grade}>{GRADE_CODES[e.grade]||e.grade}</span>}
+            {e.brix != null && <span className="log-chip">{Number(e.brix).toFixed(1)}°Bx</span>}
+            {pt && <span className="log-chip" style={{ color:pt.color }}>{pt.name}</span>}
+            {e.note && <span className="log-note">{e.note}</span>}
+          </span>
+          <span className="log-amt">{fmt(e.val, K.dp)} <span className="u">{K.unit}</span></span>
+        </button>
+      ); })}
+
+      {allEntries.length <= 8 && (
+        <div className="primary-bar" style={{ margin:'16px 0 4px' }}>
+          <button className="btn-primary" onClick={openSheet} id="log-a-run" style={{ minHeight:52, fontSize:16 }}>
+            <I.plus size={18} color="#07090f" /> {lang==='fr' ? 'Noter une coulée' : 'Log a run'}
+          </button>
         </div>
-        <div style={{ marginBottom:14 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:4 }}>{t(lang,'syrupMade')}</div>
-          <div style={{ display:'flex', alignItems:'baseline', gap:5 }}>
-            <span style={{ fontSize:28, fontWeight:800, color:'#2dd4a7', lineHeight:1.05, letterSpacing:'-0.01em' }}>{fmt(syT,1)}</span>
-            <span style={{ fontSize:13, color:'#7f92a6', fontWeight:500 }}>{u}</span>
-          </div>
-          <div className="stat3" style={{ marginTop:12, paddingTop:12, borderTop:'1px solid #131e2c' }}>
-            {[{l:'Sap',v:sapT},{l:'R/O',v:roT},{l:'Evaporator',v:evT}].map(s=>(
-              <div key={s.l} style={{ minWidth:0 }}>
-                <div style={{ fontSize:12, color:'#7f92a6', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{s.l}</div>
-                <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
-                  <span style={{ fontSize:16, fontWeight:700, color:'#e6edf3' }}>{fmt(s.v,0)}</span>
-                  <span style={{ fontSize:12, color:'#7f92a6' }}>{u}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
-          <span style={{ fontWeight:700, fontSize:12, color:'#7f92a6', letterSpacing:'0.08em', textTransform:'uppercase' }}>{t(lang,'seasonGoal')}</span>
-          <span style={{ color:'#7f92a6', fontSize:14 }}>{fmt(syT,1)} / {fmt(goal,1)} {u}</span>
-        </div>
-        <div className="progress-bar-bg"><div className="progress-bar-fill" style={{ width:`${pct}%`, background:'#2dd4a7' }} /></div>
-        <div style={{ fontSize:12, color:'#7f92a6', marginTop:6, lineHeight:1.5 }}>{t(lang,'benchmark')}: {fmt(goal,1)} {u} target — {yieldMidOf(yieldModelSaved())} {u}/tap × {fmt(trees,0)} taps, {yieldModelSaved().label}</div>
+      )}
+
+      {/* ── Everything else, behind one row ── */}
+      <button className="more-row" onClick={()=>setShowMore(v=>!v)} aria-expanded={showMore}>
+        <span>{lang==='fr' ? 'Plus' : 'More'}</span>
+        <span className="sub">{lang==='fr' ? 'Exporter · Points de collecte · Copie auto' : 'Export · Collection points · Auto-copy'}</span>
+        {showMore ? <I.chevUp size={16} color="#7f92a6" /> : <I.chevDown size={16} color="#7f92a6" />}
+      </button>
+      {showMore && (
+        <div style={{ marginTop:12 }}>
+      {/* ── Export, one quiet row ── */}
+      <div className="card" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, padding:'12px 16px', minHeight:60 }}>
+        <span style={{ fontSize:15, fontWeight:700 }}>Export {season}</span>
+        <span style={{ display:'flex', gap:8 }}>
+          <button onClick={exportCSV} className="btn-secondary" style={{ width:'auto', padding:'0 14px', fontSize:14 }}><I.download size={16} color="#7f92a6" /> CSV</button>
+          <button onClick={()=>exportSeasonPDF({ season, trees, units, logs, brixLog: ls.get('sg_brixlog',[]), sapBrix })}
+            className="btn-secondary" style={{ width:'auto', padding:'0 14px', fontSize:14 }}>
+            <I.clipboard size={16} color="#7f92a6" /> PDF
+          </button>
+        </span>
       </div>
-
-      {/* ── Sap Freshness Tracker ── */}
-      <SapFreshnessTracker />
 
       {/* ── Collection Points setup ── */}
       <div className="card" style={{ marginBottom:8 }}>
@@ -3292,12 +3335,12 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
             <span style={{ fontWeight:700, fontSize:15 }}>Collection Points</span>
             {cpoints.length > 0 && <span style={{ fontSize:12, color:'#7f92a6' }}>{cpoints.length} defined</span>}
           </div>
-          {showCPSetup ? <I.chevUp size={16} color="#8b949e" /> : <I.chevDown size={16} color="#8b949e" />}
+          {showCPSetup ? <I.chevUp size={16} color="#7f92a6" /> : <I.chevDown size={16} color="#7f92a6" />}
         </div>
         {showCPSetup && (
           <div style={{ marginTop:12 }}>
             <div style={{ fontSize:13, color:'#7f92a6', marginBottom:10, lineHeight:1.5 }}>
-              Track sap from separate pumphouses or gathering tanks. Select a collection point before logging to tag that entry — or leave it on <strong style={{ color:'#8b949e' }}>All</strong> for shared/unassigned entries.
+              Track sap from separate pumphouses or gathering tanks. Select a collection point before logging to tag that entry — or leave it on <strong style={{ color:'#7f92a6' }}>All</strong> for shared/unassigned entries.
             </div>
             {cpoints.map(pt => (
               <div key={pt.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'6px 0', borderBottom:'1px solid #131e2c' }}>
@@ -3323,7 +3366,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
       {/* Auto-copy settings */}
       <div className="card" style={{ marginBottom:8 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
-          <I.zap size={15} color="#8b949e" />
+          <I.zap size={15} color="#7f92a6" />
           <span style={{ fontWeight:700, fontSize:15 }}>Auto-copy Sap Collected</span>
           <span style={{ fontSize:12, color:'#7f92a6' }}>(off by default)</span>
         </div>
@@ -3346,7 +3389,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
       {sapT > 0 && (
         <div className="card" style={{ marginBottom:8 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
-            <I.download size={15} color="#8b949e" />
+            <I.download size={15} color="#7f92a6" />
             <span style={{ fontWeight:700, fontSize:15, color:'#e6edf3' }}>Fill R/O &amp; Evaporator from Season Total</span>
           </div>
           <div style={{ fontSize:13, color:'#7f92a6', marginBottom:12, lineHeight:1.5 }}>
@@ -3402,7 +3445,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
 
       {/* ── SapSpy / CSV import — a row, not a banner ── */}
       <button onClick={()=>setShowImport(true)} className="card" style={{ width:'100%', display:'flex', alignItems:'center', gap:12, cursor:'pointer', textAlign:'left', padding:'12px 16px', minHeight:60, marginBottom:8, font:'inherit', color:'inherit' }}>
-        <I.download size={20} color="#8b949e" />
+        <I.download size={20} color="#7f92a6" />
         <span style={{ flex:1, minWidth:0 }}>
           <span style={{ display:'block', fontSize:15, fontWeight:700, color:'#e6edf3' }}>Import CSV</span>
           <span style={{ display:'block', fontSize:13, color:'#7f92a6', marginTop:1 }}>SapSpy, SapTrac, SugarCalc or any CSV</span>
@@ -3410,18 +3453,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
         <span style={{ color:'#7f92a6', fontSize:16, flexShrink:0 }}>›</span>
       </button>
 
-      {/* ── Export, one quiet row ── */}
-      <div className="card" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, padding:'12px 16px', minHeight:60 }}>
-        <span style={{ fontSize:15, fontWeight:700 }}>Export {season}</span>
-        <span style={{ display:'flex', gap:8 }}>
-          <button onClick={exportCSV} className="btn-secondary" style={{ width:'auto', padding:'0 14px', fontSize:14 }}><I.download size={16} color="#8b949e" /> CSV</button>
-          <button onClick={()=>exportSeasonPDF({ season, trees, units, logs, brixLog: ls.get('sg_brixlog',[]), sapBrix })}
-            className="btn-secondary" style={{ width:'auto', padding:'0 14px', fontSize:14 }}>
-            <I.clipboard size={16} color="#8b949e" /> PDF
-          </button>
-        </span>
-      </div>
-
+      {!tracking && <SapFreshnessTracker />}
       <div style={{ textAlign:'center', marginBottom:14 }}>
         <button onClick={()=>{if(!window.confirm('Clear all data for '+season+'?'))return;const up={...logs};delete up[season];setLogs(up);ls.set('sg_logs2',up);}} style={{ background:'none', border:'none', color:'#7f92a6', fontSize:14, textDecoration:'underline', cursor:'pointer' }}>
           {t(lang,'clearSeason')}
@@ -3431,7 +3463,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
       <div className="card">
         <div className="collapsible-header" onClick={()=>setShowF(s=>!s)}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}><CardIcon bg="#2d2010" icon="zap" /><span style={{ fontWeight:700, fontSize:15 }}>{t(lang,'seasonForecast')}</span></div>
-          {showF ? <I.chevUp size={16} color="#8b949e" /> : <I.chevDown size={16} color="#8b949e" />}
+          {showF ? <I.chevUp size={16} color="#7f92a6" /> : <I.chevDown size={16} color="#7f92a6" />}
         </div>
         {showF && (
           <div style={{ marginTop:12 }}>
@@ -3449,7 +3481,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
       <div className="card">
         <div className="collapsible-header" onClick={()=>setShowC(s=>!s)}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}><CardIcon bg="#1c2128" icon="barChart" /><span style={{ fontWeight:700, fontSize:15 }}>{t(lang,'seasonComparison')}</span></div>
-          {showC ? <I.chevUp size={16} color="#8b949e" /> : <I.chevDown size={16} color="#8b949e" />}
+          {showC ? <I.chevUp size={16} color="#7f92a6" /> : <I.chevDown size={16} color="#7f92a6" />}
         </div>
         {showC && (
           <div style={{ marginTop:12 }}>
@@ -3474,6 +3506,125 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
             )}
           </div>
         )}
+      </div>
+        </div>
+      )}
+
+      {allEntries.length > 8 && (
+        <div className="primary-bar pinned">
+          <button className="btn-primary" onClick={openSheet} id="log-a-run">
+            <I.plus size={18} color="#07090f" /> {lang==='fr' ? 'Noter une coulée' : 'Log a run'}
+          </button>
+        </div>
+      )}
+
+      {showSheet && <LogEntrySheet kinds={KINDS} kind={sheetKind} setKind={setSheetKind} lang={lang} units={units}
+        activePoint={activePoint} grades={GRADES} gradeLabels={GRADE_LABELS} onSave={saveEntry} onClose={()=>{ setShowSheet(false); setEditing(null); }}
+        editing={editing} onUpdate={updateEntry} onDelete={deleteEntry} />}
+    </div>
+  );
+}
+
+// ─── LOG ENTRY SHEET ─────────────────────────────────────────────────────────
+// One sheet for every kind of entry. It opens on the kind used last, the keypad is up
+// when it opens, and Save is one tap. The data written is exactly what the old
+// per-section forms wrote: {id, date, val, note, grade?, brix?, point?}.
+function LogEntrySheet({ kinds, kind, setKind, lang, units, activePoint, grades, gradeLabels, onSave, onClose, editing = null, onUpdate, onDelete }) {
+  const K = kinds.find(x => x.k === kind) || kinds[0];
+  const [val,   setVal]   = useState(editing ? editing.val : 0);
+  const [note,  setNote]  = useState(editing ? (editing.note || '') : '');
+  const [grade, setGrade] = useState(editing && editing.grade ? editing.grade : '—');
+  const [brix,  setBrix]  = useState(editing && editing.brix != null ? String(editing.brix) : '');
+  const toISO = ds => { const d = new Date(ds); if (isNaN(d)) return ''; return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+  const [dateISO, setDateISO] = useState(editing ? toISO(editing.date) : '');
+  const [armed, setArmed] = useState(false);
+  React.useEffect(() => { if (!armed) return; const t = setTimeout(() => setArmed(false), 3000); return () => clearTimeout(t); }, [armed]);
+  const title = editing ? (lang==='fr' ? 'Modifier l’entrée' : 'Change this entry') : (lang==='fr' ? 'Noter une coulée' : 'Log a run');
+  const save = () => {
+    if (!val) { const el = document.getElementById('log-amount'); if (el) el.focus(); return; }
+    if (editing) {
+      const changes = { val: parseFloat(val), note, grade: K.grade ? grade : undefined, brix: K.brix && brix ? parseFloat(brix) : undefined };
+      if (dateISO) { const [y,m,d] = dateISO.split('-').map(Number); changes.date = new Date(y, m-1, d).toLocaleDateString(); }
+      onUpdate(editing.kind, editing.id, changes);
+      onClose(); return;
+    }
+    const entry = {
+      id:    Date.now(),
+      date:  new Date().toLocaleDateString(),
+      val:   parseFloat(val),
+      note,
+      grade: K.grade ? grade : undefined,
+      brix:  K.brix && brix ? parseFloat(brix) : undefined,
+      point: activePoint || undefined,
+    };
+    onSave(K.k, entry);
+    onClose();
+  };
+  return (
+    <div className="scrim" onClick={onClose} role="dialog" aria-modal="true" aria-label={title}>
+      <div className="sheet sheet-form" onClick={e=>e.stopPropagation()}>
+        <div className="sheet-handle" />
+        <div style={{ fontWeight:800, fontSize:17, marginBottom:12 }}>{title}</div>
+        {!editing && (
+          <div className="picker" role="group" aria-label="What are you logging">
+            {kinds.map(x => (
+              <button key={x.k} className={`seg${x.k===K.k ? ' on' : ''}`} aria-pressed={x.k===K.k} onClick={()=>{ setKind(x.k); setGrade('—'); setBrix(''); }}>{x.l}</button>
+            ))}
+          </div>
+        )}
+        {editing && (
+          <div style={{ marginBottom:4 }}>
+            <div className="field-label">{lang==='fr' ? 'Date' : 'Date'}</div>
+            <input aria-label="Entry date" type="date" value={dateISO} onChange={e=>setDateISO(e.target.value)} style={{ colorScheme:'dark' }} />
+          </div>
+        )}
+        <div className="field-label" style={{ marginTop:14 }}>{K.long.charAt(0) + K.long.slice(1).replace(/ ([A-Z])(?=[a-z])/g, m => m.toLowerCase())}</div>
+        <div className="amount">
+          <NumInput id="log-amount" autoFocus label={`${K.long} — amount in ${K.unit}`} value={val} onChange={setVal} min={0} step={K.dp ? 0.1 : 1} placeholder=" " />
+          <span className="unit" aria-hidden="true">{K.unit}</span>
+        </div>
+        {K.grade && K.brix && (
+          <div className="two-col">
+            <div>
+              <div className="field-label">{lang==='fr' ? 'Classe' : 'Grade'} <span style={{ fontWeight:400 }}>({t(lang,'optional')})</span></div>
+              <div className="select-wrap">
+                <select aria-label={`${lang==='fr' ? 'Classe' : 'Grade'} (${t(lang,'optional')})`} value={grade} onChange={e=>setGrade(e.target.value)} style={{ color: grade==='—' ? '#7f92a6' : '#e6edf3' }}>
+                  {grades.map(g=><option key={g} value={g}>{g==='—' ? (lang==='fr' ? 'Aucune' : 'None') : (gradeLabels[g]||g)}</option>)}
+                </select>
+                <I.chevDown size={16} color="#7f92a6" />
+              </div>
+            </div>
+            <div>
+              <div className="field-label">{t(lang,'syrupBrix')} <span style={{ fontWeight:400 }}>({t(lang,'optional')})</span></div>
+              <input aria-label={`${t(lang,'syrupBrix')} (${t(lang,'optional')})`} type="text" inputMode="decimal" value={brix} placeholder="e.g. 66.9"
+                onChange={e=>{ const raw=e.target.value; if(!/^[\d.,\s]*$/.test(raw)) return; setBrix(raw); }}
+                onBlur={e=>{ const n=srParseNum(e.target.value); setBrix(n===null?'':String(Math.max(0,Math.min(100,n)))); }} />
+            </div>
+          </div>
+        )}
+        {K.brix && !K.grade && (
+          <div style={{ marginBottom:14 }}>
+            <div className="field-label">{t(lang,'sapBrix')} <span style={{ fontWeight:400 }}>({t(lang,'optional')})</span></div>
+            <input aria-label={`${t(lang,'sapBrix')} (${t(lang,'optional')})`} type="text" inputMode="decimal" value={brix} placeholder="e.g. 2.1"
+              onChange={e=>{ const raw=e.target.value; if(!/^[\d.,\s]*$/.test(raw)) return; setBrix(raw); }}
+              onBlur={e=>{ const n=srParseNum(e.target.value); setBrix(n===null?'':String(Math.max(0,Math.min(10,n)))); }} />
+          </div>
+        )}
+        <div className="field-label">{t(lang,'note')} <span style={{ fontWeight:400 }}>({t(lang,'optional')})</span></div>
+        <input aria-label={t(lang,'note')} type="text" value={note} onChange={e=>setNote(e.target.value)} placeholder={lang==='fr' ? 'Ajouter une note' : 'Add a note'} onKeyDown={e=>e.key==='Enter'&&save()} />
+        <div className="sheet-foot">
+          <button className="btn-primary" onClick={save} id="log-save" style={{ minHeight:52, fontSize:16 }}>
+            <I.check size={18} color="#07090f" /> {lang==='fr' ? 'Enregistrer' : 'Save'}
+          </button>
+          <button className="sheet-cancel" onClick={onClose}>{lang==='fr' ? 'Annuler' : 'Cancel'}</button>
+          {editing && (
+            <button className={`sheet-delete${armed ? ' armed' : ''}`} id="log-delete"
+              onClick={()=>{ if (armed) { onDelete(editing.kind, editing.id); onClose(); } else setArmed(true); }}
+              aria-label={armed ? 'Confirm: delete this entry' : 'Delete this entry'}>
+              {armed ? (lang==='fr' ? 'Appuyez encore pour supprimer' : 'Tap again to delete') : (lang==='fr' ? 'Supprimer l’entrée' : 'Delete entry')}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -3527,7 +3678,7 @@ function EquipTab({ lang='en' }) {
             <CardIcon bg="#0d1a2b" icon="clock" />
             <span style={{ fontWeight:600 }}>Transfer Time Calculator</span>
           </div>
-          {showTransfer ? <I.chevUp size={16} color="#8b949e" /> : <I.chevDown size={16} color="#8b949e" />}
+          {showTransfer ? <I.chevUp size={16} color="#7f92a6" /> : <I.chevDown size={16} color="#7f92a6" />}
         </div>
         {showTransfer && (
           <div style={{ marginTop:14 }}>
@@ -3579,7 +3730,7 @@ function EquipTab({ lang='en' }) {
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
                 <div style={{ textAlign:'center' }}>
                   <div style={{ fontSize:13, color:'#7f92a6', marginBottom:2 }}>Theoretical</div>
-                  <div style={{ fontSize:22, fontWeight:800, color:'#8b949e' }}>{baseTotal.toFixed(0)} <span style={{ fontSize:13, fontWeight:400 }}>min</span></div>
+                  <div style={{ fontSize:22, fontWeight:800, color:'#7f92a6' }}>{baseTotal.toFixed(0)} <span style={{ fontSize:13, fontWeight:400 }}>min</span></div>
                   <div style={{ fontSize:13, color:'#7f92a6' }}>{baseFillMin.toFixed(0)} fill + {setupMin} setup</div>
                 </div>
                 <div style={{ textAlign:'center' }}>
@@ -3592,15 +3743,15 @@ function EquipTab({ lang='en' }) {
               {numHauls && (
                 <div style={{ borderTop:'1px solid #1e2d3d', paddingTop:10 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
-                    <span style={{ fontSize:13, color:'#8b949e' }}>Hauls this season ({curSeason})</span>
+                    <span style={{ fontSize:13, color:'#7f92a6' }}>Hauls this season ({curSeason})</span>
                     <span style={{ fontWeight:700, fontSize:14, color:'#e6edf3' }}>{numHauls} hauls</span>
                   </div>
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
-                    <span style={{ fontSize:13, color:'#8b949e' }}>Total haul time</span>
+                    <span style={{ fontSize:13, color:'#7f92a6' }}>Total haul time</span>
                     <span style={{ fontWeight:700, fontSize:14, color:'#e6edf3' }}>{totalHaulHrs.toFixed(1)} hrs</span>
                   </div>
                   <div style={{ display:'flex', justifyContent:'space-between' }}>
-                    <span style={{ fontSize:13, color:'#8b949e' }}>Avg gal/haul</span>
+                    <span style={{ fontSize:13, color:'#7f92a6' }}>Avg gal/haul</span>
                     <span style={{ fontWeight:700, fontSize:14, color:'#e6edf3' }}>{(sapT / numHauls).toFixed(0)} gal</span>
                   </div>
                   <div style={{ fontSize:13, color:'#7f92a6', marginTop:8, lineHeight:1.5 }}>
@@ -3652,7 +3803,7 @@ function EquipTab({ lang='en' }) {
       )}
       {items.length===0 && !show && (
         <div className="card" style={{ textAlign:'center', padding:'28px 20px' }}>
-          <div style={{ fontWeight:600, fontSize:16, marginBottom:6, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}><I.wrench size={20} color="#8b949e" /> {t(lang,'noEquipYet')}</div>
+          <div style={{ fontWeight:600, fontSize:16, marginBottom:6, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}><I.wrench size={20} color="#7f92a6" /> {t(lang,'noEquipYet')}</div>
           <div style={{ color:'#7f92a6', fontSize:14 }}>{t(lang,'equipDesc')}</div>
         </div>
       )}
@@ -3664,7 +3815,7 @@ function EquipTab({ lang='en' }) {
               {item.brand && <span style={{ color:'#7f92a6', fontSize:13 }}>{item.brand}</span>}
               {item.year  && <span style={{ color:'#7f92a6', fontSize:13 }}>· {item.year}</span>}
               {item.qty>1 && <span style={{ color:'#7f92a6', fontSize:13 }}>· {t(lang,'equipQtyLabel')} {item.qty}</span>}
-              <span style={{ fontSize:12, fontWeight:600, color:cColor[item.condition]||'#8b949e' }}>● {item.condition==='Good'?t(lang,'condGood'):item.condition==='Fair'?t(lang,'condFair'):t(lang,'condPoor')}</span>
+              <span style={{ fontSize:12, fontWeight:600, color:cColor[item.condition]||'#7f92a6' }}>● {item.condition==='Good'?t(lang,'condGood'):item.condition==='Fair'?t(lang,'condFair'):t(lang,'condPoor')}</span>
             </div>
             {item.notes && <div style={{ color:'#7f92a6', fontSize:13 }}>{item.notes}</div>}
           </div>
@@ -3705,7 +3856,7 @@ function TasksTab({ season, lang='en' }) {
             <span style={{ fontWeight:700, fontSize:18 }}>{t(lang,'seasonChecklists')}</span>
             <span className="badge">{season}</span>
           </div>
-          <button onClick={reset} title="Reset" style={{ background:'none', border:'none', color:'#7f92a6', display:'flex', padding:4 }}><I.refresh size={18} color="#8b949e" /></button>
+          <button onClick={reset} title="Reset" style={{ background:'none', border:'none', color:'#7f92a6', display:'flex', padding:4 }}><I.refresh size={18} color="#7f92a6" /></button>
         </div>
         <div className="two-col" style={{ marginBottom:12, gap:6 }}>
           <button onClick={()=>setPhase('pre')}  style={{ background:phase==='pre'?'#2dd4a7':'#0f1720', color:phase==='pre'?'#07090f':'#7f92a6', border:`1px solid ${phase==='pre'?'transparent':'#1e2d3d'}`, borderRadius:11, padding:11, fontWeight:700, fontSize:14, boxShadow:phase==='pre'?'0 3px 14px rgba(45,212,167,0.28)':'none', transition:'all 0.18s' }}>{t(lang,'preSeason')}</button>
@@ -3843,7 +3994,7 @@ function SeasonTab({ season, lang='en' }) {
         {!lat ? (
           <>
             <button className="btn-secondary" style={{ marginBottom:10 }} onClick={useGPS}>
-              <I.mapPin size={16} color="#8b949e" /> {t(lang,'useGPS')}
+              <I.mapPin size={16} color="#7f92a6" /> {t(lang,'useGPS')}
             </button>
             <div style={{ textAlign:'center', color:'#7f92a6', fontSize:12, marginBottom:8 }}>{t(lang,'ftOr')}</div>
             <div style={{ display:'flex', gap:8, marginBottom:12 }}>
@@ -3928,7 +4079,7 @@ function SeasonTab({ season, lang='en' }) {
                   </div>
                   {dailyDD.slice().reverse().map(d => (
                     <div key={d.date} style={{ display:'grid', gridTemplateColumns:'auto 1fr 1fr 1fr 1fr', gap:4, fontSize:12, padding:'5px 6px', borderBottom:'1px solid #131e2c' }}>
-                      <span style={{ color:'#8b949e' }}>{d.date.slice(5)}</span>
+                      <span style={{ color:'#7f92a6' }}>{d.date.slice(5)}</span>
                       <span style={{ textAlign:'right', color:'#e0a44a' }}>{d.hi}°</span>
                       <span style={{ textAlign:'right', color:'#58a6ff' }}>{d.lo}°</span>
                       <span style={{ textAlign:'right', color: d.dd>0?'#3fb950':'#7f92a6' }}>{d.dd}</span>
@@ -4697,6 +4848,7 @@ function LinesTab({ lang='en' }) {
   React.useEffect(() => {
     if (!leafletReady || !mapRef.current || _lMap) return;
     _lMap = window.L.map(mapRef.current, { zoomControl:true });
+    if (_lMap.attributionControl) _lMap.attributionControl.setPrefix(false);
     _lMap._sat = window.L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       { attribution:'Imagery © Esri', maxZoom:20 }
@@ -5143,7 +5295,7 @@ function LinesTab({ lang='en' }) {
       {/* ── Beta notice ─────────────────────────────────────────────────── */}
       {!betaDismissed && (
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, marginBottom:6, minHeight:32 }}>
-          <div style={{ fontSize:13, color:'#8b949e', lineHeight:1.4, minWidth:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+          <div style={{ fontSize:13, color:'#7f92a6', lineHeight:1.4, minWidth:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
             <span style={{ fontWeight:700, color:'#e6edf3' }}>Beta</span> · GPS ±5–15 m under canopy · routes need signal
           </div>
           <button onClick={dismissBeta} aria-label="Dismiss the beta notice"
@@ -5222,17 +5374,17 @@ function LinesTab({ lang='en' }) {
               <button key={o.v} onClick={() => setSeasonMode(o.v)} aria-pressed={seasonMode===o.v}
                 style={{ background:seasonMode===o.v?'rgba(45,212,167,0.16)':'transparent', border:'none', borderRadius:999,
                   padding:'0 10px', fontSize:13, fontWeight:700, minWidth:36,
-                  color:seasonMode===o.v?'#2dd4a7':'#8b949e', cursor:'pointer', whiteSpace:'nowrap',
+                  color:seasonMode===o.v?'#2dd4a7':'#7f92a6', cursor:'pointer', whiteSpace:'nowrap',
                   display:'flex', alignItems:'center', justifyContent:'center', minHeight:36 }}
                 aria-label={o.v==='naip' ? 'Leaf-on imagery' : o.v==='clarity' ? 'Leaf-off imagery' : o.v==='compare' ? 'Compare' : 'Live imagery'}>
-                {o.Ico ? <o.Ico size={16} color={seasonMode===o.v?'#2dd4a7':'#8b949e'} /> : o.l}
+                {o.Ico ? <o.Ico size={16} color={seasonMode===o.v?'#2dd4a7':'#7f92a6'} /> : o.l}
               </button>
             ))}
           </div>
 
           <button onClick={() => setShowCoordPanel(v => !v)} aria-pressed={showCoordPanel}
             style={{ background:showCoordPanel?'rgba(45,212,167,0.16)':'rgba(255,255,255,0.06)', border:'none', borderRadius:999,
-              padding:'0 12px', minHeight:40, flexShrink:0, fontSize:13, fontWeight:700, color:showCoordPanel?'#2dd4a7':'#8b949e' }}>
+              padding:'0 12px', minHeight:40, flexShrink:0, fontSize:13, fontWeight:700, color:showCoordPanel?'#2dd4a7':'#7f92a6' }}>
             XY
           </button>
         </div>
@@ -5279,7 +5431,7 @@ function LinesTab({ lang='en' }) {
           </div>
           {cacheMsg && (
             <div role="status" style={{ marginTop:8, fontSize:12, lineHeight:1.45,
-              color: cacheMsg.startsWith('✓') ? '#2dd4a7' : cacheMsg.startsWith('!') ? '#e0a44a' : '#8b949e' }}>
+              color: cacheMsg.startsWith('✓') ? '#2dd4a7' : cacheMsg.startsWith('!') ? '#e0a44a' : '#7f92a6' }}>
               {caching && (
                 <div style={{ height:2, background:'rgba(45,212,167,0.15)', borderRadius:1, marginBottom:5, overflow:'hidden' }}>
                   <div style={{ height:'100%', width:`${cachePct}%`, background:'#2dd4a7', borderRadius:1, transition:'width 0.2s' }} />
@@ -5443,7 +5595,7 @@ function LinesTab({ lang='en' }) {
                                 <div style={{ width:30, height:30, borderRadius:isTank?6:'50%', background:nc+'22', border:`2px solid ${nc}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
                                   {isTank ? <I.tank size={13} color={nc} /> : <I.tree size={13} color={nc} />}
                                 </div>
-                                <span style={{ fontSize:12, color:'#8b949e', maxWidth:52, textAlign:'center', lineHeight:1.2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{node.label}</span>
+                                <span style={{ fontSize:12, color:'#7f92a6', maxWidth:52, textAlign:'center', lineHeight:1.2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{node.label}</span>
                                 <span style={{ fontSize:12, color:'#7f92a6' }}>{node.elev!=null ? node.elev.toFixed(0)+'ft' : '—'}</span>
                               </div>
                               {seg && (
@@ -5496,7 +5648,7 @@ function LinesTab({ lang='en' }) {
 
               {/* Legend */}
               <div style={{ background:'#081622', borderRadius:8, padding:'8px 12px', fontSize:13, color:'#7f92a6', display:'flex', flexWrap:'wrap', gap:'8px 16px', alignItems:'center' }}>
-                <span style={{ color:'#8b949e', fontWeight:600 }}>Grade key:</span>
+                <span style={{ color:'#7f92a6', fontWeight:600 }}>Grade key:</span>
                 <span><span style={{ color:'#f85149', fontWeight:700 }}>━</span> &lt;0.5% flat</span>
                 <span><span style={{ color:'#e0a44a', fontWeight:700 }}>━</span> 0.5–1% marginal</span>
                 <span><span style={{ color:'#3fb950', fontWeight:700 }}>━</span> 1–6% ✓ ideal</span>
@@ -5683,7 +5835,7 @@ function LinesTab({ lang='en' }) {
           {treePins.length === 0 ? (
             <div className="card">
               <div className="empty-state">
-                <div className="empty-title" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8}}><I.mapleLeaf size={20} color="#8b949e" /> No trees yet</div>
+                <div className="empty-title" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8}}><I.mapleLeaf size={20} color="#7f92a6" /> No trees yet</div>
                 Tap the map in Tap Tree mode to add your first tree.
               </div>
             </div>
@@ -5803,7 +5955,7 @@ function LinesTab({ lang='en' }) {
 
           <button onClick={addMainline} disabled={!nextMainlineId()}
             style={{ width:'100%', background:'transparent', border:'1px dashed #2d3d50', borderRadius:12,
-              padding:'13px 16px', color: nextMainlineId() ? '#8b949e' : '#7f92a6', fontWeight:600, fontSize:13,
+              padding:'13px 16px', color: nextMainlineId() ? '#7f92a6' : '#7f92a6', fontWeight:600, fontSize:13,
               cursor: nextMainlineId() ? 'pointer' : 'default', marginBottom:8 }}>
             {nextMainlineId() ? '+ Add a mainline' : 'All 26 mainlines in use'}
           </button>
@@ -5818,7 +5970,7 @@ function LinesTab({ lang='en' }) {
                 <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
                   {unassigned.map(p => (
                     <button key={p.id} onClick={() => { setSelectedPinId(p.id); setShowPinPanel(true); zoomToPin(p); }}
-                      style={{ background:'#1e2d3d', border:'1px solid #2d3d50', borderRadius:6, padding:'3px 9px', fontSize:13, color:'#8b949e', cursor:'pointer' }}>
+                      style={{ background:'#1e2d3d', border:'1px solid #2d3d50', borderRadius:6, padding:'3px 9px', fontSize:13, color:'#7f92a6', cursor:'pointer' }}>
                       {p.label}
                     </button>
                   ))}
@@ -5887,7 +6039,7 @@ function LinesTab({ lang='en' }) {
                 </div>
               </div>
             </div>
-            <button onClick={() => setShowPinPanel(false)} style={{ background:'#1e2d3d', border:'none', borderRadius:'50%', width:30, height:30, display:'flex', alignItems:'center', justifyContent:'center', color:'#8b949e', cursor:'pointer', fontSize:16 }}>✕</button>
+            <button onClick={() => setShowPinPanel(false)} style={{ background:'#1e2d3d', border:'none', borderRadius:'50%', width:30, height:30, display:'flex', alignItems:'center', justifyContent:'center', color:'#7f92a6', cursor:'pointer', fontSize:16 }}>✕</button>
           </div>
 
           {/* Tree-specific fields */}
@@ -6006,7 +6158,7 @@ function LinesTab({ lang='en' }) {
                   updatePinField(selectedPin.id, 'elevManual', false);
                 }}
                 title="Look up elevation for this pin (needs a connection)"
-                style={{ background:'transparent', border:'1px solid #2d3d50', borderRadius:8, color:'#8b949e', fontSize:12, fontWeight:600, padding:'0 12px', minHeight:40, cursor:'pointer', whiteSpace:'nowrap' }}>
+                style={{ background:'transparent', border:'1px solid #2d3d50', borderRadius:8, color:'#7f92a6', fontSize:12, fontWeight:600, padding:'0 12px', minHeight:40, cursor:'pointer', whiteSpace:'nowrap' }}>
                 Look up
               </button>
             </div>
@@ -6228,7 +6380,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
               <span style={{ fontWeight:600, fontSize:14, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{locName}</span>
             </div>
             <button onClick={() => setShowSearch(true)}
-              style={{ background:'#1c2128', border:'1px solid #30363d', borderRadius:8, padding:'5px 12px', color:'#8b949e', fontSize:12, cursor:'pointer', flexShrink:0 }}>
+              style={{ background:'#1c2128', border:'1px solid #30363d', borderRadius:8, padding:'5px 12px', color:'#7f92a6', fontSize:12, cursor:'pointer', flexShrink:0 }}>
               {t(lang,'wxChange')}
             </button>
           </div>
@@ -6236,7 +6388,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
           <div>
             <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', marginBottom:8, letterSpacing:'0.06em' }}>{t(lang,'wxSetLoc')}</div>
             <button className="btn-secondary" style={{ marginBottom:10 }} onClick={useGPS}>
-              <I.mapPin size={15} color="#8b949e" /> {t(lang,'wxUseGPS')}
+              <I.mapPin size={15} color="#7f92a6" /> {t(lang,'wxUseGPS')}
             </button>
             <div style={{ textAlign:'center', color:'#7f92a6', fontSize:12, marginBottom:8 }}>{t(lang,'wxOr')}</div>
             <div style={{ display:'flex', gap:8 }}>
@@ -6256,7 +6408,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                     className="wx-geo-result"
                     style={{ background: i % 2 === 0 ? '#1c2128' : '#161b22', borderBottom: i < geoResults.length - 1 ? '1px solid #30363d' : 'none' }}>
                     <span style={{ fontWeight:600 }}>{res.name}</span>
-                    {res.admin1 && <span style={{ color:'#8b949e' }}>, {res.admin1}</span>}
+                    {res.admin1 && <span style={{ color:'#7f92a6' }}>, {res.admin1}</span>}
                     {res.country_code && <span style={{ color:'#7f92a6' }}> ({res.country_code})</span>}
                   </button>
                 ))}
@@ -6314,7 +6466,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                     background: selDay === i ? scoreBg(day.score) : 'transparent',
                     borderColor: selDay === i ? scoreColor(day.score) : '#1e2d3d'
                   }}>
-                  <span style={{ fontSize:13, fontWeight:700, color: selDay === i ? '#e6edf3' : '#8b949e' }}>
+                  <span style={{ fontSize:13, fontWeight:700, color: selDay === i ? '#e6edf3' : '#7f92a6' }}>
                     {day.dayLabel}
                   </span>
                   <div style={{ width:22, height:64, background:'#1e2d3d', borderRadius:11, position:'relative', overflow:'hidden', margin:'2px 0' }}>
@@ -6338,7 +6490,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
             {/* Legend */}
             <div style={{ display:'flex', flexWrap:'wrap', gap:'5px 12px', marginTop:10, paddingTop:10, borderTop:'1px solid #1e2d3d' }}>
               {[[`#3fb950`,t(lang,'scoreLeg80')],[`#7cc950`,t(lang,'scoreLeg62')],[`#d4a017`,t(lang,'scoreLeg44')],[`#7f92a6`,t(lang,'scoreLegNo')]].map(([c, lbl]) => (
-                <div key={lbl} style={{ display:'flex', alignItems:'center', gap:5, fontSize:13, color:'#8b949e' }}>
+                <div key={lbl} style={{ display:'flex', alignItems:'center', gap:5, fontSize:13, color:'#7f92a6' }}>
                   <div style={{ width:10, height:10, borderRadius:3, background:c, flexShrink:0 }} />
                   {lbl}
                 </div>
@@ -6376,7 +6528,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                   note: sel.hiF >= 40 && sel.hiF < 46 ? t(lang,'wxIdealRange') : sel.hiF >= 50 ? t(lang,'wxBuddyRunRisk') : sel.hiF >= 33 ? t(lang,'wxMarginalThaw') : t(lang,'wxNoThaw') },
                 { Icon:I.barChart, tint:'#2dd4a7', label:t(lang,'wxDtSwing'), val:(sel.hiF-sel.loF)+'\u00b0F',
                   note: (sel.hiF-sel.loF) >= 25 ? t(lang,'wxExcellent') : (sel.hiF-sel.loF) >= 18 ? t(lang,'wxGood') : t(lang,'wxLimited') },
-                { Icon:I.wind, tint:'#8b949e', label:t(lang,'wxWind'),       val:sel.windMph+' mph',
+                { Icon:I.wind, tint:'#7f92a6', label:t(lang,'wxWind'),       val:sel.windMph+' mph',
                   note: sel.windMph <= 10 ? t(lang,'wxCalm') : sel.windMph <= 20 ? t(lang,'wxLightWind') : t(lang,'wxReducesFlow') },
                 { Icon:I.droplet, tint:'#58a6ff', label:t(lang,'wxPrecip'),     val:sel.precipIn+'"',
                   note: sel.precipIn < 0.05 ? t(lang,'wxClearSky') : sel.precipIn < 0.2 ? t(lang,'wxLightRain') : t(lang,'wxHeavyRain') },
@@ -6388,7 +6540,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                     <span style={{ display:'inline-flex', alignItems:'center', width:16 }}>
                       {React.createElement(row.Icon, { size:15, color:row.tint })}
                     </span>
-                    <span style={{ fontSize:13, color:'#8b949e' }}>{row.label}</span>
+                    <span style={{ fontSize:13, color:'#7f92a6' }}>{row.label}</span>
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                     <span style={{ fontSize:13, fontWeight:600, color:'#e6edf3' }}>{row.val}</span>
@@ -6451,7 +6603,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
       {/* ── Empty state ── */}
       {!loading && !wxData && (
         <div className="card" style={{ textAlign:'center', padding:'24px 14px' }}>
-          <div style={{ fontWeight:700, fontSize:16, marginBottom:8, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}><I.thermometer size={20} color="#8b949e" /> {t(lang,'wxEmptyTitle')}</div>
+          <div style={{ fontWeight:700, fontSize:16, marginBottom:8, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}><I.thermometer size={20} color="#7f92a6" /> {t(lang,'wxEmptyTitle')}</div>
           <div style={{ color:'#7f92a6', fontSize:13, lineHeight:1.7, marginBottom:16 }}>
             SweetRun pulls the 7-day forecast from Open-Meteo and scores each day for sap flow potential based on freeze-thaw cycles, temperature swing, sunshine, wind, and precipitation.
           </div>
@@ -6460,9 +6612,9 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
               [I.snowflake,'#58a6ff','Ideal freeze: 18\u201328\u00b0F'],
               [I.sun,'#e0a44a','Ideal thaw: 40\u201346\u00b0F'],
               [I.barChart,'#2dd4a7','\u0394T swing \u2265 25\u00b0F = excellent'],
-              [I.wind,'#8b949e','High wind reduces flow']
+              [I.wind,'#7f92a6','High wind reduces flow']
             ].map(([Ico, tint, tx]) => (
-              <div key={tx} style={{ background:'#161b22', border:'1px solid #1e2d3d', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#8b949e', display:'flex', alignItems:'center', gap:6 }}>
+              <div key={tx} style={{ background:'#161b22', border:'1px solid #1e2d3d', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#7f92a6', display:'flex', alignItems:'center', gap:6 }}>
                 <Ico size={13} color={tint} /> {tx}
               </div>
             ))}
@@ -6952,7 +7104,7 @@ function InsightRow({ ins }) {
       {open && (
         <div style={{marginTop:8,marginLeft:22,background:'#0d1a2b',borderRadius:6,padding:'8px 10px',border:`1px solid ${borderColor}30`}}>
           <div style={{fontSize:12,color:borderColor,fontWeight:700,letterSpacing:'0.06em',marginBottom:3}}>WHAT TO DO</div>
-          <div style={{fontSize:12,color:'#8b949e',lineHeight:1.6}}>{ins.action}</div>
+          <div style={{fontSize:12,color:'#7f92a6',lineHeight:1.6}}>{ins.action}</div>
         </div>
       )}
     </div>
@@ -7031,7 +7183,7 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
       </div>
       <div style={{textAlign:'center',padding:'20px 0'}}>
         <div style={{marginBottom:10,display:'flex',justifyContent:'center'}}><I.brain size={34} color="#2dd4a7" /></div>
-        <div style={{fontSize:14,fontWeight:600,color:'#8b949e'}}>Awaiting season data</div>
+        <div style={{fontSize:14,fontWeight:600,color:'#7f92a6'}}>Awaiting season data</div>
         <div style={{fontSize:12,color:'#7f92a6',marginTop:4,lineHeight:1.6}}>Log taps, sap, and syrup in the Log tab<br/>to activate intelligence.</div>
       </div>
     </div>
@@ -7215,7 +7367,7 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
       {/* ── tip of the month ── */}
       <div style={{borderLeft:'3px solid #58a6ff',background:'#07090f',borderRadius:'0 10px 10px 0',padding:'10px 14px'}}>
         <div style={{fontSize:12,color:'#58a6ff',fontWeight:700,letterSpacing:'0.1em',marginBottom:4}}>TIP OF THE MONTH</div>
-        <div style={{fontSize:12,color:'#8b949e',lineHeight:1.65}}>{tip}</div>
+        <div style={{fontSize:12,color:'#7f92a6',lineHeight:1.65}}>{tip}</div>
       </div>
     </div>
   );
@@ -7511,7 +7663,7 @@ function SapFreshnessTracker() {
         border:'1px solid #1e2d3d',borderRadius:open?'16px 16px 0 0':16,
         padding:'12px 16px',cursor:'pointer',minHeight:60}}>
         <div style={{display:'flex',alignItems:'center',gap:12}}>
-          <I.flask size={20} color="#8b949e" />
+          <I.flask size={20} color="#7f92a6" />
           <div style={{textAlign:'left'}}>
             <div style={{fontSize:15,fontWeight:700,color:'#e6edf3'}}>Sap Freshness Tracker</div>
             <div style={{fontSize:13,color:'#7f92a6'}}>Degree-hour spoilage predictor</div>
@@ -7526,7 +7678,7 @@ function SapFreshnessTracker() {
               {statusLabel}
             </span>
           )}
-          {open ? <I.chevUp size={16} color="#8b949e" /> : <I.chevDown size={16} color="#8b949e" />}
+          {open ? <I.chevUp size={16} color="#7f92a6" /> : <I.chevDown size={16} color="#7f92a6" />}
         </div>
       </button>
 
@@ -7545,7 +7697,7 @@ function SapFreshnessTracker() {
           {/* Idle state */}
           {lat && status === 'idle' && (
             <div style={{textAlign:'center',padding:'12px 0'}}>
-              <div style={{fontSize:13,color:'#8b949e',marginBottom:16,lineHeight:1.6}}>
+              <div style={{fontSize:13,color:'#7f92a6',marginBottom:16,lineHeight:1.6}}>
                 Start the timer right after you collect sap. SweetRun tracks the cumulative
                 heat your sap experiences and tells you when to boil.
               </div>
@@ -7560,7 +7712,7 @@ function SapFreshnessTracker() {
           {/* Done states */}
           {(status === 'boiled' || status === 'dumped') && (
             <div style={{textAlign:'center',padding:'14px 0'}}>
-              <div style={{marginBottom:8,display:'flex',justifyContent:'center'}}>{status==='boiled' ? <I.check size={28} color="#3fb950" /> : <I.trash size={26} color="#8b949e" />}</div>
+              <div style={{marginBottom:8,display:'flex',justifyContent:'center'}}>{status==='boiled' ? <I.check size={28} color="#3fb950" /> : <I.trash size={26} color="#7f92a6" />}</div>
               <div style={{fontSize:14,fontWeight:700,color: status==='boiled'?'#3fb950':'#f85149',marginBottom:4}}>
                 {status==='boiled'?'Marked as Boiled — great work!':'Marked as Dumped'}
               </div>
@@ -7569,7 +7721,7 @@ function SapFreshnessTracker() {
               </div>
               <button onClick={reset}
                 style={{background:'transparent',border:'1px solid #1e2d3d',borderRadius:8,
-                  padding:'8px 18px',fontSize:12,color:'#8b949e',cursor:'pointer'}}>
+                  padding:'8px 18px',fontSize:12,color:'#7f92a6',cursor:'pointer'}}>
                 Start New Batch
               </button>
             </div>
@@ -7677,7 +7829,7 @@ function SapFreshnessTracker() {
                   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
                     <button onClick={fetchTemps}
                       style={{padding:'10px 8px',borderRadius:9,border:'1px solid #1e2d3d',
-                        background:'transparent',color:'#8b949e',fontSize:12,cursor:'pointer',fontWeight:600}}>
+                        background:'transparent',color:'#7f92a6',fontSize:12,cursor:'pointer',fontWeight:600}}>
                       ↻ Refresh
                     </button>
                     <button onClick={markBoiled}
@@ -7688,7 +7840,7 @@ function SapFreshnessTracker() {
                     <button onClick={markDumped}
                       style={{padding:'10px 8px',borderRadius:9,border:'1px solid #f85149',
                         background:'transparent',color:'#f85149',fontSize:12,cursor:'pointer',fontWeight:600}}>
-                      <I.trash size={15} color="#8b949e" /> Dumped
+                      <I.trash size={15} color="#7f92a6" /> Dumped
                     </button>
                   </div>
                 </>
@@ -7891,14 +8043,14 @@ function SageCard({ entry, expanded, onToggle }) {
   const catColors = {
     biology:'#3fb950', tapping:'#e0a44a', vacuum:'#58a6ff', ro:'#22d3ee',
     evaporation:'#e0a44a', finishing:'#c990ff', weather:'#58a6ff',
-    tree_health:'#3fb950', business:'#58a6ff', lines:'#8b949e', troubleshooting:'#f85149',
+    tree_health:'#3fb950', business:'#58a6ff', lines:'#7f92a6', troubleshooting:'#f85149',
   };
   const CAT_LABELS = {
     biology:'Biology', tapping:'Tapping', vacuum:'Vacuum', ro:'R/O',
     evaporation:'Evaporation', finishing:'Finishing', weather:'Weather',
     tree_health:'Tree Health', business:'Business', lines:'Lines', troubleshooting:'Troubleshoot',
   };
-  const color    = catColors[entry.cat] || '#8b949e';
+  const color    = catColors[entry.cat] || '#7f92a6';
   const catLabel = CAT_LABELS[entry.cat] || entry.cat;
 
   return (
@@ -7927,11 +8079,11 @@ function SageCard({ entry, expanded, onToggle }) {
       </button>
       {expanded && (
         <div style={{padding:'0 16px 16px',borderTop:'1px solid #1e2d3d'}}>
-          <p style={{fontSize:13,lineHeight:1.8,color:'#8b949e',margin:'12px 0 14px'}}>{entry.a}</p>
+          <p style={{fontSize:13,lineHeight:1.8,color:'#7f92a6',margin:'12px 0 14px'}}>{entry.a}</p>
           {entry.tip && (
             <div style={{borderLeft:`2px solid ${color}`,paddingLeft:12,marginBottom:12}}>
               <div style={{fontSize:12,fontWeight:700,color,letterSpacing:'0.08em',marginBottom:4,textTransform:'uppercase'}}>Pro tip</div>
-              <div style={{fontSize:12,color:'#8b949e',lineHeight:1.65}}>{entry.tip}</div>
+              <div style={{fontSize:12,color:'#7f92a6',lineHeight:1.65}}>{entry.tip}</div>
             </div>
           )}
           <div style={{fontSize:12,color:'#7f92a6',lineHeight:1.5,borderTop:'1px solid #1e2d3d',paddingTop:10,marginTop:4}}>
@@ -8073,7 +8225,7 @@ function TubingTab({ trees }) {
           </div>
           <div style={{padding:'12px 16px',background:'#07090f',borderRadius:10,border:'1px solid #1e2d3d',
             display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-            <span style={{fontSize:13,fontWeight:600,color:'#8b949e'}}>Required pump vacuum:</span>
+            <span style={{fontSize:13,fontWeight:600,color:'#7f92a6'}}>Required pump vacuum:</span>
             <span style={{fontSize:22,fontWeight:900,
               color: parseFloat(calc.vacPump)>28?'#f85149':parseFloat(calc.vacPump)>24?'#e0a44a':'#3fb950'}}>
               {calc.vacPump}" Hg
@@ -8097,7 +8249,7 @@ function TubingTab({ trees }) {
             <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',letterSpacing:'0.1em',marginBottom:10}}>LATERAL LINES</div>
             <div style={{fontSize:32,fontWeight:900,color:'#c9d1d9',lineHeight:1}}>{calc.numLat}</div>
             <div style={{fontSize:13,color:'#7f92a6',marginTop:2,marginBottom:8}}>lateral runs</div>
-            <div style={{fontSize:20,fontWeight:800,color:'#8b949e'}}>{parseInt(calc.latFtTot).toLocaleString()} ft</div>
+            <div style={{fontSize:20,fontWeight:800,color:'#7f92a6'}}>{parseInt(calc.latFtTot).toLocaleString()} ft</div>
             <div style={{fontSize:13,color:'#7f92a6'}}>total lateral footage</div>
           </div>
           <div style={{background:'#0d1a2b',border:'1px solid #1e2d3d',borderRadius:14,padding:18}} className="sage-fadein">
@@ -8134,7 +8286,7 @@ function TubingTab({ trees }) {
 
       </>) : (
         <div style={{textAlign:'center',padding:'28px 20px'}}>
-          <div style={{fontSize:15,fontWeight:700,color:'#e6edf3',marginBottom:6,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}><I.wrench size={20} color="#8b949e" /> Enter your system details above</div>
+          <div style={{fontSize:15,fontWeight:700,color:'#e6edf3',marginBottom:6,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}><I.wrench size={20} color="#7f92a6" /> Enter your system details above</div>
           <div style={{fontSize:12,color:'#7f92a6',lineHeight:1.65,marginBottom:20}}>
             Mainline size, vacuum analysis, pump sizing, and materials list will appear instantly.
           </div>
@@ -8233,19 +8385,23 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
 
   return (
     <div className="card">
-      <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:14}}>
-        SweetRun Score
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+        <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',letterSpacing:'0.12em',textTransform:'uppercase'}}>SweetRun Score</div>
+        <button onClick={copyShare} aria-label="Copy a one-line summary of this score"
+          style={{background:'none', border:'none', padding:'0 2px', minHeight:44, fontSize:13, fontWeight:700, color: copied ? '#3fb950' : '#7f92a6', cursor:'pointer'}}>
+          {copied ? 'Copied' : 'Share score'}
+        </button>
       </div>
 
       {/* Score, on the card */}
       <div style={{display:'flex',alignItems:'baseline',gap:10,paddingBottom:14,marginBottom:14,borderBottom:'1px solid #131e2c'}}>
-        <span style={{fontSize:28,fontWeight:800,color:'#e6edf3',lineHeight:1,letterSpacing:'-0.01em'}}>{overall}</span>
+        <span style={{fontSize:28,fontWeight:800,color: graded ? gradeColor : '#e6edf3',lineHeight:1,letterSpacing:'-0.01em'}}>{overall}</span>
         <span style={{fontSize:13,color:'#7f92a6',fontWeight:500}}>out of 100</span>
-        <span style={{marginLeft:'auto',fontSize:13,fontWeight:800,color:gradeColor,background:`${gradeColor}1f`,
-          borderRadius:999,padding:'3px 12px',lineHeight:1.4,alignSelf:'center'}}>{grade}</span>
+        {graded && <span style={{fontSize:13,fontWeight:800,color:gradeColor,background:`${gradeColor}1f`,
+          borderRadius:999,padding:'3px 12px',lineHeight:1.4,alignSelf:'center'}} aria-label={`Grade ${grade}`}>{grade}</span>}
       </div>
 
-      <div style={{marginBottom:16}}>
+      <div>
         {/* Score bars */}
         <div style={{display:'flex',flexDirection:'column',gap:10}}>
           {scores.map((s,i) => (
@@ -8264,15 +8420,6 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
         </div>
       </div>
 
-      {/* Share row */}
-      <div style={{borderTop:'1px solid #131e2c',paddingTop:12}}>
-        <div style={{fontSize:13,color:'#7f92a6',lineHeight:1.5,marginBottom:10}}>{shareText}</div>
-        <button onClick={copyShare} className="btn-secondary"
-          style={{background: copied?'#3fb950':undefined, borderColor: copied?'#3fb950':undefined,
-            color: copied?'#07090f':undefined, fontSize:14}}>
-          {copied ? 'Copied!' : 'Share Score'}
-        </button>
-      </div>
     </div>
   );
 }
@@ -8378,29 +8525,13 @@ function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
       </div>
 
       {/* Gap visual */}
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:16}}>
-        <div style={{background:'#0d1a2b',borderRadius:12,padding:'12px 10px',textAlign:'center'}}>
-          <div style={{fontSize:12,color:'#7f92a6',fontWeight:700,letterSpacing:'0.08em',marginBottom:6}}>YOU MADE</div>
-          <div style={{fontSize:20,fontWeight:700,color:'#e6edf3',lineHeight:1}}>{fmt(syrupGal,1)}</div>
-          <div style={{fontSize:13,color:'#7f92a6',marginTop:4}}>gal</div>
-        </div>
-        <div style={{background:'#0d1a2b',borderRadius:12,padding:'12px 10px',textAlign:'center'}}>
-          <div style={{fontSize:12,color:'#7f92a6',fontWeight:700,letterSpacing:'0.08em',marginBottom:6}}>BENCHMARK</div>
-          <div style={{fontSize:20,fontWeight:700,color:'#e6edf3',lineHeight:1}}>{fmt(theorMaxSyrupLow,0)}–{fmt(theorMaxSyrup,0)}</div>
-          <div style={{fontSize:13,color:'#7f92a6',marginTop:4,whiteSpace:'nowrap'}}>at {gModel.low}–{gModel.high}/tap</div>
-        </div>
-        <div style={{background:'#0d1a2b',borderRadius:12,padding:'12px 10px',textAlign:'center'}}>
-          <div style={{fontSize:12,color:'#7f92a6',fontWeight:700,letterSpacing:'0.08em',marginBottom:6}}>
-            {gapMid > 0 ? 'GAP' : 'SURPLUS'}
-          </div>
-          <div style={{fontSize:20,fontWeight:700,lineHeight:1,
-            color: gapMid > 0 ? '#e0a44a' : '#3fb950'}}>
-            {gapMid > 0 ? `~${gapMid.toFixed(0)}` : `+${Math.abs(gapLow).toFixed(0)}`}
-          </div>
-          <div style={{fontSize:13,color:'#7f92a6',marginTop:4}}>gal</div>
-        </div>
+      <div className="stat3" style={{gridTemplateColumns:'1fr 1.4fr 1fr',paddingBottom:12,borderBottom:'1px solid #131e2c'}}>
+        <div className="eyebrow">You made</div><div className="eyebrow">Benchmark</div><div className="eyebrow">{gapMid > 0 ? 'Gap' : 'Surplus'}</div>
+        <div className="fig"><span className="v">{fmt(syrupGal,1)}</span><span className="u">gal</span></div>
+        <div className="fig"><span className="v">{fmt(theorMaxSyrupLow,0)}–{fmt(theorMaxSyrup,0)}</span><span className="u">gal</span></div>
+        <div className="fig"><span className="v" style={{color: gapMid > 0 ? '#e0a44a' : '#3fb950'}}>{gapMid > 0 ? `~${fmt(gapMid,0)}` : `+${fmt(Math.abs(gapLow),0)}`}</span><span className="u">gal</span></div>
       </div>
-      <div style={{fontSize:12,color:'#7f92a6',margin:'-8px 0 14px'}}>Benchmark: {gModel.label}, {gModel.low}–{gModel.high} gal per tap.</div>
+      <div style={{fontSize:12,color:'#7f92a6',margin:'8px 0 14px',lineHeight:1.5}}>Benchmark at {gModel.low.toFixed(2)}–{gModel.high.toFixed(2)} gal/tap for {gModel.label}.</div>
 
       {/* Dollar impact */}
       {gapMid > 2 && (
@@ -8488,8 +8619,8 @@ function CauseCard({ cause, sevColor }) {
               <div style={{flex:1}}>
                 <div style={{fontSize:12,color:'#c9d1d9',lineHeight:1.5,marginBottom:4}}>{fix.action}</div>
                 <div style={{display:'flex',gap:12,fontSize:12,color:'#7f92a6'}}>
-                  <span>Cost: <span style={{color:'#8b949e'}}>{fix.cost}</span></span>
-                  <span>Time: <span style={{color:'#8b949e'}}>{fix.time}</span></span>
+                  <span>Cost: <span style={{color:'#7f92a6'}}>{fix.cost}</span></span>
+                  <span>Time: <span style={{color:'#7f92a6'}}>{fix.time}</span></span>
                 </div>
               </div>
               <div style={{flexShrink:0,textAlign:'right'}}>
@@ -8645,7 +8776,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
     const up = pct >= 0;
     return (
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 0', borderBottom:'1px solid #131e2c' }}>
-        <span style={{ fontSize:13, color:'#8b949e' }}>{label}</span>
+        <span style={{ fontSize:13, color:'#7f92a6' }}>{label}</span>
         <span className={up ? 'recap-yoy-up' : 'recap-yoy-dn'}
           style={{ fontWeight:700, fontSize:14, color: up ? '#2dd4a7' : '#f85149' }}>
           {up ? '▲' : '▼'} {Math.abs(pct).toFixed(1)}%
@@ -8667,17 +8798,16 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
       </div>
 
       {/* ── Screen header ── */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
         <div>
-          <div className="recap-header" style={{ fontWeight:800, fontSize:20, lineHeight:1.2 }}>{season} {lang==='fr'?'Bilan de saison':'Season Recap'}</div>
-          <div className="recap-sub" style={{ fontSize:13, color:'#7f92a6', marginTop:2 }}>{t(lang,'recapSub')}</div>
+          <div className="recap-header" style={{ fontWeight:800, fontSize:22, lineHeight:1.2, letterSpacing:'-0.01em' }}>{season} {lang==='fr'?'Bilan de saison':'Season Recap'}</div>
         </div>
         <button
           className="recap-print-btn"
           onClick={() => window.print()}
-          style={{ background:'#2dd4a7', border:'none', borderRadius:10, padding:'10px 14px', minHeight:44, fontWeight:700, fontSize:13, color:'#07090f', cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}
+          style={{ background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:'10px 14px', minHeight:44, fontWeight:700, fontSize:13, color:'#e6edf3', cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}
         >
-          <I.download size={15} color="#07090f" /> {t(lang,'exportPDF')}
+          <I.download size={15} color="#7f92a6" /> {t(lang,'exportPDF')}
         </button>
       </div>
 
@@ -8772,7 +8902,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
             </div>
           </div>
           {actualRatio > theorRatio * 1.15 && (
-            <div style={{ fontSize:13, color:'#8b949e', lineHeight:1.5 }}>
+            <div style={{ fontSize:13, color:'#7f92a6', lineHeight:1.5 }}>
               Your ratio is {((actualRatio - theorRatio)/theorRatio*100).toFixed(0)}% above theoretical — check for foam loss, evaporator leaks, or thin drawoff.
             </div>
           )}
@@ -8806,7 +8936,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
           const BAR_W = Math.round(W * pct);
           return (
             <div style={{ marginBottom:10 }}>
-              <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#8b949e', marginBottom:3 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#7f92a6', marginBottom:3 }}>
                 <span style={{ fontWeight:600 }}>{label}</span>
                 <span style={{ color:'#e6edf3', fontWeight:700 }}>{value >= 10 ? value.toFixed(0) : value.toFixed(1)} <span style={{ color:'#7f92a6', fontWeight:500 }}>{unit}</span></span>
               </div>
@@ -8851,7 +8981,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
                     <input type="checkbox" id="preheat-chk" checked={hasPreheater}
                       onChange={e => saveR('sg_recap_preheat', setHasPreheater)(e.target.checked)}
                       style={{ accentColor:'#2dd4a7', width:16, height:16 }} />
-                    <label htmlFor="preheat-chk" style={{ fontSize:13, color:'#8b949e', cursor:'pointer' }}>{t(lang,'preheaterLbl')}</label>
+                    <label htmlFor="preheat-chk" style={{ fontSize:13, color:'#7f92a6', cursor:'pointer' }}>{t(lang,'preheaterLbl')}</label>
                   </div>
                 </div>
               )}
@@ -8922,7 +9052,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
                   </div>
                   <div style={{ textAlign:'right' }}>
                     <div style={{ fontWeight:700, fontSize:15, color:pt.color }}>{ptSap.toFixed(1)} <span style={{ fontSize:13, fontWeight:400 }}>{uLbl2} {t(lang,'sapShort')}</span></div>
-                    {ptSyrup > 0 && <div style={{ fontSize:12, color:'#8b949e' }}>{ptSyrup.toFixed(1)} {uLbl2} {t(lang,'syrupShort')}</div>}
+                    {ptSyrup > 0 && <div style={{ fontSize:12, color:'#7f92a6' }}>{ptSyrup.toFixed(1)} {uLbl2} {t(lang,'syrupShort')}</div>}
                   </div>
                 </div>
               );
@@ -8979,7 +9109,7 @@ function SettingsSheet({ units, setUnits, lang, setLang, season, setSeason,
     <div style={{ display:'flex', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:2 }}>
       {opts.map(o => (
         <button key={o.v} onClick={()=>set(o.v)} aria-pressed={val===o.v}
-          style={{ background: val===o.v ? 'rgba(45,212,167,0.16)' : 'transparent', color: val===o.v ? '#2dd4a7' : '#8b949e',
+          style={{ background: val===o.v ? 'rgba(45,212,167,0.16)' : 'transparent', color: val===o.v ? '#2dd4a7' : '#7f92a6',
             border:'none', borderRadius:8, padding:'8px 15px', fontSize:13, fontWeight:700,
             cursor:'pointer', minHeight:38 }}>{o.l}</button>
       ))}
@@ -9019,14 +9149,14 @@ function SettingsSheet({ units, setUnits, lang, setLang, season, setSeason,
           <div style={{ display:'flex', alignItems:'center', gap:4 }}>
             <button onClick={()=>setSeason(s=>s-1)} aria-label="Previous season"
               style={{ background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, width:44, height:44,
-                color:'#8b949e', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <I.chevDown size={15} color="#8b949e" />
+                color:'#7f92a6', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <I.chevDown size={15} color="#7f92a6" />
             </button>
             <span style={{ fontSize:15, fontWeight:700, minWidth:48, textAlign:'center' }}>{season}</span>
             <button onClick={()=>setSeason(s=>s+1)} aria-label="Next season"
               style={{ background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, width:44, height:44,
-                color:'#8b949e', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <I.chevUp size={15} color="#8b949e" />
+                color:'#7f92a6', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <I.chevUp size={15} color="#7f92a6" />
             </button>
           </div>
         </Row>
@@ -9109,7 +9239,7 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
       <div className="card">
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:8 }}>
           <Eyebrow>Season goal</Eyebrow>
-          <span style={{ color:'#7f92a6', fontSize:14 }}>{fmt(conv(syT),1)} / {fmt(conv(goal),1)} {u}</span>
+          <span style={{ color:'#7f92a6', fontSize:14 }}>{fmt(pct,0)}% of {fmt(conv(goal),0)} {u}</span>
         </div>
         <div className="progress-bar-bg"><div className="progress-bar-fill"
           style={{ width:`${pct}%`, background:'#2dd4a7' }} /></div>
@@ -9137,7 +9267,7 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
           <div style={{ textAlign:'right', flexShrink:0 }}>
             <Eyebrow>Benchmark</Eyebrow>
             <div style={{ display:'flex', alignItems:'baseline', gap:4, marginTop:4, justifyContent:'flex-end' }}>
-              <span style={{ fontSize:20, fontWeight:700, color:'#e6edf3', lineHeight:1.05 }}>{model.low}–{model.high}</span>
+              <span style={{ fontSize:20, fontWeight:700, color:'#e6edf3', lineHeight:1.05 }}>{model.low.toFixed(2)}–{model.high.toFixed(2)}</span>
               <span style={{ fontSize:13, color:'#7f92a6', fontWeight:500 }}>{u}/tap</span>
             </div>
           </div>
@@ -9150,12 +9280,12 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
 
       {/* The landing screen remembers: the last three runs, plain rows, no card */}
       {recent.length > 0 && (
-        <div style={{ margin:'4px 2px 0' }}>
+        <div style={{ margin:'4px 0 0' }}>
           <Eyebrow>Recent runs</Eyebrow>
           <div style={{ marginTop:6 }}>
             {recent.map(e => (
-              <div key={e.id} style={{ display:'grid', gridTemplateColumns:'76px 1fr auto', columnGap:12, alignItems:'baseline', minHeight:44, padding:'10px 0', borderBottom:'1px solid #131e2c', fontSize:14 }}>
-                <span style={{ color:'#7f92a6', whiteSpace:'nowrap' }}>{e.date}</span>
+              <div key={e.id} style={{ display:'grid', gridTemplateColumns:'var(--w-date) 1fr auto', columnGap:10, alignItems:'baseline', minHeight:44, padding:'10px 0', borderBottom:'1px solid #131e2c', fontSize:14 }}>
+                <span style={{ color:'#7f92a6', whiteSpace:'nowrap' }}>{(d => isNaN(d) ? e.date : d.toLocaleDateString(lang==='fr' ? 'fr-CA' : 'en-US', { month:'short', day:'numeric' }))(new Date(e.date))}</span>
                 <span style={{ color:'#e6edf3', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{SHORT[e.kind] || e.kind}</span>
                 <span style={{ fontWeight:700, textAlign:'right', whiteSpace:'nowrap' }}>{fmt(e.kind==='syrupMade'||e.kind==='sapCollected'||e.kind==='sapRO'||e.kind==='sapEvap' ? conv(parseFloat(e.val)||0) : parseFloat(e.val)||0, dpOf(e.kind))} <span style={{ fontWeight:500, color:'#7f92a6' }}>{unitOf(e.kind)}</span></span>
               </div>
@@ -9166,7 +9296,7 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
 
       <div className="primary-bar">
         <button className="btn-primary" onClick={() => go('log')}>
-          <I.clipboard size={18} color="#07090f" /> Log today's run
+          <I.plus size={18} color="#07090f" /> {lang==='fr' ? 'Noter une coulée' : 'Log a run'}
         </button>
       </div>
     </div>
@@ -9560,7 +9690,7 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
                 <I.chevDown size={14} color="#7f92a6" style={{ transform: open ? 'rotate(180deg)' : 'none', transition:'0.18s' }} />
               </div>
             </div>
-            <div style={{ fontSize:12, color:'#8b949e', marginTop:4, lineHeight:1.5 }}>{f.summary}</div>
+            <div style={{ fontSize:12, color:'#7f92a6', marginTop:4, lineHeight:1.5 }}>{f.summary}</div>
           </div>
         </button>
         {open && (
@@ -9578,7 +9708,7 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
             )}
             {f.effort && (
               <div style={{ fontSize:12, color:'#7f92a6', marginBottom:10 }}>
-                <span style={{ color:'#8b949e', fontWeight:600 }}>Effort: </span>{f.effort}
+                <span style={{ color:'#7f92a6', fontWeight:600 }}>Effort: </span>{f.effort}
               </div>
             )}
             {f.details && f.details.length > 0 && (
@@ -9750,7 +9880,7 @@ function LicenseModal({ onClose, lic, onLicenseSaved }) {
         {lic.status === 'licensed' ? (
           <div style={{ fontSize:13.5, color:'#3fb950', lineHeight:1.6, marginBottom:8 }}>✓ Your Season Pass is active through {lic.until}. Thank you for supporting a one-person project.</div>
         ) : (
-          <div style={{ fontSize:13, color:'#8b949e', lineHeight:1.5, marginBottom:14 }}>
+          <div style={{ fontSize:13, color:'#7f92a6', lineHeight:1.5, marginBottom:14 }}>
             {lic.status === 'expired'
               ? 'Your Season Trial has ended. Your data is safe — viewing and export always work — but new entries need a pass.'
               : `You're on a free Season Trial (${lic.daysLeft} days left — and it never ends before you've had 3 real sap days). Every feature is unlocked.`}
@@ -9768,10 +9898,10 @@ function LicenseModal({ onClose, lic, onLicenseSaved }) {
         {msg && <div style={{ marginTop:8, fontSize:12.5, lineHeight:1.5, color: msg.ok ? '#3fb950' : '#f85149' }}>{msg.text}</div>}
         {lic.status !== 'licensed' && (
           <div style={{ marginTop:16, paddingTop:14, borderTop:'1px solid #131e2c' }}>
-            <div style={{ fontSize:12.5, color:'#8b949e', lineHeight:1.5, marginBottom:8 }}>Want sap-season tips and a heads-up before your trial ends? <span style={{color:'#7f92a6'}}>(optional)</span></div>
+            <div style={{ fontSize:12.5, color:'#7f92a6', lineHeight:1.5, marginBottom:8 }}>Want sap-season tips and a heads-up before your trial ends? <span style={{color:'#7f92a6'}}>(optional)</span></div>
             <input aria-label="you@sugarbush.com" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@sugarbush.com" style={inp} />
-            <button onClick={saveEmail} style={{ width:'100%', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:'10px 16px', fontWeight:700, fontSize:13, color:'#8b949e', cursor:'pointer' }}>Keep me posted</button>
-            {emailMsg && <div style={{ marginTop:6, fontSize:12, color:'#8b949e' }}>{emailMsg}</div>}
+            <button onClick={saveEmail} style={{ width:'100%', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:'10px 16px', fontWeight:700, fontSize:13, color:'#7f92a6', cursor:'pointer' }}>Keep me posted</button>
+            {emailMsg && <div style={{ marginTop:6, fontSize:12, color:'#7f92a6' }}>{emailMsg}</div>}
           </div>
         )}
       </div>
@@ -9831,7 +9961,7 @@ function BackupModal({ onClose }) {
           <div style={{ fontWeight:800, fontSize:17 }}><I.save size={18} color="#2dd4a7" /> Data &amp; Backup</div>
           <button onClick={onClose} style={{ background:'none', border:'none', color:'#7f92a6', cursor:'pointer', padding:4 }}><I.x size={16}/></button>
         </div>
-        <div style={{ fontSize:13, color:'#8b949e', lineHeight:1.5, marginBottom:14 }}>
+        <div style={{ fontSize:13, color:'#7f92a6', lineHeight:1.5, marginBottom:14 }}>
           All your SweetRun data lives on this device only ({keyCount} entries). Download a backup after each session you care about — it's the only copy that exists.
         </div>
         {persisted === false && (
@@ -9842,8 +9972,8 @@ function BackupModal({ onClose }) {
         <button onClick={doExport} style={{ width:'100%', background:'#2dd4a7', border:'none', borderRadius:10, padding:'12px 16px', fontWeight:700, fontSize:14, color:'#07090f', cursor:'pointer', marginBottom:10 }}>
           ⬇ Download backup (.json)
         </button>
-        <label style={{ display:'block', width:'100%', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:'12px 16px', fontWeight:700, fontSize:14, color:'#8b949e', cursor:'pointer', textAlign:'center' }}>
-          <I.upload size={15} color="#8b949e" /> Restore from backup…
+        <label style={{ display:'block', width:'100%', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:'12px 16px', fontWeight:700, fontSize:14, color:'#7f92a6', cursor:'pointer', textAlign:'center' }}>
+          <I.upload size={15} color="#7f92a6" /> Restore from backup…
           <input type="file" accept=".json,application/json" onChange={doImport} style={{ display:'none' }} />
         </label>
         {msg && (
@@ -10008,18 +10138,18 @@ function App() {
           </div>
           <div className="app-header-controls" style={{ display:'flex', alignItems:'center', gap:7, flexShrink:0 }}>
             {lic.status !== 'checking' && (
-              <button onClick={()=>setShowLicense(true)} style={{
+              <button onClick={()=>setShowLicense(true)} className="hit44" style={{
                 background: lic.status==='licensed' ? 'rgba(63,185,80,0.12)' : lic.status==='expired' ? 'rgba(248,81,73,0.12)' : '#0f1720',
-                border: 'none',
-                borderRadius:18, padding:'0 12px', height:36, display:'flex', alignItems:'center', fontSize:12, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap',
-                color: lic.status==='licensed' ? '#3fb950' : lic.status==='expired' ? '#f85149' : '#8b949e' }}>
-                {lic.status==='licensed' ? '✓ Pass' : lic.status==='expired' ? 'Unlock' : `Trial · ${lic.daysLeft}d`}
+                border: '1px solid #1e2d3d',
+                borderRadius:18, padding:'0 12px', height:36, display:'flex', alignItems:'center', fontSize:12, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', position:'relative',
+                color: lic.status==='licensed' ? '#3fb950' : lic.status==='expired' ? '#f85149' : '#7f92a6' }}>
+                {lic.status==='licensed' ? '✓ Pass' : lic.status==='expired' ? 'Unlock' : `Trial · ${lic.daysLeft}d left`}
               </button>
             )}
             <button onClick={()=>setShowSettings(true)} aria-label="Settings and data" title="Settings"
-              style={{ background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10,
-                width:36, height:36, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-              <I.settings size={17} color="#8b949e" />
+              style={{ background:'none', border:'none', borderRadius:10, margin:'0 -8px 0 -2px',
+                width:44, height:44, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <I.settings size={20} color="#7f92a6" />
             </button>
           </div>
         </div>
@@ -10072,7 +10202,7 @@ function App() {
               <div style={{ fontSize:13, fontWeight:700, color:'#3fb950', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:2 }}>
                 <I.tree size={16} color="#2dd4a7" /> First Season?
               </div>
-              <div style={{ fontSize:13, color:'#8b949e' }}>Get a personalized season plan in 2 minutes.</div>
+              <div style={{ fontSize:13, color:'#7f92a6' }}>Get a personalized season plan in 2 minutes.</div>
             </div>
             <button onClick={()=>setShowWizard(true)}
               style={{ background:'#3fb950', border:'none', borderRadius:10, padding:'9px 16px',
