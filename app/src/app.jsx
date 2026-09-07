@@ -91,7 +91,7 @@ function pingEvent(type, email) {
 const BETA_FEATURES = true; // Set to false to hide experimental features
 
 // ─── Formatters ──────────────────────────────────────────────────────────────
-const fmt  = (n, d = 1) => isNaN(n) || !isFinite(n) ? '—' : Number(n).toFixed(d);
+const fmt  = (n, d = 1) => isNaN(n) || !isFinite(n) ? '—' : Number(n).toLocaleString('en-US', { minimumFractionDigits:d, maximumFractionDigits:d });
 const fmtH = h => { if (!isFinite(h) || h <= 0) return '—'; const hh = Math.floor(h), mm = Math.round((h - hh) * 60); return `${hh}h ${mm}m`; };
 const DAY  = { en:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], fr:['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'] };
 const MON  = { en:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
@@ -110,7 +110,7 @@ const TR = {
     save:'Save', cancel:'Cancel', add:'Add', export:'Export',
     csvExport:'CSV', pdfReport:'PDF Report', clear:'Clear',
     note:'Note', date:'Date', optional:'optional', trees:'Trees',
-    units:'gal', noEntries:'No entries yet — tap + to add',
+    units:'gal', noEntries:'No entries yet',
     // Sap tab
     sapTitle:'Sap Yield Calculator', sapGal:'Sap Volume',
     sapBrix:'Sap °Brix', sapRatio:'SAP:SYRUP RATIO',
@@ -185,7 +185,7 @@ const TR = {
     // Log tab
     logTitle:'SEASON OVERVIEW', seasonGoal:'SEASON GOAL',
     benchmark:'Benchmark', sapCollected:'Sap Collected',
-    syrupMade:'Syrup Made', sapRO:'Sap Thru R/O', sapEvap:'Sap in Evaporator',
+    syrupMade:'Syrup Made', sapRO:'Sap through R/O', sapEvap:'Sap in Evaporator',
     fuelUsed:'Fuel Burned', boilHours:'Hours Boiling',
     clearSeason:'Clear all season data', seasonForecast:'Season Forecast',
     seasonComparison:'Season Comparison', noSeasonData:'No season data yet.',
@@ -360,7 +360,7 @@ const TR = {
     save:'Enregistrer', cancel:'Annuler', add:'Ajouter', export:'Exporter',
     csvExport:'CSV', pdfReport:'Rapport PDF', clear:'Effacer',
     note:'Note', date:'Date', optional:'optionnel', trees:'Arbres',
-    units:'gal', noEntries:'Aucune entrée — appuyez sur + pour ajouter',
+    units:'gal', noEntries:'Aucune entrée',
     // Sap tab
     sapTitle:'Calculateur de rendement', sapGal:'Volume de sève',
     sapBrix:'°Brix de la sève', sapRatio:'RATIO SÈVE:SIROP',
@@ -674,6 +674,8 @@ const I = {
   zap:         (p) => <Svg {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Svg>,
   barChart:    (p) => <Svg {...p}><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></Svg>,
   refresh:     (p) => <Svg {...p}><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.18"/></Svg>,
+  undo:        (p) => <Svg {...p}><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></Svg>,
+  plus:        (p) => <Svg {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Svg>,
   network:     (p) => <Svg {...p}><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5" y2="16"/><line x1="12" y1="8" x2="19" y2="16"/></Svg>,
   tank:        (p) => <Svg {...p}><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12"/><path d="M20 6v12"/><ellipse cx="12" cy="18" rx="8" ry="3"/><path d="M4 12a8 3 0 0 0 16 0"/><line x1="10" y1="18" x2="10" y2="21"/><line x1="14" y1="18" x2="14" y2="21"/></Svg>,
   trash:       (p) => <Svg {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></Svg>,
@@ -879,8 +881,9 @@ function NumInput({ value, onChange, min, max, step = 0.1, placeholder, label, i
   );
 }
 function CardIcon({ bg, icon }) {
+  // One well for every card title: inset fill, dim icon. The per-card tint was decoration.
   const Ic = I[icon];
-  return <div className="card-icon" style={{ background: bg }}>{Ic ? <Ic size={18} color="#fff" /> : null}</div>;
+  return <div className="card-icon">{Ic ? <Ic size={20} color="#8b949e" /> : null}</div>;
 }
 function TipItem({ children }) {
   return <div className="tip-item"><div className="tip-dot" /><span>{children}</span></div>;
@@ -888,8 +891,8 @@ function TipItem({ children }) {
 function InfoRow({ label, value }) {
   return (
     <div className="info-row">
-      <span style={{ color:'#5a6a7a', fontSize:14 }}>{label}</span>
-      <span style={{ fontWeight:500, fontSize:14 }}>{value}</span>
+      <span style={{ color:'#7f92a6', fontSize:14 }}>{label}</span>
+      <span style={{ fontWeight:600, fontSize:14 }}>{value}</span>
     </div>
   );
 }
@@ -948,7 +951,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
     <button onClick={()=>set(val)}
       style={{padding: wide ? '12px 14px' : '12px 8px', borderRadius:12,
         border:`2px solid ${cur===val ? accent : '#1e2d3d'}`,
-        background: cur===val ? `rgba(${accent==='#2dd4a7'?'45,212,167':accent==='#58a6ff'?'88,166,255':accent==='#a78bfa'?'167,139,250':accent==='#3fb950'?'63,185,80':accent==='#f59e0b'?'245,158,11':'45,212,167'},0.09)` : '#0a1420',
+        background: cur===val ? `rgba(${accent==='#2dd4a7'?'45,212,167':accent==='#58a6ff'?'88,166,255':accent==='#a78bfa'?'167,139,250':accent==='#3fb950'?'63,185,80':accent==='#e0a44a'?'245,158,11':'45,212,167'},0.09)` : '#0a1420',
         cursor:'pointer', transition:'all 0.15s', textAlign: wide ? 'left' : 'center',
         display: wide ? 'flex' : 'block', alignItems: wide ? 'center' : undefined, gap: wide ? 10 : 0,
         width:'100%', minWidth:0, boxSizing:'border-box'}}>
@@ -956,11 +959,11 @@ function FirstSeasonWizard({ onClose, onComplete }) {
         ? <><span style={{display:'inline-flex',alignItems:'center',fontSize:20,flexShrink:0}}>{glyph}</span>
             <div>
               <div style={{fontSize:12,fontWeight:700,color:cur===val?accent:'#c9d1d9'}}>{label}</div>
-              <div style={{fontSize:12,color:'#5a6a7a'}}>{sub}</div>
+              <div style={{fontSize:12,color:'#7f92a6'}}>{sub}</div>
             </div></>
         : <><div style={{fontSize:20,marginBottom:5,display:'flex',justifyContent:'center'}}>{glyph}</div>
             <div style={{fontSize:13,fontWeight:700,color:cur===val?accent:'#c9d1d9'}}>{label}</div>
-            {sub && <div style={{fontSize:12,color:'#5a6a7a',marginTop:2,lineHeight:1.3}}>{sub}</div>}</>
+            {sub && <div style={{fontSize:12,color:'#7f92a6',marginTop:2,lineHeight:1.3}}>{sub}</div>}</>
       }
     </button>
   );
@@ -969,19 +972,19 @@ function FirstSeasonWizard({ onClose, onComplete }) {
   const steps = [
     // 0 — Trees
     <div key="s0">
-      <p style={{fontSize:13,color:'#8a9ab5',marginBottom:18,lineHeight:1.6}}>
+      <p style={{fontSize:13,color:'#8b949e',marginBottom:18,lineHeight:1.6}}>
         Let's start with your trees. This helps SweetRun calculate your real production potential.
       </p>
       <div style={{marginBottom:18}}>
-        <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:8}}>
+        <label style={{fontSize:13,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:8}}>
           How many maple trees do you tap?
         </label>
         <input aria-label="How many maple trees do you tap?" type="number" value={treeCount} onChange={e=>setTreeCount(e.target.value)}
           placeholder="e.g. 150" min="1"
           style={{width:'100%',background:'#0a1420',border:'1.5px solid #1e2d3d',borderRadius:10,
-            padding:'11px 14px',color:'#e2eaf4',fontSize:16,boxSizing:'border-box',outline:'none'}}/>
+            padding:'11px 14px',color:'#e6edf3',fontSize:16,boxSizing:'border-box',outline:'none'}}/>
       </div>
-      <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>
+      <label style={{fontSize:13,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>
         Average trunk diameter at chest height
       </label>
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,minWidth:0}}>
@@ -993,15 +996,15 @@ function FirstSeasonWizard({ onClose, onComplete }) {
 
     // 1 — System
     <div key="s1">
-      <p style={{fontSize:13,color:'#8a9ab5',marginBottom:18,lineHeight:1.6}}>
+      <p style={{fontSize:13,color:'#8b949e',marginBottom:18,lineHeight:1.6}}>
         Your system type is the biggest lever on how much sap you collect per tap.
       </p>
-      <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Tap system</label>
+      <label style={{fontSize:13,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Tap system</label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:18}}>
         <Opt val="gravity" cur={systemType} set={setSystemType} accent="#58a6ff" Icon={I.droplet} label="Gravity" sub={`Natural flow\n${YIELD_MODELS.gravity.low}–${YIELD_MODELS.gravity.high} gal/tap`}/>
         <Opt val="vacuum"  cur={systemType} set={setSystemType} accent="#58a6ff" Icon={I.wind} label="Vacuum"  sub={`Pump-assisted\n${YIELD_MODELS.vacuum.low}–${YIELD_MODELS.vacuum.high} gal/tap`}/>
       </div>
-      <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Collection method</label>
+      <label style={{fontSize:13,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Collection method</label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
         <Opt val="buckets"  cur={collectionType} set={setCollectionType} accent="#a78bfa" Icon={I.bucket} label="Buckets"  sub="Classic, manual"/>
         <Opt val="mainline" cur={collectionType} set={setCollectionType} accent="#a78bfa" Icon={I.link} label="Mainline" sub="Flows to tank"/>
@@ -1010,72 +1013,72 @@ function FirstSeasonWizard({ onClose, onComplete }) {
 
     // 2 — Evaporator
     <div key="s2">
-      <p style={{fontSize:13,color:'#8a9ab5',marginBottom:18,lineHeight:1.6}}>
+      <p style={{fontSize:13,color:'#8b949e',marginBottom:18,lineHeight:1.6}}>
         Your evaporator size determines how many sessions your season will take.
       </p>
-      <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Do you have an evaporator?</label>
+      <label style={{fontSize:13,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Do you have an evaporator?</label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:18}}>
         <Opt val={true}  cur={hasEvap} set={setHasEvap} accent="#3fb950" Icon={I.check} label="Yes, I do"  sub="Ready to boil"/>
         <Opt val={false} cur={hasEvap} set={setHasEvap} accent="#3fb950" Icon={I.clipboard} label="Not yet"    sub="Planning ahead"/>
       </div>
       {hasEvap && <>
-        <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Pan size</label>
+        <label style={{fontSize:13,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Pan size</label>
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(56px,1fr))',gap:6,marginBottom:18}}>
           {['2x3','2x4','2x6','2x8','3x8','3x10','4x12','4x14','5x16'].map(sz=>(
             <button key={sz} onClick={()=>setPanSize(sz)}
-              style={{padding:'9px 4px',borderRadius:10,border:`2px solid ${panSize===sz?'#f59e0b':'#1e2d3d'}`,
+              style={{padding:'9px 4px',borderRadius:10,border:`2px solid ${panSize===sz?'#e0a44a':'#1e2d3d'}`,
                 background:panSize===sz?'rgba(245,158,11,0.08)':'#0a1420',cursor:'pointer',transition:'all 0.15s',textAlign:'center'}}>
-              <div style={{fontSize:13,fontWeight:700,color:panSize===sz?'#f59e0b':'#c9d1d9'}}>{sz}</div>
-              <div style={{fontSize:12,color:'#5a6a7a',marginTop:2}}>{evapRates[sz]}gph</div>
+              <div style={{fontSize:13,fontWeight:700,color:panSize===sz?'#e0a44a':'#c9d1d9'}}>{sz}</div>
+              <div style={{fontSize:12,color:'#7f92a6',marginTop:2}}>{evapRates[sz]}gph</div>
             </button>
           ))}
         </div>
       </>}
-      <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Fuel type</label>
+      <label style={{fontSize:13,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Fuel type</label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
         {[['Firewood (cord)',I.firewood,'Wood-fired'],['Oil (gallon)',I.fuel,'Oil burner'],
           ['Propane (gallon)',I.flame,'Propane'],['Natural Gas (ccf)',I.zap,'Gas line']].map(([v,Ico,desc])=>(
-          <Opt key={v} val={v} cur={wizFuelType} set={setWizFuelType} accent="#f59e0b" Icon={Ico} label={v.split(' ')[0]} sub={desc} wide/>
+          <Opt key={v} val={v} cur={wizFuelType} set={setWizFuelType} accent="#e0a44a" Icon={Ico} label={v.split(' ')[0]} sub={desc} wide/>
         ))}
       </div>
     </div>,
 
     // 3 — Costs
     <div key="s3">
-      <p style={{fontSize:13,color:'#8a9ab5',marginBottom:18,lineHeight:1.6}}>
+      <p style={{fontSize:13,color:'#8b949e',marginBottom:18,lineHeight:1.6}}>
         Two numbers that unlock the full financial picture of your operation.
       </p>
       <div style={{marginBottom:18}}>
-        <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:8}}>
+        <label style={{fontSize:13,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:8}}>
           Fuel cost this season ({wizFuelType})
         </label>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <span style={{color:'#5a6a7a',fontSize:16,flexShrink:0}}>$</span>
+          <span style={{color:'#7f92a6',fontSize:16,flexShrink:0}}>$</span>
           <input aria-label={`Fuel cost this season in dollars (${wizFuelType})`} type="number" value={fuelCostVal} onChange={e=>setFuelCostVal(e.target.value)}
             placeholder={wizFuelType.includes('Firewood')?'300':'120'} min="0"
             style={{flex:1,background:'#0a1420',border:'1.5px solid #1e2d3d',borderRadius:10,
-              padding:'11px 14px',color:'#e2eaf4',fontSize:15,outline:'none'}}/>
+              padding:'11px 14px',color:'#e6edf3',fontSize:15,outline:'none'}}/>
         </div>
-        <div style={{fontSize:13,color:'#3d5068',marginTop:4}}>Whole-season total, for break-even. Your price per cord or gallon is set on the Evap tab.</div>
+        <div style={{fontSize:13,color:'#7f92a6',marginTop:4}}>Whole-season total, for break-even. Your price per cord or gallon is set on the Evap tab.</div>
       </div>
       <div style={{marginBottom:18}}>
-        <label style={{fontSize:13,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:8}}>
+        <label style={{fontSize:13,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:8}}>
           Syrup selling price (per gallon)
         </label>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <span style={{color:'#5a6a7a',fontSize:16,flexShrink:0}}>$</span>
+          <span style={{color:'#7f92a6',fontSize:16,flexShrink:0}}>$</span>
           <input aria-label="Syrup selling price per gallon, in dollars" type="number" value={syrupPrice} onChange={e=>setSyrupPrice(e.target.value)}
             placeholder="40" min="0"
             style={{flex:1,background:'#0a1420',border:'1.5px solid #1e2d3d',borderRadius:10,
-              padding:'11px 14px',color:'#e2eaf4',fontSize:15,outline:'none'}}/>
+              padding:'11px 14px',color:'#e6edf3',fontSize:15,outline:'none'}}/>
         </div>
-        <div style={{fontSize:13,color:'#3d5068',marginTop:4}}>Retail bulk maple typically sells $35–$70/gal.</div>
+        <div style={{fontSize:13,color:'#7f92a6',marginTop:4}}>Retail bulk maple typically sells $35–$70/gal.</div>
       </div>
       {trees > 0 && (
         <div style={{background:'rgba(63,185,80,0.06)',border:'1px solid rgba(63,185,80,0.2)',borderRadius:12,padding:'14px 16px'}}>
           <div style={{fontSize:12,fontWeight:700,color:'#3fb950',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:10}}>Revenue Snapshot</div>
           <div style={{fontSize:13,color:'#c9d1d9',lineHeight:1.9}}>
-            <div>Bad year: <span style={{color:'#f59e0b',fontWeight:700}}>{syrupLow.toFixed(1)} gal → ${(syrupLow * price).toFixed(0)}</span></div>
+            <div>Bad year: <span style={{color:'#e0a44a',fontWeight:700}}>{syrupLow.toFixed(1)} gal → ${(syrupLow * price).toFixed(0)}</span></div>
             <div>Average: <span style={{color:'#2dd4a7',fontWeight:700}}>{syrupMid.toFixed(1)} gal → ${(syrupMid * price).toFixed(0)}</span></div>
             <div>Great year: <span style={{color:'#3fb950',fontWeight:700}}>{syrupHigh.toFixed(1)} gal → ${(syrupHigh * price).toFixed(0)}</span></div>
           </div>
@@ -1095,24 +1098,24 @@ function FirstSeasonWizard({ onClose, onComplete }) {
               [recTaps,        'Recommended taps',   '#2dd4a7'],
               [syrupLow.toFixed(0)+'–'+syrupHigh.toFixed(0), 'Expected gal syrup','#a78bfa'],
               [sapMid.toLocaleString(), 'Estimated gal sap',  '#58a6ff'],
-              ['$'+(syrupMid*price).toFixed(0), 'Avg season revenue','#f59e0b'],
+              ['$'+(syrupMid*price).toFixed(0), 'Avg season revenue','#e0a44a'],
             ].map(([val,lbl,clr],i)=>(
               <div key={i} style={{textAlign:'center',background:'rgba(0,0,0,0.25)',borderRadius:10,padding:'12px 8px'}}>
                 <div style={{fontSize:24,fontWeight:800,color:clr,lineHeight:1}}>{val}</div>
-                <div style={{fontSize:12,color:'#5a6a7a',marginTop:4}}>{lbl}</div>
+                <div style={{fontSize:12,color:'#7f92a6',marginTop:4}}>{lbl}</div>
               </div>
             ))}
           </div>
           {hasEvap && sessions && (
             <div style={{paddingTop:12,borderTop:'1px solid #1a4a25',display:'flex',gap:20,justifyContent:'center'}}>
               <div style={{textAlign:'center'}}>
-                <span style={{fontSize:18,fontWeight:700,color:'#f59e0b'}}>{sessions}</span>
-                <span style={{fontSize:13,color:'#5a6a7a',display:'block'}}>evap sessions</span>
+                <span style={{fontSize:18,fontWeight:700,color:'#e0a44a'}}>{sessions}</span>
+                <span style={{fontSize:13,color:'#7f92a6',display:'block'}}>evap sessions</span>
               </div>
               {firewood && (
                 <div style={{textAlign:'center'}}>
                   <span style={{fontSize:18,fontWeight:700,color:'#e8865a'}}>{firewood}</span>
-                  <span style={{fontSize:13,color:'#5a6a7a',display:'block'}}>cords wood</span>
+                  <span style={{fontSize:13,color:'#7f92a6',display:'block'}}>cords wood</span>
                 </div>
               )}
             </div>
@@ -1124,7 +1127,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
             ['Feb · Prep',       'Inspect all equipment, drill bits, spouts, lines. Order supplies now — stock runs out.',  '#2dd4a7'],
             ['Late Feb · Watch', 'Monitor 10-day forecast. Look for 40°F+ days with sub-freezing nights.',                  '#58a6ff'],
             ['First Run',        "Tap when the forecast shows the pattern. Don't wait — early sap is your best.",           '#3fb950'],
-            ['During Season',    'Collect sap within 24–48 hrs. Refrigerate if not boiling same day. Log every run.',       '#f59e0b'],
+            ['During Season',    'Collect sap within 24–48 hrs. Refrigerate if not boiling same day. Log every run.',       '#e0a44a'],
             ['Late Season',      'Watch for buddy sap (cloudy, off-taste). Pull taps when buds swell.',                     '#a78bfa'],
             ['After Season',     "Clean lines, store equipment dry, log final numbers in SweetRun's Recap tab.",            '#e8865a'],
           ].map(([title,desc,clr],i,arr)=>(
@@ -1132,15 +1135,14 @@ function FirstSeasonWizard({ onClose, onComplete }) {
               <div style={{width:7,height:7,borderRadius:'50%',background:clr,marginTop:5,flexShrink:0}}/>
               <div>
                 <div style={{fontSize:13,fontWeight:700,color:'#c9d1d9',marginBottom:2}}>{title}</div>
-                <div style={{fontSize:13,color:'#5a6a7a',lineHeight:1.5}}>{desc}</div>
+                <div style={{fontSize:13,color:'#7f92a6',lineHeight:1.5}}>{desc}</div>
               </div>
             </div>
           ))}
         </div>
       </> : (
-        <div style={{textAlign:'center',padding:'40px 20px',color:'#5a6a7a'}}>
-          <div style={{marginBottom:12,display:'flex',justifyContent:'center'}}><I.tree size={46} color="#2dd4a7" /></div>
-          <div style={{fontSize:14,color:'#c9d1d9',marginBottom:6}}>Go back and enter your tree count</div>
+        <div style={{textAlign:'center',padding:'28px 20px',color:'#7f92a6'}}>
+          <div style={{fontSize:14,color:'#e6edf3',marginBottom:6,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}><I.tree size={20} color="#8b949e" /> Go back and enter your tree count</div>
           <div style={{fontSize:12}}>to generate your personalized season plan.</div>
         </div>
       )}
@@ -1148,11 +1150,9 @@ function FirstSeasonWizard({ onClose, onComplete }) {
   ];
 
   return (
-    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.88)',zIndex:9000,
-      display:'flex',alignItems:'flex-end',justifyContent:'center',backdropFilter:'blur(4px)'}}>
-      <div style={{background:'#07090f',border:'1px solid #1e2d3d',borderRadius:'24px 24px 0 0',
-        padding:'24px 20px 32px',width:'100%',maxWidth:540,maxHeight:'92vh',overflowY:'auto',overflowX:'hidden',
-        boxSizing:'border-box',animation:'fadeIn 0.3s ease both'}}>
+    <div className="scrim" style={{zIndex:9000}}>
+      <div className="sheet" style={{maxHeight:'92vh',overflowX:'hidden'}}>
+        <div className="sheet-handle" />
         {/* Header */}
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:18}}>
           <div>
@@ -1162,11 +1162,11 @@ function FirstSeasonWizard({ onClose, onComplete }) {
                 Step {step+1} of {STEPS}
               </span>
             </div>
-            <div style={{fontSize:20,fontWeight:800,color:'#e2eaf4'}}>{stepTitles[step]}</div>
+            <div style={{fontSize:20,fontWeight:800,color:'#e6edf3'}}>{stepTitles[step]}</div>
           </div>
           <button onClick={onClose}
-            style={{background:'none',border:'none',color:'#3d5068',padding:4,cursor:'pointer',display:'flex'}}>
-            <I.x size={20} color="#3d5068"/>
+            style={{background:'none',border:'none',color:'#7f92a6',padding:4,cursor:'pointer',display:'flex'}}>
+            <I.x size={20} color="#7f92a6"/>
           </button>
         </div>
         {/* Progress */}
@@ -1181,22 +1181,22 @@ function FirstSeasonWizard({ onClose, onComplete }) {
           {step > 0 && (
             <button onClick={goBack}
               style={{flex:1,padding:'13px',borderRadius:12,border:'1px solid #1e2d3d',
-                background:'transparent',color:'#8a9ab5',fontSize:14,fontWeight:600,cursor:'pointer'}}>
+                background:'transparent',color:'#8b949e',fontSize:14,fontWeight:600,cursor:'pointer'}}>
               ← Back
             </button>
           )}
           {step < STEPS-1 ? (
             <button onClick={goNext} disabled={!canNext}
               style={{flex:2,padding:'13px',borderRadius:12,border:'none',
-                background:canNext?'linear-gradient(135deg,#2dd4a7,#1fbf94)':'#131e2c',
-                color:canNext?'#07090f':'#3d5068',fontSize:14,fontWeight:700,
+                background:canNext?'#2dd4a7':'#131e2c',
+                color:canNext?'#07090f':'#7f92a6',fontSize:14,fontWeight:700,
                 cursor:canNext?'pointer':'not-allowed',transition:'all 0.15s'}}>
               Continue →
             </button>
           ) : (
             <button onClick={finish}
               style={{flex:2,padding:'13px',borderRadius:12,border:'none',
-                background:'linear-gradient(135deg,#3fb950,#2ea043)',color:'#fff',
+                background:'#3fb950',color:'#fff',
                 fontSize:14,fontWeight:700,cursor:'pointer'}}>
               <I.mapleLeaf size={17} color="#07090f" /> Start My Season
             </button>
@@ -1205,7 +1205,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
         {step === 0 && (
           <div style={{textAlign:'center',marginTop:12}}>
             <button onClick={onClose}
-              style={{background:'none',border:'none',color:'#3d5068',fontSize:12,cursor:'pointer'}}>
+              style={{background:'none',border:'none',color:'#7f92a6',fontSize:12,cursor:'pointer'}}>
               Skip — I'll set up later
             </button>
           </div>
@@ -1261,13 +1261,13 @@ function FreezeThawWidget({ lang='en' }) {
 
   return (
     <div className="card">
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontSize:12, fontWeight:600, letterSpacing:'0.08em', color:'#5a6a7a', marginBottom:12 }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontSize:12, fontWeight:600, letterSpacing:'0.08em', color:'#7f92a6', marginBottom:12 }}>
         <I.snowflake size={14} color="#58a6ff" /> {t(lang,'ftTitle')} <I.sun size={14} color="#e0a44a" />
       </div>
       <button className="btn-secondary" style={{ marginBottom:10 }} onClick={useGPS}>
         <I.mapPin size={16} color="#8b949e" /> {t(lang,'useGPS')}
       </button>
-      <div style={{ textAlign:'center', color:'#3d5068', fontSize:12, marginBottom:8 }}>{t(lang,'ftOr')}</div>
+      <div style={{ textAlign:'center', color:'#7f92a6', fontSize:12, marginBottom:8 }}>{t(lang,'ftOr')}</div>
       <div style={{ display:'flex', gap:8 }}>
         <input aria-label={t(lang,'wxCityPh')} type="text" placeholder={t(lang,'wxCityPh')} value={zip}
           onChange={e => setZip(e.target.value)} onKeyDown={e => e.key==='Enter' && searchZip()} style={{ flex:1 }} />
@@ -1275,7 +1275,7 @@ function FreezeThawWidget({ lang='en' }) {
           <I.search size={18} color="#0d1117" />
         </button>
       </div>
-      {loading && <div style={{ textAlign:'center', color:'#5a6a7a', marginTop:12, fontSize:14 }}>Loading…</div>}
+      {loading && <div style={{ textAlign:'center', color:'#7f92a6', marginTop:12, fontSize:14 }}>Loading…</div>}
       {error   && <div style={{ color:'#f85149', fontSize:13, marginTop:8 }}>{error}</div>}
       {weather && (
         <div style={{ marginTop:14 }}>
@@ -1295,16 +1295,16 @@ function FreezeThawWidget({ lang='en' }) {
               <>
                 <div style={{ background: idealCount>0?'#081e0e':'#1a0d04', borderRadius:10, padding:'10px 14px', marginBottom:10, display:'flex', justifyContent:'space-between', alignItems:'center', border:`1px solid ${idealCount>0?'#1a4a25':'#4a2000'}` }}>
                   <div>
-                    <div style={{ fontWeight:700, color: idealCount>0?'#3fb950':'#f0883e', fontSize:15 }}>
+                    <div style={{ fontWeight:700, color: idealCount>0?'#3fb950':'#e0a44a', fontSize:15 }}>
                       {idealCount>0 ? (lang==='fr' ? idealCount + (idealCount!==1?' jours de coulée':' jour de coulée') + ' à venir' : idealCount + ' run day' + (idealCount!==1?'s':'') + ' ahead') : '—'}
                     </div>
-                    <div style={{ fontSize:12, color:'#5a6a7a', marginTop:2 }}>
+                    <div style={{ fontSize:12, color:'#7f92a6', marginTop:2 }}>
                       {tooWarmCount >= 4 ? t(lang,'ftWarmStretch') : 'hi \u2265 40\u00b0F \u00b7 lo \u2264 28\u00b0F'}
                     </div>
                   </div>
                   <div style={{ display:'flex' }}>{idealCount>0
               ? <I.mapleLeaf size={22} color="#2dd4a7" />
-              : tooWarmCount>=4 ? <I.alert size={22} color="#f0883e" />
+              : tooWarmCount>=4 ? <I.alert size={22} color="#e0a44a" />
               : <I.snowflake size={22} color="#58a6ff" />}</div>
                 </div>
                 {days.map(({ date, hi, lo, ideal, freezeThaw, tooWarm, allFreeze }) => {
@@ -1313,24 +1313,24 @@ function FreezeThawWidget({ lang='en' }) {
                   let badge = null;
                   if (ideal)      badge = <span style={{ background:'rgba(63,185,80,0.15)', color:'#3fb950', fontSize:13, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(63,185,80,0.25)' }}>\u2713 {t(lang,'badgeIdeal')}</span>;
                   else if (freezeThaw) badge = <span className="good-badge">{t(lang,'badgeFreezeThaw')}</span>;
-                  else if (tooWarm)    badge = <span style={{ background:'rgba(240,136,62,0.13)', color:'#f0883e', fontSize:13, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(240,136,62,0.22)' }}>{t(lang,'badgeTooWarm')}</span>;
+                  else if (tooWarm)    badge = <span style={{ background:'rgba(240,136,62,0.13)', color:'#e0a44a', fontSize:13, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(240,136,62,0.22)' }}>{t(lang,'badgeTooWarm')}</span>;
                   else if (allFreeze)  badge = <span className="freeze-badge">{t(lang,'badgeAllFreeze')}</span>;
                   return (
-                    <div key={date} className="weather-day" style={{ borderLeft: ideal?'3px solid #3fb950':tooWarm?'3px solid #f0883e':'3px solid transparent' }}>
+                    <div key={date} className="weather-day" style={{ borderLeft: ideal?'3px solid #3fb950':tooWarm?'3px solid #e0a44a':'3px solid transparent' }}>
                       <div>
                         <div style={{ fontWeight:600, fontSize:14 }}>{i===0?t(lang,'today'):DAY[lang][d.getDay()]}</div>
-                        <div style={{ color:'#5a6a7a', fontSize:12 }}>{MON[lang][d.getMonth()]} {d.getDate()}</div>
+                        <div style={{ color:'#7f92a6', fontSize:12 }}>{MON[lang][d.getMonth()]} {d.getDate()}</div>
                       </div>
                       <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                        <span style={{ color:'#f0883e', fontWeight:600 }}>{hi}°</span>
-                        <span style={{ color:'#5a6a7a', fontSize:13 }}>/</span>
+                        <span style={{ color:'#e0a44a', fontWeight:600 }}>{hi}°</span>
+                        <span style={{ color:'#7f92a6', fontSize:13 }}>/</span>
                         <span style={{ color:'#58a6ff', fontWeight:600 }}>{lo}°</span>
                         {badge}
                       </div>
                     </div>
                   );
                 })}
-                <div style={{ fontSize:12, color:'#3d5068', marginTop:8, textAlign:'center' }}>
+                <div style={{ fontSize:12, color:'#7f92a6', marginTop:8, textAlign:'center' }}>
                   {t(lang,'ftLegend')}
                 </div>
               </>
@@ -1356,52 +1356,49 @@ function SapTab({ sapBrix, setSapBrix, trees, units, lang='en' }) {
       <div className="card">
         <div className="card-title">
           <CardIcon bg="#2d2010" icon="calculator" />
-          <div><div>{t(lang,'rule86Title')}</div><div style={{ fontSize:12, color:'#5a6a7a', fontWeight:400 }}>{t(lang,'rule86Sub')}</div></div>
+          <div><div>{t(lang,'rule86Title')}</div><div style={{ fontSize:12, color:'#7f92a6', fontWeight:400 }}>{t(lang,'rule86Sub')}</div></div>
         </div>
         <div className="field-label">{t(lang,'sapSugarContent')}</div>
         <NumInput label={t(lang,'sapSugarContent')} value={sapBrix} onChange={setSapBrix} min={0.5} max={10} step={0.1} />
-        <div style={{ fontSize:12, color:'#e0a44a', marginTop:5, marginBottom:10 }}>{t(lang,'sharedAllTabs')}</div>
-        <div className="result-box orange">
-          <div className="two-col">
-            <div>
-              <div className="result-label" style={{ color:'#e0a44a' }}>{t(lang,'sapToSyrup')}</div>
-              <div className="result-value" style={{ color:'#e0a44a' }}>{fmt(ratio,1)}:1</div>
-            </div>
-            <div>
-              <div className="result-label" style={{ color:'#e0a44a' }}>{t(lang,'jonesRule')}</div>
-              <div className="result-value" style={{ color:'#e0a44a' }}>{fmt(jones,1)}:1</div>
-            </div>
+        <div style={{ fontSize:12, color:'#7f92a6', marginTop:5, marginBottom:10 }}>{t(lang,'sharedAllTabs')}</div>
+        <div className="result-box">
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', columnGap:10, rowGap:5, alignItems:'baseline' }}>
+            <div className="result-label" style={{ marginBottom:0 }}>{t(lang,'sapToSyrup')}</div>
+            <div className="result-label" style={{ marginBottom:0 }}>{t(lang,'jonesRule')}</div>
+            <div className="result-value" style={{ color:'#2dd4a7' }}>{fmt(ratio,1)}:1</div>
+            <div className="result-value" style={{ fontSize:20, fontWeight:700 }}>{fmt(jones,1)}:1</div>
           </div>
-          <div style={{ marginTop:8, fontSize:13, color:'#5a6a7a' }}>{fmt(ratio,1)} {u} sap = 1 {u} syrup</div>
+          <div style={{ marginTop:8, fontSize:13, color:'#7f92a6' }}>{fmt(ratio,1)} {u} sap = 1 {u} syrup</div>
         </div>
       </div>
 
       <div className="card">
         <div className="card-title">
           <CardIcon bg="#1a2a2d" icon="droplet" />
-          <div><div>{t(lang,'syrupYieldCard')}</div><div style={{ fontSize:12, color:'#5a6a7a', fontWeight:400 }}>{t(lang,'syrupYieldSub')}</div></div>
+          <div><div>{t(lang,'syrupYieldCard')}</div><div style={{ fontSize:12, color:'#7f92a6', fontWeight:400 }}>{t(lang,'syrupYieldSub')}</div></div>
         </div>
         <div className="two-col" style={{ marginBottom:12 }}>
           <div><div className="field-label">{t(lang,'sapFieldLabel')} ({u})</div><NumInput label={`${t(lang,'sapFieldLabel')} (${u})`} value={sapGal} onChange={setSapGal} min={1} max={100000} step={1} /></div>
           <div><div className="field-label">{t(lang,'sapBrix')}</div><input aria-label={t(lang,'sapBrix')} type="number" value={sapBrix} onChange={e=>setSapBrix(parseFloat(e.target.value)||0)} onFocus={e=>e.target.select()} min={0.5} max={10} step={0.1} /></div>
         </div>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:16, padding:'10px 0' }}>
-          <div style={{ textAlign:'center' }}>
-            <div className="result-value" style={{ color:'#e0a44a', fontSize:32 }}>{conv(sapGal)}</div>
-            <div style={{ color:'#5a6a7a', fontSize:13 }}>{u} {t(lang,'sapSap')}</div>
+        <div className="result-box" style={{ marginTop:0 }}>
+          <div className="two-col" style={{ alignItems:'baseline' }}>
+            <div>
+              <div className="result-label">{t(lang,'sapSap')}</div>
+              <div className="result-value" style={{ fontSize:20, fontWeight:700 }}>{fmt(units==='L'?sapGal*3.78541:sapGal,0)}<span className="unit">{u}</span></div>
+            </div>
+            <div>
+              <div className="result-label">{t(lang,'sapSyrup')}</div>
+              <div className="result-value" style={{ fontSize:20, fontWeight:700 }}>{fmt(units==='L'?sy*3.78541:sy,1)}<span className="unit">{u}</span></div>
+            </div>
           </div>
-          <div style={{ color:'#2dd4a7', fontSize:22 }}>→</div>
-          <div style={{ textAlign:'center' }}>
-            <div className="result-value" style={{ color:'#2dd4a7', fontSize:32 }}>{conv(sy)}</div>
-            <div style={{ color:'#5a6a7a', fontSize:13 }}>{u} {t(lang,'sapSyrup')}</div>
-          </div>
+          {trees > 0 && (
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginTop:10, paddingTop:10, borderTop:'1px solid #131e2c' }}>
+              <span style={{ color:'#7f92a6', fontSize:13 }}>{lang==='fr' ? 'Par entaille' : 'Per tap'} ({fmt(trees,0)} {lang==='fr' ? 'entailles' : 'taps'})</span>
+              <span style={{ fontWeight:700, fontSize:14 }}>{fmt(sy/trees,3)} <span style={{ fontWeight:500, color:'#7f92a6', fontSize:13 }}>{u}/tap</span></span>
+            </div>
+          )}
         </div>
-        {trees > 0 && (
-          <div style={{ background:'#0f1720', borderRadius:8, padding:'8px 14px', display:'flex', justifyContent:'space-between', marginTop:8 }}>
-            <span style={{ color:'#2dd4a7', fontSize:14 }}>{t(lang,'perTreeLabel')} ({trees} {t(lang,'trees')})</span>
-            <span style={{ fontWeight:700, color:'#2dd4a7' }}>{fmt(sy/trees,3)} {u}/tree</span>
-          </div>
-        )}
       </div>
 
       <div className="card">
@@ -1411,9 +1408,9 @@ function SapTab({ sapBrix, setSapBrix, trees, units, lang='en' }) {
         </div>
         <div className="two-col">
           {qr.map(q => (
-            <div key={q.b} style={{ background: Math.abs(q.b-sapBrix)<0.01 ? '#1e1005':'#0f1720', border:`1px solid ${Math.abs(q.b-sapBrix)<0.01 ? 'rgba(224,164,74,0.5)':'#1a2840'}`, borderRadius:10, padding:12 }}>
-              <div style={{ fontWeight:700, color:'#e0a44a' }}>{q.b}° Brix</div>
-              <div style={{ color:'#5a6a7a', fontSize:13 }}>{q.r}:1 ratio</div>
+            <div key={q.b} style={{ background: Math.abs(q.b-sapBrix)<0.01 ? 'rgba(45,212,167,0.16)' : '#0d1a2b', borderRadius:10, padding:12 }}>
+              <div style={{ fontWeight:700, color: Math.abs(q.b-sapBrix)<0.01 ? '#2dd4a7' : '#e6edf3' }}>{q.b}° Brix</div>
+              <div style={{ color: Math.abs(q.b-sapBrix)<0.01 ? '#e6edf3' : '#7f92a6', fontSize:13 }}>{q.r}:1 ratio</div>
             </div>
           ))}
         </div>
@@ -1475,7 +1472,7 @@ async function _downloadBatchLabel(b, batchNum, season, trees, units) {
   c.fillStyle = `rgba(${gr},${gg},${gb},0.12)`; c.fillRect(0, 72, W, 52);
   c.fillStyle = g.color;
   c.beginPath(); c.arc(36, 98, 16, 0, Math.PI*2); c.fill();
-  c.fillStyle = '#5a6a7a'; c.font = '700 8px Arial, sans-serif'; c.fillText('USDA GRADE A', 64, 90);
+  c.fillStyle = '#7f92a6'; c.font = '700 8px Arial, sans-serif'; c.fillText('USDA GRADE A', 64, 90);
   c.fillStyle = g.color; c.font = 'bold 17px Arial, sans-serif'; c.fillText(g.name, 64, 112);
 
   // Stats
@@ -1490,7 +1487,7 @@ async function _downloadBatchLabel(b, batchNum, season, trees, units) {
   stats.forEach((s, i) => {
     const x = i*cw + 14;
     if (i > 0) { c.fillStyle = '#131e2c'; c.fillRect(i*cw, 125, 1, 54); }
-    c.fillStyle = '#3d5068'; c.font = '700 8px Arial, sans-serif'; c.fillText(s.label, x, 144);
+    c.fillStyle = '#7f92a6'; c.font = '700 8px Arial, sans-serif'; c.fillText(s.label, x, 144);
     c.fillStyle = '#e6edf3'; c.font = 'bold 17px Arial, sans-serif'; c.fillText(s.val, x, 166);
   });
   c.fillStyle = '#131e2c'; c.fillRect(0, 179, W, 1);
@@ -1502,7 +1499,7 @@ async function _downloadBatchLabel(b, batchNum, season, trees, units) {
     b.loc  ? b.loc : null,
     b.notes ? b.notes : null,
   ].filter(Boolean);
-  c.fillStyle = '#8a9ab5'; c.font = '13px Arial, sans-serif';
+  c.fillStyle = '#8b949e'; c.font = '13px Arial, sans-serif';
   details.forEach(d => { c.fillText(d, 20, dy); dy += 24; });
 
   // QR
@@ -1516,7 +1513,7 @@ async function _downloadBatchLabel(b, batchNum, season, trees, units) {
   if (c.roundRect) { c.beginPath(); c.roundRect(qrX-8, qrY-8, qrSize+16, qrSize+16, 8); c.fill(); }
   else { c.fillRect(qrX-8, qrY-8, qrSize+16, qrSize+16); }
   c.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
-  c.fillStyle = '#3d5068'; c.font = '10px Arial, sans-serif'; c.textAlign = 'center';
+  c.fillStyle = '#7f92a6'; c.font = '10px Arial, sans-serif'; c.textAlign = 'center';
   c.fillText('Scan to verify batch provenance', W/2, qrY + qrSize + 18);
   c.fillStyle = '#2dd4a7'; c.font = 'bold 10px Arial, sans-serif';
   c.fillText('sweetrun.app', W/2, qrY + qrSize + 33);
@@ -1683,7 +1680,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
             <div><div className="result-label" style={{ color:'#3fb950' }}>{t(lang,'fuelNeeded')}</div><div className="result-value" style={{ color:'#3fb950' }}>{fmt(uNeeded,2)} {fuel.unit}s</div></div>
             <div><div className="result-label" style={{ color:'#3fb950' }}>{t(lang,'estCost')}</div><div className="result-value" style={{ color:'#3fb950' }}>${fmt(cost,2)}</div></div>
           </div>
-          <div style={{ fontSize:13, color:'#5a6a7a', marginTop:6 }}>{t(lang,'forSap')} {conv(sapGal)} {u} {t(lang,'ofSap')}</div>
+          <div style={{ fontSize:13, color:'#7f92a6', marginTop:6 }}>{t(lang,'forSap')} {conv(sapGal)} {u} {t(lang,'ofSap')}</div>
         </div>
       </div>
 
@@ -1725,7 +1722,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
                   { l:t(lang,'total'),    v:`$${fmt(totalCost,0)}` },
                 ].map(r=>(
                   <div key={r.l} style={{ textAlign:'center', background:'#081e0e', borderRadius:8, padding:'8px 4px' }}>
-                    <div style={{ fontSize:12, color:'#5a6a7a', fontWeight:600 }}>{r.l}</div>
+                    <div style={{ fontSize:12, color:'#7f92a6', fontWeight:600 }}>{r.l}</div>
                     <div style={{ fontWeight:700, color:'#3fb950', fontSize:16 }}>{r.v}</div>
                   </div>
                 ))}
@@ -1733,7 +1730,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
               <div style={{ textAlign:'center', borderTop:'1px solid #1a4a25', paddingTop:10 }}>
                 <div style={{ fontSize:13, color:'#3fb950', fontWeight:600, letterSpacing:'0.08em', marginBottom:3 }}>{t(lang,'costPerGal').replace('GAL',u2.toUpperCase())}</div>
                 <div style={{ fontSize:34, fontWeight:800, color:'#3fb950' }}>${fmt(cpg,2)}</div>
-                <div style={{ color:'#5a6a7a', fontSize:12, marginTop:2 }}>{t(lang,'forSap')} {fmt(syrupYield,1)} {u2} {t(lang,'sapSyrup')} — {fmt(sapGal,0)} {u2} {t(lang,'sapSap')}</div>
+                <div style={{ color:'#7f92a6', fontSize:12, marginTop:2 }}>{t(lang,'forSap')} {fmt(syrupYield,1)} {u2} {t(lang,'sapSyrup')} — {fmt(sapGal,0)} {u2} {t(lang,'sapSap')}</div>
               </div>
             </div>
           );
@@ -1745,14 +1742,14 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
           <CardIcon bg="#0d1a2b" icon="dollar" />
           {t(lang,'retailTitle')}
         </div>
-        <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:12 }}>{t(lang,'retailDesc')}</div>
+        <div style={{ fontSize:13, color:'#7f92a6', marginBottom:12 }}>{t(lang,'retailDesc')}</div>
         <div className="two-col" style={{ marginBottom:12 }}>
           <div>
             <div className="field-label">{t(lang,'marginLabel')}</div>
             <NumInput label={t(lang,'marginLabel')} value={retailMargin} onChange={setRetailMargin} min={0} max={95} step={1} />
           </div>
           <div>
-            <div className="field-label">{t(lang,'yourCostPerGal')} <span style={{ color:'#3d5068', fontSize:13 }}>({t(lang,'orEnterManual')})</span></div>
+            <div className="field-label">{t(lang,'yourCostPerGal')} <span style={{ color:'#7f92a6', fontSize:13 }}>({t(lang,'orEnterManual')})</span></div>
             <NumInput label={t(lang,'yourCostPerGal')} value={retailCostOverride} onChange={setRetailCostOverride} min={0} step={0.5} placeholder="auto" />
           </div>
         </div>
@@ -1783,10 +1780,10 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
             <>
               <div className="result-box blue" style={{ padding:'10px 14px', marginBottom:14 }}>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:4, marginBottom:6 }}>
-                  <div style={{ color:'#5a6a7a', fontSize:13, fontWeight:600 }}>{t(lang,'bottleSize')}</div>
-                  <div style={{ color:'#5a6a7a', fontSize:13, fontWeight:600, textAlign:'center' }}>{t(lang,'costPerBottle')}</div>
-                  <div style={{ color:'#5a6a7a', fontSize:13, fontWeight:600, textAlign:'center' }}>{t(lang,'retail')}</div>
-                  <div style={{ color:'#5a6a7a', fontSize:13, fontWeight:600, textAlign:'center' }}>{t(lang,'profit')}</div>
+                  <div style={{ color:'#7f92a6', fontSize:13, fontWeight:600 }}>{t(lang,'bottleSize')}</div>
+                  <div style={{ color:'#7f92a6', fontSize:13, fontWeight:600, textAlign:'center' }}>{t(lang,'costPerBottle')}</div>
+                  <div style={{ color:'#7f92a6', fontSize:13, fontWeight:600, textAlign:'center' }}>{t(lang,'retail')}</div>
+                  <div style={{ color:'#7f92a6', fontSize:13, fontWeight:600, textAlign:'center' }}>{t(lang,'profit')}</div>
                 </div>
                 {BOTTLE_SIZES.map(bs=>{
                   const bottleCpg  = cpg * bs.gal;
@@ -1803,7 +1800,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
                 })}
               </div>
               <div style={{ background:'#0f1720', borderRadius:10, padding:'10px 14px' }}>
-                <div style={{ fontSize:13, color:'#5a6a7a', fontWeight:600, letterSpacing:'0.08em', marginBottom:8 }}>{t(lang,'usdaBenchmark')}</div>
+                <div style={{ fontSize:13, color:'#7f92a6', fontWeight:600, letterSpacing:'0.08em', marginBottom:8 }}>{t(lang,'usdaBenchmark')}</div>
                 {USDA_GRADES.map(g=>(
                   <div key={g.grade} style={{ display:'flex', justifyContent:'space-between', borderTop:'1px solid #1e2d3d', padding:'6px 0', fontSize:13 }}>
                     <span style={{ color:'#8b949e' }}>{g.grade}</span>
@@ -1840,8 +1837,8 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
               <div><div className="field-label">Location</div>
                 <div style={{ display:'flex', gap:6 }}>
                   <input aria-label="Location" type="text" value={bf.loc} onChange={e=>setBf(p=>({...p,loc:e.target.value}))} placeholder="e.g. Craftsbury, VT" style={{ flex:1 }} />
-                  <button onClick={gpsLoc} disabled={locLoading} title="Use my location" style={{ background:'rgba(45,212,167,0.1)', border:'1px solid rgba(45,212,167,0.25)', borderRadius:8, padding:'0 10px', fontSize:16, cursor:'pointer', color: locLoading ? '#3d5068' : '#2dd4a7', flexShrink:0 }}>
-                    {locLoading ? <I.clock size={15} color="#8a9ab5" /> : <I.mapPin size={15} color="#8a9ab5" />}
+                  <button onClick={gpsLoc} disabled={locLoading} title="Use my location" style={{ background:'rgba(45,212,167,0.1)', border:'1px solid rgba(45,212,167,0.25)', borderRadius:8, padding:'0 10px', fontSize:16, cursor:'pointer', color: locLoading ? '#7f92a6' : '#2dd4a7', flexShrink:0 }}>
+                    {locLoading ? <I.clock size={15} color="#8b949e" /> : <I.mapPin size={15} color="#8b949e" />}
                   </button>
                 </div>
               </div>
@@ -1854,11 +1851,11 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
           </div>
         )}
         {batches.length===0 && !showForm && (
-          <div style={{ textAlign:'center', color:'#3d5068', padding:'16px 0', fontSize:14 }}>{t(lang,'noBatchesLong')}</div>
+          <div style={{ textAlign:'center', color:'#7f92a6', padding:'16px 0', fontSize:14 }}>{t(lang,'noBatchesLong')}</div>
         )}
         {batches.length>0 && (
-          <div style={{ fontSize:13, color:'#3d5068', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
-            <I.tag size={15} color="#8a9ab5" />
+          <div style={{ fontSize:13, color:'#7f92a6', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
+            <I.tag size={15} color="#8b949e" />
             <span>Tap <strong style={{color:'#2dd4a7'}}>Label</strong> on any batch to download a printable provenance label with a QR code.</span>
           </div>
         )}
@@ -1868,14 +1865,14 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
             <div key={b.id} className="log-entry" style={{ gap:8 }}>
               <div style={{ width:10, height:10, borderRadius:'50%', background:bg.color, flexShrink:0, marginTop:3 }} />
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontWeight:600, fontSize:14 }}>{b.date}{b.loc ? <span style={{ fontWeight:400, color:'#5a6a7a', fontSize:12 }}> · {b.loc}</span> : ''}</div>
-                <div style={{ color:'#5a6a7a', fontSize:12 }}>{bg.name} · Sap: {b.sapIn} {u} → Syrup: {b.syrupOut} {u}{b.notes?` • ${b.notes}`:''}</div>
+                <div style={{ fontWeight:600, fontSize:14 }}>{b.date}{b.loc ? <span style={{ fontWeight:400, color:'#7f92a6', fontSize:12 }}> · {b.loc}</span> : ''}</div>
+                <div style={{ color:'#7f92a6', fontSize:12 }}>{bg.name} · Sap: {b.sapIn} {u} → Syrup: {b.syrupOut} {u}{b.notes?` • ${b.notes}`:''}</div>
               </div>
               <button
                 onClick={()=>_downloadBatchLabel(b, i+1, season, trees, units)}
                 title="Download provenance label PNG"
                 style={{ background:'rgba(45,212,167,0.1)', border:'1px solid rgba(45,212,167,0.25)', borderRadius:7, padding:'5px 10px', fontSize:13, fontWeight:700, color:'#2dd4a7', cursor:'pointer', flexShrink:0, letterSpacing:'0.03em', lineHeight:1.3, textAlign:'center' }}>
-                <I.tag size={15} color="#8a9ab5" /><br/>Label
+                <I.tag size={15} color="#8b949e" /><br/>Label
               </button>
               <button className="delete-btn" aria-label="Delete this batch" title="Delete batch" onClick={()=>setBatches(p=>p.filter((_,j)=>j!==i))}><I.trash size={15} /></button>
             </div>
@@ -1943,14 +1940,14 @@ function ROTab({ sapBrix, setSapBrix, evapRate, fuelType, fuelCost, units, lang=
           <CardIcon bg="#1a0d2b" icon="percent" />
           {t(lang,'multiPass')}
         </div>
-        <div style={{ color:'#5a6a7a', fontSize:14, marginBottom:10 }}>{t(lang,'startingBrix')} {sapBrix}° Brix:</div>
+        <div style={{ color:'#7f92a6', fontSize:14, marginBottom:10 }}>{t(lang,'startingBrix')} {sapBrix}° Brix:</div>
         {[{labelKey:'singlePass',brix:sapBrix*2},{labelKey:'doublePass',brix:sapBrix*4},{labelKey:'triplePass',brix:sapBrix*8}].map(p=>(
           <div key={p.labelKey} style={{ display:'flex', justifyContent:'space-between', background:'#100a1e', borderRadius:8, padding:'12px 16px', marginBottom:6 }}>
             <span style={{ color:'#c990ff', fontWeight:500 }}>{t(lang,p.labelKey)}</span>
             <span style={{ fontWeight:700 }}>{fmt(p.brix,1)}° Brix</span>
           </div>
         ))}
-        <div style={{ color:'#3d5068', fontSize:12, marginTop:8 }}>{t(lang,'maxPractical')}</div>
+        <div style={{ color:'#7f92a6', fontSize:12, marginTop:8 }}>{t(lang,'maxPractical')}</div>
       </div>
 
       <div className="card">
@@ -1980,7 +1977,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
   const corrB = syBrix + corr;
   const inR   = corrB >= 66 && corrB <= 68.9;
   const tooLt = corrB < 66;
-  const sColor= inR ? '#3fb950' : '#f0883e';
+  const sColor= inR ? '#3fb950' : '#e0a44a';
   const sText = inR ? t(lang,'perfectDensity') : tooLt ? t(lang,'tooLight') : t(lang,'tooDense');
   const cpP          = PLATE_CUPS[psKey] || 3.25;
   const cupsPerPlate = plates * cpP;
@@ -2009,12 +2006,12 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
         </div>
         <div className="field-label">{t(lang,'waterBP')}</div>
         <NumInput label={t(lang,'waterBP')} value={waterBP} onChange={setWaterBP} min={200} max={215} step={0.1} />
-        <div style={{ fontSize:12, color:'#5a6a7a', marginTop:5, marginBottom:10 }}>{t(lang,'sharedWithBoil')}</div>
+        <div style={{ fontSize:12, color:'#7f92a6', marginTop:5, marginBottom:10 }}>{t(lang,'sharedWithBoil')}</div>
         <div className="result-box orange">
           <div className="result-label" style={{ color:'#e0a44a', textAlign:'center' }}>{t(lang,'finishAt')}</div>
           <div className="result-value" style={{ color:'#e0a44a', textAlign:'center', fontSize:36 }}>{fmt(finT,1)}°F</div>
-          <div style={{ color:'#5a6a7a', textAlign:'center', marginTop:4 }}>= {fmt((finT-32)*5/9,1)}°C</div>
-          <div style={{ color:'#5a6a7a', textAlign:'center', fontSize:13 }}>{lang==='fr'?"7,1°F au-dessus du point d'ébullition de l'eau":'7.1°F above water boiling point'}</div>
+          <div style={{ color:'#7f92a6', textAlign:'center', marginTop:4 }}>= {fmt((finT-32)*5/9,1)}°C</div>
+          <div style={{ color:'#7f92a6', textAlign:'center', fontSize:13 }}>{lang==='fr'?"7,1°F au-dessus du point d'ébullition de l'eau":'7.1°F above water boiling point'}</div>
         </div>
       </div>
 
@@ -2029,11 +2026,11 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
         </div>
         <div className="result-box orange" style={{ marginBottom:10 }}>
           <div style={{ fontWeight:600, color:'#e0a44a', fontSize:14 }}>{t(lang,'tempCorrection')}: At {syTemp}°F, {corr>=0?'add':'subtract'} {fmt(Math.abs(corr),2)}° to reading</div>
-          <div style={{ color:'#5a6a7a', marginTop:4 }}>{t(lang,'correctedBrix')}: <strong style={{ color:'#e6edf3' }}>{fmt(corrB,1)}°</strong></div>
+          <div style={{ color:'#7f92a6', marginTop:4 }}>{t(lang,'correctedBrix')}: <strong style={{ color:'#e6edf3' }}>{fmt(corrB,1)}°</strong></div>
         </div>
         <div style={{ background: inR?'#0d2b15':'#2b1a0d', borderRadius:10, padding:'14px 16px', textAlign:'center', border:`1px solid ${inR?'#1a4a25':'#4a3020'}` }}>
           <div style={{ fontWeight:700, fontSize:18, color:sColor }}>{sText}</div>
-          <div style={{ color:'#5a6a7a', fontSize:13, marginTop:4 }}>{t(lang,'legalRange')}</div>
+          <div style={{ color:'#7f92a6', fontSize:13, marginTop:4 }}>{t(lang,'legalRange')}</div>
         </div>
       </div>
 
@@ -2043,7 +2040,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           Brix ↔ Baumé
         </div>
         <div className="two-col">
-          <div style={{ background:'#0d1a2b', borderRadius:10, padding:14, border:'1px solid #1a304a' }}>
+          <div style={{ background:'#0d1a2b', borderRadius:10, padding:14, border:'1px solid #1e2d3d' }}>
             <div style={{ fontSize:13, fontWeight:600, color:'#58a6ff', letterSpacing:'0.08em', marginBottom:6 }}>FROM BRIX</div>
             <div style={{ fontSize:26, fontWeight:700 }}>{fmt(syBrix,1)}°</div>
             <div style={{ color:'#58a6ff', fontWeight:600, marginTop:4 }}>= {fmt(brixToBe(syBrix),1)}° Bé</div>
@@ -2052,7 +2049,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
             <div style={{ fontSize:13, fontWeight:600, color:'#c990ff', letterSpacing:'0.08em', marginBottom:6 }}>ENTER BAUMÉ</div>
             <NumInput label="Enter degrees Baumé" value={baumeIn} onChange={setBaumeIn} min={28} max={40} step={0.1} />
             <div style={{ color:'#c990ff', fontSize:13, marginTop:6 }}>= {fmt(beToBrix(baumeIn),1)}° Brix</div>
-            <div style={{ color:'#748699', fontSize:13, marginTop:6, lineHeight:1.45 }}>{BE_HOT_NOTE}</div>
+            <div style={{ color:'#7f92a6', fontSize:13, marginTop:6, lineHeight:1.45 }}>{BE_HOT_NOTE}</div>
           </div>
         </div>
       </div>
@@ -2062,7 +2059,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           <CardIcon bg="#1c2128" icon="layers" />
           <div>
             <div>{t(lang,'filterPress')}</div>
-            <div style={{ fontSize:12, color:'#5a6a7a', fontWeight:400 }}>Step-by-step DE Calculator</div>
+            <div style={{ fontSize:12, color:'#7f92a6', fontWeight:400 }}>Step-by-step DE Calculator</div>
           </div>
         </div>
 
@@ -2072,7 +2069,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           <div style={{ fontSize:13, fontWeight:700, color:'#e6edf3' }}>How many gallons are you filtering right now?</div>
         </div>
         <NumInput label="Gallons to filter" value={gal2f} onChange={setGal2f} min={0} max={1000} step={1} />
-        <div style={{ fontSize:12, color:'#3d5068', marginTop:4, marginBottom:14 }}>Enter the gallons sitting in your finishing pan ready to press</div>
+        <div style={{ fontSize:12, color:'#7f92a6', marginTop:4, marginBottom:14 }}>Enter the gallons sitting in your finishing pan ready to press</div>
 
         {/* ── Auto recommendation banner ── */}
         {gal2f > 0 && (() => {
@@ -2119,7 +2116,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
               }}>
                 {isRec && <div style={{ position:'absolute', top:6, right:8, fontSize:12, fontWeight:800, color:m.color, letterSpacing:'0.06em', opacity:0.8, display:'flex', alignItems:'center', gap:4 }}><I.star size={10} color={m.color} />RECOMMENDED</div>}
                 <div style={{ fontSize:13, fontWeight:700, color: isSel ? m.color : '#8b949e', marginBottom:3, paddingRight:isRec?52:0 }}>{m.label}</div>
-                <div style={{ fontSize:13, color:'#3d5068', lineHeight:1.4 }}>{m.sub}</div>
+                <div style={{ fontSize:13, color:'#7f92a6', lineHeight:1.4 }}>{m.sub}</div>
               </button>
             );
           })}
@@ -2142,7 +2139,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
               cursor:'pointer', textAlign:'left', transition:'all 0.15s'
             }}>
               <div style={{ fontSize:13, fontWeight:700, color: szn===s.id ? s.color : '#8b949e', marginBottom:3 }}>{s.label}</div>
-              <div style={{ fontSize:13, color:'#3d5068', lineHeight:1.4 }}>{s.sub}</div>
+              <div style={{ fontSize:13, color:'#7f92a6', lineHeight:1.4 }}>{s.sub}</div>
             </button>
           ))}
         </div>
@@ -2167,15 +2164,15 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
             <div style={{ fontSize:16, color:'#2dd4a7', opacity:0.7, marginBottom:12 }}>cups of DE</div>
             <div style={{ display:'flex', gap:0, justifyContent:'center' }}>
               <div style={{ padding:'8px 20px', borderRight:'1px solid #131e2c' }}>
-                <div style={{ fontSize:12, color:'#3d5068', letterSpacing:'0.08em', marginBottom:2 }}>TABLESPOONS</div>
+                <div style={{ fontSize:12, color:'#7f92a6', letterSpacing:'0.08em', marginBottom:2 }}>TABLESPOONS</div>
                 <div style={{ fontWeight:700, color:'#8b949e', fontSize:16 }}>{Math.round(cups*16)}</div>
               </div>
               <div style={{ padding:'8px 20px', borderRight:'1px solid #131e2c' }}>
-                <div style={{ fontSize:12, color:'#3d5068', letterSpacing:'0.08em', marginBottom:2 }}>OUNCES</div>
+                <div style={{ fontSize:12, color:'#7f92a6', letterSpacing:'0.08em', marginBottom:2 }}>OUNCES</div>
                 <div style={{ fontWeight:700, color:'#8b949e', fontSize:16 }}>{fmt(oz,1)}</div>
               </div>
               <div style={{ padding:'8px 20px' }}>
-                <div style={{ fontSize:12, color:'#3d5068', letterSpacing:'0.08em', marginBottom:2 }}>POUNDS</div>
+                <div style={{ fontSize:12, color:'#7f92a6', letterSpacing:'0.08em', marginBottom:2 }}>POUNDS</div>
                 <div style={{ fontWeight:700, color:'#8b949e', fontSize:16 }}>{fmt(lbs,2)}</div>
               </div>
             </div>
@@ -2187,7 +2184,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           </div>
         ) : (
           <div style={{ background:'#0d1520', borderRadius:16, padding:'20px 16px', textAlign:'center', marginBottom:16, border:'1px solid #1e2d3d' }}>
-            <div style={{ fontSize:14, color:'#3d5068' }}>Enter your gallons above to get your DE amount</div>
+            <div style={{ fontSize:14, color:'#7f92a6' }}>Enter your gallons above to get your DE amount</div>
           </div>
         )}
 
@@ -2219,10 +2216,10 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           { step:'Watch your pressure gauge', detail:'Stop at 40 PSI — plates are full. Rinse the press and repeat the precharge if you have more syrup to run.' },
         ]).map((item,i) => (
           <div key={i} style={{ display:'flex', gap:12, marginBottom:12, alignItems:'flex-start' }}>
-            <div style={{ width:24, height:24, borderRadius:'50%', background:'#131e2c', border:'1px solid #1e2d3d', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'#5a6a7a', flexShrink:0, marginTop:1 }}>{i+1}</div>
+            <div style={{ width:24, height:24, borderRadius:'50%', background:'#131e2c', border:'1px solid #1e2d3d', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'#7f92a6', flexShrink:0, marginTop:1 }}>{i+1}</div>
             <div>
               <div style={{ fontSize:13, fontWeight:600, color:'#e6edf3', marginBottom:3 }}>{item.step}</div>
-              <div style={{ fontSize:12, color:'#5a6a7a', lineHeight:1.5 }}>{item.detail}</div>
+              <div style={{ fontSize:12, color:'#7f92a6', lineHeight:1.5 }}>{item.detail}</div>
             </div>
           </div>
         ))}
@@ -2235,9 +2232,9 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           { prob:'Nothing is coming out / flow stopped', fix:'Check that your valves are open. If pressure is at or above 40 PSI, your plates are full — stop, disassemble, rinse, and reload.' },
           { prob:'Syrup tastes or smells like DE', fix:'You\'ve used way too much. This is rare with filter-press grade DE. Reduce by half next time. Make sure you\'re using food-grade filter DE, not pool filter DE.' },
         ].map((item,i) => (
-          <div key={i} style={{ background:'#0d1520', borderRadius:10, padding:'10px 14px', marginBottom:8, border:'1px solid #1a2840' }}>
-            <div style={{ fontSize:12, fontWeight:700, color:'#f0883e', marginBottom:3 }}><I.zap size={13} color="#f0883e" /> {item.prob}</div>
-            <div style={{ fontSize:12, color:'#5a6a7a', lineHeight:1.5 }}>{item.fix}</div>
+          <div key={i} style={{ background:'#0d1520', borderRadius:10, padding:'10px 14px', marginBottom:8, border:'1px solid #1e2d3d' }}>
+            <div style={{ fontSize:12, fontWeight:700, color:'#e0a44a', marginBottom:3 }}><I.zap size={13} color="#e0a44a" /> {item.prob}</div>
+            <div style={{ fontSize:12, color:'#7f92a6', lineHeight:1.5 }}>{item.fix}</div>
           </div>
         ))}
       </div>
@@ -2256,7 +2253,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
               <div style={{ fontWeight:700, color:g.color, fontSize:15 }}>{g.l}</div>
               <div style={{ background:g.color+'22', borderRadius:8, padding:'2px 9px', fontSize:13, fontWeight:700, color:g.color }}>{g.brix} Brix</div>
             </div>
-            <div style={{ color:'#5a6a7a', fontSize:12, marginTop:4 }}>Light transmittance {g.light} · {g.note}</div>
+            <div style={{ color:'#7f92a6', fontSize:12, marginTop:4 }}>Light transmittance {g.light} · {g.note}</div>
           </div>
         ))}
         <div className="divider" />
@@ -2264,7 +2261,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           {[{l:t(lang,'legalMin'),v:'66.0° Brix'},{l:t(lang,'legalMax'),v:'68.9° Brix'}].map(r=>(
             <div key={r.l} style={{ background:'#2d1f0a', borderRadius:10, padding:'12px 14px', border:'1px solid #4a3020' }}>
               <div style={{ fontWeight:700, color:'#e0a44a', marginBottom:4 }}>{r.l}</div>
-              <div style={{ color:'#5a6a7a', fontSize:14 }}>{r.v}</div>
+              <div style={{ color:'#7f92a6', fontSize:14 }}>{r.v}</div>
             </div>
           ))}
         </div>
@@ -2279,15 +2276,15 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           <div style={{ textAlign:'center' }}>
             <div style={{ fontSize:12, color:'#e0a44a', fontWeight:700, letterSpacing:'0.08em', marginBottom:4 }}>CAN BETWEEN</div>
             <div style={{ fontSize:38, fontWeight:800, color:'#e0a44a', lineHeight:1 }}>180 – 190°F</div>
-            <div style={{ fontSize:12, color:'#5a6a7a', marginTop:6 }}>82 – 88°C</div>
+            <div style={{ fontSize:12, color:'#7f92a6', marginTop:6 }}>82 – 88°C</div>
           </div>
         </div>
 
-        <div style={{ background:'#0f1720', borderRadius:10, padding:'12px 14px', marginBottom:10, border:'1px solid #1a2840' }}>
+        <div style={{ background:'#0f1720', borderRadius:10, padding:'12px 14px', marginBottom:10, border:'1px solid #1e2d3d' }}>
           <div style={{ fontWeight:600, color:'#c9d1d9', fontSize:14, marginBottom:8 }}>Why this range matters</div>
           <div style={{ fontSize:13, color:'#8b949e', lineHeight:1.7 }}>
             <span style={{ color:'#3fb950', fontWeight:600 }}>Above 180°F</span> — hot enough to sterilize the container and create a vacuum seal as the syrup cools.<br/>
-            <span style={{ color:'#f0883e', fontWeight:600 }}>Below 190°F</span> — avoids driving off moisture that would push syrup above legal density, and prevents forming new niter (calcium malate crystals) that re-form above ~190°F even in already-filtered syrup.
+            <span style={{ color:'#e0a44a', fontWeight:600 }}>Below 190°F</span> — avoids driving off moisture that would push syrup above legal density, and prevents forming new niter (calcium malate crystals) that re-form above ~190°F even in already-filtered syrup.
           </div>
         </div>
 
@@ -2301,7 +2298,7 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           <TipItem key={i}><span style={{ color:'#c9d1d9', fontWeight:600 }}>{item.title} — </span>{item.body}</TipItem>
         ))}
 
-        <div style={{ background:'#081622', borderRadius:8, padding:'10px 12px', marginTop:8, fontSize:12, color:'#5a6a7a', lineHeight:1.7 }}>
+        <div style={{ background:'#081622', borderRadius:8, padding:'10px 12px', marginTop:8, fontSize:12, color:'#7f92a6', lineHeight:1.7 }}>
           <span style={{ color:'#8b949e', fontWeight:600 }}>Container yield guide: </span>
           250 mL ≈ 0.066 gal · 500 mL ≈ 0.132 gal · 1 L ≈ 0.264 gal · 1 qt ≈ 0.25 gal · ½ gal ≈ 0.5 gal · 1 gal jug = 1 gal
         </div>
@@ -2313,13 +2310,13 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           <CardIcon bg="#2b1a0d" icon="star" />
           <div>
             <div>Maple Candy Temperatures</div>
-            <div style={{ fontSize:12, color:'#5a6a7a', fontWeight:400 }}>Adjusted for your altitude · based on {fmt(waterBP,1)}°F boiling point</div>
+            <div style={{ fontSize:12, color:'#7f92a6', fontWeight:400 }}>Adjusted for your altitude · based on {fmt(waterBP,1)}°F boiling point</div>
           </div>
         </div>
 
         {/* Target temp grid */}
         {[
-          { name:'Maple Cream / Butter',  offset:22, color:'#f4a44a', desc:'Cook to temp, cool to ~70°F, stir until thick and creamy. Spreadable.' },
+          { name:'Maple Cream / Butter',  offset:22, color:'#e0a44a', desc:'Cook to temp, cool to ~70°F, stir until thick and creamy. Spreadable.' },
           { name:'Maple Taffy',           offset:28, color:'#e0a44a', desc:'Pour onto packed snow or ice. Pull and stretch while warm.' },
           { name:'Molded Candy',          offset:34, color:'#2dd4a7', desc:'Cook to temp, cool to ~160°F, stir until it begins to granulate, pour into molds quickly.' },
           { name:'Maple Sugar (granulated)', offset:45, color:'#c990ff', desc:'Cook to temp, stir vigorously while cooling until fully dry and granulated.' },
@@ -2329,10 +2326,10 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
               <div style={{ fontWeight:700, fontSize:14, color:'#e6edf3' }}>{c.name}</div>
               <div style={{ fontWeight:900, fontSize:22, color:c.color }}>{fmt(waterBP + c.offset, 1)}°F</div>
             </div>
-            <div style={{ fontSize:13, color:'#3d5068', marginBottom:3 }}>
+            <div style={{ fontSize:13, color:'#7f92a6', marginBottom:3 }}>
               BP + {c.offset}°F &nbsp;·&nbsp; {fmt((waterBP + c.offset - 32)*5/9, 1)}°C
             </div>
-            <div style={{ fontSize:12, color:'#5a6a7a', lineHeight:1.5 }}>{c.desc}</div>
+            <div style={{ fontSize:12, color:'#7f92a6', lineHeight:1.5 }}>{c.desc}</div>
           </div>
         ))}
 
@@ -2354,8 +2351,8 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
           ))}
         </div>
 
-        <div style={{ fontSize:13, color:'#3d5068', marginTop:10, lineHeight:1.7 }}>
-          <span style={{ color:'#5a6a7a', fontWeight:600 }}>All temps above auto-adjust for your altitude.</span> Update your water boiling point at the top of this tab if you move to a different elevation.
+        <div style={{ fontSize:13, color:'#7f92a6', marginTop:10, lineHeight:1.7 }}>
+          <span style={{ color:'#7f92a6', fontWeight:600 }}>All temps above auto-adjust for your altitude.</span> Update your water boiling point at the top of this tab if you move to a different elevation.
         </div>
       </div>
 
@@ -2418,7 +2415,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
           <div>
             <div className="field-label">{t(lang,'avgTrunkDiam')}</div>
             <NumInput label={t(lang,'avgTrunkDiam')} value={dbh} onChange={setDbh} min={6} max={60} step={1} />
-            <div style={{ fontSize:13, color:'#3d5068', marginTop:3 }}>{t(lang,'dbhHint')}</div>
+            <div style={{ fontSize:13, color:'#7f92a6', marginTop:3 }}>{t(lang,'dbhHint')}</div>
           </div>
         </div>
         <div className="field-label">{t(lang,'vacSystemQ')}</div>
@@ -2433,8 +2430,8 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
         </div>
         <div className="result-box orange">
           <div className="two-col">
-            <div><div className="result-label" style={{ color:'#e0a44a' }}>{t(lang,'estSapSeason')}</div><div className="result-value" style={{ color:'#e0a44a' }}>{conv(sap)} {u}</div><div style={{ color:'#5a6a7a', fontSize:13 }}>{t(lang,'perTapUnit').replace('{u}',u).replace('{n}', tot>0 ? fmt(conv(sap)/tot,1) : '0')}</div></div>
-            <div><div className="result-label" style={{ color:'#e0a44a' }}>{t(lang,'estSyrupYield')}</div><div className="result-value" style={{ color:'#e0a44a' }}>{conv(sy)} {u}</div><div style={{ color:'#5a6a7a', fontSize:13 }}>{t(lang,'atRatioLbl').replace('{n}',fmt(rule86(sapBrix),0))}</div></div>
+            <div><div className="result-label" style={{ color:'#e0a44a' }}>{t(lang,'estSapSeason')}</div><div className="result-value" style={{ color:'#e0a44a' }}>{conv(sap)} {u}</div><div style={{ color:'#7f92a6', fontSize:13 }}>{t(lang,'perTapUnit').replace('{u}',u).replace('{n}', tot>0 ? fmt(conv(sap)/tot,1) : '0')}</div></div>
+            <div><div className="result-label" style={{ color:'#e0a44a' }}>{t(lang,'estSyrupYield')}</div><div className="result-value" style={{ color:'#e0a44a' }}>{conv(sy)} {u}</div><div style={{ color:'#7f92a6', fontSize:13 }}>{t(lang,'atRatioLbl').replace('{n}',fmt(rule86(sapBrix),0))}</div></div>
           </div>
         </div>
       </div>
@@ -2443,7 +2440,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
         <div className="card-title" style={{ marginBottom:10 }}><CardIcon bg="#1c2128" icon="ruler" />{t(lang,'minTreeGuide')}</div>
         {sizeGuide(lang).map(r=>(
           <div key={r.s} className="info-row">
-            <div><span style={{ fontWeight:600 }}>{r.s}</span> <span style={{ color:'#3d5068', fontSize:13 }}>• {r.n}</span></div>
+            <div><span style={{ fontWeight:600 }}>{r.s}</span> <span style={{ color:'#7f92a6', fontSize:13 }}>• {r.n}</span></div>
             <span style={{ color:'#2dd4a7', fontWeight:600 }}>{r.taps}</span>
           </div>
         ))}
@@ -2460,7 +2457,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
             <div><div className="result-label" style={{ color:'#58a6ff' }}>{t(lang,'drillBit')}</div><div className="result-value" style={{ color:'#58a6ff' }}>{sp.bit}</div></div>
             <div><div className="result-label" style={{ color:'#58a6ff' }}>{t(lang,'tapDepth')}</div><div className="result-value" style={{ color:'#58a6ff', fontSize:22 }}>{sp.depth}</div></div>
           </div>
-          <div style={{ background:'#081622', borderRadius:8, padding:'8px 12px', fontSize:14, color:'#5a6a7a', display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ background:'#081622', borderRadius:8, padding:'8px 12px', fontSize:14, color:'#7f92a6', display:'flex', alignItems:'center', gap:8 }}>
             <I.info size={14} color="#58a6ff" /> {sp.note}
           </div>
         </div>
@@ -2477,7 +2474,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
             <CardIcon bg="#0d2b15" icon="clipboard" />
             <div>
               <div style={{ fontWeight:600 }}>{t(lang,'treeNotes')}</div>
-              <div style={{ fontSize:12, color:'#5a6a7a' }}>{treeNotes.length} {treeNotes.length!==1?t(lang,'notesRecorded'):t(lang,'noteRecorded')}</div>
+              <div style={{ fontSize:12, color:'#7f92a6' }}>{treeNotes.length} {treeNotes.length!==1?t(lang,'notesRecorded'):t(lang,'noteRecorded')}</div>
             </div>
           </div>
           {showTN ? <I.chevUp size={16} color="#8b949e" /> : <I.chevDown size={16} color="#8b949e" />}
@@ -2509,11 +2506,11 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
             <button className="btn-secondary" style={{ marginBottom:12 }} onClick={()=>setShowTN(true)}>
               <I.edit size={16} color="#8b949e" /> {t(lang,'addNote')}
             </button>
-            {treeNotes.length===0 && <div style={{ textAlign:'center', color:'#3d5068', fontSize:13, padding:'6px 0' }}>{t(lang,'noTreeNotesYet')}</div>}
+            {treeNotes.length===0 && <div style={{ textAlign:'center', color:'#7f92a6', fontSize:13, padding:'6px 0' }}>{t(lang,'noTreeNotesYet')}</div>}
             {treeNotes.slice().reverse().map((n,i)=>(
-              <div key={n.id} style={{ background:'#0f1720', borderRadius:10, padding:'11px 14px', marginBottom:7, border:'1px solid #1a2840', display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+              <div key={n.id} style={{ background:'#0f1720', borderRadius:10, padding:'11px 14px', marginBottom:7, border:'1px solid #1e2d3d', display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
                 <div>
-                  <div style={{ fontWeight:600, fontSize:14, color:'#3fb950' }}>{n.tree||t(lang,'noId')} <span style={{ color:'#3d5068', fontSize:12, fontWeight:400 }}>{n.date}</span></div>
+                  <div style={{ fontWeight:600, fontSize:14, color:'#3fb950' }}>{n.tree||t(lang,'noId')} <span style={{ color:'#7f92a6', fontSize:12, fontWeight:400 }}>{n.date}</span></div>
                   <div style={{ color:'#b0bec8', fontSize:13, marginTop:3 }}>{n.obs}</div>
                 </div>
                 <button className="delete-btn" aria-label="Delete this tree note" title="Delete note" onClick={()=>setTreeNotes(p=>p.filter(t=>t.id!==n.id))}><I.x size={14} /></button>
@@ -2529,7 +2526,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
             <CardIcon bg="#1a0d2b" icon="refresh" />
             <div>
               <div style={{ fontWeight:600 }}>{t(lang,'tapRotTitle')}</div>
-              <div style={{ fontSize:12, color:'#5a6a7a' }}>{t(lang,'tapRotDesc')}</div>
+              <div style={{ fontSize:12, color:'#7f92a6' }}>{t(lang,'tapRotDesc')}</div>
             </div>
           </div>
           {showRot ? <I.chevUp size={16} color="#8b949e" /> : <I.chevDown size={16} color="#8b949e" />}
@@ -2552,7 +2549,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
                 <div style={{ display:'flex', gap:8 }}>
                   {['N','S','E','W'].map(s=>(
                     <button key={s} onClick={()=>setRotForm(p=>({...p,side:s}))}
-                      style={{ flex:1, background:rotForm.side===s?'linear-gradient(135deg,#a855f7,#9333ea)':'#131e2c', border:`1px solid ${rotForm.side===s?'#a855f7':'#1e2d3d'}`, borderRadius:8, padding:'8px 4px', fontSize:14, fontWeight:700, color:rotForm.side===s?'#fff':'#8b949e', cursor:'pointer' }}>
+                      style={{ flex:1, background:rotForm.side===s?'#2dd4a7':'#131e2c', border:`1px solid ${rotForm.side===s?'#a855f7':'#1e2d3d'}`, borderRadius:8, padding:'8px 4px', fontSize:14, fontWeight:700, color:rotForm.side===s?'#fff':'#8b949e', cursor:'pointer' }}>
                       {t(lang,s==='N'?'north':s==='S'?'south':s==='E'?'east':'west')}
                     </button>
                   ))}
@@ -2563,15 +2560,15 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
                 <button className="btn-primary" onClick={addRotEntry}>{t(lang,'addRotEntry')}</button>
               </div>
             </div>
-            {rotEntries.length===0 && <div style={{ textAlign:'center', color:'#3d5068', fontSize:13, padding:'6px 0' }}>{t(lang,'noRotEntries')}</div>}
+            {rotEntries.length===0 && <div style={{ textAlign:'center', color:'#7f92a6', fontSize:13, padding:'6px 0' }}>{t(lang,'noRotEntries')}</div>}
             {rotEntries.slice().reverse().map(e=>{
               const OPPOSITE = {N:'S',S:'N',E:'W',W:'E'};
               const opp = OPPOSITE[e.side];
               return (
-                <div key={e.id} style={{ background:'#0f1720', borderRadius:10, padding:'11px 14px', marginBottom:7, border:'1px solid #1a2840', display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+                <div key={e.id} style={{ background:'#0f1720', borderRadius:10, padding:'11px 14px', marginBottom:7, border:'1px solid #1e2d3d', display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
                   <div>
                     <div style={{ fontWeight:600, fontSize:14, color:'#a855f7' }}>
-                      {e.tree||'(no ID)'} <span style={{ color:'#3d5068', fontSize:12, fontWeight:400 }}>{e.year}</span>
+                      {e.tree||'(no ID)'} <span style={{ color:'#7f92a6', fontSize:12, fontWeight:400 }}>{e.year}</span>
                     </div>
                     <div style={{ color:'#b0bec8', fontSize:13, marginTop:2 }}>
                       {t(lang,'side')}: <strong>{t(lang,e.side==='N'?'north':e.side==='S'?'south':e.side==='E'?'east':'west')}</strong>
@@ -2658,7 +2655,7 @@ function BoilPtTab({ waterBP, setWaterBP, lang='en' }) {
           </button>
         </div>
         {err     && <div style={{ color:'#f85149', fontSize:13, marginTop:8 }}>{err}</div>}
-        {loading && <div style={{ color:'#5a6a7a', fontSize:13, marginTop:8 }}>Loading…</div>}
+        {loading && <div style={{ color:'#7f92a6', fontSize:13, marginTop:8 }}>Loading…</div>}
         <div style={{ background:'linear-gradient(135deg,#c87d1e,#a05e10)', borderRadius:14, padding:'22px 16px', textAlign:'center', marginTop:14, boxShadow:'0 6px 24px rgba(180,100,20,0.28)' }}>
           <div style={{ fontSize:12, fontWeight:600, letterSpacing:'0.1em', color:'rgba(255,255,255,.8)' }}>{t(lang,'waterBoilsAt')}</div>
           <div style={{ fontSize:44, fontWeight:700, color:'#fff', margin:'4px 0' }}>{fmt(waterBP,1)}°F</div>
@@ -2673,13 +2670,13 @@ function BoilPtTab({ waterBP, setWaterBP, lang='en' }) {
         <div className="card-title"><CardIcon bg="#2d1a0d" icon="mountain" />{t(lang,'manualEntry')}</div>
         <div className="field-label">{t(lang,'altitude')}</div>
         <NumInput label={t(lang,'altitude')} value={altIn} onChange={handleAlt} min={0} max={15000} step={100} placeholder="e.g., 1500" />
-        <div style={{ textAlign:'center', color:'#3d5068', fontSize:13, margin:'10px 0' }}>{lang==='fr' ? '— ou —' : '— or —'}</div>
+        <div style={{ textAlign:'center', color:'#7f92a6', fontSize:13, margin:'10px 0' }}>{lang==='fr' ? '— ou —' : '— or —'}</div>
         <div className="field-label">{t(lang,'pressure')}</div>
         <NumInput label={t(lang,'pressure')} value={presIn} onChange={handlePres} min={26} max={32} step={0.01} placeholder="e.g., 29.92" />
         {(altIn!==''||presIn!=='') && (
           <div className="result-box orange" style={{ marginTop:12, textAlign:'center' }}>
             <div style={{ fontWeight:700, fontSize:22, color:'#e0a44a' }}>{t(lang,'waterBoilsAt2')} {fmt(bp,1)}°F</div>
-            <div style={{ color:'#5a6a7a', fontSize:13 }}>{t(lang,'finishAt2')} {fmt(finTemp(bp),1)}°F</div>
+            <div style={{ color:'#7f92a6', fontSize:13 }}>{t(lang,'finishAt2')} {fmt(finTemp(bp),1)}°F</div>
           </div>
         )}
       </div>
@@ -2689,7 +2686,7 @@ function BoilPtTab({ waterBP, setWaterBP, lang='en' }) {
         {ALT_REF.map(r=>(
           <div key={r.alt} className="info-row" style={{ marginBottom:4 }}>
             <span style={{ fontWeight:500 }}>{r.alt}</span>
-            <span style={{ color:'#5a6a7a', fontSize:14 }}><strong style={{ color:'#e6edf3' }}>{r.bp}°F</strong> → {t(lang,'finishAt2')} {r.fin}°F</span>
+            <span style={{ color:'#7f92a6', fontSize:14 }}><strong style={{ color:'#e6edf3' }}>{r.bp}°F</strong> → {t(lang,'finishAt2')} {r.fin}°F</span>
           </div>
         ))}
       </div>
@@ -2754,9 +2751,10 @@ function SapImportModal({ season, onClose, onImport }) {
         'Sap Collected':     'sap',
         'Syrup Made':        'syrup',
         'Sap Thru R/O':      'ro',
+        'Sap through R/O':   'ro',
         'Sap in Evaporator': 'evap',
       };
-      const re = /(\d{1,2}\/\d{1,2}\/\d{4})\s+(Sap Collected|Syrup Made|Sap Thru R\/O|Sap in Evaporator)\s+([\d.]+)/g;
+      const re = /(\d{1,2}\/\d{1,2}\/\d{4})\s+(Sap Collected|Syrup Made|Sap Thru R\/O|Sap through R\/O|Sap in Evaporator)\s+([\d.]+)/g;
       const rows = [];
       let m;
       while ((m = re.exec(fullText)) !== null) {
@@ -2868,18 +2866,17 @@ function SapImportModal({ season, onClose, onImport }) {
   };
 
   return (
-    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:999,display:'flex',
-      alignItems:'flex-end',justifyContent:'center'}} onClick={e=>e.target===e.currentTarget&&onClose()}>
-      <div style={{background:'#13171e',borderRadius:'20px 20px 0 0',width:'100%',maxWidth:600,
-        maxHeight:'90vh',overflowY:'auto',padding:24,boxShadow:'0 -8px 32px rgba(0,0,0,0.5)'}}>
+    <div className="scrim" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="sheet">
+        <div className="sheet-handle" />
 
         {/* Header */}
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
           <div>
             <div style={{fontSize:18,fontWeight:700,color:'#fff'}}><I.import size={17} color="#fff" /> Import Season Data</div>
-            <div style={{fontSize:12,color:'#5a6a7a',marginTop:2}}>SugarCalc PDF · SapSpy · SapTrac · CSV</div>
+            <div style={{fontSize:12,color:'#7f92a6',marginTop:2}}>SugarCalc PDF · SapSpy · SapTrac · CSV</div>
           </div>
-          <button onClick={onClose} style={{background:'none',border:'none',color:'#5a6a7a',
+          <button onClick={onClose} style={{background:'none',border:'none',color:'#7f92a6',
             fontSize:22,cursor:'pointer',padding:'4px 8px'}}>✕</button>
         </div>
 
@@ -2891,20 +2888,20 @@ function SapImportModal({ season, onClose, onImport }) {
               <button key={s.id} onClick={()=>setSource(s.id)}
                 style={{padding:'6px 14px',borderRadius:20,fontSize:13,fontWeight:500,cursor:'pointer',
                   border:'1.5px solid',
-                  borderColor: source===s.id ? '#58a6ff' : '#21262d',
+                  borderColor: source===s.id ? '#58a6ff' : '#1e2d3d',
                   background: source===s.id ? '#0d1117' : '#161b22',
                   color: source===s.id ? '#58a6ff' : '#8b949e'}}>
                 {s.label}
               </button>
             ))}
           </div>
-          <div style={{fontSize:13,color:'#3d5068',marginTop:6}}>
+          <div style={{fontSize:13,color:'#7f92a6',marginTop:6}}>
             {SOURCES.find(s=>s.id===source)?.hint}
           </div>
         </div>
 
         {/* File upload — iOS-safe: label wraps input directly, no JS click() needed */}
-        <label htmlFor="csv-file-input" style={{border:'2px dashed #21262d',borderRadius:12,
+        <label htmlFor="csv-file-input" style={{border:'2px dashed #1e2d3d',borderRadius:12,
           padding:20,textAlign:'center',marginBottom:16,cursor:'pointer',display:'block'}}>
           <input id="csv-file-input" type="file"
             accept=".csv,.txt,.pdf,application/pdf,text/csv,text/plain"
@@ -2914,7 +2911,7 @@ function SapImportModal({ season, onClose, onImport }) {
           <div style={{fontSize:14,fontWeight:600,color:'#e6edf3'}}>
             {source === 'sugarcalc_pdf' ? 'Tap to select PDF' : 'Tap to select CSV file'}
           </div>
-          <div style={{fontSize:12,color:'#5a6a7a',marginTop:4}}>
+          <div style={{fontSize:12,color:'#7f92a6',marginTop:4}}>
             {source === 'sugarcalc_pdf' ? 'SugarCalc Season Report PDF' : 'or paste data below'}
           </div>
         </label>
@@ -2926,7 +2923,7 @@ function SapImportModal({ season, onClose, onImport }) {
           placeholder={"date,sap_gallons,syrup_gallons\n2024-03-15,450,4.2\n2024-03-16,380,3.5\n..."}
           rows={5}
           style={{width:'100%',boxSizing:'border-box',padding:'10px 12px',background:'#0d1117',
-            border:'1.5px solid #21262d',borderRadius:10,color:'#e6edf3',fontSize:12,
+            border:'1.5px solid #1e2d3d',borderRadius:10,color:'#e6edf3',fontSize:12,
             fontFamily:'monospace',resize:'vertical',outline:'none',marginBottom:12}}
         />
 
@@ -2940,12 +2937,12 @@ function SapImportModal({ season, onClose, onImport }) {
 
         {/* Preview */}
         {preview && !error && (
-          <div style={{background:'#0d1117',border:'1px solid #21262d',borderRadius:12,
+          <div style={{background:'#0d1117',border:'1px solid #1e2d3d',borderRadius:12,
             padding:16,marginBottom:16}}>
             {preview.isPDF && (
               <div style={{background:'rgba(63,185,80,0.08)',border:'1px solid rgba(63,185,80,0.25)',
                 borderRadius:8,padding:'8px 12px',marginBottom:12,display:'flex',alignItems:'center',gap:8}}>
-                <I.clipboard size={14} color="#8a9ab5" />
+                <I.clipboard size={14} color="#8b949e" />
                 <div style={{fontSize:12,color:'#3fb950',fontWeight:600}}>
                   SugarCalc PDF · {preview.rows.length} entries · Season {preview.detectedYear}
                 </div>
@@ -2959,21 +2956,21 @@ function SapImportModal({ season, onClose, onImport }) {
                 {label:'Sap',   val:preview.totalSap   > 0 ? preview.totalSap.toFixed(0)+' gal'   : '—', color:'#58a6ff'},
                 {label:'Syrup', val:preview.totalSyrup > 0 ? preview.totalSyrup.toFixed(1)+' gal' : '—', color:'#3fb950'},
                 {label:'RO',    val:preview.totalRO    > 0 ? preview.totalRO.toFixed(0)+' gal'    : '—', color:'#a78bfa'},
-                {label:'Evap',  val:(preview.totalEvap||0) > 0 ? (preview.totalEvap||0).toFixed(0)+' gal' : '—', color:'#f59e0b'},
+                {label:'Evap',  val:(preview.totalEvap||0) > 0 ? (preview.totalEvap||0).toFixed(0)+' gal' : '—', color:'#e0a44a'},
               ].map(x=>(
                 <div key={x.label} style={{textAlign:'center',background:'#161b22',borderRadius:8,padding:'10px 6px'}}>
                   <div style={{fontSize:16,fontWeight:700,color:x.color}}>{x.val}</div>
-                  <div style={{fontSize:12,color:'#5a6a7a',marginTop:2}}>{x.label}</div>
+                  <div style={{fontSize:12,color:'#7f92a6',marginTop:2}}>{x.label}</div>
                 </div>
               ))}
             </div>
-            <div style={{maxHeight:160,overflowY:'auto',borderRadius:8,border:'1px solid #21262d'}}>
+            <div style={{maxHeight:160,overflowY:'auto',borderRadius:8,border:'1px solid #1e2d3d'}}>
               {(preview.isPDF ? preview.rows.slice(0,8) : preview.rows.slice(0,5)).map((r,i)=>(
                 <div key={i} style={{display:'flex',justifyContent:'space-between',
                   padding:'7px 12px',borderBottom:'1px solid #161b22',fontSize:12,color:'#8b949e'}}>
                   <span>{r.date}</span>
                   {preview.isPDF
-                    ? <span style={{color: r.cat==='sap'?'#58a6ff':r.cat==='syrup'?'#3fb950':r.cat==='ro'?'#a78bfa':'#f59e0b'}}>
+                    ? <span style={{color: r.cat==='sap'?'#58a6ff':r.cat==='syrup'?'#3fb950':r.cat==='ro'?'#a78bfa':'#e0a44a'}}>
                         {r.val} gal {r.cat==='sap'?'sap':r.cat==='syrup'?'syrup':r.cat==='ro'?'RO':'evap'}
                       </span>
                     : <>
@@ -2985,7 +2982,7 @@ function SapImportModal({ season, onClose, onImport }) {
                 </div>
               ))}
               {preview.rows.length > (preview.isPDF ? 8 : 5) && (
-                <div style={{padding:'6px 12px',fontSize:13,color:'#3d5068',textAlign:'center'}}>
+                <div style={{padding:'6px 12px',fontSize:13,color:'#7f92a6',textAlign:'center'}}>
                   + {preview.rows.length - (preview.isPDF ? 8 : 5)} more entries…
                 </div>
               )}
@@ -2996,7 +2993,7 @@ function SapImportModal({ season, onClose, onImport }) {
         {/* Buttons */}
         <div style={{display:'flex',gap:10}}>
           <button onClick={onClose}
-            style={{flex:1,padding:'13px',borderRadius:12,border:'1.5px solid #21262d',
+            style={{flex:1,padding:'13px',borderRadius:12,border:'1.5px solid #1e2d3d',
               background:'#161b22',color:'#8b949e',fontSize:15,cursor:'pointer',fontWeight:500}}>
             Cancel
           </button>
@@ -3076,13 +3073,13 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
   const GRADE_LABELS = {'—':'—','Golden Delicate':t(lang,'gradeGolden'),'Amber Rich':t(lang,'gradeAmber'),'Dark Robust':t(lang,'gradeDark'),'Very Dark Strong':t(lang,'gradeVeryDark')};
   const GRADE_COLORS = { 'Golden Delicate':'#f5c842','Amber Rich':'#e0a44a','Dark Robust':'#c47a28','Very Dark Strong':'#8b4513' };
 
-  function LogSection({ label, logKey, color, icon, showGrade=false, showBrix=false, onAdd=null, unitLabel=null }) {
+  function LogSection({ label, logKey, color, icon, showGrade=false, showBrix=false, onAdd=null, unitLabel=null, dp=1 }) {
     const uLbl = unitLabel || u;
     const entries        = slog[logKey] || [];
     // Filter displayed entries by active collection point (null = show all)
-    const displayEntries = activePoint
+    const displayEntries = (activePoint
       ? entries.filter(e => e.point === activePoint)
-      : entries;
+      : entries).slice().sort((a, b) => (new Date(b.date) - new Date(a.date)) || ((b.id||0) - (a.id||0)));
     const tot2    = displayEntries.reduce((s,e)=>s+(parseFloat(e.val)||0),0);
     const [val,   setVal]   = useState('');
     const [note,  setNote]  = useState('');
@@ -3123,23 +3120,30 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
       <div className="card">
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <div className="card-icon" style={{ background:color+'33', width:36, height:36 }}>{Ic2?<Ic2 size={18} color={color}/>:null}</div>
+            <div className="card-icon">{Ic2?<Ic2 size={20} color="#8b949e"/>:null}</div>
             <div>
-              <span style={{ fontWeight:600, fontSize:16 }}>{label}</span>
+              <span style={{ fontWeight:700, fontSize:16 }}>{label}</span>
               {activePoint && (() => { const pt=cpoints.find(p=>p.id===activePoint); return pt ? <span style={{ fontSize:13, color:pt.color, fontWeight:700, marginLeft:6 }}>· {pt.name}</span> : null; })()}
             </div>
           </div>
-          <span className="badge" style={{ background:color, color:'#fff' }}>{fmt(tot2,1)} {uLbl}</span>
+          <span className="badge">{fmt(tot2,dp)} <span style={{ fontWeight:500, color:'#7f92a6' }}>{uLbl}</span></span>
         </div>
+        <div className="field-label">{lang==='fr' ? 'Nouvelle entrée' : 'New entry'} <span style={{ fontWeight:400 }}>· {uLbl}{lang==='fr' ? ' et note' : ' and note'}</span></div>
         <div style={{ display:'flex', gap:8 }}>
-          <div style={{ flex:1 }}><NumInput label={`${label} — amount in ${uLbl}`} value={val} onChange={setVal} min={0} step={0.1} placeholder={`${t(lang,'units')}…`} /></div>
+          <div style={{ flex:1, position:'relative' }}>
+            <NumInput label={`${label} — amount in ${uLbl}`} value={val} onChange={setVal} min={0} step={0.1} placeholder=" " />
+            <span aria-hidden="true" style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:13, color:'#7f92a6', pointerEvents:'none' }}>{uLbl}</span>
+          </div>
           <div style={{ flex:2 }}><input aria-label={t(lang,'note')} type="text" value={note} onChange={e=>setNote(e.target.value)} placeholder={t(lang,'note')} onKeyDown={e=>e.key==='Enter'&&add()} /></div>
-          <button onClick={add} aria-label={`Add ${label} entry`} title={`Add ${label} entry`} className="btn-icon" style={{ background:color }}><I.check size={18} color="#fff" /></button>
+          <button onClick={add} aria-label={`Add ${label} entry`} title={`Add ${label} entry`} className="btn-icon"
+            style={ val ? { background:'#2dd4a7' } : { background:'transparent', border:'1px solid #1e2d3d', color:'#7f92a6' } }>
+            <I.check size={18} color="currentColor" />
+          </button>
         </div>
         {showBrix && (
           <div style={{ marginTop:8, display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ flex:1 }}>
-              <div className="field-label">{t(lang,'sapBrix')} <span style={{ color:'#3d5068', fontWeight:400 }}>({t(lang,'optional')})</span></div>
+              <div className="field-label">{t(lang,'sapBrix')} <span style={{ fontWeight:400 }}>({t(lang,'optional')})</span></div>
               <input aria-label={`${t(lang,'sapBrix')} (${t(lang,'optional')})`} type="text" inputMode="decimal" value={brix}
                 onChange={e=>{ const raw=e.target.value; if(!/^[\d.,\s]*$/.test(raw)) return; setBrix(raw); }}
                 onBlur={e=>{ const n=srParseNum(e.target.value); setBrix(n===null?'':String(Math.max(0,Math.min(10,n)))); }}
@@ -3150,26 +3154,27 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
         )}
         {showGrade && (
           <div style={{ marginTop:8 }}>
-            <div className="field-label">{t(lang,'syrupBrix')} {t(lang,'optional')}</div>
-            <select aria-label={`${t(lang,'syrupBrix')} ${t(lang,'optional')}`} value={grade} onChange={e=>setGrade(e.target.value)}>
-              {GRADES.map(g=><option key={g} value={g}>{GRADE_LABELS[g]||g}</option>)}
+            <div className="field-label">{lang==='fr' ? 'Classe' : 'Grade'} <span style={{ fontWeight:400 }}>({t(lang,'optional')})</span></div>
+            <select aria-label={`${lang==='fr' ? 'Classe' : 'Grade'} (${t(lang,'optional')})`} value={grade} onChange={e=>setGrade(e.target.value)}
+              style={{ color: grade==='—' ? '#7f92a6' : '#e6edf3' }}>
+              {GRADES.map(g=><option key={g} value={g}>{g==='—' ? (lang==='fr' ? 'Aucune' : 'None') : (GRADE_LABELS[g]||g)}</option>)}
             </select>
           </div>
         )}
         {displayEntries.length===0 && (
-          <div style={{ textAlign:'center', color:'#3d5068', fontSize:13, padding:'10px 0' }}>
+          <div style={{ textAlign:'center', color:'#7f92a6', fontSize:13, padding:'10px 0' }}>
             {activePoint ? `No entries for this collection point yet.` : t(lang,'noEntries')}
           </div>
         )}
         {displayEntries.map((e)=>(
           <div key={e.id} className="log-entry">
             <div style={{ flex:1 }}>
-              <span style={{ fontWeight:600 }}>{fmt(e.val,1)} {uLbl}</span>
+              <span style={{ fontWeight:700 }}>{fmt(e.val,dp)} <span style={{ fontWeight:500, color:'#7f92a6' }}>{uLbl}</span></span>
               {e.brix != null && <span style={{ fontSize:13, fontWeight:600, color:'#2dd4a7', background:'#2dd4a722', borderRadius:6, padding:'1px 7px', marginLeft:6 }}>{e.brix.toFixed(1)}°Bx</span>}
               {e.grade && e.grade !== '—' && <span style={{ fontSize:13, fontWeight:700, color: GRADE_COLORS[e.grade]||'#e0a44a', background:(GRADE_COLORS[e.grade]||'#e0a44a')+'22', borderRadius:6, padding:'1px 7px', marginLeft:6 }}>{GRADE_LABELS[e.grade]||e.grade}</span>}
               {/* Collection point badge — only show in All view to avoid redundancy */}
               {!activePoint && e.point && (() => { const pt=cpoints.find(p=>p.id===e.point); return pt ? <span style={{ fontSize:12, fontWeight:700, color:pt.color, background:pt.color+'22', borderRadius:5, padding:'1px 6px', marginLeft:5 }}>{pt.name}</span> : null; })()}
-              {e.note && <span style={{ color:'#5a6a7a', fontSize:13 }}> · {e.note}</span>}
+              {e.note && <span style={{ color:'#7f92a6', fontSize:13 }}> · {e.note}</span>}
               {editDateId === e.id ? (
                 <input aria-label="Entry date" type="date" autoFocus
                   defaultValue={toISO(e.date)}
@@ -3180,7 +3185,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
               ) : (
                 <span onClick={()=>setEditDateId(e.id)}
                   title="Click to edit date"
-                  style={{ color:'#3d5068', fontSize:12, marginLeft:8, cursor:'pointer', borderBottom:'1px dotted #3d5068' }}>
+                  style={{ color:'#7f92a6', fontSize:12, marginLeft:8, cursor:'pointer' }}>
                   {e.date}
                 </span>
               )}
@@ -3195,86 +3200,110 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
   return (
     <div>
 
-      {/* ── SapSpy / CSV Import Banner ── */}
-      <div style={{ background:'linear-gradient(135deg,#071a0e,#0d2b15)', border:'1px solid #2d6a4f', borderRadius:14, padding:'16px 18px', marginBottom:14, display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
-        <div style={{ flex:1 }}>
-          <div style={{ fontSize:12, fontWeight:700, color:'#3fb950', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:4 }}>Import Your Data</div>
-          <div style={{ fontSize:14, fontWeight:600, color:'#c9d1d9', marginBottom:3 }}>SapSpy · SapTrac · Any CSV</div>
-          <div style={{ fontSize:12, color:'#5a6a7a', lineHeight:1.5 }}>Already tracking in SugarCalc, SapSpy, or SapTrac? Import a PDF or CSV and SweetRun does the rest.</div>
-        </div>
-        <button onClick={()=>setShowImport(true)}
-          style={{ background:'#3fb950', border:'none', borderRadius:10, padding:'11px 18px', fontWeight:700, fontSize:13, color:'#07090f', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
-          Import CSV
-        </button>
-      </div>
       {showImport && <SapImportModal season={season} onClose={()=>setShowImport(false)} onImport={updated=>{setLogs(updated);}} />}
 
-      {/* ── Sap Freshness Tracker ── */}
-      <SapFreshnessTracker />
+      {/* ── Collection Point filter pills (only shown when points are defined) ── */}
+      {cpoints.length > 0 && (
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12, padding:'2px 0' }}>
+          <button onClick={()=>setActivePoint(null)}
+            style={{ background: activePoint===null ? '#2dd4a7' : '#0f1720', border:`1px solid ${activePoint===null ? '#2dd4a7' : '#1e2d3d'}`, borderRadius:20, padding:'5px 14px', color: activePoint===null ? '#07090f' : '#7f92a6', fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>
+            All
+          </button>
+          {cpoints.map(pt => (
+            <button key={pt.id} onClick={()=>setActivePoint(pt.id)}
+              style={{ background: activePoint===pt.id ? pt.color+'30' : '#0f1720', border:`1px solid ${activePoint===pt.id ? pt.color : '#1e2d3d'}`, borderRadius:20, padding:'5px 14px', color: activePoint===pt.id ? pt.color : '#7f92a6', fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.15s', display:'flex', alignItems:'center', gap:6 }}>
+              <span style={{ width:8, height:8, borderRadius:'50%', background:pt.color, display:'inline-block' }} />
+              {pt.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <LogSection label={t(lang,'sapCollected')} logKey="sapCollected" color="#2dd4a7" icon="package" showBrix={true} dp={0}
+        onAdd={(amount, date, note) => {
+          if (!autoCopy.ro && !autoCopy.evap) return;
+          // Use functional updater so both RO + Evap are written atomically
+          // (avoids stale-closure overwrite when both boxes are checked)
+          setLogs(prevLogs => {
+            const prevSlog = prevLogs[season] || empty;
+            const updates  = { ...prevSlog };
+            if (autoCopy.ro)   updates.sapRO   = [...(prevSlog.sapRO  ||[]), { id:Date.now(),   date, val:amount, note:'← auto from sap collected' }];
+            if (autoCopy.evap) updates.sapEvap = [...(prevSlog.sapEvap||[]), { id:Date.now()+1, date, val:amount, note:'← auto from sap collected' }];
+            const up = { ...prevLogs, [season]: updates };
+            ls.set('sg_logs2', up);
+            return up;
+          });
+        }}
+      />
+      <LogSection label={t(lang,'syrupMade')}    logKey="syrupMade"    color="#e0a44a" icon="droplet" showGrade={true} />
+      <LogSection label={t(lang,'sapRO')}        logKey="sapRO"        color="#58a6ff" icon="filter"  dp={0} />
+      <LogSection label={t(lang,'sapEvap')}      logKey="sapEvap"      color="#e0a44a" icon="flame"   dp={0} />
+      <LogSection label={t(lang,'fuelUsed')}     logKey="fuelUsed"     color="#e0a44a" icon="flame"
+        unitLabel={(FUELS.find(f=>f.label===ls.get('sg_fuel','Firewood (cord)'))||FUELS[0]).unit} />
+      <LogSection label={t(lang,'boilHours')}    logKey="boilHours"    color="#8b949e" icon="clock"
+        unitLabel="hr" />
 
       <div className="card">
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
           <div>
-            <div style={{ fontSize:13, color:'#2dd4a7', fontWeight:600, letterSpacing:'0.1em', marginBottom:4 }}>{t(lang,'logTitle')}</div>
-            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <span style={{ fontSize:28, fontWeight:700 }}>{season}</span>
-              <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
-                <button onClick={()=>setSeason(s=>s+1)} aria-label="Next season" title="Next season" style={{ background:'none', border:'none', color:'#5a6a7a', lineHeight:1, padding:'2px 6px' }}><I.chevUp size={14} color="#8b949e" /></button>
-                <button onClick={()=>setSeason(s=>s-1)} aria-label="Previous season" title="Previous season" style={{ background:'none', border:'none', color:'#5a6a7a', lineHeight:1, padding:'2px 6px' }}><I.chevDown size={14} color="#8b949e" /></button>
-              </div>
-            </div>
+            <div style={{ fontSize:12, color:'#7f92a6', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:4 }}>{t(lang,'logTitle')}</div>
+            <div style={{ fontSize:20, fontWeight:700 }}>{season}</div>
           </div>
-          <div style={{ background:'#0f1720', borderRadius:10, padding:'8px 14px', display:'flex', alignItems:'center', gap:8 }}>
-            <I.tree size={18} color="#3fb950" />
-            <span style={{ fontSize:20, fontWeight:700 }}>{trees}</span>
-            <button onClick={()=>{const n=parseInt(prompt('Number of trees:',trees));if(n>0)setTrees(n);}} aria-label='Edit the number of trees' title='Edit tree count' style={{ background:'none', border:'none', color:'#5a6a7a', display:'flex', padding:2 }}><I.edit size={14} color="#8b949e" /></button>
+          <div style={{ background:'#0d1a2b', borderRadius:10, padding:'8px 14px', display:'flex', alignItems:'center', gap:8 }}>
+            <I.tree size={18} color="#8b949e" />
+            <span style={{ fontSize:16, fontWeight:700 }}>{fmt(trees,0)} <span style={{ fontWeight:500, color:'#7f92a6', fontSize:13 }}>taps</span></span>
+            <button onClick={()=>{const n=parseInt(prompt('Number of taps:',trees));if(n>0)setTrees(n);}} aria-label='Edit the number of taps' title='Edit tap count' style={{ background:'none', border:'none', color:'#7f92a6', display:'flex', padding:2 }}><I.edit size={14} color="#8b949e" /></button>
           </div>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:8, marginBottom:14 }}>
-          {[{l:'SAP',c:'#2dd4a7',v:sapT},{l:'SYRUP',c:'#e0a44a',v:syT},{l:'R/O',c:'#58a6ff',v:roT},{l:'EVAPORATOR',c:'#f0883e',v:evT}].map(s=>(
-            <div key={s.l} style={{ background:'linear-gradient(160deg,#121c28,#0d1520)', border:'1px solid #1a2840', borderRadius:10, padding:'10px 6px', textAlign:'center' }}>
-              <div style={{ fontSize:18, fontWeight:700, color:s.c }}>{fmt(s.v,1)}</div>
-              <div style={{ fontSize:12, color:'#5a6a7a', fontWeight:600 }}>{s.l}</div>
-              <div style={{ fontSize:12, color:'#3d5068' }}>{u}</div>
-            </div>
-          ))}
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:4 }}>{t(lang,'syrupMade')}</div>
+          <div style={{ display:'flex', alignItems:'baseline', gap:5 }}>
+            <span style={{ fontSize:28, fontWeight:800, color:'#2dd4a7', lineHeight:1.05, letterSpacing:'-0.01em' }}>{fmt(syT,1)}</span>
+            <span style={{ fontSize:13, color:'#7f92a6', fontWeight:500 }}>{u}</span>
+          </div>
+          <div className="stat3" style={{ marginTop:12, paddingTop:12, borderTop:'1px solid #131e2c' }}>
+            {[{l:'Sap',v:sapT},{l:'R/O',v:roT},{l:'Evaporator',v:evT}].map(s=>(
+              <div key={s.l} style={{ minWidth:0 }}>
+                <div style={{ fontSize:12, color:'#7f92a6', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{s.l}</div>
+                <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
+                  <span style={{ fontSize:16, fontWeight:700, color:'#e6edf3' }}>{fmt(s.v,0)}</span>
+                  <span style={{ fontSize:12, color:'#7f92a6' }}>{u}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
         <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
-          <span style={{ fontWeight:600, fontSize:14 }}>{t(lang,'seasonGoal')}</span>
-          <span style={{ color:'#5a6a7a', fontSize:14 }}>{fmt(syT,1)} / {fmt(goal,1)} {u}</span>
+          <span style={{ fontWeight:700, fontSize:12, color:'#7f92a6', letterSpacing:'0.08em', textTransform:'uppercase' }}>{t(lang,'seasonGoal')}</span>
+          <span style={{ color:'#7f92a6', fontSize:14 }}>{fmt(syT,1)} / {fmt(goal,1)} {u}</span>
         </div>
         <div className="progress-bar-bg"><div className="progress-bar-fill" style={{ width:`${pct}%`, background:'#2dd4a7' }} /></div>
-        <div style={{ fontSize:12, color:'#5a6a7a', marginTop:6 }}>{t(lang,'benchmark')}: {yieldMidOf(yieldModelSaved())} {u}/tap × {trees} taps ({yieldModelSaved().label}) = {fmt(goal,1)} {u} target</div>
+        <div style={{ fontSize:12, color:'#7f92a6', marginTop:6, lineHeight:1.5 }}>{t(lang,'benchmark')}: {fmt(goal,1)} {u} target — {yieldMidOf(yieldModelSaved())} {u}/tap × {fmt(trees,0)} taps, {yieldModelSaved().label}</div>
       </div>
 
-      <div style={{ display:'flex', gap:8, marginBottom:14 }}>
-        <button onClick={exportCSV} style={{ flex:1, background:'transparent', border:'1px solid #e0a44a', color:'#e0a44a', borderRadius:10, padding:'12px 16px', fontWeight:600, fontSize:14, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}><I.download size={16} color="#e0a44a" /> CSV</button>
-        <button onClick={()=>exportSeasonPDF({ season, trees, units, logs, brixLog: ls.get('sg_brixlog',[]), sapBrix })}
-          style={{ flex:1, background:'transparent', border:'1px solid #58a6ff', color:'#58a6ff', borderRadius:10, padding:'12px 16px', fontWeight:600, fontSize:14, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-          <I.clipboard size={16} color="#58a6ff" /> PDF Report
-        </button>
-      </div>
+      {/* ── Sap Freshness Tracker ── */}
+      <SapFreshnessTracker />
 
       {/* ── Collection Points setup ── */}
       <div className="card" style={{ marginBottom:8 }}>
         <div className="collapsible-header" onClick={()=>setShowCPSetup(s=>!s)}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <CardIcon bg="#1a1030" icon="circle" />
-            <span style={{ fontWeight:600 }}>Collection Points</span>
-            {cpoints.length > 0 && <span style={{ fontSize:12, color:'#5a6a7a' }}>{cpoints.length} defined</span>}
+            <span style={{ fontWeight:700, fontSize:15 }}>Collection Points</span>
+            {cpoints.length > 0 && <span style={{ fontSize:12, color:'#7f92a6' }}>{cpoints.length} defined</span>}
           </div>
           {showCPSetup ? <I.chevUp size={16} color="#8b949e" /> : <I.chevDown size={16} color="#8b949e" />}
         </div>
         {showCPSetup && (
           <div style={{ marginTop:12 }}>
-            <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:10, lineHeight:1.5 }}>
-              Track sap from separate pumphouses or gathering tanks. Select a collection point before logging to tag that entry — or leave it on <strong style={{ color:'#8a9ab0' }}>All</strong> for shared/unassigned entries.
+            <div style={{ fontSize:13, color:'#7f92a6', marginBottom:10, lineHeight:1.5 }}>
+              Track sap from separate pumphouses or gathering tanks. Select a collection point before logging to tag that entry — or leave it on <strong style={{ color:'#8b949e' }}>All</strong> for shared/unassigned entries.
             </div>
             {cpoints.map(pt => (
               <div key={pt.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'6px 0', borderBottom:'1px solid #131e2c' }}>
                 <div style={{ width:11, height:11, borderRadius:'50%', background:pt.color, flexShrink:0 }} />
-                <span style={{ flex:1, fontWeight:600, fontSize:14, color:'#e2eaf4' }}>{pt.name}</span>
-                <button onClick={()=>removeCpoint(pt.id)} style={{ background:'none', border:'none', color:'#3d5068', cursor:'pointer', fontSize:12, textDecoration:'underline' }}>Remove</button>
+                <span style={{ flex:1, fontWeight:600, fontSize:14, color:'#e6edf3' }}>{pt.name}</span>
+                <button onClick={()=>removeCpoint(pt.id)} style={{ background:'none', border:'none', color:'#7f92a6', cursor:'pointer', fontSize:12, textDecoration:'underline' }}>Remove</button>
               </div>
             ))}
             {cpoints.length < 6 && (
@@ -3286,7 +3315,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
                 <button onClick={addCpoint} style={{ background:'#2dd4a7', border:'none', borderRadius:8, padding:'0 16px', fontWeight:700, fontSize:14, color:'#07090f', cursor:'pointer' }}>Add</button>
               </div>
             )}
-            {cpoints.length === 6 && <div style={{ fontSize:12, color:'#3d5068', marginTop:8 }}>Maximum 6 collection points.</div>}
+            {cpoints.length === 6 && <div style={{ fontSize:12, color:'#7f92a6', marginTop:8 }}>Maximum 6 collection points.</div>}
           </div>
         )}
       </div>
@@ -3295,50 +3324,50 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
       <div className="card" style={{ marginBottom:8 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
           <I.zap size={15} color="#8b949e" />
-          <span style={{ fontWeight:600, fontSize:14 }}>Auto-copy Sap Collected</span>
-          <span style={{ fontSize:12, color:'#3d5068' }}>(off by default)</span>
+          <span style={{ fontWeight:700, fontSize:15 }}>Auto-copy Sap Collected</span>
+          <span style={{ fontSize:12, color:'#7f92a6' }}>(off by default)</span>
         </div>
-        <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:10 }}>When you log sap collected, automatically add the same amount to:</div>
+        <div style={{ fontSize:13, color:'#7f92a6', marginBottom:10 }}>When you log sap collected, automatically add the same amount to:</div>
         <div style={{ display:'flex', gap:16 }}>
           <label style={{ display:'flex', alignItems:'center', gap:6, cursor:'pointer', fontSize:14 }}>
             <input type="checkbox" checked={autoCopy.ro} onChange={e=>setAutoCopyField('ro',e.target.checked)}
-              style={{ accentColor:'#58a6ff', width:16, height:16 }} />
-            <span style={{ color:'#58a6ff', fontWeight:600 }}>R/O</span>
+              style={{ accentColor:'#2dd4a7', width:16, height:16 }} />
+            <span style={{ fontWeight:600 }}>R/O</span>
           </label>
           <label style={{ display:'flex', alignItems:'center', gap:6, cursor:'pointer', fontSize:14 }}>
             <input type="checkbox" checked={autoCopy.evap} onChange={e=>setAutoCopyField('evap',e.target.checked)}
-              style={{ accentColor:'#f0883e', width:16, height:16 }} />
-            <span style={{ color:'#f0883e', fontWeight:600 }}>Evaporator</span>
+              style={{ accentColor:'#2dd4a7', width:16, height:16 }} />
+            <span style={{ fontWeight:600 }}>Evaporator</span>
           </label>
         </div>
       </div>
 
       {/* ── FILL FROM SEASON TOTAL ── */}
       {sapT > 0 && (
-        <div className="card" style={{ marginBottom:8, background:'rgba(88,166,255,0.04)', border:'1px solid rgba(88,166,255,0.18)' }}>
+        <div className="card" style={{ marginBottom:8 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
-            <I.download size={15} color="#58a6ff" />
-            <span style={{ fontWeight:700, fontSize:14, color:'#e6edf3' }}>Fill R/O &amp; Evaporator from Season Total</span>
+            <I.download size={15} color="#8b949e" />
+            <span style={{ fontWeight:700, fontSize:15, color:'#e6edf3' }}>Fill R/O &amp; Evaporator from Season Total</span>
           </div>
-          <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:12, lineHeight:1.5 }}>
-            You have <strong style={{ color:'#2dd4a7' }}>{fmt(sapT,1)} gal</strong> of sap logged this season.
+          <div style={{ fontSize:13, color:'#7f92a6', marginBottom:12, lineHeight:1.5 }}>
+            You have <strong style={{ color:'#e6edf3' }}>{fmt(sapT,0)} gal</strong> of sap logged this season.
             If all of it went through R/O and/or the evaporator, use this to add that total as a single entry — no need to re-enter run by run.
           </div>
           <div style={{ display:'flex', gap:16, marginBottom:14 }}>
             <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
               <input type="checkbox" checked={bfTarget.ro} onChange={e=>setBfTarget(p=>({...p,ro:e.target.checked}))}
-                style={{ accentColor:'#58a6ff', width:17, height:17 }} />
+                style={{ accentColor:'#2dd4a7', width:17, height:17 }} />
               <div>
-                <div style={{ fontSize:14, fontWeight:700, color:'#58a6ff' }}>R/O</div>
-                {roT > 0 && <div style={{ fontSize:13, color:'#f0883e', marginTop:1 }}>{fmt(roT,1)} gal already logged — will add to it</div>}
+                <div style={{ fontSize:14, fontWeight:700 }}>R/O</div>
+                {roT > 0 && <div style={{ fontSize:13, color:'#7f92a6', marginTop:1 }}>{fmt(roT,0)} gal already logged — will add to it</div>}
               </div>
             </label>
             <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
               <input type="checkbox" checked={bfTarget.evap} onChange={e=>setBfTarget(p=>({...p,evap:e.target.checked}))}
-                style={{ accentColor:'#f0883e', width:17, height:17 }} />
+                style={{ accentColor:'#2dd4a7', width:17, height:17 }} />
               <div>
-                <div style={{ fontSize:14, fontWeight:700, color:'#f0883e' }}>Evaporator</div>
-                {evT > 0 && <div style={{ fontSize:13, color:'#f0883e', marginTop:1 }}>{fmt(evT,1)} gal already logged — will add to it</div>}
+                <div style={{ fontSize:14, fontWeight:700 }}>Evaporator</div>
+                {evT > 0 && <div style={{ fontSize:13, color:'#7f92a6', marginTop:1 }}>{fmt(evT,0)} gal already logged — will add to it</div>}
               </div>
             </label>
           </div>
@@ -3362,70 +3391,51 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
               setBfTarget({ro:false,evap:false});
             }}
             style={{ width:'100%', padding:'12px', borderRadius:10, border:'none',
-              background: (bfTarget.ro||bfTarget.evap) ? 'linear-gradient(135deg,#1a3a5c,#0f2a45)' : '#0d1520',
-              color: (bfTarget.ro||bfTarget.evap) ? '#58a6ff' : '#3d5068',
+              background: (bfTarget.ro||bfTarget.evap) ? '#2dd4a7' : '#0d1a2b',
+              color: (bfTarget.ro||bfTarget.evap) ? '#07090f' : '#7f92a6',
               fontSize:14, fontWeight:700, cursor:(bfTarget.ro||bfTarget.evap)?'pointer':'not-allowed',
               transition:'all 0.15s' }}>
-            ↓ Add {fmt(sapT,1)} gal to {[bfTarget.ro&&'R/O',bfTarget.evap&&'Evaporator'].filter(Boolean).join(' + ') || 'selected fields'}
+            Add {fmt(sapT,0)} gal to {[bfTarget.ro&&'R/O',bfTarget.evap&&'Evaporator'].filter(Boolean).join(' + ') || 'selected fields'}
           </button>
         </div>
       )}
 
-      {/* ── Collection Point filter pills (only shown when points are defined) ── */}
-      {cpoints.length > 0 && (
-        <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12, padding:'2px 0' }}>
-          <button onClick={()=>setActivePoint(null)}
-            style={{ background: activePoint===null ? '#2dd4a7' : '#0f1720', border:`1px solid ${activePoint===null ? '#2dd4a7' : '#1e2d3d'}`, borderRadius:20, padding:'5px 14px', color: activePoint===null ? '#07090f' : '#5a6a7a', fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>
-            All
-          </button>
-          {cpoints.map(pt => (
-            <button key={pt.id} onClick={()=>setActivePoint(pt.id)}
-              style={{ background: activePoint===pt.id ? pt.color+'30' : '#0f1720', border:`1px solid ${activePoint===pt.id ? pt.color : '#1e2d3d'}`, borderRadius:20, padding:'5px 14px', color: activePoint===pt.id ? pt.color : '#5a6a7a', fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.15s', display:'flex', alignItems:'center', gap:6 }}>
-              <span style={{ width:8, height:8, borderRadius:'50%', background:pt.color, display:'inline-block' }} />
-              {pt.name}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* ── SapSpy / CSV import — a row, not a banner ── */}
+      <button onClick={()=>setShowImport(true)} className="card" style={{ width:'100%', display:'flex', alignItems:'center', gap:12, cursor:'pointer', textAlign:'left', padding:'12px 16px', minHeight:60, marginBottom:8, font:'inherit', color:'inherit' }}>
+        <I.download size={20} color="#8b949e" />
+        <span style={{ flex:1, minWidth:0 }}>
+          <span style={{ display:'block', fontSize:15, fontWeight:700, color:'#e6edf3' }}>Import CSV</span>
+          <span style={{ display:'block', fontSize:13, color:'#7f92a6', marginTop:1 }}>SapSpy, SapTrac, SugarCalc or any CSV</span>
+        </span>
+        <span style={{ color:'#7f92a6', fontSize:16, flexShrink:0 }}>›</span>
+      </button>
 
-      <LogSection label={t(lang,'sapCollected')} logKey="sapCollected" color="#2dd4a7" icon="package" showBrix={true}
-        onAdd={(amount, date, note) => {
-          if (!autoCopy.ro && !autoCopy.evap) return;
-          // Use functional updater so both RO + Evap are written atomically
-          // (avoids stale-closure overwrite when both boxes are checked)
-          setLogs(prevLogs => {
-            const prevSlog = prevLogs[season] || empty;
-            const updates  = { ...prevSlog };
-            if (autoCopy.ro)   updates.sapRO   = [...(prevSlog.sapRO  ||[]), { id:Date.now(),   date, val:amount, note:'← auto from sap collected' }];
-            if (autoCopy.evap) updates.sapEvap = [...(prevSlog.sapEvap||[]), { id:Date.now()+1, date, val:amount, note:'← auto from sap collected' }];
-            const up = { ...prevLogs, [season]: updates };
-            ls.set('sg_logs2', up);
-            return up;
-          });
-        }}
-      />
-      <LogSection label={t(lang,'syrupMade')}    logKey="syrupMade"    color="#e0a44a" icon="droplet" showGrade={true} />
-      <LogSection label={t(lang,'sapRO')}        logKey="sapRO"        color="#58a6ff" icon="filter"  />
-      <LogSection label={t(lang,'sapEvap')}      logKey="sapEvap"      color="#f0883e" icon="flame"   />
-      <LogSection label={t(lang,'fuelUsed')}     logKey="fuelUsed"     color="#e0a44a" icon="flame"
-        unitLabel={(FUELS.find(f=>f.label===ls.get('sg_fuel','Firewood (cord)'))||FUELS[0]).unit} />
-      <LogSection label={t(lang,'boilHours')}    logKey="boilHours"    color="#8b949e" icon="clock"
-        unitLabel="hr" />
+      {/* ── Export, one quiet row ── */}
+      <div className="card" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, padding:'12px 16px', minHeight:60 }}>
+        <span style={{ fontSize:15, fontWeight:700 }}>Export {season}</span>
+        <span style={{ display:'flex', gap:8 }}>
+          <button onClick={exportCSV} className="btn-secondary" style={{ width:'auto', padding:'0 14px', fontSize:14 }}><I.download size={16} color="#8b949e" /> CSV</button>
+          <button onClick={()=>exportSeasonPDF({ season, trees, units, logs, brixLog: ls.get('sg_brixlog',[]), sapBrix })}
+            className="btn-secondary" style={{ width:'auto', padding:'0 14px', fontSize:14 }}>
+            <I.clipboard size={16} color="#8b949e" /> PDF
+          </button>
+        </span>
+      </div>
 
       <div style={{ textAlign:'center', marginBottom:14 }}>
-        <button onClick={()=>{if(!window.confirm('Clear all data for '+season+'?'))return;const up={...logs};delete up[season];setLogs(up);ls.set('sg_logs2',up);}} style={{ background:'none', border:'none', color:'#3d5068', fontSize:14, textDecoration:'underline', cursor:'pointer' }}>
+        <button onClick={()=>{if(!window.confirm('Clear all data for '+season+'?'))return;const up={...logs};delete up[season];setLogs(up);ls.set('sg_logs2',up);}} style={{ background:'none', border:'none', color:'#7f92a6', fontSize:14, textDecoration:'underline', cursor:'pointer' }}>
           {t(lang,'clearSeason')}
         </button>
       </div>
 
       <div className="card">
         <div className="collapsible-header" onClick={()=>setShowF(s=>!s)}>
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}><CardIcon bg="#2d2010" icon="zap" /><span style={{ fontWeight:600 }}>{t(lang,'seasonForecast')}</span></div>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}><CardIcon bg="#2d2010" icon="zap" /><span style={{ fontWeight:700, fontSize:15 }}>{t(lang,'seasonForecast')}</span></div>
           {showF ? <I.chevUp size={16} color="#8b949e" /> : <I.chevDown size={16} color="#8b949e" />}
         </div>
         {showF && (
           <div style={{ marginTop:12 }}>
-            {sapT===0 ? <div style={{ textAlign:'center', color:'#3d5068', fontSize:14, padding:'10px 0' }}>No sap logged yet. Start collecting to see a forecast.</div> : (
+            {sapT===0 ? <div style={{ textAlign:'center', color:'#7f92a6', fontSize:14, padding:'10px 0' }}>No sap logged yet. Start collecting to see a forecast.</div> : (
               <div>
                 <InfoRow label={t(lang,'collectedSoFar')}            value={`${fmt(sapT,1)} ${u}`} />
                 <InfoRow label={`${t(lang,'projectedYield')} (at ${fmt(rule86(sapBrix),0)}:1)`} value={`${fmt(syrupY(sapT,sapBrix),1)} ${u}`} />
@@ -3438,14 +3448,14 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
 
       <div className="card">
         <div className="collapsible-header" onClick={()=>setShowC(s=>!s)}>
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}><CardIcon bg="#1c2128" icon="barChart" /><span style={{ fontWeight:600 }}>{t(lang,'seasonComparison')}</span></div>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}><CardIcon bg="#1c2128" icon="barChart" /><span style={{ fontWeight:700, fontSize:15 }}>{t(lang,'seasonComparison')}</span></div>
           {showC ? <I.chevUp size={16} color="#8b949e" /> : <I.chevDown size={16} color="#8b949e" />}
         </div>
         {showC && (
           <div style={{ marginTop:12 }}>
-            {seasons.length===0 ? <div style={{ textAlign:'center', color:'#3d5068', fontSize:14 }}>{t(lang,'noSeasonData')}</div> : (
+            {seasons.length===0 ? <div style={{ textAlign:'center', color:'#7f92a6', fontSize:14 }}>{t(lang,'noSeasonData')}</div> : (
               <div>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6, fontSize:12, fontWeight:600, color:'#5a6a7a', marginBottom:6, padding:'0 4px' }}>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6, fontSize:12, fontWeight:600, color:'#7f92a6', marginBottom:6, padding:'0 4px' }}>
                   <span>Season</span><span style={{ textAlign:'right' }}>Sap</span><span style={{ textAlign:'right' }}>Syrup</span>
                 </div>
                 {seasons.map(yr=>{
@@ -3453,7 +3463,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
                   const s2=(sl.sapCollected||[]).reduce((a,e)=>a+(parseFloat(e.val)||0),0);
                   const sy2=(sl.syrupMade||[]).reduce((a,e)=>a+(parseFloat(e.val)||0),0);
                   return (
-                    <div key={yr} style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6, padding:'8px 4px', borderBottom:'1px solid #21262d', fontSize:14 }}>
+                    <div key={yr} style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6, padding:'8px 4px', borderBottom:'1px solid #1e2d3d', fontSize:14 }}>
                       <span style={{ fontWeight:yr===season?700:400, color:yr===season?'#2dd4a7':'#e6edf3' }}>{yr}</span>
                       <span style={{ textAlign:'right' }}>{fmt(s2,1)}</span>
                       <span style={{ textAlign:'right', color:'#e0a44a' }}>{fmt(sy2,1)}</span>
@@ -3521,42 +3531,42 @@ function EquipTab({ lang='en' }) {
         </div>
         {showTransfer && (
           <div style={{ marginTop:14 }}>
-            <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:12, lineHeight:1.5 }}>
+            <div style={{ fontSize:13, color:'#7f92a6', marginBottom:12, lineHeight:1.5 }}>
               Enter your pump and line specs to get a realistic haul time estimate.
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:14 }}>
               <div>
-                <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>Pump flow (GPM)</div>
+                <div style={{ fontSize:13, color:'#7f92a6', marginBottom:3 }}>Pump flow (GPM)</div>
                 <input aria-label="Pump flow in gallons per minute" type="number" value={pumpGPM} min={1} max={500} step={1}
                   onChange={e => saveP('sg_pump_gpm', setPumpGPM)(parseFloat(e.target.value)||28)}
                   style={{ width:'100%', boxSizing:'border-box' }} />
               </div>
               <div>
-                <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>Tank size (gal)</div>
+                <div style={{ fontSize:13, color:'#7f92a6', marginBottom:3 }}>Tank size (gal)</div>
                 <input aria-label="Tank size in gallons" type="number" value={tankGal} min={10} max={10000} step={50}
                   onChange={e => saveP('sg_pump_tank', setTankGal)(parseFloat(e.target.value)||300)}
                   style={{ width:'100%', boxSizing:'border-box' }} />
               </div>
               <div>
-                <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>Line length (ft)</div>
+                <div style={{ fontSize:13, color:'#7f92a6', marginBottom:3 }}>Line length (ft)</div>
                 <input aria-label="Line length in feet" type="number" value={lineLen} min={0} max={5000} step={50}
                   onChange={e => saveP('sg_pump_line', setLineLen)(parseFloat(e.target.value)||0)}
                   style={{ width:'100%', boxSizing:'border-box' }} />
               </div>
               <div>
-                <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>Vertical lift (ft)</div>
+                <div style={{ fontSize:13, color:'#7f92a6', marginBottom:3 }}>Vertical lift (ft)</div>
                 <input aria-label="Vertical lift in feet" type="number" value={liftFt} min={0} max={200} step={1}
                   onChange={e => saveP('sg_pump_lift', setLiftFt)(parseFloat(e.target.value)||0)}
                   style={{ width:'100%', boxSizing:'border-box' }} />
               </div>
               <div>
-                <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>Setup time (min)</div>
+                <div style={{ fontSize:13, color:'#7f92a6', marginBottom:3 }}>Setup time (min)</div>
                 <input aria-label="Setup time in minutes" type="number" value={setupMin} min={0} max={30} step={1}
                   onChange={e => saveP('sg_pump_setup', setSetupMin)(parseFloat(e.target.value)||4)}
                   style={{ width:'100%', boxSizing:'border-box' }} />
               </div>
               <div style={{ display:'flex', alignItems:'flex-end', paddingBottom:2 }}>
-                <div style={{ fontSize:12, color:'#3d5068', lineHeight:1.4 }}>
+                <div style={{ fontSize:12, color:'#7f92a6', lineHeight:1.4 }}>
                   {effectiveGPM < pumpGPM
                     ? `Line + lift reduces flow to ~${effectiveGPM.toFixed(0)} GPM`
                     : 'No friction/lift penalty'}
@@ -3568,38 +3578,38 @@ function EquipTab({ lang='en' }) {
             <div style={{ background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:12, padding:'12px 14px' }}>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
                 <div style={{ textAlign:'center' }}>
-                  <div style={{ fontSize:13, color:'#3d5068', marginBottom:2 }}>Theoretical</div>
-                  <div style={{ fontSize:22, fontWeight:800, color:'#8a9ab0' }}>{baseTotal.toFixed(0)} <span style={{ fontSize:13, fontWeight:400 }}>min</span></div>
-                  <div style={{ fontSize:13, color:'#3d5068' }}>{baseFillMin.toFixed(0)} fill + {setupMin} setup</div>
+                  <div style={{ fontSize:13, color:'#7f92a6', marginBottom:2 }}>Theoretical</div>
+                  <div style={{ fontSize:22, fontWeight:800, color:'#8b949e' }}>{baseTotal.toFixed(0)} <span style={{ fontSize:13, fontWeight:400 }}>min</span></div>
+                  <div style={{ fontSize:13, color:'#7f92a6' }}>{baseFillMin.toFixed(0)} fill + {setupMin} setup</div>
                 </div>
                 <div style={{ textAlign:'center' }}>
                   <div style={{ fontSize:13, color:'#2dd4a7', marginBottom:2, fontWeight:600 }}>Realistic</div>
                   <div style={{ fontSize:22, fontWeight:800, color:'#2dd4a7' }}>{realisticTotal.toFixed(0)} <span style={{ fontSize:13, fontWeight:400 }}>min</span></div>
-                  <div style={{ fontSize:13, color:'#3d5068' }}>{realFillMin.toFixed(0)} fill + {setupMin} setup{extraMin > 0.5 ? ` (+${extraMin.toFixed(0)} friction)` : ''}</div>
+                  <div style={{ fontSize:13, color:'#7f92a6' }}>{realFillMin.toFixed(0)} fill + {setupMin} setup{extraMin > 0.5 ? ` (+${extraMin.toFixed(0)} friction)` : ''}</div>
                 </div>
               </div>
 
               {numHauls && (
                 <div style={{ borderTop:'1px solid #1e2d3d', paddingTop:10 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
-                    <span style={{ fontSize:13, color:'#8a9ab0' }}>Hauls this season ({curSeason})</span>
-                    <span style={{ fontWeight:700, fontSize:14, color:'#e2eaf4' }}>{numHauls} hauls</span>
+                    <span style={{ fontSize:13, color:'#8b949e' }}>Hauls this season ({curSeason})</span>
+                    <span style={{ fontWeight:700, fontSize:14, color:'#e6edf3' }}>{numHauls} hauls</span>
                   </div>
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
-                    <span style={{ fontSize:13, color:'#8a9ab0' }}>Total haul time</span>
-                    <span style={{ fontWeight:700, fontSize:14, color:'#e2eaf4' }}>{totalHaulHrs.toFixed(1)} hrs</span>
+                    <span style={{ fontSize:13, color:'#8b949e' }}>Total haul time</span>
+                    <span style={{ fontWeight:700, fontSize:14, color:'#e6edf3' }}>{totalHaulHrs.toFixed(1)} hrs</span>
                   </div>
                   <div style={{ display:'flex', justifyContent:'space-between' }}>
-                    <span style={{ fontSize:13, color:'#8a9ab0' }}>Avg gal/haul</span>
-                    <span style={{ fontWeight:700, fontSize:14, color:'#e2eaf4' }}>{(sapT / numHauls).toFixed(0)} gal</span>
+                    <span style={{ fontSize:13, color:'#8b949e' }}>Avg gal/haul</span>
+                    <span style={{ fontWeight:700, fontSize:14, color:'#e6edf3' }}>{(sapT / numHauls).toFixed(0)} gal</span>
                   </div>
-                  <div style={{ fontSize:13, color:'#3d5068', marginTop:8, lineHeight:1.5 }}>
+                  <div style={{ fontSize:13, color:'#7f92a6', marginTop:8, lineHeight:1.5 }}>
                     Based on {sapT.toFixed(0)} gal logged · hauling at 90% tank capacity ({(tankGal * 0.9).toFixed(0)} gal)
                   </div>
                 </div>
               )}
               {!numHauls && (
-                <div style={{ fontSize:12, color:'#3d5068', textAlign:'center', paddingTop:6 }}>
+                <div style={{ fontSize:12, color:'#7f92a6', textAlign:'center', paddingTop:6 }}>
                   Log sap in the Log tab to see seasonal haul estimates.
                 </div>
               )}
@@ -3609,7 +3619,7 @@ function EquipTab({ lang='en' }) {
             {numHauls && totalHaulHrs && (
               <div style={{ background:'rgba(45,212,167,0.06)', border:'1px solid rgba(45,212,167,0.2)', borderRadius:10, padding:'10px 12px', marginTop:10 }}>
                 <div style={{ fontSize:12, fontWeight:700, color:'#2dd4a7', marginBottom:4 }}>Smart Scheduling Tip</div>
-                <div style={{ fontSize:12, color:'#5a6a7a', lineHeight:1.5 }}>
+                <div style={{ fontSize:12, color:'#7f92a6', lineHeight:1.5 }}>
                   Hauling at 90% full ({(tankGal * 0.9).toFixed(0)} gal) instead of daily keeps your runs fewer and longer. Coordinate hauls with forecast sap-run days to minimize idle trips.
                 </div>
               </div>
@@ -3641,10 +3651,9 @@ function EquipTab({ lang='en' }) {
         </div>
       )}
       {items.length===0 && !show && (
-        <div className="card" style={{ textAlign:'center', padding:'40px 20px' }}>
-          <I.wrench size={40} color="#30363d" />
-          <div style={{ fontWeight:600, fontSize:16, marginBottom:6, marginTop:12 }}>{t(lang,'noEquipYet')}</div>
-          <div style={{ color:'#3d5068', fontSize:14 }}>{t(lang,'equipDesc')}</div>
+        <div className="card" style={{ textAlign:'center', padding:'28px 20px' }}>
+          <div style={{ fontWeight:600, fontSize:16, marginBottom:6, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}><I.wrench size={20} color="#8b949e" /> {t(lang,'noEquipYet')}</div>
+          <div style={{ color:'#7f92a6', fontSize:14 }}>{t(lang,'equipDesc')}</div>
         </div>
       )}
       {items.map((item,i)=>(
@@ -3652,12 +3661,12 @@ function EquipTab({ lang='en' }) {
           <div style={{ flex:1 }}>
             <div style={{ fontWeight:600, fontSize:16, marginBottom:4 }}>{item.name}</div>
             <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:4 }}>
-              {item.brand && <span style={{ color:'#5a6a7a', fontSize:13 }}>{item.brand}</span>}
-              {item.year  && <span style={{ color:'#5a6a7a', fontSize:13 }}>· {item.year}</span>}
-              {item.qty>1 && <span style={{ color:'#5a6a7a', fontSize:13 }}>· {t(lang,'equipQtyLabel')} {item.qty}</span>}
+              {item.brand && <span style={{ color:'#7f92a6', fontSize:13 }}>{item.brand}</span>}
+              {item.year  && <span style={{ color:'#7f92a6', fontSize:13 }}>· {item.year}</span>}
+              {item.qty>1 && <span style={{ color:'#7f92a6', fontSize:13 }}>· {t(lang,'equipQtyLabel')} {item.qty}</span>}
               <span style={{ fontSize:12, fontWeight:600, color:cColor[item.condition]||'#8b949e' }}>● {item.condition==='Good'?t(lang,'condGood'):item.condition==='Fair'?t(lang,'condFair'):t(lang,'condPoor')}</span>
             </div>
-            {item.notes && <div style={{ color:'#3d5068', fontSize:13 }}>{item.notes}</div>}
+            {item.notes && <div style={{ color:'#7f92a6', fontSize:13 }}>{item.notes}</div>}
           </div>
           <button className="delete-btn" aria-label="Delete this equipment item" title="Delete item" onClick={()=>setItems(p=>p.filter((_,j)=>j!==i))}><I.trash size={15} /></button>
         </div>
@@ -3696,13 +3705,13 @@ function TasksTab({ season, lang='en' }) {
             <span style={{ fontWeight:700, fontSize:18 }}>{t(lang,'seasonChecklists')}</span>
             <span className="badge">{season}</span>
           </div>
-          <button onClick={reset} title="Reset" style={{ background:'none', border:'none', color:'#5a6a7a', display:'flex', padding:4 }}><I.refresh size={18} color="#8b949e" /></button>
+          <button onClick={reset} title="Reset" style={{ background:'none', border:'none', color:'#7f92a6', display:'flex', padding:4 }}><I.refresh size={18} color="#8b949e" /></button>
         </div>
         <div className="two-col" style={{ marginBottom:12, gap:6 }}>
-          <button onClick={()=>setPhase('pre')}  style={{ background:phase==='pre'?'linear-gradient(135deg,#2dd4a7,#1fbf94)':'#0f1720', color:phase==='pre'?'#07090f':'#5a6a7a', border:`1px solid ${phase==='pre'?'transparent':'#1e2d3d'}`, borderRadius:11, padding:11, fontWeight:700, fontSize:14, boxShadow:phase==='pre'?'0 3px 14px rgba(45,212,167,0.28)':'none', transition:'all 0.18s' }}>{t(lang,'preSeason')}</button>
-          <button onClick={()=>setPhase('post')} style={{ background:phase==='post'?'linear-gradient(135deg,#e0a44a,#c88a2a)':'#0f1720', color:phase==='post'?'#07090f':'#5a6a7a', border:`1px solid ${phase==='post'?'transparent':'#1e2d3d'}`, borderRadius:11, padding:11, fontWeight:700, fontSize:14, boxShadow:phase==='post'?'0 3px 14px rgba(224,164,74,0.28)':'none', transition:'all 0.18s' }}>{t(lang,'postSeason')}</button>
+          <button onClick={()=>setPhase('pre')}  style={{ background:phase==='pre'?'#2dd4a7':'#0f1720', color:phase==='pre'?'#07090f':'#7f92a6', border:`1px solid ${phase==='pre'?'transparent':'#1e2d3d'}`, borderRadius:11, padding:11, fontWeight:700, fontSize:14, boxShadow:phase==='pre'?'0 3px 14px rgba(45,212,167,0.28)':'none', transition:'all 0.18s' }}>{t(lang,'preSeason')}</button>
+          <button onClick={()=>setPhase('post')} style={{ background:phase==='post'?'#e0a44a':'#0f1720', color:phase==='post'?'#07090f':'#7f92a6', border:`1px solid ${phase==='post'?'transparent':'#1e2d3d'}`, borderRadius:11, padding:11, fontWeight:700, fontSize:14, boxShadow:phase==='post'?'0 3px 14px rgba(224,164,74,0.28)':'none', transition:'all 0.18s' }}>{t(lang,'postSeason')}</button>
         </div>
-        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:14, color:'#5a6a7a' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:14, color:'#7f92a6' }}>
           <span>{done} {t(lang,'taskOf')} {all.length} {t(lang,'taskDone')}</span><span>{pct}%</span>
         </div>
         <div className="progress-bar-bg"><div className="progress-bar-fill" style={{ width:`${pct}%`, background:phase==='pre'?'#2dd4a7':'#e0a44a' }} /></div>
@@ -3827,7 +3836,7 @@ function SeasonTab({ season, lang='en' }) {
       {/* ── Degree Days ── */}
       <div className="card">
         <div className="card-title"><CardIcon bg="#0d2b15" icon="sun" />{t(lang,'ddTitle')}</div>
-        <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:12, lineHeight:1.5 }}>{t(lang,'ddDesc')}
+        <div style={{ fontSize:13, color:'#7f92a6', marginBottom:12, lineHeight:1.5 }}>{t(lang,'ddDesc')}
         </div>
 
         {/* Location */}
@@ -3836,7 +3845,7 @@ function SeasonTab({ season, lang='en' }) {
             <button className="btn-secondary" style={{ marginBottom:10 }} onClick={useGPS}>
               <I.mapPin size={16} color="#8b949e" /> {t(lang,'useGPS')}
             </button>
-            <div style={{ textAlign:'center', color:'#3d5068', fontSize:12, marginBottom:8 }}>{t(lang,'ftOr')}</div>
+            <div style={{ textAlign:'center', color:'#7f92a6', fontSize:12, marginBottom:8 }}>{t(lang,'ftOr')}</div>
             <div style={{ display:'flex', gap:8, marginBottom:12 }}>
               <input aria-label={t(lang,'cityZip')} type="text" placeholder={t(lang,'cityZip')} value={zip} onChange={e=>setZip(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchZip()} style={{ flex:1 }} />
               <button onClick={searchZip} aria-label="Search for this place" title="Search" style={{ background:'#2dd4a7', border:'none', borderRadius:8, width:44, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><I.search size={18} color="#0d1117" /></button>
@@ -3845,7 +3854,7 @@ function SeasonTab({ season, lang='en' }) {
         ) : (
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
             <div style={{ display:'flex', alignItems:'center', gap:6 }}><I.mapPin size={14} color="#2dd4a7" /><span style={{ fontSize:13, color:'#b0bec8' }}>{locName}</span></div>
-            <button onClick={()=>{setLat(null);setLon(null);setLocName('');setDdData(null);}} style={{ background:'none', border:'none', color:'#3d5068', fontSize:12, cursor:'pointer', textDecoration:'underline' }}>{t(lang,'changeLocation')}</button>
+            <button onClick={()=>{setLat(null);setLon(null);setLocName('');setDdData(null);}} style={{ background:'none', border:'none', color:'#7f92a6', fontSize:12, cursor:'pointer', textDecoration:'underline' }}>{t(lang,'changeLocation')}</button>
           </div>
         )}
 
@@ -3856,7 +3865,7 @@ function SeasonTab({ season, lang='en' }) {
           <button onClick={refresh} aria-label="Refresh the forecast" title="Refresh" style={{ background:'#2dd4a7', border:'none', borderRadius:8, width:44, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><I.search size={18} color="#0d1117" /></button>
         </div>
 
-        {ddLoad && <div style={{ textAlign:'center', color:'#5a6a7a', fontSize:14 }}>{t(lang,'loadingWeather')}</div>}
+        {ddLoad && <div style={{ textAlign:'center', color:'#7f92a6', fontSize:14 }}>{t(lang,'loadingWeather')}</div>}
         {ddErr  && <div style={{ color:'#f85149', fontSize:13 }}>{ddErr}</div>}
 
         {dailyDD.length > 0 && (
@@ -3865,19 +3874,19 @@ function SeasonTab({ season, lang='en' }) {
             <div className="result-box green">
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
                 <div style={{ textAlign:'center' }}>
-                  <div style={{ fontSize:12, color:'#5a6a7a', fontWeight:600 }}>{t(lang,'totalDD')}</div>
+                  <div style={{ fontSize:12, color:'#7f92a6', fontWeight:600 }}>{t(lang,'totalDD')}</div>
                   <div style={{ fontSize:32, fontWeight:800, color:'#3fb950' }}>{Math.round(cumDD)}</div>
-                  <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'sinceTapDay')}</div>
+                  <div style={{ fontSize:13, color:'#7f92a6' }}>{t(lang,'sinceTapDay')}</div>
                 </div>
                 <div style={{ textAlign:'center' }}>
-                  <div style={{ fontSize:12, color:'#5a6a7a', fontWeight:600 }}>{t(lang,'days')}</div>
+                  <div style={{ fontSize:12, color:'#7f92a6', fontWeight:600 }}>{t(lang,'days')}</div>
                   <div style={{ fontSize:32, fontWeight:800, color:'#3fb950' }}>{dailyDD.length}</div>
-                  <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'inSeason')}</div>
+                  <div style={{ fontSize:13, color:'#7f92a6' }}>{t(lang,'inSeason')}</div>
                 </div>
                 <div style={{ textAlign:'center' }}>
-                  <div style={{ fontSize:12, color:'#5a6a7a', fontWeight:600 }}>{t(lang,'avgDay')}</div>
+                  <div style={{ fontSize:12, color:'#7f92a6', fontWeight:600 }}>{t(lang,'avgDay')}</div>
                   <div style={{ fontSize:32, fontWeight:800, color:'#3fb950' }}>{(cumDD/dailyDD.length).toFixed(1)}</div>
-                  <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'ddPerDay')}</div>
+                  <div style={{ fontSize:13, color:'#7f92a6' }}>{t(lang,'ddPerDay')}</div>
                 </div>
               </div>
             </div>
@@ -3897,10 +3906,10 @@ function SeasonTab({ season, lang='en' }) {
                   <div key={m.threshold} style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 10px', borderRadius:8, marginBottom:4, background: active?'#081e0e':'transparent', border: active?'1px solid #1a4a25':'1px solid transparent' }}>
                     <div style={{ width:8, height:8, borderRadius:'50%', background: cumDD >= m.threshold ? '#3fb950' : '#253040', flexShrink:0 }} />
                     <div style={{ flex:1 }}>
-                      <span style={{ fontWeight: active?700:400, color: active?'#3fb950':'#5a6a7a', fontSize:14 }}>{m.label}</span>
-                      {active && <span style={{ color:'#5a6a7a', fontSize:12 }}> · {m.note}</span>}
+                      <span style={{ fontWeight: active?700:400, color: active?'#3fb950':'#7f92a6', fontSize:14 }}>{m.label}</span>
+                      {active && <span style={{ color:'#7f92a6', fontSize:12 }}> · {m.note}</span>}
                     </div>
-                    <span style={{ fontSize:12, color:'#3d5068' }}>{m.threshold} DD</span>
+                    <span style={{ fontSize:12, color:'#7f92a6' }}>{m.threshold} DD</span>
                   </div>
                 );
               })}
@@ -3909,20 +3918,20 @@ function SeasonTab({ season, lang='en' }) {
             {/* Daily breakdown (collapsible) */}
             <div style={{ marginTop:10 }}>
               <div className="collapsible-header" onClick={()=>setShowDays(s=>!s)} style={{ padding:'4px 0' }}>
-                <span style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'dailyBreakdown')} ({dailyDD.length})</span>
-                {showDays ? <I.chevUp size={14} color="#5a6a7a" /> : <I.chevDown size={14} color="#5a6a7a" />}
+                <span style={{ fontSize:13, color:'#7f92a6' }}>{t(lang,'dailyBreakdown')} ({dailyDD.length})</span>
+                {showDays ? <I.chevUp size={14} color="#7f92a6" /> : <I.chevDown size={14} color="#7f92a6" />}
               </div>
               {showDays && (
                 <div style={{ marginTop:8, maxHeight:220, overflowY:'auto' }}>
-                  <div style={{ display:'grid', gridTemplateColumns:'auto 1fr 1fr 1fr 1fr', gap:4, fontSize:13, fontWeight:600, color:'#5a6a7a', padding:'4px 6px', marginBottom:2 }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'auto 1fr 1fr 1fr 1fr', gap:4, fontSize:13, fontWeight:600, color:'#7f92a6', padding:'4px 6px', marginBottom:2 }}>
                     <span>Date</span><span style={{ textAlign:'right' }}>Hi</span><span style={{ textAlign:'right' }}>Lo</span><span style={{ textAlign:'right' }}>DD</span><span style={{ textAlign:'right' }}>Total</span>
                   </div>
                   {dailyDD.slice().reverse().map(d => (
                     <div key={d.date} style={{ display:'grid', gridTemplateColumns:'auto 1fr 1fr 1fr 1fr', gap:4, fontSize:12, padding:'5px 6px', borderBottom:'1px solid #131e2c' }}>
                       <span style={{ color:'#8b949e' }}>{d.date.slice(5)}</span>
-                      <span style={{ textAlign:'right', color:'#f0883e' }}>{d.hi}°</span>
+                      <span style={{ textAlign:'right', color:'#e0a44a' }}>{d.hi}°</span>
                       <span style={{ textAlign:'right', color:'#58a6ff' }}>{d.lo}°</span>
-                      <span style={{ textAlign:'right', color: d.dd>0?'#3fb950':'#3d5068' }}>{d.dd}</span>
+                      <span style={{ textAlign:'right', color: d.dd>0?'#3fb950':'#7f92a6' }}>{d.dd}</span>
                       <span style={{ textAlign:'right', fontWeight:600 }}>{d.cum}</span>
                     </div>
                   ))}
@@ -3936,15 +3945,15 @@ function SeasonTab({ season, lang='en' }) {
       {/* ── Brix Trend ── */}
       <div className="card">
         <div className="card-title"><CardIcon bg="#2b1a0d" icon="droplet" />{t(lang,'brixTitle')}</div>
-        <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:12 }}>{t(lang,'brixDesc')}
+        <div style={{ fontSize:13, color:'#7f92a6', marginBottom:12 }}>{t(lang,'brixDesc')}
         </div>
 
         {buddyWarn && (
           <div style={{ background:'#2b1505', border:'1px solid #8b3a10', borderRadius:10, padding:'10px 14px', marginBottom:12, display:'flex', gap:10, alignItems:'center' }}>
-            <I.alert size={20} color="#f0883e" />
+            <I.alert size={20} color="#e0a44a" />
             <div>
-              <div style={{ fontWeight:700, color:'#f0883e' }}>{t(lang,'buddyTitle')}</div>
-              <div style={{ fontSize:12, color:'#5a6a7a' }}>Brix dropped to {lastB}° — down from peak of {peak}°. Check clarity and taste.</div>
+              <div style={{ fontWeight:700, color:'#e0a44a' }}>{t(lang,'buddyTitle')}</div>
+              <div style={{ fontSize:12, color:'#7f92a6' }}>Brix dropped to {lastB}° — down from peak of {peak}°. Check clarity and taste.</div>
             </div>
           </div>
         )}
@@ -3957,8 +3966,8 @@ function SeasonTab({ season, lang='en' }) {
               {[bMin, (bMin+bMax)/2, bMax].map((v,i) => {
                 const y = SH - ((v - bMin) / bRange) * (SH - 10) - 2;
                 return <g key={i}>
-                  <line x1="0" y1={y} x2={Math.max(SW, brixLog.length*32)} y2={y} stroke="#1a2840" strokeWidth="1" strokeDasharray="4,4"/>
-                  <text x="2" y={y-2} fontSize="12" fill="#3d5068">{v.toFixed(1)}°</text>
+                  <line x1="0" y1={y} x2={Math.max(SW, brixLog.length*32)} y2={y} stroke="#1e2d3d" strokeWidth="1" strokeDasharray="4,4"/>
+                  <text x="2" y={y-2} fontSize="12" fill="#7f92a6">{v.toFixed(1)}°</text>
                 </g>;
               })}
               {/* Line */}
@@ -3980,7 +3989,7 @@ function SeasonTab({ season, lang='en' }) {
               {brixLog.map((e,i) => {
                 if (brixLog.length > 8 && i % Math.ceil(brixLog.length/6) !== 0 && i !== brixLog.length-1) return null;
                 const x = (i / Math.max(brixLog.length-1,1)) * (Math.max(SW, brixLog.length*32) - 20) + 10;
-                return <text key={'l'+e.id} x={x} y={SH+16} fontSize="12" fill="#5a6a7a" textAnchor="middle">{e.date.split('/').slice(0,2).join('/')}</text>;
+                return <text key={'l'+e.id} x={x} y={SH+16} fontSize="12" fill="#7f92a6" textAnchor="middle">{e.date.split('/').slice(0,2).join('/')}</text>;
               })}
             </svg>
           </div>
@@ -3993,15 +4002,15 @@ function SeasonTab({ season, lang='en' }) {
           <button onClick={addBrix} aria-label="Add Brix reading" title="Add Brix reading" className="btn-icon" style={{ background:'#e0a44a' }}><I.check size={18} color="#07090f" /></button>
         </div>
 
-        {brixLog.length === 0 && <div style={{ textAlign:'center', color:'#3d5068', fontSize:13, padding:'8px 0' }}>No readings yet — log your first brix reading above.</div>}
+        {brixLog.length === 0 && <div style={{ textAlign:'center', color:'#7f92a6', fontSize:13, padding:'8px 0' }}>No readings yet — log your first brix reading above.</div>}
 
         {/* Reading list */}
         {brixLog.slice().reverse().map((e,i) => (
           <div key={e.id} className="log-entry">
             <div>
               <span style={{ fontWeight:700, color:'#e0a44a', fontSize:16 }}>{e.brix}°</span>
-              {e.note && <span style={{ color:'#5a6a7a', fontSize:13 }}> · {e.note}</span>}
-              <span style={{ color:'#3d5068', fontSize:12, marginLeft:8 }}>{e.date}</span>
+              {e.note && <span style={{ color:'#7f92a6', fontSize:13 }}> · {e.note}</span>}
+              <span style={{ color:'#7f92a6', fontSize:12, marginLeft:8 }}>{e.date}</span>
             </div>
             <button className="delete-btn" aria-label="Delete this Brix reading" title="Delete reading" onClick={()=>setBrixLog(p=>p.filter(x=>x.id!==e.id))}><I.x size={14}/></button>
           </div>
@@ -4010,8 +4019,8 @@ function SeasonTab({ season, lang='en' }) {
         {brixLog.length >= 2 && (
           <div style={{ marginTop:8 }} className="result-box orange">
             <div className="two-col">
-              <div><div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'peakBrix')}</div><div style={{ fontWeight:700, color:'#e0a44a', fontSize:20 }}>{peak.toFixed(1)}°</div></div>
-              <div><div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'latestBrix')}</div><div style={{ fontWeight:700, color: buddyWarn?'#f0883e':'#e0a44a', fontSize:20 }}>{lastB.toFixed(1)}°</div></div>
+              <div><div style={{ fontSize:13, color:'#7f92a6' }}>{t(lang,'peakBrix')}</div><div style={{ fontWeight:700, color:'#e0a44a', fontSize:20 }}>{peak.toFixed(1)}°</div></div>
+              <div><div style={{ fontSize:13, color:'#7f92a6' }}>{t(lang,'latestBrix')}</div><div style={{ fontWeight:700, color: buddyWarn?'#e0a44a':'#e0a44a', fontSize:20 }}>{lastB.toFixed(1)}°</div></div>
             </div>
           </div>
         )}
@@ -4268,7 +4277,7 @@ function _drawRouteLines(results) {
 }
 
 function _gradeColor(g) {
-  return g < 0 ? '#f85149' : g < 0.5 ? '#f85149' : g < 1.0 ? '#f0883e' : g <= 6.0 ? '#3fb950' : '#f0883e';
+  return g < 0 ? '#f85149' : g < 0.5 ? '#f85149' : g < 1.0 ? '#e0a44a' : g <= 6.0 ? '#3fb950' : '#e0a44a';
 }
 
 function _clearRouteLines() {
@@ -4319,9 +4328,9 @@ const _SPECIES_LABELS = { sugar_maple:'Sugar Maple', red_maple:'Red Maple', silv
 const _HEALTH_COLORS = { excellent:'#22c55e', good:'#84cc16', fair:'#eab308', poor:'#f97316', dead:'#ef4444' };
 const _HEALTH_LABELS = { excellent:'Excellent', good:'Good', fair:'Fair', poor:'Poor', dead:'Dead' };
 const _PIN_TYPE_CFG = [
-  { id:'tree',       label:'Tap Tree',    Icon:I.mapleLeaf,  bg:'#2ea043', radius:'50%',  size:30 },
+  { id:'tree',       label:'Tap Tree',    Icon:I.mapleLeaf,  bg:'#3fb950', radius:'50%',  size:30 },
   { id:'tank',       label:'Tank',        Icon:I.tank,       bg:'#1f6feb', radius:'6px',  size:34 },
-  { id:'sugarhouse', label:'Sugarhouse',  Icon:I.sugarhouse, bg:'#f59e0b', radius:'6px',  size:30 },
+  { id:'sugarhouse', label:'Sugarhouse',  Icon:I.sugarhouse, bg:'#e0a44a', radius:'6px',  size:30 },
   { id:'pump',       label:'Pump House',  Icon:I.settings,   bg:'#f97316', radius:'50%', size:28 },
   { id:'junction',   label:'Junction',    Icon:I.network,    bg:'#8b5cf6', radius:'50%', size:28 },
   { id:'marker',     label:'Waypoint',    Icon:I.mapPin,     bg:'#ef4444', radius:'50%', size:26 },
@@ -4498,7 +4507,7 @@ function _sbDrawProperty(gj) {
   if (!_lMap || !window.L || !gj) return 0;
   _lPropertyLayers.forEach(l => { try { _lMap.removeLayer(l); } catch {} });
   _lPropertyLayers = [];
-  const palette = ['#f59e0b','#3b82f6','#22c55e','#a855f7','#ef4444'];
+  const palette = ['#e0a44a','#3b82f6','#22c55e','#a855f7','#ef4444'];
   let ci = 0, drawn = 0;
   const feats = gj.type === 'FeatureCollection' ? (gj.features || []) : [gj];
   feats.forEach(f => {
@@ -5102,7 +5111,7 @@ function LinesTab({ lang='en' }) {
   const _MODE_TABS = [
     { id:'tree',       Icon:I.mapleLeaf, label:'Tap Tree',   color:'#2dd4a7' },
     { id:'tank',       Icon:I.tank,      label:'Tank',       color:'#3b82f6' },
-    { id:'sugarhouse', Icon:I.sugarhouse,label:'Sugarhouse', color:'#f59e0b' },
+    { id:'sugarhouse', Icon:I.sugarhouse,label:'Sugarhouse', color:'#e0a44a' },
     { id:'pump',       Icon:I.settings,  label:'Pump',       color:'#f97316' },
     { id:'junction',   Icon:I.crosshair, label:'Junction',   color:'#8b5cf6' },
     { id:'marker',     Icon:I.mapPin,    label:'Waypoint',   color:'#ef4444' },
@@ -5110,131 +5119,128 @@ function LinesTab({ lang='en' }) {
   const _activeCfg = _MODE_TABS.find(c => c.id === mode) || _MODE_TABS[0];
 
   const [betaDismissed, setBetaDismissed] = React.useState(() => ls.get('sg_map_beta_dismissed', false));
+  const [showModePicker, setShowModePicker] = React.useState(false);
+  // The stage fills the screen from its own top edge to the bottom bar; Leaflet is told when that changes.
+  const stageRef = React.useRef(null);
+  const [stageH, setStageH] = React.useState(560);
+  React.useLayoutEffect(() => {
+    const fit = () => {
+      if (!stageRef.current) return;
+      const top = stageRef.current.getBoundingClientRect().top + window.scrollY;
+      const nav = document.querySelector('.bottom-nav');
+      const navH = nav && getComputedStyle(nav).display !== 'none' ? nav.getBoundingClientRect().height : 0;
+      setStageH(Math.max(420, Math.round(window.innerHeight - top - navH)));
+    };
+    fit(); window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, [betaDismissed]);
+  React.useEffect(() => { if (_lMap) setTimeout(() => { try { _lMap.invalidateSize(); } catch (e) {} }, 60); }, [stageH, leafletReady]);
   const dismissBeta = () => { ls.set('sg_map_beta_dismissed', true); setBetaDismissed(true); };
 
   return (
-    <div style={{ position:'relative' }}>
+    <div style={{ position:'relative', marginTop:-8 }}>
 
       {/* ── Beta notice ─────────────────────────────────────────────────── */}
       {!betaDismissed && (
-        <div style={{ background:'rgba(251,191,36,0.08)', border:'1px solid rgba(251,191,36,0.25)',
-          borderRadius:12, padding:'10px 14px', marginBottom:10,
-          display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:10 }}>
-          <div>
-            <div style={{ fontSize:13, fontWeight:800, color:'#fbbf24', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:3 }}>
-              Beta Feature
-            </div>
-            <div style={{ fontSize:13, color:'#8a9ab5', lineHeight:1.5 }}>
-              Sugarbush mapping is actively being improved. GPS accuracy varies under canopy (5–15 m typical). Route analysis and elevation data require internet. Tap <b style={{color:'#c9d1d9'}}>Save offline</b> while connected to cache the map for field use.
-            </div>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, marginBottom:6, minHeight:32 }}>
+          <div style={{ fontSize:13, color:'#8b949e', lineHeight:1.4, minWidth:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+            <span style={{ fontWeight:700, color:'#e6edf3' }}>Beta</span> · GPS ±5–15 m under canopy · routes need signal
           </div>
-          <button onClick={dismissBeta}
-            style={{ background:'none', border:'none', color:'#5a6a7a', fontSize:18, cursor:'pointer', flexShrink:0, lineHeight:1, padding:'0 2px' }}>✕</button>
+          <button onClick={dismissBeta} aria-label="Dismiss the beta notice"
+            style={{ background:'none', border:'none', color:'#7f92a6', cursor:'pointer', flexShrink:0, width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center' }}><I.x size={16} /></button>
         </div>
       )}
 
-      {/* ── Mode selector — nav-tab style ──────────────────────────────── */}
-      <div style={{ display:'flex', gap:3, marginBottom:10, overflowX:'auto', paddingBottom:1 }}>
-        {_MODE_TABS.map(({ id, Icon, label, color }) => {
-          const active = mode === id;
-          return (
-            <button key={id} onClick={() => setMode(id)}
-              style={{ flex:1, flexShrink:0, minWidth:52,
-                background: active ? `linear-gradient(135deg,${color},${color}bb)` : 'transparent',
-                border:'none', borderRadius:11, padding:'8px 5px',
-                display:'flex', flexDirection:'column', alignItems:'center', gap:4,
-                fontWeight:600, fontSize:12, letterSpacing:'0.02em',
-                color: active ? '#07090f' : '#3d5068',
-                cursor:'pointer', transition:'all 0.18s',
-                boxShadow: active ? `0 3px 16px ${color}44` : 'none' }}>
-              <Icon size={17} color={active ? '#07090f' : '#3d5068'} />
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ── Map card ───────────────────────────────────────────────────── */}
-      <div style={{ background:'#0a1420', borderRadius:16, overflow:'hidden', marginBottom:10, boxShadow:'0 4px 24px rgba(0,0,0,0.4)' }}>
-
-        {/* Top control strip */}
-        <div style={{ display:'flex', alignItems:'center', gap:6, padding:'10px 12px 0' }}>
-          {/* Sat / Street pill */}
-          <div style={{ display:'flex', background:'rgba(255,255,255,0.06)', borderRadius:999, padding:2 }}>
-            {[{v:'satellite',l:'Sat'},{v:'street',l:'Street'}].map(o => (
-              <button key={o.v} onClick={() => setMapType(o.v)}
-                style={{ background:mapType===o.v?'rgba(255,255,255,0.12)':'transparent', border:'none', borderRadius:999,
-                  padding:'5px 11px', fontSize:13, fontWeight:600, color:mapType===o.v?'#e2e8f0':'#4a5a6a', cursor:'pointer' }}>
-                {o.l}
-              </button>
-            ))}
-          </div>
-
-          {/* Season pill */}
-          <div style={{ display:'flex', background:'rgba(255,255,255,0.06)', borderRadius:999, padding:2, flex:1 }}>
-            {[{v:'off',l:'Live'},{v:'naip',Ico:I.sun},{v:'clarity',Ico:I.snowflake},{v:'compare',l:'⟺'}].map(o => (
-              <button key={o.v} onClick={() => setSeasonMode(o.v)}
-                style={{ flex:1, background:seasonMode===o.v?'rgba(59,130,246,0.35)':'transparent', border:'none', borderRadius:999,
-                  padding:'5px 6px', fontSize:13, fontWeight:700,
-                  color:seasonMode===o.v?'#93c5fd':'#4a5a6a', cursor:'pointer', whiteSpace:'nowrap',
-                  display:'flex', alignItems:'center', justifyContent:'center', minHeight:26 }}
-                aria-label={o.v==='naip' ? 'Leaf-on imagery' : o.v==='clarity' ? 'Leaf-off imagery' : o.v==='compare' ? 'Compare' : 'Live imagery'}>
-                {o.Ico ? <o.Ico size={14} color={seasonMode===o.v?'#93c5fd':'#4a5a6a'} /> : o.l}
-              </button>
-            ))}
-          </div>
-
-          {/* GPS drop */}
-          <button onClick={markGPS} disabled={gpsLoading}
-            style={{ background:gpsLoading?'rgba(255,255,255,0.05)':'rgba(88,166,255,0.18)', border:'none', borderRadius:999,
-              padding:'5px 10px', fontSize:13, fontWeight:700, color:gpsLoading?'#4a5a6a':'#58a6ff',
-              whiteSpace:'nowrap', opacity:gpsLoading?0.5:1 }}>
-            {gpsLoading ? '…' : '⊕ GPS'}
+      {/* ── The stage: the map fills the screen under the sub-tab row; one floating cluster ── */}
+      <div className="map-stage" ref={stageRef} style={{ height:stageH }}>
+        {!leafletReady
+          ? <div style={{ height:'100%', display:'flex', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'0 24px', color:'#7f92a6', fontSize:13, lineHeight:1.5 }}>
+              {leafletError
+                ? 'The map needs a connection the first time it opens. Open this tab once with signal and tap Save offline. Your pin list below still works.'
+                : 'Loading map…'}
+            </div>
+          : <div ref={mapRef} style={{ height:'100%' }} />
+        }
+        <div className="map-cluster">
+          <button className="mfab" onClick={() => setMapType(t => t === 'satellite' ? 'street' : 'satellite')}
+            aria-label={mapType === 'satellite' ? 'Switch to the street map' : 'Switch to satellite imagery'} title={mapType === 'satellite' ? 'Street map' : 'Satellite'}>
+            <I.layers size={20} color="currentColor" />
           </button>
-
-          {/* Track toggle */}
-          <button onClick={gpsTracking ? stopTracking : startTracking}
-            style={{ background:gpsTracking?'rgba(239,68,68,0.18)':'rgba(255,255,255,0.06)', border:'none', borderRadius:999,
-              padding:'5px 10px', fontSize:13, fontWeight:700, color:gpsTracking?'#f87171':'#4a5a6a', whiteSpace:'nowrap' }}>
-            {gpsTracking ? <><I.circle size={12} color="currentColor" /> Stop</> : <><I.crosshair size={12} color="currentColor" /> Track</>}
+          <button className="mfab" onClick={markGPS} disabled={gpsLoading} aria-label="Drop a pin at my GPS position" title="Drop a pin at my GPS position">
+            {gpsLoading ? <span style={{ fontSize:13, fontWeight:700 }}>…</span> : <I.crosshair size={20} color="currentColor" />}
           </button>
-
-          {/* XY */}
-          <button onClick={() => setShowCoordPanel(v => !v)}
-            style={{ background:showCoordPanel?'rgba(88,166,255,0.2)':'rgba(255,255,255,0.06)', border:'none', borderRadius:999,
-              padding:'5px 10px', fontSize:13, fontWeight:700, color:showCoordPanel?'#58a6ff':'#4a5a6a' }}>
-            XY
+          <button className={`mfab${gpsTracking ? ' rec' : ''}`} onClick={gpsTracking ? stopTracking : startTracking} aria-pressed={gpsTracking}
+            aria-label={gpsTracking ? 'Stop tracking my route' : 'Track my route'} title={gpsTracking ? 'Stop tracking' : 'Track my route'}>
+            {gpsTracking ? <I.circle size={18} color="currentColor" /> : <I.mapPin size={20} color="currentColor" />}
           </button>
-
-          {/* Save for offline */}
-          <button onClick={saveOffline} disabled={caching || !leafletReady}
-            title="Download visible map tiles so this area works offline"
-            style={{ background:caching?'rgba(45,212,167,0.08)':'rgba(45,212,167,0.14)', border:'none', borderRadius:999,
-              padding:'5px 10px', fontSize:13, fontWeight:700,
-              color:caching?'#4a5a6a':'#2dd4a7', whiteSpace:'nowrap',
-              opacity:(caching||!leafletReady)?0.5:1, cursor:caching?'default':'pointer' }}>
-            <><I.save size={13} color="currentColor" /> {caching ? `${cachePct}%` : 'Save offline'}</>
+          <button className={`mfab${caching ? ' on' : ''}`} onClick={saveOffline} disabled={caching || !leafletReady}
+            aria-label="Save this area of the map for offline use" title="Save offline">
+            {caching ? <span style={{ fontSize:12, fontWeight:700 }}>{cachePct}%</span> : <I.save size={20} color="currentColor" />}
           </button>
-
+          <button className="mfab" onClick={() => { if (pins.length) removePin(pins[pins.length - 1].id); }} disabled={pins.length === 0}
+            aria-label="Undo the last pin" title="Undo">
+            <I.undo size={20} color="currentColor" />
+          </button>
         </div>
-
-        {/* Cache progress / confirmation */}
+        <button className="map-add" onClick={() => setShowModePicker(true)} aria-label={`Choose what a tap on the map adds. Now: ${_activeCfg.label}`}>
+          <I.plus size={18} color="#07090f" /> {_activeCfg.label}
+        </button>
         {cacheMsg ? (
-          <div style={{ margin:'6px 12px 0', background:'rgba(45,212,167,0.08)', border:'1px solid rgba(45,212,167,0.2)',
-            borderRadius:8, padding:'6px 12px', fontSize:13, color:'#2dd4a7', display:'flex', alignItems:'center', gap:8 }}>
+          <div className="map-toast" style={{ display:'flex', alignItems:'center', gap:8 }}>
             {caching && (
               <div style={{ flex:1, height:3, background:'rgba(45,212,167,0.15)', borderRadius:2, overflow:'hidden' }}>
                 <div style={{ height:'100%', width:`${cachePct}%`, background:'#2dd4a7', borderRadius:2, transition:'width 0.2s' }} />
               </div>
             )}
-            <span>{cacheMsg}</span>
+            <span>{cacheMsg.replace(/^[✓!]\s*/, '')}</span>
           </div>
         ) : null}
+      </div>
+
+      {/* ── What a tap adds: a sheet, opened from the one floating button ── */}
+      {showModePicker && (
+        <div className="scrim" onClick={() => setShowModePicker(false)} role="dialog" aria-modal="true" aria-label="What a tap on the map adds">
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <div style={{ fontWeight:800, fontSize:17, marginBottom:10 }}>Tap the map to add</div>
+            {_MODE_TABS.map(({ id, Icon, label }) => (
+              <button key={id} className={`pick-row${mode === id ? ' on' : ''}`} onClick={() => { setMode(id); setShowModePicker(false); }} aria-pressed={mode === id}>
+                <Icon size={20} color="currentColor" /> {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Below the map: imagery, coordinates, offline ── */}
+      <div style={{ background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:16, overflow:'hidden', margin:'10px 0' }}>
+        <div className="hscroll" style={{ display:'flex', alignItems:'center', gap:6, padding:'10px 12px 0' }}>
+          <span style={{ fontSize:12, fontWeight:700, color:'#7f92a6', letterSpacing:'0.08em', textTransform:'uppercase', flexShrink:0 }}>Imagery</span>
+          {/* Season pill */}
+          <div style={{ display:'flex', background:'rgba(255,255,255,0.06)', borderRadius:999, padding:2, flexShrink:0 }}>
+            {[{v:'off',l:'Live'},{v:'naip',Ico:I.sun},{v:'clarity',Ico:I.snowflake},{v:'compare',l:'⟺'}].map(o => (
+              <button key={o.v} onClick={() => setSeasonMode(o.v)} aria-pressed={seasonMode===o.v}
+                style={{ background:seasonMode===o.v?'rgba(45,212,167,0.16)':'transparent', border:'none', borderRadius:999,
+                  padding:'0 10px', fontSize:13, fontWeight:700, minWidth:36,
+                  color:seasonMode===o.v?'#2dd4a7':'#8b949e', cursor:'pointer', whiteSpace:'nowrap',
+                  display:'flex', alignItems:'center', justifyContent:'center', minHeight:36 }}
+                aria-label={o.v==='naip' ? 'Leaf-on imagery' : o.v==='clarity' ? 'Leaf-off imagery' : o.v==='compare' ? 'Compare' : 'Live imagery'}>
+                {o.Ico ? <o.Ico size={16} color={seasonMode===o.v?'#2dd4a7':'#8b949e'} /> : o.l}
+              </button>
+            ))}
+          </div>
+
+          <button onClick={() => setShowCoordPanel(v => !v)} aria-pressed={showCoordPanel}
+            style={{ background:showCoordPanel?'rgba(45,212,167,0.16)':'rgba(255,255,255,0.06)', border:'none', borderRadius:999,
+              padding:'0 12px', minHeight:40, flexShrink:0, fontSize:13, fontWeight:700, color:showCoordPanel?'#2dd4a7':'#8b949e' }}>
+            XY
+          </button>
+        </div>
 
         {/* Coordinate entry */}
         {showCoordPanel && (
           <div style={{ margin:'8px 12px 0', background:'rgba(255,255,255,0.04)', borderRadius:10, padding:'10px 12px' }}>
-            <div style={{ fontSize:13, color:'#4a5a6a', marginBottom:6 }}>
+            <div style={{ fontSize:13, color:'#7f92a6', marginBottom:6 }}>
               Drop <b style={{ color:'#c9d1d9' }}>{_activeCfg?.label || mode}</b> at coordinates:
             </div>
             <div style={{ display:'flex', gap:6, alignItems:'center' }}>
@@ -5253,31 +5259,19 @@ function LinesTab({ lang='en' }) {
           </div>
         )}
 
-        {/* Map */}
-        <div style={{ padding:'8px 0 0' }}>
-          {!leafletReady
-            ? <div style={{ height:390, display:'flex', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'0 24px', color:'#4a5a6a', fontSize:13, lineHeight:1.5 }}>
-                {leafletError
-                  ? 'The map needs a connection the first time it opens. Open this tab once with signal and tap Save offline. Your pin list below still works.'
-                  : 'Loading map…'}
-              </div>
-            : <div ref={mapRef} style={{ height:390 }} />
-          }
-        </div>
-
         {/* ── Offline tile save — always-visible card inside map panel ── */}
-        <div style={{ margin:'0 10px 10px', padding:'10px 12px', background:'rgba(45,212,167,0.05)', border:'1px solid rgba(45,212,167,0.15)', borderRadius:10 }}>
+        <div style={{ margin:'0 10px 10px', padding:'10px 12px', background:'#0d1a2b', borderRadius:10 }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
             <div>
-              <div style={{ fontSize:13, fontWeight:700, color:'#2dd4a7', marginBottom:2 }}><I.signal size={14} color="#2dd4a7" /> Save Map for Offline</div>
-              <div style={{ fontSize:12, color:'#5a6a7a', lineHeight:1.4 }}>
+              <div style={{ fontSize:14, fontWeight:700, color:'#e6edf3', marginBottom:2 }}>Save the map for offline</div>
+              <div style={{ fontSize:12, color:'#7f92a6', lineHeight:1.4 }}>
                 Zoom to your sugarbush, then tap Save. Works on next visit without cell service.
               </div>
             </div>
             <button onClick={saveOffline} disabled={caching || !leafletReady}
-              style={{ background:caching?'rgba(45,212,167,0.08)':'rgba(45,212,167,0.18)',
-                border:'1px solid rgba(45,212,167,0.3)', borderRadius:8,
-                padding:'7px 13px', fontSize:13, fontWeight:700, color:caching?'#4a5a6a':'#2dd4a7',
+              style={{ background:'#0f1720',
+                border:'1px solid #1e2d3d', borderRadius:10, minHeight:44,
+                padding:'0 16px', fontSize:14, fontWeight:700, color:caching?'#7f92a6':'#e6edf3',
                 whiteSpace:'nowrap', flexShrink:0,
                 opacity:(caching||!leafletReady)?0.5:1, cursor:caching?'default':'pointer' }}>
               {caching ? `${cachePct}%` : 'Save'}
@@ -5285,7 +5279,7 @@ function LinesTab({ lang='en' }) {
           </div>
           {cacheMsg && (
             <div role="status" style={{ marginTop:8, fontSize:12, lineHeight:1.45,
-              color: cacheMsg.startsWith('✓') ? '#2dd4a7' : cacheMsg.startsWith('!') ? '#f4a44a' : '#8a9ab5' }}>
+              color: cacheMsg.startsWith('✓') ? '#2dd4a7' : cacheMsg.startsWith('!') ? '#e0a44a' : '#8b949e' }}>
               {caching && (
                 <div style={{ height:2, background:'rgba(45,212,167,0.15)', borderRadius:1, marginBottom:5, overflow:'hidden' }}>
                   <div style={{ height:'100%', width:`${cachePct}%`, background:'#2dd4a7', borderRadius:1, transition:'width 0.2s' }} />
@@ -5294,7 +5288,7 @@ function LinesTab({ lang='en' }) {
               <span style={{ display:'flex', alignItems:'flex-start', gap:7 }}>
                 <span style={{ flexShrink:0, marginTop:1 }}>
                   {cacheMsg.startsWith('✓') ? <I.check size={14} color="#2dd4a7" />
-                    : cacheMsg.startsWith('!') ? <I.alert size={14} color="#f4a44a" /> : null}
+                    : cacheMsg.startsWith('!') ? <I.alert size={14} color="#e0a44a" /> : null}
                 </span>
                 <span>{cacheMsg.replace(/^[✓!]\s*/, '')}</span>
               </span>
@@ -5303,14 +5297,14 @@ function LinesTab({ lang='en' }) {
         </div>
 
         {/* Stats + action strip */}
-        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 10px 10px', fontSize:13, color:'#4a5a6a' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 10px 10px', fontSize:13, color:'#7f92a6' }}>
           {/* Counts */}
           <div style={{ display:'flex', alignItems:'center', gap:6, flex:1, flexWrap:'wrap' }}>
             {treePins.length > 0 && (
               <span style={{ display:'inline-flex', alignItems:'center', gap:3 }}>
                 <I.mapleLeaf size={11} color="#2dd4a7" />
                 <span style={{ color:'#2dd4a7', fontWeight:700 }}>{treePins.length}</span>
-                {totalTaps > 0 && <span style={{ color:'#4a5a6a' }}>· {totalTaps}t</span>}
+                {totalTaps > 0 && <span style={{ color:'#7f92a6' }}>· {totalTaps}t</span>}
               </span>
             )}
             {tankPins.length > 0 && (
@@ -5321,35 +5315,25 @@ function LinesTab({ lang='en' }) {
             )}
             {otherPins.length > 0 && (
               <span style={{ display:'inline-flex', alignItems:'center', gap:3 }}>
-                <I.flame size={11} color="#f59e0b" />
-                <span style={{ color:'#f59e0b', fontWeight:700 }}>{otherPins.length}</span>
+                <I.flame size={11} color="#e0a44a" />
+                <span style={{ color:'#e0a44a', fontWeight:700 }}>{otherPins.length}</span>
               </span>
             )}
             {routeResults.length > 0 && (
-              <span style={{ color:gravityLines===routeResults.length?'#4ade80':'#f87171', fontWeight:700 }}>
+              <span style={{ color:gravityLines===routeResults.length?'#4ade80':'#f85149', fontWeight:700 }}>
                 {gravityLines}/{routeResults.length} ✓
               </span>
             )}
             {(readyTrees < treePins.length || readyTanks < tankPins.length) && (
-              <I.clock size={14} color="#f59e0b" />
+              <I.clock size={14} color="#e0a44a" />
             )}
           </div>
 
-          {/* Undo */}
-          <button onClick={() => { if (pins.length) removePin(pins[pins.length - 1].id); }}
-            disabled={pins.length === 0}
-            style={{ background:'rgba(255,255,255,0.07)', border:'none', borderRadius:8,
-              padding:'5px 11px', fontSize:13, fontWeight:700,
-              color:pins.length?'#8b949e':'#2d3d50', cursor:pins.length?'pointer':'default',
-              display:'flex', alignItems:'center', gap:4 }}>
-            ↩ Undo
-          </button>
-
           {/* Clear all */}
           <button onClick={clearAll} disabled={pins.length === 0}
-            style={{ background:'rgba(239,68,68,0.1)', border:'none', borderRadius:8,
+            style={{ background:'rgba(248,81,73,0.1)', border:'none', borderRadius:8,
               padding:'5px 11px', fontSize:13, fontWeight:700,
-              color:pins.length?'#f87171':'#2d3d50', cursor:pins.length?'pointer':'default' }}>
+              color:pins.length?'#f85149':'#2d3d50', cursor:pins.length?'pointer':'default' }}>
             Clear All
           </button>
         </div>
@@ -5366,7 +5350,7 @@ function LinesTab({ lang='en' }) {
           <button key={t.id} onClick={() => setMainTab(t.id)}
             style={{ flex:1, background:mainTab===t.id?'rgba(255,255,255,0.1)':'transparent',
               border:'none', borderRadius:9, padding:'8px 4px', fontSize:13, fontWeight:700,
-              color:mainTab===t.id?'#e2e8f0':'#4a5a6a', cursor:'pointer', transition:'all .15s' }}>
+              color:mainTab===t.id?'#e2e8f0':'#7f92a6', cursor:'pointer', transition:'all .15s' }}>
             {t.l}
           </button>
         ))}
@@ -5378,16 +5362,16 @@ function LinesTab({ lang='en' }) {
           {/* Action buttons */}
           <div style={{ display:'flex', gap:8, marginBottom:8 }}>
             <button onClick={analyzeRoutes} disabled={analyzing||!treePins.length||!tankPins.length}
-              style={{ flex:2, background:analyzing?'#0d1a2b':'linear-gradient(135deg,#3fb950,#2ea043)',
-                border:'none', borderRadius:10, padding:'13px', fontSize:14, fontWeight:700,
-                color:'#fff', cursor:'pointer', opacity:(!treePins.length||!tankPins.length)?0.4:1,
+              style={{ flex:2, background:analyzing?'#0d1a2b':'#2dd4a7',
+                border:'none', borderRadius:10, padding:'13px', minHeight:44, fontSize:14, fontWeight:700,
+                color:'#07090f', cursor:'pointer', opacity:(!treePins.length||!tankPins.length)?0.4:1,
                 display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-              <I.ruler size={16} color="#fff" /> {analyzing ? 'Analyzing…' : 'Analyze Routes'}
+              <I.ruler size={16} color="#07090f" /> {analyzing ? 'Analyzing…' : 'Analyze Routes'}
             </button>
             <button onClick={findTankSpots} disabled={findingSpots||treePins.length<2}
-              style={{ flex:1, background:findingSpots?'#0d1a2b':'linear-gradient(135deg,#e6b800,#b08800)',
-                border:'none', borderRadius:10, padding:'13px', fontSize:13, fontWeight:700,
-                color:'#07090f', cursor:'pointer', opacity:treePins.length<2?0.4:1,
+              style={{ flex:1, background:'#0f1720',
+                border:'1px solid #1e2d3d', borderRadius:10, padding:'13px', minHeight:44, fontSize:13, fontWeight:700,
+                color:'#e6edf3', cursor:'pointer', opacity:treePins.length<2?0.4:1,
                 display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
               {findingSpots ? '…' : <I.star size={13} color="currentColor" />} Tank Spots
             </button>
@@ -5395,7 +5379,7 @@ function LinesTab({ lang='en' }) {
 
           {/* Progress + messages */}
           {routeProgress && (
-            <div style={{ background:'rgba(63,185,80,0.1)', border:'1px solid #2ea043', borderRadius:10, padding:'8px 14px', marginBottom:8, fontSize:12, color:'#3fb950' }}>{routeProgress}</div>
+            <div style={{ background:'rgba(63,185,80,0.1)', border:'1px solid #3fb950', borderRadius:10, padding:'8px 14px', marginBottom:8, fontSize:12, color:'#3fb950' }}>{routeProgress}</div>
           )}
           {routeMsg && (
             <div role="status" style={{ background: /…$/.test(routeMsg) ? 'rgba(88,166,255,0.08)' : 'rgba(248,81,73,0.1)',
@@ -5438,10 +5422,10 @@ function LinesTab({ lang='en' }) {
                       <div style={{ display:'flex', alignItems:'center', gap:7, flex:1, minWidth:0 }}>
                         <I.tank size={15} color="#58a6ff" />
                         <span style={{ fontWeight:700, fontSize:14, color:'#c9d1d9' }}>{r.tank.label}</span>
-                        <span style={{ fontSize:13, color:'#5a6a7a', flexShrink:0 }}>· {r.trees.length} tree{r.trees.length!==1?'s':''}</span>
+                        <span style={{ fontSize:13, color:'#7f92a6', flexShrink:0 }}>· {r.trees.length} tree{r.trees.length!==1?'s':''}</span>
                       </div>
                       <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-                        <span style={{ fontSize:12, color:'#5a6a7a' }}>overall</span>
+                        <span style={{ fontSize:12, color:'#7f92a6' }}>overall</span>
                         <span style={{ fontWeight:800, color:col, fontSize:18 }}>{r.overallGrade.toFixed(1)}%</span>
                       </div>
                     </div>
@@ -5460,13 +5444,13 @@ function LinesTab({ lang='en' }) {
                                   {isTank ? <I.tank size={13} color={nc} /> : <I.tree size={13} color={nc} />}
                                 </div>
                                 <span style={{ fontSize:12, color:'#8b949e', maxWidth:52, textAlign:'center', lineHeight:1.2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{node.label}</span>
-                                <span style={{ fontSize:12, color:'#5a6a7a' }}>{node.elev!=null ? node.elev.toFixed(0)+'ft' : '—'}</span>
+                                <span style={{ fontSize:12, color:'#7f92a6' }}>{node.elev!=null ? node.elev.toFixed(0)+'ft' : '—'}</span>
                               </div>
                               {seg && (
                                 <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:'0 0 auto', padding:'0 1px', marginTop:-12 }}>
                                   <span style={{ fontSize:12, fontWeight:700, color:_gradeColor(seg.grade) }}>{seg.grade.toFixed(1)}%</span>
                                   <div style={{ height:3, width:44, background:_gradeColor(seg.grade), borderRadius:2, opacity:0.9 }} />
-                                  <span style={{ fontSize:12, color:'#3d5068' }}>
+                                  <span style={{ fontSize:12, color:'#7f92a6' }}>
                                     {seg.dist < 5280 ? seg.dist.toFixed(0)+'ft' : (seg.dist/5280).toFixed(2)+'mi'}
                                   </span>
                                 </div>
@@ -5486,7 +5470,7 @@ function LinesTab({ lang='en' }) {
                         { l:'LINE LEN', v:r.totalDist<5280?r.totalDist.toFixed(0)+' ft':(r.totalDist/5280).toFixed(2)+' mi', c:'#c9d1d9' },
                       ].map(item => (
                         <div key={item.l} style={{ textAlign:'center', background:'#081622', borderRadius:6, padding:'5px 2px' }}>
-                          <div style={{ fontSize:12, color:'#5a6a7a', fontWeight:600, letterSpacing:'0.04em' }}>{item.l}</div>
+                          <div style={{ fontSize:12, color:'#7f92a6', fontWeight:600, letterSpacing:'0.04em' }}>{item.l}</div>
                           <div style={{ fontWeight:700, color:item.c, fontSize:12, marginTop:2 }}>{item.v}</div>
                         </div>
                       ))}
@@ -5498,10 +5482,10 @@ function LinesTab({ lang='en' }) {
                     {r.badSegs.length > 0 && (
                       <div style={{ marginTop:4 }}>
                         {r.badSegs.map((s, bi) => (
-                          <div key={bi} style={{ fontSize:13, color:'#f0883e', display:'flex', alignItems:'center', gap:5, marginTop:2 }}>
-                            <span style={{ background:'#f0883e22', borderRadius:4, padding:'1px 5px', fontWeight:700 }}>{s.grade.toFixed(2)}%</span>
+                          <div key={bi} style={{ fontSize:13, color:'#e0a44a', display:'flex', alignItems:'center', gap:5, marginTop:2 }}>
+                            <span style={{ background:'#e0a44a22', borderRadius:4, padding:'1px 5px', fontWeight:700 }}>{s.grade.toFixed(2)}%</span>
                             {s.from.label} → {s.to.label}
-                            <span style={{ color:'#5a6a7a' }}>({s.dist.toFixed(0)} ft, {Math.abs(s.drop).toFixed(1)} ft drop)</span>
+                            <span style={{ color:'#7f92a6' }}>({s.dist.toFixed(0)} ft, {Math.abs(s.drop).toFixed(1)} ft drop)</span>
                           </div>
                         ))}
                       </div>
@@ -5511,12 +5495,12 @@ function LinesTab({ lang='en' }) {
               })}
 
               {/* Legend */}
-              <div style={{ background:'#081622', borderRadius:8, padding:'8px 12px', fontSize:13, color:'#5a6a7a', display:'flex', flexWrap:'wrap', gap:'8px 16px', alignItems:'center' }}>
+              <div style={{ background:'#081622', borderRadius:8, padding:'8px 12px', fontSize:13, color:'#7f92a6', display:'flex', flexWrap:'wrap', gap:'8px 16px', alignItems:'center' }}>
                 <span style={{ color:'#8b949e', fontWeight:600 }}>Grade key:</span>
                 <span><span style={{ color:'#f85149', fontWeight:700 }}>━</span> &lt;0.5% flat</span>
-                <span><span style={{ color:'#f0883e', fontWeight:700 }}>━</span> 0.5–1% marginal</span>
+                <span><span style={{ color:'#e0a44a', fontWeight:700 }}>━</span> 0.5–1% marginal</span>
                 <span><span style={{ color:'#3fb950', fontWeight:700 }}>━</span> 1–6% ✓ ideal</span>
-                <span><span style={{ color:'#f0883e', fontWeight:700 }}>━</span> &gt;6% steep</span>
+                <span><span style={{ color:'#e0a44a', fontWeight:700 }}>━</span> &gt;6% steep</span>
               </div>
             </div>
           )}
@@ -5551,7 +5535,7 @@ function LinesTab({ lang='en' }) {
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
                   <div className="card-title" style={{ marginBottom:0 }}><CardIcon bg="#0d1a2b" icon="ruler" />Materials Estimator</div>
                   <button onClick={()=>setShowMatPrices(v=>!v)}
-                    style={{ background:'none', border:'1px solid #1e2d3d', borderRadius:8, padding:'4px 10px', fontSize:12, color:'#5a6a7a', cursor:'pointer' }}>
+                    style={{ background:'none', border:'1px solid #1e2d3d', borderRadius:8, padding:'4px 10px', fontSize:12, color:'#7f92a6', cursor:'pointer' }}>
                     {showMatPrices ? 'Hide' : 'Edit'} Prices
                   </button>
                 </div>
@@ -5562,7 +5546,7 @@ function LinesTab({ lang='en' }) {
                     <div style={{ display:'flex', gap:6 }}>
                       {[['Gravity','grav'],['Vacuum','vac']].map(([lbl,key])=>(
                         <button key={key} onClick={()=>setVacSystem(key==='vac')}
-                          style={{ flex:1, background:(vacSystem===(key==='vac'))?'linear-gradient(135deg,#58a6ff,#1f6feb)':'#131e2c', border:'1px solid '+(vacSystem===(key==='vac')?'#58a6ff':'#1e2d3d'), borderRadius:8, padding:'7px 4px', fontSize:12, fontWeight:600, color:(vacSystem===(key==='vac'))?'#fff':'#5a6a7a', cursor:'pointer' }}>{lbl}</button>
+                          style={{ flex:1, background:(vacSystem===(key==='vac'))?'#2dd4a7':'#131e2c', border:'1px solid '+(vacSystem===(key==='vac')?'#58a6ff':'#1e2d3d'), borderRadius:8, padding:'7px 4px', fontSize:12, fontWeight:600, color:(vacSystem===(key==='vac'))?'#fff':'#7f92a6', cursor:'pointer' }}>{lbl}</button>
                       ))}
                     </div>
                   </div>
@@ -5571,16 +5555,16 @@ function LinesTab({ lang='en' }) {
                     <div style={{ display:'flex', gap:6 }}>
                       {['3/4"','1"'].map(sz=>(
                         <button key={sz} onClick={()=>setMainSize(sz)}
-                          style={{ flex:1, background:mainSize===sz?'linear-gradient(135deg,#3fb950,#2ea043)':'#131e2c', border:'1px solid '+(mainSize===sz?'#3fb950':'#1e2d3d'), borderRadius:8, padding:'7px 4px', fontSize:12, fontWeight:600, color:mainSize===sz?'#07090f':'#5a6a7a', cursor:'pointer' }}>{sz}</button>
+                          style={{ flex:1, background:mainSize===sz?'#3fb950':'#131e2c', border:'1px solid '+(mainSize===sz?'#3fb950':'#1e2d3d'), borderRadius:8, padding:'7px 4px', fontSize:12, fontWeight:600, color:mainSize===sz?'#07090f':'#7f92a6', cursor:'pointer' }}>{sz}</button>
                       ))}
                     </div>
-                    {mainSize !== mainRec && <div style={{ fontSize:12, color:'#f0883e', marginTop:3, display:'flex', alignItems:'center', gap:5 }}><I.alert size={12} color="#f0883e" /> Recommend {mainRec} for {totalTaps2} tap{totalTaps2!==1?'s':''}</div>}
+                    {mainSize !== mainRec && <div style={{ fontSize:12, color:'#e0a44a', marginTop:3, display:'flex', alignItems:'center', gap:5 }}><I.alert size={12} color="#e0a44a" /> Recommend {mainRec} for {totalTaps2} tap{totalTaps2!==1?'s':''}</div>}
                   </div>
                 </div>
 
                 {showMatPrices && (
                   <div style={{ background:'#081622', borderRadius:10, padding:'12px', marginBottom:12, border:'1px solid #1e2d3d' }}>
-                    <div style={{ fontSize:12, color:'#5a6a7a', marginBottom:8 }}>Price per unit (edit to match your supplier)</div>
+                    <div style={{ fontSize:12, color:'#7f92a6', marginBottom:8 }}>Price per unit (edit to match your supplier)</div>
                     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
                       {[
                         ['lateral',  `${latDia} lateral ($/ft)`],
@@ -5591,7 +5575,7 @@ function LinesTab({ lang='en' }) {
                         ['mainTee',  'Main line tee (each)'],
                       ].map(([k, label]) => (
                         <div key={k}>
-                          <div style={{ fontSize:12, color:'#5a6a7a', marginBottom:2 }}>{label}</div>
+                          <div style={{ fontSize:12, color:'#7f92a6', marginBottom:2 }}>{label}</div>
                           <div style={{ display:'flex', alignItems:'center', gap:4 }}>
                             <span style={{ color:'#3fb950', fontSize:12 }}>$</span>
                             <input aria-label="Main Line Size" type="number" defaultValue={matPrices[k]} step="0.01" min="0"
@@ -5614,19 +5598,19 @@ function LinesTab({ lang='en' }) {
                         <div style={{ display:'flex', alignItems:'center', gap:6, fontWeight:600, fontSize:13 }}>
                           <I.tank size={13} color="#58a6ff" /> {r.tank.label}
                         </div>
-                        <span style={{ fontSize:13, color:'#5a6a7a' }}>{r.trees.length} tree{r.trees.length!==1?'s':''} · {rTaps} tap{rTaps!==1?'s':''}</span>
+                        <span style={{ fontSize:13, color:'#7f92a6' }}>{r.trees.length} tree{r.trees.length!==1?'s':''} · {rTaps} tap{rTaps!==1?'s':''}</span>
                       </div>
                       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:4, fontSize:13 }}>
                         <div style={{ background:'#081622', borderRadius:6, padding:'5px 6px' }}>
-                          <div style={{ color:'#5a6a7a' }}>{latDia} lateral</div>
+                          <div style={{ color:'#7f92a6' }}>{latDia} lateral</div>
                           <div style={{ fontWeight:700, color:'#58a6ff' }}>{rLat.toFixed(0)} ft</div>
                         </div>
                         <div style={{ background:'#081622', borderRadius:6, padding:'5px 6px' }}>
-                          <div style={{ color:'#5a6a7a' }}>{mainSize} main</div>
+                          <div style={{ color:'#7f92a6' }}>{mainSize} main</div>
                           <div style={{ fontWeight:700, color:'#3fb950' }}>{rMain.toFixed(0)} ft</div>
                         </div>
                         <div style={{ background:'#081622', borderRadius:6, padding:'5px 6px' }}>
-                          <div style={{ color:'#5a6a7a' }}>drops + tees</div>
+                          <div style={{ color:'#7f92a6' }}>drops + tees</div>
                           <div style={{ fontWeight:700, color:'#e0a44a' }}>{rTaps} × each</div>
                         </div>
                       </div>
@@ -5647,7 +5631,7 @@ function LinesTab({ lang='en' }) {
                     <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'5px 0', borderBottom:'1px solid #1a4a25' }}>
                       <div>
                         <div style={{ fontSize:13, color:row.color, fontWeight:500 }}>{row.item}</div>
-                        <div style={{ fontSize:12, color:'#3d5068' }}>Measured: {row.qty} · Order: {row.order}</div>
+                        <div style={{ fontSize:12, color:'#7f92a6' }}>Measured: {row.qty} · Order: {row.order}</div>
                       </div>
                       <div style={{ fontSize:14, fontWeight:700, color:'#3fb950', flexShrink:0, marginLeft:8 }}>${row.cost.toFixed(2)}</div>
                     </div>
@@ -5655,7 +5639,7 @@ function LinesTab({ lang='en' }) {
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:10 }}>
                     <div>
                       <div style={{ fontWeight:700, color:'#3fb950', fontSize:15 }}>Est. Total</div>
-                      <div style={{ fontSize:13, color:'#5a6a7a' }}>Material cost only · {latNote}</div>
+                      <div style={{ fontSize:13, color:'#7f92a6' }}>Material cost only · {latNote}</div>
                     </div>
                     <div style={{ fontSize:22, fontWeight:800, color:'#3fb950' }}>${total.toFixed(2)}</div>
                   </div>
@@ -5671,19 +5655,19 @@ function LinesTab({ lang='en' }) {
                 <div className="card-title" style={{ marginBottom:0 }}><CardIcon bg="#1a1500" icon="mapPin" />Tank Spots</div>
                 <button className="btn-secondary" style={{ padding:'5px 12px', fontSize:12 }} onClick={clearSpots}>Clear</button>
               </div>
-              <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:8 }}>Suggested collection points — ranked by gravity-flow score.</div>
+              <div style={{ fontSize:13, color:'#7f92a6', marginBottom:8 }}>Suggested collection points — ranked by gravity-flow score.</div>
               {tankSpots.map((s,i) => (
                 <div key={i} style={{ background:'#0f1720', borderRadius:10, padding:'10px 14px', marginBottom:6, border:'1px solid #2d2000' }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                     <div>
                       <div style={{ fontWeight:600, color:'#e6b800', fontSize:13, display:'flex', alignItems:'center', gap:5 }}><I.star size={13} color="#e6b800" /> Spot {i+1}</div>
-                      <div style={{ fontSize:13, color:'#5a6a7a', marginTop:2 }}>
+                      <div style={{ fontSize:13, color:'#7f92a6', marginTop:2 }}>
                         {s.lat.toFixed(5)}, {s.lon.toFixed(5)} · {s.treesAbove}/{treePins.filter(p=>p.elev!=null).length} trees ≥1% grade
                       </div>
                     </div>
                     <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
                       <div style={{ fontWeight:700, color:'#e0a44a', fontSize:15 }}>{s.elev.toFixed(1)} ft</div>
-                      <button onClick={()=>placeSpotAsTank(s)} style={{ background:'linear-gradient(135deg,#58a6ff,#1f6feb)', border:'none', borderRadius:7, padding:'4px 10px', fontSize:13, fontWeight:700, color:'#fff', cursor:'pointer', whiteSpace:'nowrap' }}>+ Place as Tank</button>
+                      <button onClick={()=>placeSpotAsTank(s)} style={{ background:'#2dd4a7', border:'none', borderRadius:7, padding:'4px 10px', fontSize:13, fontWeight:700, color:'#fff', cursor:'pointer', whiteSpace:'nowrap' }}>+ Place as Tank</button>
                     </div>
                   </div>
                 </div>
@@ -5699,8 +5683,7 @@ function LinesTab({ lang='en' }) {
           {treePins.length === 0 ? (
             <div className="card">
               <div className="empty-state">
-                <div className="empty-icon" style={{display:'flex',justifyContent:'center'}}><I.mapleLeaf size={40} color="#2dd4a7" /></div>
-                <div className="empty-title">No trees yet</div>
+                <div className="empty-title" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8}}><I.mapleLeaf size={20} color="#8b949e" /> No trees yet</div>
                 Tap the map in Tap Tree mode to add your first tree.
               </div>
             </div>
@@ -5715,7 +5698,7 @@ function LinesTab({ lang='en' }) {
                     return (
                       <div key={k} style={{ background:'#0f1720', borderRadius:8, padding:'8px 4px', textAlign:'center', border:`1px solid ${_HEALTH_COLORS[k]}44` }}>
                         <div style={{ fontSize:16, fontWeight:800, color:_HEALTH_COLORS[k] }}>{cnt}</div>
-                        <div style={{ fontSize:12, color:'#5a6a7a', marginTop:2 }}>{l}</div>
+                        <div style={{ fontSize:12, color:'#7f92a6', marginTop:2 }}>{l}</div>
                       </div>
                     );
                   })}
@@ -5739,8 +5722,8 @@ function LinesTab({ lang='en' }) {
               <div className="card">
                 <div className="card-title"><CardIcon bg="#0d2b15" icon="list" />All Trees</div>
                 {treePins.map(p => {
-                  const sColor = _SPECIES_COLORS[p.species] || '#5a6a7a';
-                  const hColor = _HEALTH_COLORS[p.health] || '#5a6a7a';
+                  const sColor = _SPECIES_COLORS[p.species] || '#7f92a6';
+                  const hColor = _HEALTH_COLORS[p.health] || '#7f92a6';
                   const mlColor = p.mainline ? _mlColor(p.mainline) : null;
                   return (
                     <div key={p.id} role="button" tabIndex={0}
@@ -5762,14 +5745,14 @@ function LinesTab({ lang='en' }) {
                           {p.label}
                           <span style={{ fontSize:12, color:sColor, background:sColor+'22', borderRadius:4, padding:'1px 5px' }}>{_SPECIES_LABELS[p.species]||'Unknown'}</span>
                         </div>
-                        <div style={{ fontSize:13, color:'#5a6a7a', marginTop:2, display:'flex', gap:8, flexWrap:'wrap' }}>
+                        <div style={{ fontSize:13, color:'#7f92a6', marginTop:2, display:'flex', gap:8, flexWrap:'wrap' }}>
                           {p.dbh && <span>DBH: {p.dbh}"</span>}
                           {p.taps && <span>Taps: {p.taps}</span>}
                           {p.elev != null && <span style={{ color:'#e0a44a' }}>↑ {p.elev.toFixed(0)} ft</span>}
                           <span style={{ color:hColor }}>{_HEALTH_LABELS[p.health]||'?'}</span>
                         </div>
                       </div>
-                      <div style={{ color:'#3d5068', fontSize:12 }}>›</div>
+                      <div style={{ color:'#7f92a6', fontSize:12 }}>›</div>
                     </div>
                   );
                 })}
@@ -5796,12 +5779,12 @@ function LinesTab({ lang='en' }) {
                         style={{ width:'100%', background:'transparent', border:'none', borderBottom:'1px solid transparent', color:'#c9d1d9', fontWeight:700, fontSize:13, padding:'2px 0', outline:'none', boxSizing:'border-box' }}
                         onFocus={e => e.target.style.borderBottomColor = ml.color}
                         onBlur={e => { e.target.style.borderBottomColor = 'transparent'; if (!e.target.value.trim()) renameMainline(ml.id, 'Mainline ' + ml.id); }} />
-                      <div style={{ fontSize:13, color:'#5a6a7a' }}>{mlTrees.length} tree{mlTrees.length!==1?'s':''} · {mlTaps} tap{mlTaps!==1?'s':''}</div>
+                      <div style={{ fontSize:13, color:'#7f92a6' }}>{mlTrees.length} tree{mlTrees.length!==1?'s':''} · {mlTaps} tap{mlTaps!==1?'s':''}</div>
                     </div>
                   </div>
                   <button onClick={() => deleteMainline(ml.id)} aria-label={`Delete mainline ${ml.id}`} title="Delete this mainline"
-                    style={{ background:'transparent', border:'1px solid #2d3d50', borderRadius:8, color:'#5a6a7a', cursor:'pointer', padding:'7px 9px', flexShrink:0, minHeight:34 }}>
-                    <I.trash size={14} color="#5a6a7a" />
+                    style={{ background:'transparent', border:'1px solid #2d3d50', borderRadius:8, color:'#7f92a6', cursor:'pointer', padding:'7px 9px', flexShrink:0, minHeight:34 }}>
+                    <I.trash size={14} color="#7f92a6" />
                   </button>
                 </div>
                 {mlTrees.length > 0 && (
@@ -5820,7 +5803,7 @@ function LinesTab({ lang='en' }) {
 
           <button onClick={addMainline} disabled={!nextMainlineId()}
             style={{ width:'100%', background:'transparent', border:'1px dashed #2d3d50', borderRadius:12,
-              padding:'13px 16px', color: nextMainlineId() ? '#8a9ab5' : '#3d5068', fontWeight:600, fontSize:13,
+              padding:'13px 16px', color: nextMainlineId() ? '#8b949e' : '#7f92a6', fontWeight:600, fontSize:13,
               cursor: nextMainlineId() ? 'pointer' : 'default', marginBottom:8 }}>
             {nextMainlineId() ? '+ Add a mainline' : 'All 26 mainlines in use'}
           </button>
@@ -5831,7 +5814,7 @@ function LinesTab({ lang='en' }) {
             if (!unassigned.length) return null;
             return (
               <div className="card">
-                <div className="card-title" style={{ color:'#5a6a7a' }}><CardIcon bg="#1e2d3d" icon="mapPin" />Unassigned ({unassigned.length})</div>
+                <div className="card-title" style={{ color:'#7f92a6' }}><CardIcon bg="#1e2d3d" icon="mapPin" />Unassigned ({unassigned.length})</div>
                 <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
                   {unassigned.map(p => (
                     <button key={p.id} onClick={() => { setSelectedPinId(p.id); setShowPinPanel(true); zoomToPin(p); }}
@@ -5850,7 +5833,7 @@ function LinesTab({ lang='en' }) {
       {mainTab === 'property' && (
         <div className="card">
           <div className="card-title"><CardIcon bg="#1a1020" icon="mapPin" />Property Lines</div>
-          <div style={{ fontSize:12, color:'#5a6a7a', marginBottom:12, lineHeight:1.6 }}>
+          <div style={{ fontSize:12, color:'#7f92a6', marginBottom:12, lineHeight:1.6 }}>
             Import your property boundary from a GPS app or GIS export. Supported formats: KML (Google Earth), GPX, GeoJSON.
           </div>
           <label style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, background:'linear-gradient(135deg,#8b5cf6,#6d28d9)', border:'none', borderRadius:10, padding:'13px', fontSize:14, fontWeight:700, color:'#fff', cursor:'pointer' }}>
@@ -5859,7 +5842,7 @@ function LinesTab({ lang='en' }) {
               onChange={e => { const f = e.target.files[0]; if (f) _sbImportPropertyFile(f, r => { setPropMsg(r); setHasProperty(!!ls.get(PROPERTY_KEY, null)); }); e.target.value=''; }} />
           </label>
           {propMsg && (
-            <div role="status" style={{ marginTop:10, fontSize:12.5, lineHeight:1.5, color: propMsg.ok ? '#3fb950' : '#f47067' }}>{propMsg.text}</div>
+            <div role="status" style={{ marginTop:10, fontSize:12.5, lineHeight:1.5, color: propMsg.ok ? '#3fb950' : '#f85149' }}>{propMsg.text}</div>
           )}
           {hasProperty && (
             <button onClick={() => {
@@ -5870,7 +5853,7 @@ function LinesTab({ lang='en' }) {
               ✕ Clear Property Lines
             </button>
           )}
-          <div style={{ marginTop:12, fontSize:13, color:'#3d5068', lineHeight:1.6 }}>
+          <div style={{ marginTop:12, fontSize:13, color:'#7f92a6', lineHeight:1.6 }}>
             Tip: In Google Earth, right-click your polygon → Save place as → KML.
             In onX Hunt or CalTopo, export as GeoJSON.
           </div>
@@ -5879,9 +5862,9 @@ function LinesTab({ lang='en' }) {
 
       {/* ── PIN DETAIL SLIDE-UP PANEL ────────────────────────────────── */}
       {showPinPanel && selectedPin && (
-        <div style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:9999, background:'#0d1521', borderTop:'1px solid rgba(255,255,255,0.08)', borderRadius:'20px 20px 0 0', padding:'12px 16px 36px', maxHeight:'72vh', overflowY:'auto', boxShadow:'0 -12px 40px rgba(0,0,0,0.8)' }}>
+        <div className="sheet" style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:9999, maxWidth:'none', maxHeight:'72vh' }}>
           {/* Handle */}
-          <div style={{ width:36, height:3.5, background:'rgba(255,255,255,0.15)', borderRadius:2, margin:'0 auto 14px' }} />
+          <div className="sheet-handle" />
 
           {/* Header */}
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
@@ -5892,13 +5875,13 @@ function LinesTab({ lang='en' }) {
               </span>
               <div>
                 <div style={{ fontWeight:800, fontSize:16, color:'#c9d1d9' }}>{selectedPin.label}</div>
-                <div style={{ fontSize:13, color:'#5a6a7a', display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+                <div style={{ fontSize:13, color:'#7f92a6', display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
                   <span>{selectedPin.lat.toFixed(5)}, {selectedPin.lon.toFixed(5)}</span>
                   {selectedPin.accuracy != null && (
                     <span style={{
                       fontWeight:700, fontSize:12, borderRadius:4, padding:'1px 5px',
                       background: selectedPin.accuracy <= 5 ? 'rgba(45,212,167,0.15)' : selectedPin.accuracy <= 15 ? 'rgba(244,164,74,0.15)' : 'rgba(248,113,113,0.15)',
-                      color:       selectedPin.accuracy <= 5 ? '#2dd4a7'              : selectedPin.accuracy <= 15 ? '#f4a44a'              : '#f87171',
+                      color:       selectedPin.accuracy <= 5 ? '#2dd4a7'              : selectedPin.accuracy <= 15 ? '#e0a44a'              : '#f85149',
                     }}>± {selectedPin.accuracy} m</span>
                   )}
                 </div>
@@ -5912,7 +5895,7 @@ function LinesTab({ lang='en' }) {
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:12 }}>
               {/* Species */}
               <div>
-                <div style={{ fontSize:12, fontWeight:700, color:'#5a6a7a', marginBottom:4 }}>SPECIES</div>
+                <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', marginBottom:4 }}>SPECIES</div>
                 <select aria-label="Tree species" value={selectedPin.species||'sugar_maple'} onChange={e => updatePinField(selectedPin.id, 'species', e.target.value)}
                   style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'none', borderRadius:8, padding:'8px 10px', color:'#c9d1d9', fontSize:12, outline:'none' }}>
                   {Object.entries(_SPECIES_LABELS).map(([k,l]) => <option key={k} value={k}>{l}</option>)}
@@ -5921,7 +5904,7 @@ function LinesTab({ lang='en' }) {
 
               {/* Health */}
               <div>
-                <div style={{ fontSize:12, fontWeight:700, color:'#4a5a6a', marginBottom:4, letterSpacing:'0.06em' }}>HEALTH</div>
+                <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', marginBottom:4, letterSpacing:'0.06em' }}>HEALTH</div>
                 <select aria-label="Tree health" value={selectedPin.health||'good'} onChange={e => updatePinField(selectedPin.id, 'health', e.target.value)}
                   style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'none', borderRadius:8, padding:'8px 10px', color:'#c9d1d9', fontSize:12, outline:'none' }}>
                   {Object.entries(_HEALTH_LABELS).map(([k,l]) => <option key={k} value={k}>{l}</option>)}
@@ -5930,7 +5913,7 @@ function LinesTab({ lang='en' }) {
 
               {/* DBH */}
               <div>
-                <div style={{ fontSize:12, fontWeight:700, color:'#5a6a7a', marginBottom:4 }}>DBH (inches)</div>
+                <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', marginBottom:4 }}>DBH (inches)</div>
                 <input type="number" min="1" max="60" step="0.5"
                   value={selectedPin.dbh||''} placeholder="e.g. 14"
                   onChange={e => updatePinField(selectedPin.id, 'dbh', e.target.value)}
@@ -5939,7 +5922,7 @@ function LinesTab({ lang='en' }) {
 
               {/* Taps */}
               <div>
-                <div style={{ fontSize:12, fontWeight:700, color:'#4a5a6a', marginBottom:4, letterSpacing:'0.06em' }}>TAP COUNT</div>
+                <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', marginBottom:4, letterSpacing:'0.06em' }}>TAP COUNT</div>
                 <input type="number" min="0" max="4" step="1"
                   value={selectedPin.taps||''} placeholder="0–4"
                   onChange={e => updatePinField(selectedPin.id, 'taps', e.target.value)}
@@ -5948,7 +5931,7 @@ function LinesTab({ lang='en' }) {
 
               {/* Mainline */}
               <div style={{ gridColumn:'1/-1' }}>
-                <div style={{ fontSize:12, fontWeight:700, color:'#5a6a7a', marginBottom:4 }}>MAINLINE ASSIGNMENT</div>
+                <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', marginBottom:4 }}>MAINLINE ASSIGNMENT</div>
                 <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                   {[{id:'',label:'None'},...mainlines].map(ml => {
                     const on  = (selectedPin.mainline||'') === ml.id;
@@ -5960,7 +5943,7 @@ function LinesTab({ lang='en' }) {
                           background: on ? col+'33' : 'transparent',
                           border:`1px solid ${on ? col : '#1e2d3d'}`,
                           borderRadius:8, padding:'7px 4px', fontSize:13, fontWeight:700,
-                          color: on ? col : '#5a6a7a', cursor:'pointer' }}>
+                          color: on ? col : '#7f92a6', cursor:'pointer' }}>
                         {ml.id || '—'}
                       </button>
                     );
@@ -5972,14 +5955,14 @@ function LinesTab({ lang='en' }) {
 
           {/* Label (rename) */}
           <div style={{ marginBottom:10 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:'#4a5a6a', marginBottom:4, letterSpacing:'0.06em' }}>LABEL</div>
+            <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', marginBottom:4, letterSpacing:'0.06em' }}>LABEL</div>
             <input value={selectedPin.label} onChange={e => updatePinField(selectedPin.id, 'label', e.target.value)}
               style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'none', borderRadius:8, padding:'9px 12px', color:'#e2e8f0', fontSize:13, outline:'none', boxSizing:'border-box', fontWeight:600 }} />
           </div>
 
           {/* Notes */}
           <div style={{ marginBottom:14 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:'#4a5a6a', marginBottom:4, letterSpacing:'0.06em' }}>NOTES</div>
+            <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', marginBottom:4, letterSpacing:'0.06em' }}>NOTES</div>
             <textarea value={selectedPin.notes||''} onChange={e => updatePinField(selectedPin.id, 'notes', e.target.value)}
               placeholder="Add notes…" rows={2}
               style={{ width:'100%', background:'rgba(255,255,255,0.06)', border:'none', borderRadius:8, padding:'9px 12px', color:'#c9d1d9', fontSize:12, outline:'none', resize:'vertical', boxSizing:'border-box', fontFamily:'inherit' }} />
@@ -5990,8 +5973,8 @@ function LinesTab({ lang='en' }) {
               the phone has no bars. */}
           <div style={{ marginBottom:14 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:4 }}>
-              <label htmlFor="sr-pin-elev" style={{ fontSize:12, fontWeight:700, color:'#4a5a6a', letterSpacing:'0.06em' }}>ELEVATION (FT)</label>
-              <span style={{ fontSize:12, color: selectedPin.elev != null ? '#5a6a7a' : '#f0883e' }}>
+              <label htmlFor="sr-pin-elev" style={{ fontSize:12, fontWeight:700, color:'#7f92a6', letterSpacing:'0.06em' }}>ELEVATION (FT)</label>
+              <span style={{ fontSize:12, color: selectedPin.elev != null ? '#7f92a6' : '#e0a44a' }}>
                 {selectedPin.elev != null
                   ? (selectedPin.elevManual ? 'you entered this' : 'from terrain data')
                   : 'needed for route grades'}
@@ -6023,7 +6006,7 @@ function LinesTab({ lang='en' }) {
                   updatePinField(selectedPin.id, 'elevManual', false);
                 }}
                 title="Look up elevation for this pin (needs a connection)"
-                style={{ background:'transparent', border:'1px solid #2d3d50', borderRadius:8, color:'#8a9ab5', fontSize:12, fontWeight:600, padding:'0 12px', minHeight:40, cursor:'pointer', whiteSpace:'nowrap' }}>
+                style={{ background:'transparent', border:'1px solid #2d3d50', borderRadius:8, color:'#8b949e', fontSize:12, fontWeight:600, padding:'0 12px', minHeight:40, cursor:'pointer', whiteSpace:'nowrap' }}>
                 Look up
               </button>
             </div>
@@ -6034,7 +6017,7 @@ function LinesTab({ lang='en' }) {
               if (!window.confirm(`Delete "${selectedPin.label || 'this pin'}"?`)) return;
               removePin(selectedPin.id); setShowPinPanel(false); setSelectedPinId(null);
             }}
-            style={{ width:'100%', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:10, padding:'11px', fontSize:13, fontWeight:700, color:'#f87171', cursor:'pointer' }}>
+            style={{ width:'100%', background:'rgba(248,81,73,0.1)', border:'1px solid rgba(248,81,73,0.2)', borderRadius:10, padding:'11px', fontSize:13, fontWeight:700, color:'#f85149', cursor:'pointer' }}>
             Delete Pin
           </button>
         </div>
@@ -6226,7 +6209,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
   const bestScore = days.length ? Math.max(...days.map(d => d.score)) : 0;
 
   const scoreColor = (s) =>
-    s >= 80 ? '#3fb950' : s >= 62 ? '#7cc950' : s >= 44 ? '#d4a017' : s >= 22 ? '#8b5a2b' : '#3d5068';
+    s >= 80 ? '#3fb950' : s >= 62 ? '#7cc950' : s >= 44 ? '#d4a017' : s >= 22 ? '#8b5a2b' : '#7f92a6';
   const scoreBg = (s) =>
     s >= 80 ? 'rgba(63,185,80,0.13)' : s >= 62 ? 'rgba(124,201,80,0.11)' :
     s >= 44 ? 'rgba(212,160,23,0.11)' : 'rgba(61,80,104,0.08)';
@@ -6251,11 +6234,11 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
           </div>
         ) : (
           <div>
-            <div style={{ fontSize:12, fontWeight:700, color:'#5a6a7a', marginBottom:8, letterSpacing:'0.06em' }}>{t(lang,'wxSetLoc')}</div>
+            <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', marginBottom:8, letterSpacing:'0.06em' }}>{t(lang,'wxSetLoc')}</div>
             <button className="btn-secondary" style={{ marginBottom:10 }} onClick={useGPS}>
               <I.mapPin size={15} color="#8b949e" /> {t(lang,'wxUseGPS')}
             </button>
-            <div style={{ textAlign:'center', color:'#3d5068', fontSize:12, marginBottom:8 }}>{t(lang,'wxOr')}</div>
+            <div style={{ textAlign:'center', color:'#7f92a6', fontSize:12, marginBottom:8 }}>{t(lang,'wxOr')}</div>
             <div style={{ display:'flex', gap:8 }}>
               <input aria-label={t(lang,'wxCityPh')} type="text" placeholder={t(lang,'wxCityPh')}
                 value={query} onChange={e => setQuery(e.target.value)}
@@ -6274,7 +6257,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                     style={{ background: i % 2 === 0 ? '#1c2128' : '#161b22', borderBottom: i < geoResults.length - 1 ? '1px solid #30363d' : 'none' }}>
                     <span style={{ fontWeight:600 }}>{res.name}</span>
                     {res.admin1 && <span style={{ color:'#8b949e' }}>, {res.admin1}</span>}
-                    {res.country_code && <span style={{ color:'#5a6a7a' }}> ({res.country_code})</span>}
+                    {res.country_code && <span style={{ color:'#7f92a6' }}> ({res.country_code})</span>}
                   </button>
                 ))}
               </div>
@@ -6286,7 +6269,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
 
       {/* ── Loading spinner ── */}
       {loading && (
-        <div style={{ textAlign:'center', padding:'32px 0', color:'#5a6a7a', fontSize:14 }}>{t(lang,'wxLoadingForecast')}</div>
+        <div style={{ textAlign:'center', padding:'32px 0', color:'#7f92a6', fontSize:14 }}>{t(lang,'wxLoadingForecast')}</div>
       )}
 
       {/* ── Forecast content ── */}
@@ -6296,17 +6279,17 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
           {/* Summary banner */}
           <div style={{
             background: goodDays > 0 ? '#081e0e' : '#0d1117',
-            border: '1px solid ' + (goodDays > 0 ? '#1a4a25' : '#21262d'),
+            border: '1px solid ' + (goodDays > 0 ? '#1a4a25' : '#1e2d3d'),
             borderRadius:12, padding:'12px 16px', marginBottom:12,
             display:'flex', justifyContent:'space-between', alignItems:'center'
           }}>
             <div>
-              <div style={{ fontWeight:700, fontSize:15, color: goodDays > 0 ? '#3fb950' : '#5a6a7a' }}>
+              <div style={{ fontWeight:700, fontSize:15, color: goodDays > 0 ? '#3fb950' : '#7f92a6' }}>
                 {goodDays > 0
                   ? (lang==='fr' ? goodDays + (goodDays !== 1 ? ' jours de coulée' : ' jour de coulée') + ' à venir' : goodDays + ' run day' + (goodDays !== 1 ? 's' : '') + ' ahead')
                   : t(lang,'wxNoRunDays')}
               </div>
-              <div style={{ fontSize:12, color:'#5a6a7a', marginTop:2 }}>
+              <div style={{ fontSize:12, color:'#7f92a6', marginTop:2 }}>
                 {goodDays > 0
                   ? (lang==='fr' ? 'Meilleur score\u00a0: ' + bestScore + '/100 \u00b7 Appuyez pour les détails' : 'Best score: ' + bestScore + '/100 \u00b7 Tap a day for details')
                   : t(lang,'wxNoRunDaysHint')}
@@ -6319,7 +6302,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
 
           {/* 7-day score bar strip */}
           <div className="card" style={{ padding:'14px 12px' }}>
-            <div style={{ fontSize:13, fontWeight:700, color:'#5a6a7a', letterSpacing:'0.08em', marginBottom:12 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:'#7f92a6', letterSpacing:'0.08em', marginBottom:12 }}>
               {t(lang,'wxSapForecast')}
             </div>
             <div style={{ display:'flex', gap:6, overflowX:'auto', paddingBottom:4 }}>
@@ -6329,12 +6312,12 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                   style={{
                     width: 'calc(' + Math.floor(100/days.length) + '% - 6px)',
                     background: selDay === i ? scoreBg(day.score) : 'transparent',
-                    borderColor: selDay === i ? scoreColor(day.score) : '#21262d'
+                    borderColor: selDay === i ? scoreColor(day.score) : '#1e2d3d'
                   }}>
                   <span style={{ fontSize:13, fontWeight:700, color: selDay === i ? '#e6edf3' : '#8b949e' }}>
                     {day.dayLabel}
                   </span>
-                  <div style={{ width:22, height:64, background:'#21262d', borderRadius:11, position:'relative', overflow:'hidden', margin:'2px 0' }}>
+                  <div style={{ width:22, height:64, background:'#1e2d3d', borderRadius:11, position:'relative', overflow:'hidden', margin:'2px 0' }}>
                     {day.score > 0 && (
                       <div style={{
                         position:'absolute', bottom:0, left:0, right:0,
@@ -6347,14 +6330,14 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                   <span style={{ fontSize:12, fontWeight:700, color: scoreColor(day.score) }}>
                     {day.score > 0 ? day.score : '\u2014'}
                   </span>
-                  <span style={{ fontSize:12, color:'#f0883e', fontWeight:600 }}>{day.hiF}\u00b0</span>
+                  <span style={{ fontSize:12, color:'#e0a44a', fontWeight:600 }}>{day.hiF}\u00b0</span>
                   <span style={{ fontSize:12, color:'#58a6ff' }}>{day.loF}\u00b0</span>
                 </button>
               ))}
             </div>
             {/* Legend */}
-            <div style={{ display:'flex', flexWrap:'wrap', gap:'5px 12px', marginTop:10, paddingTop:10, borderTop:'1px solid #21262d' }}>
-              {[[`#3fb950`,t(lang,'scoreLeg80')],[`#7cc950`,t(lang,'scoreLeg62')],[`#d4a017`,t(lang,'scoreLeg44')],[`#3d5068`,t(lang,'scoreLegNo')]].map(([c, lbl]) => (
+            <div style={{ display:'flex', flexWrap:'wrap', gap:'5px 12px', marginTop:10, paddingTop:10, borderTop:'1px solid #1e2d3d' }}>
+              {[[`#3fb950`,t(lang,'scoreLeg80')],[`#7cc950`,t(lang,'scoreLeg62')],[`#d4a017`,t(lang,'scoreLeg44')],[`#7f92a6`,t(lang,'scoreLegNo')]].map(([c, lbl]) => (
                 <div key={lbl} style={{ display:'flex', alignItems:'center', gap:5, fontSize:13, color:'#8b949e' }}>
                   <div style={{ width:10, height:10, borderRadius:3, background:c, flexShrink:0 }} />
                   {lbl}
@@ -6374,18 +6357,18 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                       {({'Excellent':t(lang,'qualExcellent'),'Good':t(lang,'qualGood'),'Fair':t(lang,'qualFair'),'Poor':t(lang,'qualPoor'),'No Flow':t(lang,'qualNoFlow')}[sel.quality]||sel.quality)} ({sel.score}/100)
                     </span>
                     {sel.buddyRisk && (
-                      <span style={{ fontSize:13, color:'#f0883e', fontWeight:700, background:'rgba(240,136,62,0.12)', border:'1px solid rgba(240,136,62,0.3)', borderRadius:8, padding:'2px 8px' }}>
+                      <span style={{ fontSize:13, color:'#e0a44a', fontWeight:700, background:'rgba(240,136,62,0.12)', border:'1px solid rgba(240,136,62,0.3)', borderRadius:8, padding:'2px 8px' }}>
                         {t(lang,'wxBuddyRiskBadge')}
                       </span>
                     )}
                   </div>
                 </div>
                 <div style={{ textAlign:'right' }}>
-                  <div style={{ fontSize:24, fontWeight:700, color:'#f0883e', lineHeight:1.1 }}>{sel.hiF}\u00b0F</div>
+                  <div style={{ fontSize:24, fontWeight:700, color:'#e0a44a', lineHeight:1.1 }}>{sel.hiF}\u00b0F</div>
                   <div style={{ fontSize:17, fontWeight:700, color:'#58a6ff' }}>{sel.loF}\u00b0F</div>
                 </div>
               </div>
-              <div style={{ fontSize:13, fontWeight:700, color:'#5a6a7a', letterSpacing:'0.08em', marginBottom:6 }}>{t(lang,'wxScoringFactors')}</div>
+              <div style={{ fontSize:13, fontWeight:700, color:'#7f92a6', letterSpacing:'0.08em', marginBottom:6 }}>{t(lang,'wxScoringFactors')}</div>
               {[
                 { Icon:I.snowflake, tint:'#58a6ff', label:t(lang,'wxNightFreeze'), val:sel.loF+'\u00b0F',
                   note: sel.loF >= 18 && sel.loF <= 28 ? t(lang,'wxIdealRange') : sel.loF < 18 ? t(lang,'wxVeryCold') : sel.loF < 32 ? t(lang,'wxLightFreeze') : t(lang,'wxNoFreeze') },
@@ -6409,16 +6392,16 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                     <span style={{ fontSize:13, fontWeight:600, color:'#e6edf3' }}>{row.val}</span>
-                    <span style={{ fontSize:13, color:'#5a6a7a', minWidth:80, textAlign:'right' }}>{row.note}</span>
+                    <span style={{ fontSize:13, color:'#7f92a6', minWidth:80, textAlign:'right' }}>{row.note}</span>
                   </div>
                 </div>
               ))}
               {sel.buddyRisk && (
-                <div style={{ marginTop:12, background:'rgba(240,136,62,0.08)', border:'1px solid rgba(240,136,62,0.2)', borderRadius:8, padding:'9px 12px', fontSize:12, color:'#f0883e', lineHeight:1.5 }}>
+                <div style={{ marginTop:12, background:'rgba(240,136,62,0.08)', border:'1px solid rgba(240,136,62,0.2)', borderRadius:8, padding:'9px 12px', fontSize:12, color:'#e0a44a', lineHeight:1.5 }}>
                   <strong><I.alert size={13} color="currentColor" /> Buddy Run:</strong> High temps above 50\u00b0F can trigger bud break, turning sap bitter and ending the season. Taste your sap and watch the trees closely.
                 </div>
               )}
-              <div style={{ marginTop:10, fontSize:13, color:'#3d5068', lineHeight:1.6 }}>
+              <div style={{ marginTop:10, fontSize:13, color:'#7f92a6', lineHeight:1.6 }}>
                 Model based on Acer saccharum physiology (Cornell/UVM Proctor research). Factors: freeze depth, thaw quality, \u0394T swing, sunshine, wind, precipitation, run streak. Individual sugarbush conditions vary.
               </div>
             </div>
@@ -6426,7 +6409,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
 
           {/* Freeze / Thaw 7-day list */}
           <div className="card">
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontSize:12, fontWeight:600, letterSpacing:'0.08em', color:'#5a6a7a', marginBottom:12 }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontSize:12, fontWeight:600, letterSpacing:'0.08em', color:'#7f92a6', marginBottom:12 }}>
               <I.snowflake size={14} color="#58a6ff" /> {t(lang,'ftTitle')} <I.sun size={14} color="#e0a44a" />
             </div>
             {days.map((day, i) => {
@@ -6437,24 +6420,24 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
               let badge = null;
               if      (ideal)      badge = <span style={{ background:'rgba(63,185,80,0.15)', color:'#3fb950', fontSize:13, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(63,185,80,0.25)' }}>{t(lang,'badgeIdeal')}</span>;
               else if (freezeThaw) badge = <span className="good-badge">{t(lang,'badgeFreezeThaw')}</span>;
-              else if (tooWarm)    badge = <span style={{ background:'rgba(240,136,62,0.13)', color:'#f0883e', fontSize:13, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(240,136,62,0.22)' }}>{t(lang,'badgeTooWarm')}</span>;
+              else if (tooWarm)    badge = <span style={{ background:'rgba(240,136,62,0.13)', color:'#e0a44a', fontSize:13, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(240,136,62,0.22)' }}>{t(lang,'badgeTooWarm')}</span>;
               else if (allFreeze)  badge = <span className="freeze-badge">{t(lang,'badgeAllFreeze')}</span>;
               return (
-                <div key={day.date} className="weather-day" style={{ borderLeft: ideal?'3px solid #3fb950':tooWarm?'3px solid #f0883e':'3px solid transparent' }}>
+                <div key={day.date} className="weather-day" style={{ borderLeft: ideal?'3px solid #3fb950':tooWarm?'3px solid #e0a44a':'3px solid transparent' }}>
                   <div>
                     <div style={{ fontWeight:600, fontSize:14 }}>{day.dayLabel}</div>
-                    <div style={{ color:'#5a6a7a', fontSize:12 }}>{day.dateLabel}</div>
+                    <div style={{ color:'#7f92a6', fontSize:12 }}>{day.dateLabel}</div>
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                    <span style={{ color:'#f0883e', fontWeight:600 }}>{day.hiF}\u00b0</span>
-                    <span style={{ color:'#5a6a7a', fontSize:13 }}>/</span>
+                    <span style={{ color:'#e0a44a', fontWeight:600 }}>{day.hiF}\u00b0</span>
+                    <span style={{ color:'#7f92a6', fontSize:13 }}>/</span>
                     <span style={{ color:'#58a6ff', fontWeight:600 }}>{day.loF}\u00b0</span>
                     {badge}
                   </div>
                 </div>
               );
             })}
-            <div style={{ fontSize:12, color:'#3d5068', marginTop:8, textAlign:'center' }}>
+            <div style={{ fontSize:12, color:'#7f92a6', marginTop:8, textAlign:'center' }}>
               {t(lang,'ftLegend')}
             </div>
           </div>
@@ -6467,10 +6450,9 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
 
       {/* ── Empty state ── */}
       {!loading && !wxData && (
-        <div className="card" style={{ textAlign:'center', padding:'28px 14px' }}>
-          <div style={{ marginBottom:12, display:'flex', justifyContent:'center' }}><I.thermometer size={40} color="#e0a44a" /></div>
-          <div style={{ fontWeight:700, fontSize:16, marginBottom:8 }}>{t(lang,'wxEmptyTitle')}</div>
-          <div style={{ color:'#5a6a7a', fontSize:13, lineHeight:1.7, marginBottom:16 }}>
+        <div className="card" style={{ textAlign:'center', padding:'24px 14px' }}>
+          <div style={{ fontWeight:700, fontSize:16, marginBottom:8, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}><I.thermometer size={20} color="#8b949e" /> {t(lang,'wxEmptyTitle')}</div>
+          <div style={{ color:'#7f92a6', fontSize:13, lineHeight:1.7, marginBottom:16 }}>
             SweetRun pulls the 7-day forecast from Open-Meteo and scores each day for sap flow potential based on freeze-thaw cycles, temperature swing, sunshine, wind, and precipitation.
           </div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:8, justifyContent:'center' }}>
@@ -6480,7 +6462,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
               [I.barChart,'#2dd4a7','\u0394T swing \u2265 25\u00b0F = excellent'],
               [I.wind,'#8b949e','High wind reduces flow']
             ].map(([Ico, tint, tx]) => (
-              <div key={tx} style={{ background:'#161b22', border:'1px solid #21262d', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#8b949e', display:'flex', alignItems:'center', gap:6 }}>
+              <div key={tx} style={{ background:'#161b22', border:'1px solid #1e2d3d', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#8b949e', display:'flex', alignItems:'center', gap:6 }}>
                 <Ico size={13} color={tint} /> {tx}
               </div>
             ))}
@@ -6942,11 +6924,11 @@ function SubScoreBar({ label, score, color }) {
   return (
     <div className="sage-fadein">
       <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
-        <span style={{fontSize:12,color:'#5a6a7a',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.06em'}}>{label}</span>
+        <span style={{fontSize:12,color:'#7f92a6',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.06em'}}>{label}</span>
         <span style={{fontSize:12,color,fontWeight:800}}>{score}%</span>
       </div>
       <div style={{height:5,background:'#1e2d3d',borderRadius:3,overflow:'hidden'}}>
-        <div style={{height:'100%',width:`${score}%`,background:color,borderRadius:3,boxShadow:`0 0 8px ${color}50`,transition:'width 0.8s ease'}} />
+        <div style={{height:'100%',width:`${score}%`,background:color,borderRadius:3,transition:'width 0.4s cubic-bezier(.2,.8,.2,1)'}} />
       </div>
     </div>
   );
@@ -6954,7 +6936,7 @@ function SubScoreBar({ label, score, color }) {
 
 function InsightRow({ ins }) {
   const [open, setOpen] = React.useState(false);
-  const borderColor = ins.type==='success'?'#3fb950':ins.type==='warn'?'#f0883e':'#58a6ff';
+  const borderColor = ins.type==='success'?'#3fb950':ins.type==='warn'?'#e0a44a':'#58a6ff';
   const icon = ins.type==='success'?'✓':ins.type==='warn'?'!':'→';
   return (
     <div className="sage-fadein" style={{borderLeft:`3px solid ${borderColor}`,background:'#07090f',borderRadius:'0 8px 8px 0',padding:'8px 12px',cursor:'pointer',transition:'background 0.15s'}}
@@ -6964,9 +6946,9 @@ function InsightRow({ ins }) {
           <span style={{fontSize:13,fontWeight:900,color:borderColor,width:14,textAlign:'center',lineHeight:1}}>{icon}</span>
           <span style={{fontSize:13,fontWeight:600,color:'#c9d1d9'}}>{ins.title}</span>
         </div>
-        <span style={{fontSize:12,color:'#3d5068',marginLeft:8}}>{open?'▲':'▼'}</span>
+        <span style={{fontSize:12,color:'#7f92a6',marginLeft:8}}>{open?'▲':'▼'}</span>
       </div>
-      <div style={{fontSize:13,color:'#5a6a7a',marginTop:3,marginLeft:22,lineHeight:1.5}}>{ins.body}</div>
+      <div style={{fontSize:13,color:'#7f92a6',marginTop:3,marginLeft:22,lineHeight:1.5}}>{ins.body}</div>
       {open && (
         <div style={{marginTop:8,marginLeft:22,background:'#0d1a2b',borderRadius:6,padding:'8px 10px',border:`1px solid ${borderColor}30`}}>
           <div style={{fontSize:12,color:borderColor,fontWeight:700,letterSpacing:'0.06em',marginBottom:3}}>WHAT TO DO</div>
@@ -6990,7 +6972,7 @@ function BrixSparkline({ data }) {
   const last = data[data.length-1];
   const first = data[0];
   const trend = last > first+0.1 ? '↑' : last < first-0.1 ? '↓' : '→';
-  const trendColor = trend==='↑'?'#f0883e':trend==='↓'?'#3fb950':'#58a6ff';
+  const trendColor = trend==='↑'?'#e0a44a':trend==='↓'?'#3fb950':'#58a6ff';
   const trendLabel = trend==='↑'?'Rising':'↓'===trend?'Falling':'Stable';
   return (
     <div style={{display:'flex',alignItems:'center',gap:12}}>
@@ -7011,7 +6993,7 @@ function BrixSparkline({ data }) {
       <div style={{textAlign:'right',flexShrink:0,minWidth:52}}>
         <div style={{fontSize:22,fontWeight:900,color:trendColor,lineHeight:1}}>{trend}</div>
         <div style={{fontSize:13,fontWeight:700,color:trendColor}}>{trendLabel}</div>
-        <div style={{fontSize:12,color:'#5a6a7a'}}>{last}° Brix</div>
+        <div style={{fontSize:12,color:'#7f92a6'}}>{last}° Brix</div>
       </div>
     </div>
   );
@@ -7039,18 +7021,18 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
   const sparkData= brixLog.map(e=>parseFloat(e.val)||0).filter(v=>v>0).slice(-12);
   const dataPoints=[sapGal>0,syrupGal>0,taps>0,brixLog.length>2,fuelGal>0,roGal>0].filter(Boolean).length;
   const confidence= dataPoints<=1?'low':dataPoints<=3?'medium':'high';
-  const confColor = confidence==='high'?'#3fb950':confidence==='medium'?'#f0883e':'#3d5068';
+  const confColor = confidence==='high'?'#3fb950':confidence==='medium'?'#e0a44a':'#7f92a6';
 
   if (taps===0&&sapGal===0) return (
     <div style={{background:'#0d1a2b',border:'1px solid #1e2d3d',borderRadius:16,padding:'20px 24px',marginBottom:20}}>
       <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
-        <div style={{width:8,height:8,borderRadius:'50%',background:'#3d5068'}}/>
-        <span style={{fontSize:13,fontWeight:700,letterSpacing:'0.1em',color:'#3d5068'}}>SEASON INTELLIGENCE</span>
+        <div style={{width:8,height:8,borderRadius:'50%',background:'#7f92a6'}}/>
+        <span style={{fontSize:13,fontWeight:700,letterSpacing:'0.1em',color:'#7f92a6'}}>SEASON INTELLIGENCE</span>
       </div>
       <div style={{textAlign:'center',padding:'20px 0'}}>
         <div style={{marginBottom:10,display:'flex',justifyContent:'center'}}><I.brain size={34} color="#2dd4a7" /></div>
         <div style={{fontSize:14,fontWeight:600,color:'#8b949e'}}>Awaiting season data</div>
-        <div style={{fontSize:12,color:'#3d5068',marginTop:4,lineHeight:1.6}}>Log taps, sap, and syrup in the Log tab<br/>to activate intelligence.</div>
+        <div style={{fontSize:12,color:'#7f92a6',marginTop:4,lineHeight:1.6}}>Log taps, sap, and syrup in the Log tab<br/>to activate intelligence.</div>
       </div>
     </div>
   );
@@ -7110,17 +7092,17 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
   // sub-scores have to be computable before a grade means anything.
   const graded = activeSc.length >= 2;
   const grade = !graded ? '—' : overall>=90?'A':overall>=80?'B':overall>=70?'C':overall>=60?'D':'F';
-  const gradeColor = overall>=90?'#3fb950':overall>=80?'#58a6ff':overall>=70?'#f0883e':'#f85149';
+  const gradeColor = overall>=90?'#3fb950':overall>=80?'#58a6ff':overall>=70?'#e0a44a':'#f85149';
 
   const bestRun = runLogs.length>0 ? runLogs.reduce((b,e)=>(parseFloat(e.val)||0)>(parseFloat(b.val)||0)?e:b, runLogs[0]) : null;
 
   // flow forecast
   const high=parseFloat(condHigh), low=parseFloat(condLow);
-  let flowScore=0,flowLabel='',flowColor='#3d5068';
+  let flowScore=0,flowLabel='',flowColor='#7f92a6';
   if (!isNaN(high)&&!isNaN(low)) {
     if      (low<=28&&high>=36&&high<=50) { flowScore=95; flowLabel='Excellent run expected';    flowColor='#3fb950'; }
     else if (low<=32&&high>=34&&high<=55) { flowScore=72; flowLabel='Good flow likely';           flowColor='#58a6ff'; }
-    else if (high>=32&&low<=35)           { flowScore=40; flowLabel='Marginal conditions';        flowColor='#f0883e'; }
+    else if (high>=32&&low<=35)           { flowScore=40; flowLabel='Marginal conditions';        flowColor='#e0a44a'; }
     else                                  { flowScore=8;  flowLabel='Poor conditions for flow';   flowColor='#f85149'; }
   }
 
@@ -7147,26 +7129,26 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
         <div style={{display:'flex',alignItems:'center',gap:10}}>
           <div className="sage-pulse" style={{width:8,height:8,borderRadius:'50%',background:'#3fb950'}}/>
           <span style={{fontSize:13,fontWeight:700,letterSpacing:'0.1em',color:'#3fb950'}}>SEASON INTELLIGENCE</span>
-          <span style={{fontSize:13,color:'#3d5068'}}>· {season}</span>
+          <span style={{fontSize:13,color:'#7f92a6'}}>· {season}</span>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:6,background:'#07090f',borderRadius:20,padding:'3px 10px',border:'1px solid #1e2d3d'}}>
           <div style={{width:6,height:6,borderRadius:'50%',background:confColor}}/>
-          <span style={{fontSize:12,color:'#5a6a7a',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em'}}>{confidence} confidence · {dataPoints} signals</span>
+          <span style={{fontSize:12,color:'#7f92a6',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em'}}>{confidence} confidence · {dataPoints} signals</span>
         </div>
       </div>
 
       {/* ── grade + sub-scores ── */}
       <div style={{display:'flex',gap:14,marginBottom:16,alignItems:'stretch'}}>
         <div style={{background:'#07090f',borderRadius:12,padding:'14px 18px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minWidth:76,border:`1.5px solid ${gradeColor}50`,flexShrink:0}}>
-          <div style={{fontSize:46,fontWeight:900,color:gradeColor,lineHeight:1,textShadow:`0 0 24px ${gradeColor}80`}}>{grade}</div>
-          <div style={{fontSize:12,color:'#3d5068',fontWeight:700,letterSpacing:'0.1em',marginTop:4,textTransform:'uppercase'}}>Season Score</div>
+          <div style={{fontSize:28,fontWeight:800,color:gradeColor,lineHeight:1}}>{grade}</div>
+          <div style={{fontSize:12,color:'#7f92a6',fontWeight:700,letterSpacing:'0.1em',marginTop:4,textTransform:'uppercase'}}>Season Score</div>
           <div style={{fontSize:13,color:gradeColor,fontWeight:700,marginTop:2}}>{overall}%</div>
         </div>
         <div style={{flex:1,display:'flex',flexDirection:'column',gap:9,justifyContent:'center'}}>
           {yieldScore!==null && <SubScoreBar label="Yield / Tap" score={yieldScore} color="#3fb950"/>}
           {effScore!==null   && <SubScoreBar label="Efficiency"  score={effScore}   color="#58a6ff"/>}
-          {fuelScore!==null  && <SubScoreBar label="Fuel Use"    score={fuelScore}   color="#f0883e"/>}
-          {activeSc.length===0 && <div style={{fontSize:12,color:'#3d5068'}}>Log syrup & sap to generate scores</div>}
+          {fuelScore!==null  && <SubScoreBar label="Fuel Use"    score={fuelScore}   color="#e0a44a"/>}
+          {activeSc.length===0 && <div style={{fontSize:12,color:'#7f92a6'}}>Log syrup & sap to generate scores</div>}
         </div>
       </div>
 
@@ -7181,9 +7163,9 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
       {bestRun&&parseFloat(bestRun.val)>0 && (
         <div style={{background:'#07090f',border:'1px solid #1e2d3d',borderRadius:10,padding:'10px 14px',marginBottom:12,display:'flex',justifyContent:'space-between',alignItems:'center'}} className="sage-fadein">
           <div>
-            <div style={{fontSize:12,color:'#3d5068',fontWeight:700,letterSpacing:'0.1em',marginBottom:2}}>BEST RUN THIS SEASON</div>
+            <div style={{fontSize:12,color:'#7f92a6',fontWeight:700,letterSpacing:'0.1em',marginBottom:2}}>BEST RUN THIS SEASON</div>
             <div style={{fontSize:16,fontWeight:800,color:'#c9d1d9'}}>{parseFloat(bestRun.val).toFixed(1)} gal sap</div>
-            <div style={{fontSize:13,color:'#5a6a7a'}}>{bestRun.date||'Date not logged'}</div>
+            <div style={{fontSize:13,color:'#7f92a6'}}>{bestRun.date||'Date not logged'}</div>
           </div>
           <div style={{display:'flex'}}><I.trophy size={28} color="#e0a44a" /></div>
         </div>
@@ -7192,22 +7174,22 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
       {/* ── brix sparkline ── */}
       {sparkData.length>=3 && (
         <div style={{background:'#07090f',border:'1px solid #1e2d3d',borderRadius:10,padding:'10px 14px',marginBottom:12}} className="sage-fadein">
-          <div style={{fontSize:12,color:'#3d5068',fontWeight:700,letterSpacing:'0.1em',marginBottom:8}}>BRIX TREND THIS SEASON</div>
+          <div style={{fontSize:12,color:'#7f92a6',fontWeight:700,letterSpacing:'0.1em',marginBottom:8}}>BRIX TREND THIS SEASON</div>
           <BrixSparkline data={sparkData}/>
         </div>
       )}
 
       {/* ── flow forecast ── */}
       <div style={{background:'#07090f',border:'1px solid #1e2d3d',borderRadius:10,padding:'12px 14px',marginBottom:12}}>
-        <div style={{fontSize:12,color:'#3d5068',fontWeight:700,letterSpacing:'0.1em',marginBottom:10}}>TODAY'S FLOW FORECAST</div>
+        <div style={{fontSize:12,color:'#7f92a6',fontWeight:700,letterSpacing:'0.1em',marginBottom:10}}>TODAY'S FLOW FORECAST</div>
         <div style={{display:'flex',gap:8,alignItems:'flex-end'}}>
           <div style={{flex:1}}>
-            <div style={{fontSize:12,color:'#5a6a7a',marginBottom:4}}>Night low (°F)</div>
+            <div style={{fontSize:12,color:'#7f92a6',marginBottom:4}}>Night low (°F)</div>
             <input aria-label="e.g. 28" type="number" value={condLow} onChange={e=>setCondLow(e.target.value)} placeholder="e.g. 28"
               style={{width:'100%',boxSizing:'border-box',background:'#131e2c',border:'1px solid #1e2d3d',borderRadius:8,padding:'8px 10px',color:'#c9d1d9',fontSize:13,outline:'none'}}/>
           </div>
           <div style={{flex:1}}>
-            <div style={{fontSize:12,color:'#5a6a7a',marginBottom:4}}>Day high (°F)</div>
+            <div style={{fontSize:12,color:'#7f92a6',marginBottom:4}}>Day high (°F)</div>
             <input aria-label="e.g. 42" type="number" value={condHigh} onChange={e=>setCondHigh(e.target.value)} placeholder="e.g. 42"
               style={{width:'100%',boxSizing:'border-box',background:'#131e2c',border:'1px solid #1e2d3d',borderRadius:8,padding:'8px 10px',color:'#c9d1d9',fontSize:13,outline:'none'}}/>
           </div>
@@ -7224,10 +7206,10 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
               <div style={{height:'100%',width:`${flowScore}%`,background:flowColor,borderRadius:3,transition:'width 0.6s ease'}}/>
             </div>
             <div style={{fontSize:12,fontWeight:700,color:flowColor}}>{flowLabel}</div>
-            <div style={{fontSize:13,color:'#3d5068',marginTop:3}}>Based on freeze-thaw science: best flow requires overnight freeze (≤32°F) + daytime thaw (36–50°F).</div>
+            <div style={{fontSize:13,color:'#7f92a6',marginTop:3}}>Based on freeze-thaw science: best flow requires overnight freeze (≤32°F) + daytime thaw (36–50°F).</div>
           </div>
         )}
-        {flowScore===0 && <div style={{fontSize:13,color:'#3d5068',marginTop:6}}>Enter tonight's low and tomorrow's high to get a flow prediction.</div>}
+        {flowScore===0 && <div style={{fontSize:13,color:'#7f92a6',marginTop:6}}>Enter tonight's low and tomorrow's high to get a flow prediction.</div>}
       </div>
 
       {/* ── tip of the month ── */}
@@ -7272,7 +7254,7 @@ function BreakevenCalculator({ trees, units }) {
   // 3 scenarios: bad / average / great
   const scenarios = [
     { label:'Bad Year',  yld:0.14, color:'#f85149', bgc:'rgba(248,81,73,0.06)'  },
-    { label:'Average',   yld:0.22, color:'#f59e0b', bgc:'rgba(245,158,11,0.06)' },
+    { label:'Average',   yld:0.22, color:'#e0a44a', bgc:'rgba(245,158,11,0.06)' },
     { label:'Great Year',yld:0.30, color:'#3fb950', bgc:'rgba(63,185,80,0.06)'  },
   ];
 
@@ -7280,15 +7262,15 @@ function BreakevenCalculator({ trees, units }) {
     const [focused, setFocused] = React.useState(false);
     return (
       <div style={{marginBottom:12}}>
-        <div style={{fontSize:12,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:5}}>{label}</div>
+        <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:5}}>{label}</div>
         <div style={{display:'flex',alignItems:'center',gap:6,background:'#0a1420',border:`1.5px solid ${focused?'#3fb950':'#1e2d3d'}`,borderRadius:9,padding:'8px 12px',transition:'border-color 0.15s'}}>
-          {prefix && <span style={{color:'#5a6a7a',fontSize:14,flexShrink:0}}>{prefix}</span>}
+          {prefix && <span style={{color:'#7f92a6',fontSize:14,flexShrink:0}}>{prefix}</span>}
           <input type="number" value={val||''} onChange={e=>set(parseFloat(e.target.value)||0)}
             onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
             aria-label={[label, prefix === '$' ? 'in dollars' : null, suffix].filter(Boolean).join(' ')}
             placeholder="0" min="0"
-            style={{flex:1,background:'transparent',border:'none',outline:'none',color:'#e2eaf4',fontSize:small?13:15,fontFamily:'inherit'}}/>
-          {suffix && <span style={{color:'#5a6a7a',fontSize:13,flexShrink:0}}>{suffix}</span>}
+            style={{flex:1,background:'transparent',border:'none',outline:'none',color:'#e6edf3',fontSize:small?13:15,fontFamily:'inherit'}}/>
+          {suffix && <span style={{color:'#7f92a6',fontSize:13,flexShrink:0}}>{suffix}</span>}
         </div>
       </div>
     );
@@ -7304,8 +7286,8 @@ function BreakevenCalculator({ trees, units }) {
           <I.dollar size={16} color="#e0a44a" />
         </div>
         <div>
-          <div style={{fontSize:14,fontWeight:800,color:'#e2eaf4',lineHeight:1.2}}>Break-Even Calculator</div>
-          <div style={{fontSize:13,color:'#5a6a7a',marginTop:2}}>How much do you need to make to cover costs?</div>
+          <div style={{fontSize:14,fontWeight:800,color:'#e6edf3',lineHeight:1.2}}>Break-Even Calculator</div>
+          <div style={{fontSize:13,color:'#7f92a6',marginTop:2}}>How much do you need to make to cover costs?</div>
         </div>
       </div>
 
@@ -7320,13 +7302,13 @@ function BreakevenCalculator({ trees, units }) {
       {/* Labor toggle */}
       <div style={{marginBottom:16}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-          <div style={{fontSize:12,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.06em'}}>Labor Cost</div>
+          <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em'}}>Labor Cost</div>
           <button onClick={()=>setHobby(v=>!v)}
             style={{display:'flex',alignItems:'center',gap:6,background:'none',border:'none',cursor:'pointer',padding:0}}>
             <div style={{width:32,height:18,borderRadius:9,background:hobby?'#3fb950':'#1e2d3d',transition:'background 0.2s',position:'relative',flexShrink:0}}>
               <div style={{position:'absolute',top:2,left:hobby?14:2,width:14,height:14,borderRadius:'50%',background:'#fff',transition:'left 0.2s'}}/>
             </div>
-            <span style={{fontSize:13,color:hobby?'#3fb950':'#5a6a7a',fontWeight:600}}>{hobby?'Hobby ($0)':'Paid labor'}</span>
+            <span style={{fontSize:13,color:hobby?'#3fb950':'#7f92a6',fontWeight:600}}>{hobby?'Hobby ($0)':'Paid labor'}</span>
           </button>
         </div>
         {!hobby && (
@@ -7341,20 +7323,20 @@ function BreakevenCalculator({ trees, units }) {
       <div style={{borderTop:'1px solid #1e2d3d',marginBottom:16}}/>
 
       {/* Break-even answer */}
-      <div style={{background:'linear-gradient(135deg,#071020,#0d1a2b)',border:'1px solid #1a304a',borderRadius:10,padding:'14px 16px',marginBottom:14}}>
+      <div style={{background:'linear-gradient(135deg,#071020,#0d1a2b)',border:'1px solid #1e2d3d',borderRadius:10,padding:'14px 16px',marginBottom:14}}>
         {totalCost === 0 ? (
-          <div style={{textAlign:'center',color:'#5a6a7a',fontSize:13}}>Enter your costs above to calculate break-even.</div>
+          <div style={{textAlign:'center',color:'#7f92a6',fontSize:13}}>Enter your costs above to calculate break-even.</div>
         ) : (
           <>
             <div style={{fontSize:13,fontWeight:700,color:'#58a6ff',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:8}}>Your Break-Even Point</div>
             <div style={{fontSize:13,color:'#c9d1d9',lineHeight:1.9}}>
               <span style={{color:'#58a6ff',fontWeight:800,fontSize:22}}>{bevPerTap.toFixed(2)}</span>
-              <span style={{color:'#5a6a7a',fontSize:13}}> gal/tap needed  ·  </span>
+              <span style={{color:'#7f92a6',fontSize:13}}> gal/tap needed  ·  </span>
               <span style={{color:'#a78bfa',fontWeight:700,fontSize:16}}>{bevGal.toFixed(1)} gal</span>
-              <span style={{color:'#5a6a7a',fontSize:12}}> total</span>
+              <span style={{color:'#7f92a6',fontSize:12}}> total</span>
             </div>
-            <div style={{fontSize:12,color:'#5a6a7a',marginTop:4}}>
-              Total season cost: <span style={{color:'#f59e0b',fontWeight:600}}>${totalCost.toLocaleString()}</span>
+            <div style={{fontSize:12,color:'#7f92a6',marginTop:4}}>
+              Total season cost: <span style={{color:'#e0a44a',fontWeight:600}}>${totalCost.toLocaleString()}</span>
               {labor > 0 && <span> (incl. ${labor.toFixed(0)} labor)</span>}
             </div>
           </>
@@ -7362,7 +7344,7 @@ function BreakevenCalculator({ trees, units }) {
       </div>
 
       {/* Scenario bars */}
-      <div style={{fontSize:12,fontWeight:700,color:'#5a6a7a',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:10}}>Season Scenarios</div>
+      <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:10}}>Season Scenarios</div>
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
         {scenarios.map(({label,yld,color,bgc})=>{
           const syrupGal  = t * yld;
@@ -7389,7 +7371,7 @@ function BreakevenCalculator({ trees, units }) {
                 )}
               </div>
               <div style={{display:'flex',justifyContent:'space-between',marginTop:4}}>
-                <span style={{fontSize:12,color:'#5a6a7a'}}>{yld.toFixed(2)} gal/tap · {syrupGal.toFixed(1)} gal total</span>
+                <span style={{fontSize:12,color:'#7f92a6'}}>{yld.toFixed(2)} gal/tap · {syrupGal.toFixed(1)} gal total</span>
                 <span style={{fontSize:12,color:above?'#3fb950':'#f85149',fontWeight:600}}>
                   {totalCost===0?'':above?'Above break-even ✓':'Below break-even'}
                 </span>
@@ -7419,7 +7401,7 @@ function SapFreshnessTracker() {
   const [hourlyF,  setHourlyF]  = React.useState([]);  // [{ts, temp}]
   const [loading,  setLoading]  = React.useState(false);
   const [locErr,   setLocErr]   = React.useState('');
-  const [open,     setOpen]     = React.useState(true);
+  const [open,     setOpen]     = React.useState(() => ls.get('sg_fresh_status', 'idle') === 'tracking');
 
   // Use weather tab location first (sg_wx_lat/lon), fall back to degree-day tab location
   const lat = ls.get('sg_wx_lat', null) ?? ls.get('sg_ddlat', null);
@@ -7483,7 +7465,7 @@ function SapFreshnessTracker() {
 
   // Status colour
   const pct = Math.min(100, (currentHU / CRITICAL_HU) * 100);
-  const gaugeColor = pct < 40 ? '#3fb950' : pct < 70 ? '#f59e0b' : '#f85149';
+  const gaugeColor = pct < 40 ? '#3fb950' : pct < 70 ? '#e0a44a' : '#f85149';
   const statusLabel = pct < 40 ? 'Fresh' : pct < 70 ? 'Boil Soon' : 'Boil Now';
   const statusDot   = pct < 40 ? '#3fb950' : pct < 70 ? '#e0a44a' : '#f85149';
 
@@ -7522,17 +7504,17 @@ function SapFreshnessTracker() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div style={{marginBottom:14}}>
+    <div style={{marginBottom:12}}>
       {/* Header toggle */}
-      <button onClick={()=>setOpen(v=>!v)} style={{width:'100%',display:'flex',justifyContent:'space-between',
-        alignItems:'center',background:'linear-gradient(135deg,#1a0a00,#2a1200)',
-        border:'1px solid #5c2d00',borderRadius:open?'12px 12px 0 0':12,
-        padding:'12px 16px',cursor:'pointer'}}>
-        <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <I.flask size={18} color="#2dd4a7" />
+      <button onClick={()=>setOpen(v=>!v)} aria-expanded={open} style={{width:'100%',display:'flex',justifyContent:'space-between',
+        alignItems:'center',background:'#0f1720',
+        border:'1px solid #1e2d3d',borderRadius:open?'16px 16px 0 0':16,
+        padding:'12px 16px',cursor:'pointer',minHeight:60}}>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <I.flask size={20} color="#8b949e" />
           <div style={{textAlign:'left'}}>
-            <div style={{fontSize:13,fontWeight:800,color:'#f0883e'}}>Sap Freshness Tracker</div>
-            <div style={{fontSize:13,color:'#8a6040'}}>Degree-hour spoilage predictor</div>
+            <div style={{fontSize:15,fontWeight:700,color:'#e6edf3'}}>Sap Freshness Tracker</div>
+            <div style={{fontSize:13,color:'#7f92a6'}}>Degree-hour spoilage predictor</div>
           </div>
         </div>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
@@ -7544,18 +7526,18 @@ function SapFreshnessTracker() {
               {statusLabel}
             </span>
           )}
-          <span style={{color:'#5a6a7a',fontSize:13}}>{open?'▲':'▼'}</span>
+          {open ? <I.chevUp size={16} color="#8b949e" /> : <I.chevDown size={16} color="#8b949e" />}
         </div>
       </button>
 
       {open && (
-        <div style={{background:'#0a0800',border:'1px solid #5c2d00',borderTop:'none',
-          borderRadius:'0 0 12px 12px',padding:16}}>
+        <div style={{background:'#0f1720',border:'1px solid #1e2d3d',borderTop:'none',
+          borderRadius:'0 0 16px 16px',padding:16}}>
 
           {/* No location set */}
           {!lat && (
-            <div style={{textAlign:'center',padding:'20px 0',color:'#8a6040',fontSize:13}}>
-              Set your location in the <strong style={{color:'#f0883e'}}>Weather tab</strong> or <strong style={{color:'#f0883e'}}>Boil Point tab</strong> first,
+            <div style={{textAlign:'center',padding:'12px 0',color:'#7f92a6',fontSize:13,lineHeight:1.5}}>
+              Set your location in the <strong style={{color:'#e6edf3'}}>Weather tab</strong> or <strong style={{color:'#e6edf3'}}>Boil Point tab</strong> first,
               then come back to enable freshness tracking.
             </div>
           )}
@@ -7563,12 +7545,12 @@ function SapFreshnessTracker() {
           {/* Idle state */}
           {lat && status === 'idle' && (
             <div style={{textAlign:'center',padding:'12px 0'}}>
-              <div style={{fontSize:13,color:'#8a9ab5',marginBottom:16,lineHeight:1.6}}>
+              <div style={{fontSize:13,color:'#8b949e',marginBottom:16,lineHeight:1.6}}>
                 Start the timer right after you collect sap. SweetRun tracks the cumulative
                 heat your sap experiences and tells you when to boil.
               </div>
               <button onClick={startTracking}
-                style={{background:'#f0883e',border:'none',borderRadius:10,padding:'12px 28px',
+                style={{background:'#e0a44a',border:'none',borderRadius:10,padding:'12px 28px',
                   fontWeight:800,fontSize:14,color:'#07090f',cursor:'pointer'}}>
                 <I.snowflake size={16} color="#07090f" /> Start Freshness Timer
               </button>
@@ -7582,12 +7564,12 @@ function SapFreshnessTracker() {
               <div style={{fontSize:14,fontWeight:700,color: status==='boiled'?'#3fb950':'#f85149',marginBottom:4}}>
                 {status==='boiled'?'Marked as Boiled — great work!':'Marked as Dumped'}
               </div>
-              <div style={{fontSize:12,color:'#5a6a7a',marginBottom:16}}>
+              <div style={{fontSize:12,color:'#7f92a6',marginBottom:16}}>
                 Accumulated {currentHU.toFixed(0)} heat units over {elapsedHrs.toFixed(1)} hours.
               </div>
               <button onClick={reset}
                 style={{background:'transparent',border:'1px solid #1e2d3d',borderRadius:8,
-                  padding:'8px 18px',fontSize:12,color:'#8a9ab5',cursor:'pointer'}}>
+                  padding:'8px 18px',fontSize:12,color:'#8b949e',cursor:'pointer'}}>
                 Start New Batch
               </button>
             </div>
@@ -7597,7 +7579,7 @@ function SapFreshnessTracker() {
           {status === 'tracking' && (
             <>
               {loading && (
-                <div style={{textAlign:'center',padding:'12px 0',fontSize:12,color:'#5a6a7a'}}>
+                <div style={{textAlign:'center',padding:'12px 0',fontSize:12,color:'#7f92a6'}}>
                   Loading temperature data…
                 </div>
               )}
@@ -7614,7 +7596,7 @@ function SapFreshnessTracker() {
                     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
                       <span style={{fontSize:13,fontWeight:700,color:gaugeColor,display:'inline-flex',alignItems:'center',gap:6}}>
                         <span style={{width:7,height:7,borderRadius:'50%',background:statusDot,flexShrink:0}} />{statusLabel}</span>
-                      <span style={{fontSize:12,color:'#5a6a7a'}}>
+                      <span style={{fontSize:12,color:'#7f92a6'}}>
                         {currentHU.toFixed(0)} / {CRITICAL_HU} heat units
                       </span>
                     </div>
@@ -7626,7 +7608,7 @@ function SapFreshnessTracker() {
                       <div style={{position:'absolute',left:`${(WARN_HU/CRITICAL_HU)*100}%`,
                         top:0,bottom:0,width:2,background:'rgba(255,255,255,0.3)'}}/>
                     </div>
-                    <div style={{display:'flex',justifyContent:'space-between',marginTop:4,fontSize:12,color:'#3d5068'}}>
+                    <div style={{display:'flex',justifyContent:'space-between',marginTop:4,fontSize:12,color:'#7f92a6'}}>
                       <span>Fresh</span><span>Warn</span><span>Critical</span>
                     </div>
                   </div>
@@ -7635,25 +7617,25 @@ function SapFreshnessTracker() {
                   <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:14}}>
                     {[
                       ['Elapsed',    elapsedHrs < 24 ? `${elapsedHrs.toFixed(1)}h` : `${(elapsedHrs/24).toFixed(1)}d`, '#58a6ff'],
-                      ['Outdoor',    currentTemp != null ? `${currentTemp.toFixed(0)}°F` : '—', currentTemp > 50 ? '#f85149' : currentTemp > 40 ? '#f59e0b' : '#3fb950'],
+                      ['Outdoor',    currentTemp != null ? `${currentTemp.toFixed(0)}°F` : '—', currentTemp > 50 ? '#f85149' : currentTemp > 40 ? '#e0a44a' : '#3fb950'],
                       ['Heat Units', currentHU.toFixed(0), gaugeColor],
                     ].map(([lbl,val,clr])=>(
                       <div key={lbl} style={{background:'#0d1a2b',borderRadius:8,padding:'10px 8px',textAlign:'center'}}>
                         <div style={{fontSize:18,fontWeight:800,color:clr,lineHeight:1}}>{val}</div>
-                        <div style={{fontSize:12,color:'#5a6a7a',marginTop:3}}>{lbl}</div>
+                        <div style={{fontSize:12,color:'#7f92a6',marginTop:3}}>{lbl}</div>
                       </div>
                     ))}
                   </div>
 
                   {/* Predictions */}
                   <div style={{background:'#0d1a2b',borderRadius:10,padding:'12px 14px',marginBottom:14}}>
-                    <div style={{fontSize:12,fontWeight:700,color:'#f0883e',textTransform:'uppercase',
+                    <div style={{fontSize:12,fontWeight:700,color:'#e0a44a',textTransform:'uppercase',
                       letterSpacing:'0.08em',marginBottom:10}}>Forecast</div>
                     {currentHU < WARN_HU && warnEta && (
                       <div style={{display:'flex',justifyContent:'space-between',
                         fontSize:12,color:'#c9d1d9',marginBottom:6}}>
-                        <span style={{display:'inline-flex',alignItems:'center',gap:6}}><I.zap size={13} color="#f0883e" /> Boil-soon threshold</span>
-                        <span style={{color:'#f59e0b',fontWeight:700}}>{fmtEta(warnEta)}</span>
+                        <span style={{display:'inline-flex',alignItems:'center',gap:6}}><I.zap size={13} color="#e0a44a" /> Boil-soon threshold</span>
+                        <span style={{color:'#e0a44a',fontWeight:700}}>{fmtEta(warnEta)}</span>
                       </div>
                     )}
                     {critEta && (
@@ -7695,7 +7677,7 @@ function SapFreshnessTracker() {
                   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
                     <button onClick={fetchTemps}
                       style={{padding:'10px 8px',borderRadius:9,border:'1px solid #1e2d3d',
-                        background:'transparent',color:'#8a9ab5',fontSize:12,cursor:'pointer',fontWeight:600}}>
+                        background:'transparent',color:'#8b949e',fontSize:12,cursor:'pointer',fontWeight:600}}>
                       ↻ Refresh
                     </button>
                     <button onClick={markBoiled}
@@ -7786,7 +7768,7 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
         <div style={{fontSize:13,color:'#3fb950',fontWeight:700,letterSpacing:'0.18em',textTransform:'uppercase',marginBottom:10}}><I.mapleLeaf size={14} color="#3fb950" /> Maple Intelligence</div>
         <div style={{fontSize:36,fontWeight:900,color:'#c9d1d9',letterSpacing:'-1px',lineHeight:1,marginBottom:14}}>SugarSage</div>
         <div style={{
-          fontSize:16,color:'#5a6a7a',fontWeight:400,minHeight:24,
+          fontSize:16,color:'#7f92a6',fontWeight:400,minHeight:24,
           opacity: promptFade ? 1 : 0,
           transition:'opacity 0.35s ease',
         }}>{prompts[promptIdx]}</div>
@@ -7811,7 +7793,7 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
           {query
             ? <button type="button" onClick={clearSearch}
                 style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',
-                  background:'none',border:'none',cursor:'pointer',color:'#3d5068',fontSize:18,
+                  background:'none',border:'none',cursor:'pointer',color:'#7f92a6',fontSize:18,
                   display:'flex',alignItems:'center',padding:4}}>✕</button>
             : <button type="submit"
                 style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',
@@ -7827,10 +7809,10 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
             {['Why does sap flow?','How does RO work?','Best vacuum level','Niter in syrup','Yield per tap','Off-flavors'].map(s=>(
               <button key={s} onClick={()=>{setQuery(s); setTimeout(doSearch,50);}}
                 style={{padding:'6px 13px',borderRadius:20,border:'1px solid #1e2d3d',
-                  background:'transparent',color:'#5a6a7a',fontSize:12,cursor:'pointer',
+                  background:'transparent',color:'#7f92a6',fontSize:12,cursor:'pointer',
                   transition:'all 0.15s'}}
                 onMouseEnter={e=>{e.target.style.borderColor='#3fb950';e.target.style.color='#c9d1d9';}}
-                onMouseLeave={e=>{e.target.style.borderColor='#1e2d3d';e.target.style.color='#5a6a7a';}}>
+                onMouseLeave={e=>{e.target.style.borderColor='#1e2d3d';e.target.style.color='#7f92a6';}}>
                 {s}
               </button>
             ))}
@@ -7849,7 +7831,7 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
                 whiteSpace:'nowrap',flexShrink:0,
                 border:`1px solid ${active?'#3fb950':'#1e2d3d'}`,
                 background: active?'#3fb950':'transparent',
-                color: active?'#07090f':'#5a6a7a',
+                color: active?'#07090f':'#7f92a6',
                 transition:'all 0.15s'}}>
               {CAT_LABELS[id]}
             </button>
@@ -7864,10 +7846,10 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
           padding:'10px 16px',cursor:'pointer',marginBottom: showSeason?0:16,
           borderBottomLeftRadius: showSeason?0:10, borderBottomRightRadius: showSeason?0:10}}>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <div style={{width:6,height:6,borderRadius:'50%',background:'#3fb950',boxShadow:'0 0 6px #3fb95080'}}/>
-          <span style={{fontSize:12,fontWeight:700,color:'#5a6a7a',letterSpacing:'0.06em',textTransform:'uppercase'}}>Your Season Dashboard</span>
+          <div style={{width:6,height:6,borderRadius:'50%',background:'#3fb950'}}/>
+          <span style={{fontSize:12,fontWeight:700,color:'#7f92a6',letterSpacing:'0.06em',textTransform:'uppercase'}}>Your Season Dashboard</span>
         </div>
-        <span style={{fontSize:13,color:'#3d5068'}}>{showSeason?'Hide ▲':'Show ▼'}</span>
+        <span style={{fontSize:13,color:'#7f92a6'}}>{showSeason?'Hide ▲':'Show ▼'}</span>
       </button>
       {showSeason && (
         <div style={{border:'1px solid #1e2d3d',borderTop:'none',borderRadius:'0 0 10px 10px',marginBottom:16,overflow:'hidden'}}>
@@ -7880,7 +7862,7 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
 
       {/* ── Empty state ── */}
       {!searched && activeCat==='all' && (
-        <div style={{textAlign:'center',padding:'24px 20px 8px',color:'#3d5068'}}>
+        <div style={{textAlign:'center',padding:'24px 20px 8px',color:'#7f92a6'}}>
           <div style={{fontSize:12,lineHeight:1.8}}>
             Sourced from UVM Proctor, Cornell Maple Program, and leading maple research.
           </div>
@@ -7897,8 +7879,8 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
 
       {searched && results.length===0 && (
         <div style={{textAlign:'center',padding:'48px 20px'}}>
-          <div style={{fontSize:14,fontWeight:600,color:'#5a6a7a',marginBottom:6}}>No results found</div>
-          <div style={{fontSize:12,color:'#3d5068'}}>Try different keywords, or browse a category above.</div>
+          <div style={{fontSize:14,fontWeight:600,color:'#7f92a6',marginBottom:6}}>No results found</div>
+          <div style={{fontSize:12,color:'#7f92a6'}}>Try different keywords, or browse a category above.</div>
         </div>
       )}
     </div>
@@ -7907,8 +7889,8 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
 
 function SageCard({ entry, expanded, onToggle }) {
   const catColors = {
-    biology:'#3fb950', tapping:'#f0883e', vacuum:'#58a6ff', ro:'#22d3ee',
-    evaporation:'#f0883e', finishing:'#c990ff', weather:'#58a6ff',
+    biology:'#3fb950', tapping:'#e0a44a', vacuum:'#58a6ff', ro:'#22d3ee',
+    evaporation:'#e0a44a', finishing:'#c990ff', weather:'#58a6ff',
     tree_health:'#3fb950', business:'#58a6ff', lines:'#8b949e', troubleshooting:'#f85149',
   };
   const CAT_LABELS = {
@@ -7933,13 +7915,13 @@ function SageCard({ entry, expanded, onToggle }) {
           </div>
           <div style={{fontSize:14,fontWeight:600,color:'#c9d1d9',lineHeight:1.4}}>{entry.q}</div>
           {!expanded && (
-            <div style={{fontSize:12,color:'#5a6a7a',marginTop:4,lineHeight:1.55,
+            <div style={{fontSize:12,color:'#7f92a6',marginTop:4,lineHeight:1.55,
               overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>
               {entry.a.substring(0,160)}…
             </div>
           )}
         </div>
-        <span style={{fontSize:13,color:'#3d5068',marginTop:2,flexShrink:0,marginLeft:8}}>
+        <span style={{fontSize:13,color:'#7f92a6',marginTop:2,flexShrink:0,marginLeft:8}}>
           {expanded ? '▲' : '▼'}
         </span>
       </button>
@@ -7952,8 +7934,8 @@ function SageCard({ entry, expanded, onToggle }) {
               <div style={{fontSize:12,color:'#8b949e',lineHeight:1.65}}>{entry.tip}</div>
             </div>
           )}
-          <div style={{fontSize:12,color:'#3d5068',lineHeight:1.5,borderTop:'1px solid #1e2d3d',paddingTop:10,marginTop:4}}>
-            <span style={{color:'#5a6a7a',fontWeight:600}}>Source: </span>{entry.src}
+          <div style={{fontSize:12,color:'#7f92a6',lineHeight:1.5,borderTop:'1px solid #1e2d3d',paddingTop:10,marginTop:4}}>
+            <span style={{color:'#7f92a6',fontWeight:600}}>Source: </span>{entry.src}
           </div>
         </div>
       )}
@@ -7966,7 +7948,7 @@ function TInput({label, val, set, ph, unit, hint}) {
   const [focused, setFocused] = React.useState(false);
   return (
     <div style={{marginBottom:14}}>
-      <div style={{fontSize:13,fontWeight:700,color:'#5a6a7a',marginBottom:5,textTransform:'uppercase',letterSpacing:'0.06em'}}>{label}</div>
+      <div style={{fontSize:13,fontWeight:700,color:'#7f92a6',marginBottom:5,textTransform:'uppercase',letterSpacing:'0.06em'}}>{label}</div>
       <div style={{display:'flex',alignItems:'center',gap:8}}>
         <input
           value={val}
@@ -7980,9 +7962,9 @@ function TInput({label, val, set, ph, unit, hint}) {
           style={{flex:1,padding:'9px 12px',border:`1.5px solid ${focused?'#58a6ff':'#1e2d3d'}`,borderRadius:10,
             fontSize:15,outline:'none',fontFamily:'inherit',
             background:'#07090f',color:'#c9d1d9',transition:'border-color 0.15s'}}/>
-        {unit && <span style={{fontSize:12,color:'#3d5068',whiteSpace:'nowrap',minWidth:40}}>{unit}</span>}
+        {unit && <span style={{fontSize:12,color:'#7f92a6',whiteSpace:'nowrap',minWidth:40}}>{unit}</span>}
       </div>
-      {hint && <div style={{fontSize:13,color:'#3d5068',marginTop:3,lineHeight:1.4}}>{hint}</div>}
+      {hint && <div style={{fontSize:13,color:'#7f92a6',marginTop:3,lineHeight:1.4}}>{hint}</div>}
     </div>
   );
 }
@@ -8006,7 +7988,7 @@ function TubingTab({ trees }) {
     if      (t <=  100) { ms='3/4"';  msLabel='3/4 inch (19mm)';  msColor='#3fb950'; }
     else if (t <=  300) { ms='1"';    msLabel='1 inch (25mm)';     msColor='#58a6ff'; }
     else if (t <=  600) { ms='1¼"';   msLabel='1¼ inch (32mm)';    msColor='#c990ff'; }
-    else if (t <= 1200) { ms='1½"';   msLabel='1½ inch (38mm)';    msColor='#f0883e'; }
+    else if (t <= 1200) { ms='1½"';   msLabel='1½ inch (38mm)';    msColor='#e0a44a'; }
     else                { ms='2"';    msLabel='2 inch (50mm)';      msColor='#f85149'; }
 
     const diamFactor = {'3/4"':1.8,'1"':1.0,'1¼"':0.65,'1½"':0.45,'2"':0.25};
@@ -8039,15 +8021,15 @@ function TubingTab({ trees }) {
             border:'1px solid #1e3a5f',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><I.wrench size={19} color="#58a6ff" /></div>
           <div>
             <div style={{fontSize:20,fontWeight:800,color:'#c9d1d9',letterSpacing:'-0.5px'}}>Tubing Calculator</div>
-            <div style={{fontSize:13,color:'#3d5068',marginTop:1}}>Mainline sizing · Vacuum analysis · Materials estimator</div>
+            <div style={{fontSize:13,color:'#7f92a6',marginTop:1}}>Mainline sizing · Vacuum analysis · Materials estimator</div>
           </div>
         </div>
-        <div style={{fontSize:13,color:'#3d5068',marginTop:2}}>Based on Cornell Maple Program & UVM Proctor research guidelines</div>
+        <div style={{fontSize:13,color:'#7f92a6',marginTop:2}}>Based on Cornell Maple Program & UVM Proctor research guidelines</div>
       </div>
 
       {/* Inputs */}
       <div style={{background:'#0d1a2b',border:'1px solid #1e2d3d',borderRadius:16,padding:20,marginBottom:14}}>
-        <div style={{fontSize:12,fontWeight:700,color:'#5a6a7a',marginBottom:14,textTransform:'uppercase',letterSpacing:'0.08em'}}><I.ruler size={13} color="#5a6a7a" /> Your System</div>
+        <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',marginBottom:14,textTransform:'uppercase',letterSpacing:'0.08em'}}><I.ruler size={13} color="#7f92a6" /> Your System</div>
         <TInput label="Total Taps"             val={taps}      set={setTaps}      ph="e.g. 500"  unit="taps"    hint="Total taps in this tubing system"/>
         <TInput label="Mainline Length"         val={mainLen}   set={setMainLen}   ph="e.g. 2000" unit="ft"      hint="From vacuum pump to farthest tap"/>
         <TInput label="Average Downhill Grade"  val={grade}     set={setGrade}     ph="e.g. 8"    unit="% slope" hint="Slope toward collection tank — provides natural vacuum assist"/>
@@ -8060,24 +8042,23 @@ function TubingTab({ trees }) {
         {/* Mainline recommendation */}
         <div style={{background:'#0d1a2b',border:`1.5px solid ${calc.msColor}40`,borderLeft:`4px solid ${calc.msColor}`,
           borderRadius:'0 14px 14px 0',padding:20,marginBottom:14}} className="sage-fadein">
-          <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',marginBottom:12}}>RECOMMENDED MAINLINE SIZE</div>
+          <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',letterSpacing:'0.1em',marginBottom:12}}>RECOMMENDED MAINLINE SIZE</div>
           <div style={{display:'flex',alignItems:'center',gap:18}}>
             <div style={{width:72,height:72,borderRadius:'50%',
               background:`${calc.msColor}15`,border:`3px solid ${calc.msColor}`,
-              display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,
-              boxShadow:`0 0 20px ${calc.msColor}30`}}>
+              display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
               <span style={{fontSize:20,fontWeight:900,color:calc.msColor}}>{calc.ms}</span>
             </div>
             <div>
               <div style={{fontSize:22,fontWeight:800,color:calc.msColor}}>{calc.msLabel}</div>
-              <div style={{fontSize:12,color:'#5a6a7a',marginTop:4}}>For {taps} taps · {mainLen} ft mainline · Cornell guidelines</div>
+              <div style={{fontSize:12,color:'#7f92a6',marginTop:4}}>For {taps} taps · {mainLen} ft mainline · Cornell guidelines</div>
             </div>
           </div>
         </div>
 
         {/* Vacuum analysis */}
         <div style={{background:'#0d1a2b',border:'1px solid #1e2d3d',borderRadius:14,padding:20,marginBottom:14}} className="sage-fadein">
-          <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',marginBottom:14}}>VACUUM ANALYSIS</div>
+          <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',letterSpacing:'0.1em',marginBottom:14}}>VACUUM ANALYSIS</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:14}}>
             {[
               {label:'Target at Tap', val:`${targetVac}"`,      color:'#58a6ff'},
@@ -8085,8 +8066,8 @@ function TubingTab({ trees }) {
               {label:'Grade Assist',  val:`+${calc.vacGain}"`,  color:'#3fb950'},
             ].map(x=>(
               <div key={x.label} style={{textAlign:'center',background:'#07090f',borderRadius:10,padding:'12px 6px',border:`1px solid ${x.color}25`}}>
-                <div style={{fontSize:24,fontWeight:900,color:x.color,textShadow:`0 0 12px ${x.color}40`}}>{x.val}</div>
-                <div style={{fontSize:12,color:'#5a6a7a',marginTop:4,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em'}}>{x.label}</div>
+                <div style={{fontSize:20,fontWeight:700,color:x.color}}>{x.val}</div>
+                <div style={{fontSize:12,color:'#7f92a6',marginTop:4,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em'}}>{x.label}</div>
               </div>
             ))}
           </div>
@@ -8094,8 +8075,7 @@ function TubingTab({ trees }) {
             display:'flex',justifyContent:'space-between',alignItems:'center'}}>
             <span style={{fontSize:13,fontWeight:600,color:'#8b949e'}}>Required pump vacuum:</span>
             <span style={{fontSize:22,fontWeight:900,
-              color: parseFloat(calc.vacPump)>28?'#f85149':parseFloat(calc.vacPump)>24?'#f0883e':'#3fb950',
-              textShadow: `0 0 12px ${parseFloat(calc.vacPump)>28?'#f8514960':'#3fb95060'}`}}>
+              color: parseFloat(calc.vacPump)>28?'#f85149':parseFloat(calc.vacPump)>24?'#e0a44a':'#3fb950'}}>
               {calc.vacPump}" Hg
             </span>
           </div>
@@ -8114,49 +8094,48 @@ function TubingTab({ trees }) {
         {/* Laterals + Pump */}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:14}}>
           <div style={{background:'#0d1a2b',border:'1px solid #1e2d3d',borderRadius:14,padding:18}} className="sage-fadein">
-            <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',marginBottom:10}}>LATERAL LINES</div>
+            <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',letterSpacing:'0.1em',marginBottom:10}}>LATERAL LINES</div>
             <div style={{fontSize:32,fontWeight:900,color:'#c9d1d9',lineHeight:1}}>{calc.numLat}</div>
-            <div style={{fontSize:13,color:'#5a6a7a',marginTop:2,marginBottom:8}}>lateral runs</div>
+            <div style={{fontSize:13,color:'#7f92a6',marginTop:2,marginBottom:8}}>lateral runs</div>
             <div style={{fontSize:20,fontWeight:800,color:'#8b949e'}}>{parseInt(calc.latFtTot).toLocaleString()} ft</div>
-            <div style={{fontSize:13,color:'#5a6a7a'}}>total lateral footage</div>
+            <div style={{fontSize:13,color:'#7f92a6'}}>total lateral footage</div>
           </div>
           <div style={{background:'#0d1a2b',border:'1px solid #1e2d3d',borderRadius:14,padding:18}} className="sage-fadein">
-            <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',marginBottom:10}}>VACUUM PUMP</div>
+            <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',letterSpacing:'0.1em',marginBottom:10}}>VACUUM PUMP</div>
             <div style={{marginBottom:6,display:'flex',justifyContent:'center'}}><I.wind size={28} color="#58a6ff" /></div>
             <div style={{fontSize:13,fontWeight:700,color:'#c9d1d9',lineHeight:1.4}}>{calc.pump}</div>
-            <div style={{fontSize:13,color:'#5a6a7a',marginTop:4}}>{calc.cfm} CFM needed</div>
+            <div style={{fontSize:13,color:'#7f92a6',marginTop:4}}>{calc.cfm} CFM needed</div>
           </div>
         </div>
 
         {/* Materials */}
         <div style={{background:'#0d1a2b',border:'1px solid #1e2d3d',borderRadius:14,padding:20}} className="sage-fadein">
-          <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',marginBottom:14}}>MATERIALS ESTIMATE</div>
+          <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',letterSpacing:'0.1em',marginBottom:14}}>MATERIALS ESTIMATE</div>
           {[
             { item:`Mainline tubing (${calc.ms})`, qty:`${calc.mainFt.toLocaleString()} ft`,  note:'Includes 10% waste',   color:'#58a6ff' },
             { item:'Lateral tubing (5/16")',        qty:`${calc.latFt.toLocaleString()} ft`,   note:'Includes 10% waste',   color:'#3fb950' },
             { item:'Drop lines (5/16")',             qty:`${calc.dropFt.toLocaleString()} ft`,  note:'~4 ft per tap',        color:'#3fb950' },
-            { item:'Tee fittings',                  qty:calc.tees.toLocaleString(),             note:'1 per tap',            color:'#f0883e' },
+            { item:'Tee fittings',                  qty:calc.tees.toLocaleString(),             note:'1 per tap',            color:'#e0a44a' },
             { item:'Lateral end caps',              qty:calc.caps.toLocaleString(),             note:'1 per lateral',        color:'#c990ff' },
           ].map((r,i)=>(
             <div key={r.item} style={{display:'flex',justifyContent:'space-between',alignItems:'center',
               padding:'10px 0',borderBottom:i<4?'1px solid #1e2d3d':'none'}}>
               <div>
                 <div style={{fontSize:13,fontWeight:600,color:'#c9d1d9'}}>{r.item}</div>
-                <div style={{fontSize:13,color:'#3d5068'}}>{r.note}</div>
+                <div style={{fontSize:13,color:'#7f92a6'}}>{r.note}</div>
               </div>
               <div style={{fontSize:16,fontWeight:800,color:r.color}}>{r.qty}</div>
             </div>
           ))}
-          <div style={{marginTop:12,fontSize:13,color:'#3d5068',lineHeight:1.65,borderTop:'1px solid #1e2d3d',paddingTop:10}}>
+          <div style={{marginTop:12,fontSize:13,color:'#7f92a6',lineHeight:1.65,borderTop:'1px solid #1e2d3d',paddingTop:10}}>
             Cornell Maple Program guidelines · 8 ft average tree spacing assumed · Consult your dealer for exact quantities.
           </div>
         </div>
 
       </>) : (
-        <div style={{textAlign:'center',padding:'40px 20px'}}>
-          <div style={{marginBottom:12,display:'flex',justifyContent:'center'}}><I.wrench size={42} color="#58a6ff" /></div>
-          <div style={{fontSize:15,fontWeight:700,color:'#8b949e',marginBottom:6}}>Enter your system details above</div>
-          <div style={{fontSize:12,color:'#3d5068',lineHeight:1.65,marginBottom:20}}>
+        <div style={{textAlign:'center',padding:'28px 20px'}}>
+          <div style={{fontSize:15,fontWeight:700,color:'#e6edf3',marginBottom:6,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}><I.wrench size={20} color="#8b949e" /> Enter your system details above</div>
+          <div style={{fontSize:12,color:'#7f92a6',lineHeight:1.65,marginBottom:20}}>
             Mainline size, vacuum analysis, pump sizing, and materials list will appear instantly.
           </div>
           <div style={{display:'flex',flexWrap:'wrap',gap:8,justifyContent:'center'}}>
@@ -8187,27 +8166,30 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
 
   // ── Sub-scores (each 0–100) ────────────────────────────────────────────
   const scores = [];
+  // One colour rule for every bar, monotonic in the score.
+  const barColor = s => s >= 80 ? '#3fb950' : s >= 60 ? '#e0a44a' : '#f85149';
 
   // 1. Yield per tap (30 pts weight)
-  let yieldScore = null, yieldLabel = '', yieldColor = '#3d5068';
+  let yieldScore = null, yieldLabel = '', yieldColor = '#7f92a6';
   if (taps > 0 && syrupGal > 0) {
     const ypp = syrupGal / taps;
     const yM = yieldModelSaved();
     yieldScore = Math.min(100, Math.round((ypp / yieldMidOf(yM)) * 100));
     if (ypp >= yM.high) { yieldLabel = `${ypp.toFixed(2)} gal/tap — top of the range for ${yM.label}`; yieldColor = '#3fb950'; }
     else if (ypp >= yM.low) { yieldLabel = `${ypp.toFixed(2)} gal/tap — inside the ${yM.low}–${yM.high} range for ${yM.label}`; yieldColor = '#3fb950'; }
-    else { yieldLabel = `${ypp.toFixed(2)} gal/tap — below ${yM.low} for ${yM.label}`; yieldColor = '#f0883e'; }
-    scores.push({ label:'Yield / Tap', score: yieldScore, weight:30, color: yieldColor, detail: yieldLabel });
+    else { yieldLabel = `${ypp.toFixed(2)} gal/tap — below ${yM.low} for ${yM.label}`; yieldColor = '#e0a44a'; }
+    scores.push({ label:'Yield / Tap', score: yieldScore, weight:30, color: barColor(yieldScore), detail: yieldLabel });
   }
 
-  // 2. Evaporation efficiency (25 pts weight)
+  // 2. Evaporation efficiency (40 pts weight). This and the former "Ratio Accuracy" row were the
+  // same computation — theoretical ratio over actual ratio — counted twice at 25 + 15. Merged; the
+  // weighted overall is unchanged.
   let effScore = null;
   if (sapGal > 0 && syrupGal > 0 && brix > 0) {
     const ratio = sapGal / syrupGal;
     const theoretical = 86.4 / brix;
     effScore = Math.min(100, Math.round((theoretical / ratio) * 100));
-    const effColor = effScore >= 90 ? '#3fb950' : effScore >= 75 ? '#f0883e' : '#f85149';
-    scores.push({ label:'Evap Efficiency', score: effScore, weight:25, color: effColor,
+    scores.push({ label:'Evap Efficiency', score: effScore, weight:40, color: barColor(effScore),
       detail: `${ratio.toFixed(0)}:1 actual vs ${theoretical.toFixed(0)}:1 theoretical` });
   }
 
@@ -8218,27 +8200,14 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
     const fr    = fuelGal / syrupGal;                       // units of fuel per gal syrup
     const bench = (86.4 / brix) / fuelDef.spu;              // what that fuel should take
     fuelScore = Math.min(100, Math.round((bench / fr) * 100));
-    const fuelColor = fuelScore >= 90 ? '#3fb950' : fuelScore >= 60 ? '#f0883e' : '#f85149';
-    scores.push({ label:'Fuel Efficiency', score: fuelScore, weight:20, color: fuelColor,
+    scores.push({ label:'Fuel Efficiency', score: fuelScore, weight:20, color: barColor(fuelScore),
       detail: `${fr.toFixed(2)} ${fuelDef.unit}/gal syrup · expect ${bench.toFixed(2)}` });
   }
 
-  // 4. Ratio accuracy (15 pts weight)
-  let ratioScore = null;
-  if (sapGal > 0 && syrupGal > 0 && brix > 0) {
-    const actual = sapGal / syrupGal;
-    const theor  = 86.4 / brix;
-    ratioScore = Math.min(100, Math.round((theor / actual) * 100));
-    const ratioColor = ratioScore >= 90 ? '#3fb950' : ratioScore >= 70 ? '#f0883e' : '#f85149';
-    scores.push({ label:'Ratio Accuracy', score: ratioScore, weight:15, color: ratioColor,
-      detail:`${actual.toFixed(0)}:1 vs ${theor.toFixed(0)}:1 theoretical` });
-  }
-
-  // 5. Data completeness (10 pts weight) — rewards logging
+  // 4. Data completeness (10 pts weight) — rewards logging
   const dataPts = [sapGal>0, syrupGal>0, taps>0, fuelGal>0].filter(Boolean).length;
   const dataScore = Math.round((dataPts / 4) * 100);
-  const dataColor = dataScore >= 75 ? '#3fb950' : dataScore >= 50 ? '#f0883e' : '#58a6ff';
-  scores.push({ label:'Data Complete', score: dataScore, weight:10, color: dataColor,
+  scores.push({ label:'Data Complete', score: dataScore, weight:10, color: barColor(dataScore),
     detail:`${dataPts}/4 tracked fields` });
 
   // ── Weighted overall ──────────────────────────────────────────────────
@@ -8249,7 +8218,7 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
   // Same rule as Diagnose: no letter until there is enough season to judge.
   const graded = scores.length >= 3 && syrupGal > 0;
   const grade = !graded ? '—' : overall >= 90 ? 'A' : overall >= 80 ? 'B' : overall >= 70 ? 'C' : overall >= 60 ? 'D' : 'F';
-  const gradeColor = overall >= 90 ? '#3fb950' : overall >= 80 ? '#58a6ff' : overall >= 70 ? '#f0883e' : '#f85149';
+  const gradeColor = barColor(overall);
 
   const shareText = `My ${season} maple season scored ${overall}/100 (${grade}) on SweetRun · sweetrun.app`;
 
@@ -8263,41 +8232,32 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
   if (scores.length <= 1) return null;
 
   return (
-    <div style={{background:'#07090f',border:'1px solid #1e2d3d',borderRadius:16,padding:'20px',marginBottom:14,overflow:'hidden',position:'relative'}}>
-      {/* Glow behind grade */}
-      <div style={{position:'absolute',top:-30,right:-20,width:140,height:140,borderRadius:'50%',
-        background:gradeColor,opacity:0.06,filter:'blur(30px)',pointerEvents:'none'}}/>
-
-      <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:14}}>
-        SweetRun Score — {season} Season
+    <div className="card">
+      <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:14}}>
+        SweetRun Score
       </div>
 
-      {/* Main score row */}
-      <div style={{display:'flex',alignItems:'stretch',gap:16,marginBottom:18}}>
-        {/* Big grade */}
-        <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
-          minWidth:88,background:'#0d1a2b',borderRadius:14,padding:'14px 10px',
-          border:`2px solid ${gradeColor}40`,flexShrink:0}}>
-          <div style={{fontSize:52,fontWeight:900,color:gradeColor,lineHeight:1,
-            textShadow:`0 0 30px ${gradeColor}70`}}>{grade}</div>
-          <div style={{fontSize:28,fontWeight:800,color:gradeColor,lineHeight:1,marginTop:4}}>{overall}</div>
-          <div style={{fontSize:12,color:'#3d5068',fontWeight:700,letterSpacing:'0.1em',marginTop:2}}>OUT OF 100</div>
-        </div>
+      {/* Score, on the card */}
+      <div style={{display:'flex',alignItems:'baseline',gap:10,paddingBottom:14,marginBottom:14,borderBottom:'1px solid #131e2c'}}>
+        <span style={{fontSize:28,fontWeight:800,color:'#e6edf3',lineHeight:1,letterSpacing:'-0.01em'}}>{overall}</span>
+        <span style={{fontSize:13,color:'#7f92a6',fontWeight:500}}>out of 100</span>
+        <span style={{marginLeft:'auto',fontSize:13,fontWeight:800,color:gradeColor,background:`${gradeColor}1f`,
+          borderRadius:999,padding:'3px 12px',lineHeight:1.4,alignSelf:'center'}}>{grade}</span>
+      </div>
 
+      <div style={{marginBottom:16}}>
         {/* Score bars */}
-        <div style={{flex:1,display:'flex',flexDirection:'column',gap:8,justifyContent:'center'}}>
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>
           {scores.map((s,i) => (
             <div key={i}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:3}}>
-                <span style={{fontSize:12,color:'#5a6a7a',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em'}}>{s.label}</span>
-                <div style={{display:'flex',alignItems:'center',gap:6}}>
-                  <span style={{fontSize:12,color:'#3d5068'}}>{s.detail}</span>
-                  <span style={{fontSize:13,fontWeight:800,color:s.color,minWidth:28,textAlign:'right'}}>{s.score}</span>
-                </div>
+                <span style={{fontSize:12,color:'#7f92a6',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em',whiteSpace:'nowrap'}}>{s.label}</span>
+                <span style={{fontSize:14,fontWeight:700,color:'#e6edf3',minWidth:28,textAlign:'right'}}>{s.score}</span>
               </div>
+              <div style={{fontSize:12,color:'#7f92a6',marginBottom:4,lineHeight:1.4}}>{s.detail}</div>
               <div style={{height:5,background:'#1e2d3d',borderRadius:3,overflow:'hidden'}}>
                 <div style={{height:'100%',width:`${s.score}%`,background:s.color,borderRadius:3,
-                  boxShadow:`0 0 8px ${s.color}50`,transition:'width 1s ease'}}/>
+                  transition:'width 0.4s cubic-bezier(.2,.8,.2,1)'}}/>
               </div>
             </div>
           ))}
@@ -8305,14 +8265,11 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
       </div>
 
       {/* Share row */}
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',
-        borderTop:'1px solid #1e2d3d',paddingTop:12,gap:12}}>
-        <div style={{fontSize:13,color:'#3d5068',flex:1,lineHeight:1.5}}>{shareText}</div>
-        <button onClick={copyShare}
-          style={{background: copied?'#3fb950':'#0d1a2b',border:`1px solid ${copied?'#3fb950':'#1e2d3d'}`,
-            borderRadius:8,padding:'7px 14px',fontSize:13,fontWeight:700,
-            color: copied?'#07090f':'#5a6a7a',cursor:'pointer',whiteSpace:'nowrap',
-            transition:'all 0.2s',flexShrink:0}}>
+      <div style={{borderTop:'1px solid #131e2c',paddingTop:12}}>
+        <div style={{fontSize:13,color:'#7f92a6',lineHeight:1.5,marginBottom:10}}>{shareText}</div>
+        <button onClick={copyShare} className="btn-secondary"
+          style={{background: copied?'#3fb950':undefined, borderColor: copied?'#3fb950':undefined,
+            color: copied?'#07090f':undefined, fontSize:14}}>
           {copied ? 'Copied!' : 'Share Score'}
         </button>
       </div>
@@ -8412,94 +8369,89 @@ function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
     });
   }
 
-  const sevColor = s => s==='high'?'#f85149':s==='medium'?'#f0883e':s==='low'?'#3fb950':'#58a6ff';
+  const sevColor = s => s==='high'?'#f85149':s==='medium'?'#e0a44a':s==='low'?'#3fb950':'#58a6ff';
 
   return (
-    <div style={{background:'#07090f',border:'1px solid #1e2d3d',borderRadius:16,padding:'20px',marginBottom:14}}>
-      <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:16}}>
-        Yield Gap Analyzer — {season} Season
+    <div className="card">
+      <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:14}}>
+        Yield Gap Analyzer
       </div>
 
       {/* Gap visual */}
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:10,marginBottom:16}}>
-        <div style={{background:'#0d1a2b',borderRadius:12,padding:'14px 10px',textAlign:'center',border:'1px solid #3fb95040'}}>
-          <div style={{fontSize:12,color:'#3d5068',fontWeight:700,letterSpacing:'0.08em',marginBottom:6}}>YOU MADE</div>
-          <div style={{fontSize:28,fontWeight:900,color:'#3fb950',lineHeight:1}}>{syrupGal.toFixed(1)}</div>
-          <div style={{fontSize:13,color:'#5a6a7a',marginTop:2}}>gallons</div>
+        <div style={{background:'#0d1a2b',borderRadius:12,padding:'12px 10px',textAlign:'center'}}>
+          <div style={{fontSize:12,color:'#7f92a6',fontWeight:700,letterSpacing:'0.08em',marginBottom:6}}>YOU MADE</div>
+          <div style={{fontSize:20,fontWeight:700,color:'#e6edf3',lineHeight:1}}>{fmt(syrupGal,1)}</div>
+          <div style={{fontSize:13,color:'#7f92a6',marginTop:4}}>gal</div>
         </div>
-        <div style={{background:'#0d1a2b',borderRadius:12,padding:'14px 10px',textAlign:'center',border:'1px solid #58a6ff40'}}>
-          <div style={{fontSize:12,color:'#3d5068',fontWeight:700,letterSpacing:'0.08em',marginBottom:6}}>BENCHMARK</div>
-          <div style={{fontSize:28,fontWeight:900,color:'#58a6ff',lineHeight:1}}>{theorMaxSyrupLow.toFixed(0)}–{theorMaxSyrup.toFixed(0)}</div>
-          <div style={{fontSize:13,color:'#5a6a7a',marginTop:2}}>at {gModel.low}–{gModel.high}/tap · {gModel.label}</div>
+        <div style={{background:'#0d1a2b',borderRadius:12,padding:'12px 10px',textAlign:'center'}}>
+          <div style={{fontSize:12,color:'#7f92a6',fontWeight:700,letterSpacing:'0.08em',marginBottom:6}}>BENCHMARK</div>
+          <div style={{fontSize:20,fontWeight:700,color:'#e6edf3',lineHeight:1}}>{fmt(theorMaxSyrupLow,0)}–{fmt(theorMaxSyrup,0)}</div>
+          <div style={{fontSize:13,color:'#7f92a6',marginTop:4,whiteSpace:'nowrap'}}>at {gModel.low}–{gModel.high}/tap</div>
         </div>
-        <div style={{background:'#0d1a2b',borderRadius:12,padding:'14px 10px',textAlign:'center',
-          border:`1px solid ${gapMid > 0 ? '#f0883e40' : '#3fb95040'}`}}>
-          <div style={{fontSize:12,color:'#3d5068',fontWeight:700,letterSpacing:'0.08em',marginBottom:6}}>
+        <div style={{background:'#0d1a2b',borderRadius:12,padding:'12px 10px',textAlign:'center'}}>
+          <div style={{fontSize:12,color:'#7f92a6',fontWeight:700,letterSpacing:'0.08em',marginBottom:6}}>
             {gapMid > 0 ? 'GAP' : 'SURPLUS'}
           </div>
-          <div style={{fontSize:28,fontWeight:900,lineHeight:1,
-            color: gapMid > 0 ? '#f0883e' : '#3fb950'}}>
+          <div style={{fontSize:20,fontWeight:700,lineHeight:1,
+            color: gapMid > 0 ? '#e0a44a' : '#3fb950'}}>
             {gapMid > 0 ? `~${gapMid.toFixed(0)}` : `+${Math.abs(gapLow).toFixed(0)}`}
           </div>
-          <div style={{fontSize:13,color:'#5a6a7a',marginTop:2}}>gallons</div>
+          <div style={{fontSize:13,color:'#7f92a6',marginTop:4}}>gal</div>
         </div>
       </div>
+      <div style={{fontSize:12,color:'#7f92a6',margin:'-8px 0 14px'}}>Benchmark: {gModel.label}, {gModel.low}–{gModel.high} gal per tap.</div>
 
       {/* Dollar impact */}
       {gapMid > 2 && (
-        <div style={{background:'linear-gradient(135deg,#1a0a0a,#2b1010)',border:'1px solid #f0883e30',
-          borderRadius:12,padding:'14px 16px',marginBottom:16,
-          display:'flex',justifyContent:'space-between',alignItems:'center',gap:12}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:12,marginBottom:14,padding:'12px 0',borderTop:'1px solid #131e2c',borderBottom:'1px solid #131e2c'}}>
           <div>
-            <div style={{fontSize:12,fontWeight:700,color:'#f0883e',marginBottom:3}}>
-              That gap costs approximately
+            <div style={{fontSize:14,fontWeight:700,color:'#e6edf3',marginBottom:2}}>
+              That gap costs about
             </div>
-            <div style={{fontSize:13,color:'#5a6a7a',lineHeight:1.5}}>
-              Based on ${pricePerGal}/gal retail · adjust below
+            <div style={{fontSize:13,color:'#7f92a6',lineHeight:1.5}}>
+              at ${pricePerGal}/gal retail
             </div>
           </div>
           <div style={{textAlign:'right',flexShrink:0}}>
-            <div style={{fontSize:32,fontWeight:900,color:'#f0883e',
-              textShadow:'0 0 20px #f0883e60'}}>${Math.round(dollarGap).toLocaleString()}</div>
-            <div style={{fontSize:12,color:'#3d5068',marginTop:2}}>per season</div>
+            <div style={{fontSize:20,fontWeight:700,color:'#e0a44a',lineHeight:1.1}}>${Math.round(dollarGap).toLocaleString()}</div>
+            <div style={{fontSize:12,color:'#7f92a6',marginTop:2}}>per season</div>
           </div>
         </div>
       )}
 
       {/* Price input */}
-      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16,
-        background:'#0d1a2b',borderRadius:10,padding:'10px 14px',border:'1px solid #1e2d3d'}}>
-        <span style={{fontSize:13,color:'#5a6a7a',whiteSpace:'nowrap'}}>Your retail price per gallon ($)</span>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,marginBottom:16}}>
+        <span style={{fontSize:13,color:'#7f92a6'}}>Your retail price per gallon ($)</span>
         <input aria-label="Your retail price per gallon, in dollars" type="number" value={pricePerGal}
           onChange={e=>{const v=parseFloat(e.target.value)||40; setPricePerGal(v); ls.set('sg_syrup_price',v);}}
-          style={{width:70,background:'#07090f',border:'1px solid #1e2d3d',borderRadius:8,
-            padding:'6px 10px',color:'#c9d1d9',fontSize:13,outline:'none',textAlign:'center'}}/>
+          style={{width:96,textAlign:'center',flexShrink:0}}/>
       </div>
 
       {/* Gap bar */}
       {gapMid > 0 && (
         <div style={{marginBottom:16}}>
-          <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'#3d5068',marginBottom:4}}>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'#7f92a6',marginBottom:4}}>
             <span>0 gal</span>
             <span>Benchmark {theorMaxSyrup.toFixed(0)} gal</span>
           </div>
           <div style={{height:12,background:'#1e2d3d',borderRadius:6,overflow:'hidden',position:'relative'}}>
             <div style={{height:'100%',width:`${Math.min(100,(syrupGal/theorMaxSyrup)*100)}%`,
-              background:'linear-gradient(90deg,#3fb950,#2dd4a7)',borderRadius:6}}/>
+              background:'#2dd4a7',borderRadius:6}}/>
             <div style={{position:'absolute',top:0,right:0,height:'100%',
               width:`${Math.min(100,(gapHigh/theorMaxSyrup)*100)}%`,
-              background:'repeating-linear-gradient(90deg,transparent,transparent 6px,#f0883e30 6px,#f0883e30 8px)',
-              borderRight:'2px solid #f0883e'}}/>
+              background:'repeating-linear-gradient(90deg,transparent,transparent 6px,#e0a44a30 6px,#e0a44a30 8px)',
+              borderRight:'2px solid #e0a44a'}}/>
           </div>
           <div style={{display:'flex',gap:16,marginTop:6,fontSize:12}}>
-            <span style={{color:'#3fb950'}}>■ Your yield ({syrupGal.toFixed(1)} gal)</span>
-            <span style={{color:'#f0883e'}}>■ Gap ({gapHigh.toFixed(0)} gal potential)</span>
+            <span style={{color:'#2dd4a7'}}>■ Your yield ({syrupGal.toFixed(1)} gal)</span>
+            <span style={{color:'#e0a44a'}}>■ Gap ({gapHigh.toFixed(0)} gal potential)</span>
           </div>
         </div>
       )}
 
       {/* Root cause analysis */}
-      <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:10}}>
+      <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:10}}>
         Root Cause Analysis
       </div>
       <div style={{display:'flex',flexDirection:'column',gap:8}}>
@@ -8521,13 +8473,13 @@ function CauseCard({ cause, sevColor }) {
           display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8}}>
         <div>
           <div style={{fontSize:12,fontWeight:700,color,marginBottom:3}}>{cause.title}</div>
-          <div style={{fontSize:13,color:'#5a6a7a',lineHeight:1.5}}>{cause.detail}</div>
+          <div style={{fontSize:13,color:'#7f92a6',lineHeight:1.5}}>{cause.detail}</div>
         </div>
-        <span style={{fontSize:12,color:'#3d5068',flexShrink:0,marginTop:2}}>{open?'▲':'▼'}</span>
+        <span style={{fontSize:12,color:'#7f92a6',flexShrink:0,marginTop:2}}>{open?'▲':'▼'}</span>
       </button>
       {open && (
         <div style={{padding:'0 14px 12px',borderTop:'1px solid #1e2d3d'}}>
-          <div style={{fontSize:12,fontWeight:700,color:'#3d5068',letterSpacing:'0.1em',textTransform:'uppercase',margin:'10px 0 8px'}}>
+          <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',letterSpacing:'0.1em',textTransform:'uppercase',margin:'10px 0 8px'}}>
             Fix Priority
           </div>
           {cause.fixes.map((fix,j) => (
@@ -8535,14 +8487,14 @@ function CauseCard({ cause, sevColor }) {
               borderBottom: j < cause.fixes.length-1 ? '1px solid #131e2c' : 'none'}}>
               <div style={{flex:1}}>
                 <div style={{fontSize:12,color:'#c9d1d9',lineHeight:1.5,marginBottom:4}}>{fix.action}</div>
-                <div style={{display:'flex',gap:12,fontSize:12,color:'#3d5068'}}>
+                <div style={{display:'flex',gap:12,fontSize:12,color:'#7f92a6'}}>
                   <span>Cost: <span style={{color:'#8b949e'}}>{fix.cost}</span></span>
                   <span>Time: <span style={{color:'#8b949e'}}>{fix.time}</span></span>
                 </div>
               </div>
               <div style={{flexShrink:0,textAlign:'right'}}>
                 <div style={{fontSize:12,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.05em',
-                  color: fix.impact==='very high'?'#3fb950':fix.impact==='high'?'#58a6ff':fix.impact==='medium'?'#f0883e':'#3d5068'}}>
+                  color: fix.impact==='very high'?'#3fb950':fix.impact==='high'?'#58a6ff':fix.impact==='medium'?'#e0a44a':'#7f92a6'}}>
                   {fix.impact} impact
                 </div>
               </div>
@@ -8640,9 +8592,9 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
           );
         })}
         {/* Axis label */}
-        <text x={PAD} y={H+14} fontSize="12" fill="#3d5068">{firstDate}</text>
+        <text x={PAD} y={H+14} fontSize="12" fill="#7f92a6">{firstDate}</text>
         {lastDate !== firstDate && (
-          <text x={W-PAD} y={H+14} fontSize="12" fill="#3d5068" textAnchor="end">{lastDate}</text>
+          <text x={W-PAD} y={H+14} fontSize="12" fill="#7f92a6" textAnchor="end">{lastDate}</text>
         )}
       </svg>
     );
@@ -8660,28 +8612,28 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
     }).join(' ');
     return (
       <svg width="100%" viewBox={`0 0 ${W} ${H+4}`} style={{ display:'block' }}>
-        <polyline points={pts} fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinejoin="round" />
+        <polyline points={pts} fill="none" stroke="#2dd4a7" strokeWidth="2" strokeLinejoin="round" />
         {bVals.map((v, i) => {
           const x = (i / (bVals.length - 1)) * W;
           const y = H - ((v - mn) / rng) * H;
-          return <circle key={i} cx={x} cy={y} r="3" fill="#a78bfa" />;
+          return <circle key={i} cx={x} cy={y} r="3" fill="#2dd4a7" />;
         })}
       </svg>
     );
   };
 
   // ── Stat card ──────────────────────────────────────────────────────────────
-  const Stat = ({ val, lbl, sub, accent='#2dd4a7' }) => (
-    <div className="recap-stat-card" style={{ background:'#0d1a2b', border:'1px solid #1a304a', borderRadius:12, padding:'12px 10px', textAlign:'center' }}>
-      <div className="recap-stat-val" style={{ fontSize:22, fontWeight:800, color:accent, lineHeight:1.1 }}>{val}</div>
-      <div className="recap-stat-lbl" style={{ fontSize:13, color:'#8a9ab0', fontWeight:600, marginTop:2 }}>{lbl}</div>
-      {sub && <div style={{ fontSize:12, color:'#3d5068', marginTop:2 }}>{sub}</div>}
+  const Stat = ({ val, lbl, sub, accent }) => (
+    <div className="recap-stat-card" style={{ background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:16, padding:'12px 10px', textAlign:'center' }}>
+      <div className="recap-stat-val" style={{ fontSize:20, fontWeight:700, color:'#e6edf3', lineHeight:1.1 }}>{val}</div>
+      <div className="recap-stat-lbl" style={{ fontSize:12, color:'#7f92a6', fontWeight:700, marginTop:4, letterSpacing:'0.06em', textTransform:'uppercase' }}>{lbl}</div>
+      {sub && <div style={{ fontSize:12, color:'#7f92a6', marginTop:2 }}>{sub}</div>}
     </div>
   );
 
   const Sec = ({ title, children, icon }) => (
-    <div className="recap-section" style={{ background:'#0d1a2b', border:'1px solid #1a304a', borderRadius:14, padding:'14px 16px', marginBottom:12 }}>
-      <div style={{ fontSize:13, fontWeight:700, color:'#3d5068', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:10, display:'flex', alignItems:'center', gap:6 }}>
+    <div className="recap-section card">
+      <div style={{ fontSize:13, fontWeight:700, color:'#7f92a6', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:10, display:'flex', alignItems:'center', gap:6 }}>
         {icon}{title}
       </div>
       {children}
@@ -8693,7 +8645,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
     const up = pct >= 0;
     return (
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 0', borderBottom:'1px solid #131e2c' }}>
-        <span style={{ fontSize:13, color:'#8a9ab0' }}>{label}</span>
+        <span style={{ fontSize:13, color:'#8b949e' }}>{label}</span>
         <span className={up ? 'recap-yoy-up' : 'recap-yoy-dn'}
           style={{ fontWeight:700, fontSize:14, color: up ? '#2dd4a7' : '#f85149' }}>
           {up ? '▲' : '▼'} {Math.abs(pct).toFixed(1)}%
@@ -8703,7 +8655,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
   };
 
   return (
-    <div className="recap-printable" style={{ padding:'16px 14px 60px' }}>
+    <div className="recap-printable" style={{ padding:'0 0 40px' }}>
 
       {/* ── Print header (only visible on print) ── */}
       <div style={{ display:'none' }} className="recap-print-header">
@@ -8718,31 +8670,19 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16 }}>
         <div>
           <div className="recap-header" style={{ fontWeight:800, fontSize:20, lineHeight:1.2 }}>{season} {lang==='fr'?'Bilan de saison':'Season Recap'}</div>
-          <div className="recap-sub" style={{ fontSize:13, color:'#5a6a7a', marginTop:2 }}>{t(lang,'recapSub')}</div>
+          <div className="recap-sub" style={{ fontSize:13, color:'#7f92a6', marginTop:2 }}>{t(lang,'recapSub')}</div>
         </div>
         <button
           className="recap-print-btn"
           onClick={() => window.print()}
-          style={{ background:'linear-gradient(135deg,#2dd4a7,#1fbf94)', border:'none', borderRadius:10, padding:'8px 14px', fontWeight:700, fontSize:13, color:'#07090f', cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}
+          style={{ background:'#2dd4a7', border:'none', borderRadius:10, padding:'10px 14px', minHeight:44, fontWeight:700, fontSize:13, color:'#07090f', cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}
         >
           <I.download size={15} color="#07090f" /> {t(lang,'exportPDF')}
         </button>
       </div>
 
-      {/* ── Operator name input ── */}
-      <div className="recap-no-print" style={{ marginBottom:14 }}>
-        <input
-          type="text"
-          value={operatorName}
-          onChange={e => saveOp(e.target.value)}
-          aria-label={t(lang,'operatorPh')}
-          placeholder={t(lang,'operatorPh')}
-          style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:10, padding:'8px 12px', color:'#e2eaf4', fontSize:13, boxSizing:'border-box' }}
-        />
-      </div>
-
       {!hasData && (
-        <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.25)', borderRadius:12, padding:'14px 16px', fontSize:13, color:'#f59e0b', lineHeight:1.5, marginBottom:16 }}>
+        <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.25)', borderRadius:12, padding:'14px 16px', fontSize:13, color:'#e0a44a', lineHeight:1.5, marginBottom:16 }}>
           <I.alert size={14} color="currentColor" /> {t(lang,'noDataMsgRecap').replace('{year}',season)}
         </div>
       )}
@@ -8750,18 +8690,32 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
       {hasData && <SweetRunScore sapGal={sapGal} syrupGal={syrupGal} sapBrix={sapBrix} trees={parseInt(trees)||0} fuelGal={fuelGal} season={season} />}
       {hasData && <YieldGapAnalyzer sapGal={sapGal} syrupGal={syrupGal} sapBrix={sapBrix} trees={parseInt(trees)||0} season={season} />}
 
+      {/* ── Operator name input ── */}
+      <div className="recap-no-print" style={{ marginBottom:14 }}>
+        <label htmlFor="recap-op-name" className="field-label" style={{ display:'block', textTransform:'uppercase', letterSpacing:'0.08em', fontWeight:700 }}>Operation name</label>
+        <input
+          id="recap-op-name"
+          type="text"
+          value={operatorName}
+          onChange={e => saveOp(e.target.value)}
+          aria-label={t(lang,'operatorPh')}
+          placeholder={t(lang,'operatorPh')}
+          style={{ width:'100%', boxSizing:'border-box' }}
+        />
+      </div>
+
       {/* ── Big 4 stats ── */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:12 }}>
-        <Stat val={sapGal > 0 ? sapGal.toLocaleString('en-US',{maximumFractionDigits:1}) : '—'} lbl={`${t(lang,'totalSapLbl')} (${uLbl})`} sub={`${(slog.sapCollected||[]).length} ${(slog.sapCollected||[]).length!==1?t(lang,'collectionPlur'):t(lang,'collectionSing')}`} />
-        <Stat val={syrupGal > 0 ? syrupGal.toFixed(1) : '—'} lbl={`${t(lang,'syrupMadeLbl')} (${uLbl})`} sub={`${(slog.syrupMade||[]).length} ${(slog.syrupMade||[]).length!==1?t(lang,'batchPlur'):t(lang,'batchSing')}`} accent="#a78bfa" />
-        <Stat val={actualRatio > 0 ? actualRatio.toFixed(1)+':1' : '—'} lbl={t(lang,'actualRatioLbl')} sub={theorRatio > 0 ? `${t(lang,'theoryPrefix')} ${theorRatio.toFixed(1)}:1` : null} accent={actualRatio > 0 && theorRatio > 0 && actualRatio <= theorRatio * 1.15 ? '#2dd4a7' : '#f59e0b'} />
+        <Stat val={sapGal > 0 ? fmt(sapGal,0) : '—'} lbl={`${t(lang,'totalSapLbl')} (${uLbl})`} sub={`${(slog.sapCollected||[]).length} ${(slog.sapCollected||[]).length!==1?t(lang,'collectionPlur'):t(lang,'collectionSing')}`} />
+        <Stat val={syrupGal > 0 ? fmt(syrupGal,1) : '—'} lbl={`${t(lang,'syrupMadeLbl')} (${uLbl})`} sub={`${(slog.syrupMade||[]).length} ${(slog.syrupMade||[]).length!==1?t(lang,'batchPlur'):t(lang,'batchSing')}`} accent="#a78bfa" />
+        <Stat val={actualRatio > 0 ? actualRatio.toFixed(1)+':1' : '—'} lbl={t(lang,'actualRatioLbl')} sub={theorRatio > 0 ? `${t(lang,'theoryPrefix')} ${theorRatio.toFixed(1)}:1` : null} accent={actualRatio > 0 && theorRatio > 0 && actualRatio <= theorRatio * 1.15 ? '#2dd4a7' : '#e0a44a'} />
         <Stat val={seasonDays != null ? `${seasonDays}d` : '—'} lbl={t(lang,'seasonLengthLbl')} sub={firstDate && lastDate ? `${firstDate} – ${lastDate}` : null} accent="#58a6ff" />
       </div>
 
       {/* ── Secondary stats ── */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:12 }}>
-        <Stat val={bestDay ? bestDay.val+'' : '—'} lbl={`${t(lang,'bestRunLbl')} (${uLbl})`} sub={bestDay?.date || null} accent="#f59e0b" />
-        <Stat val={roGal > 0 ? roGal.toFixed(0) : '—'} lbl={`${t(lang,'rodLbl')} (${uLbl})`} sub={roGal > 0 && evapGal > 0 ? `${(roGal/evapGal*100).toFixed(0)}% util` : null} accent="#2dd4a7" />
+        <Stat val={bestDay ? fmt(bestDay.val,0) : '—'} lbl={`${t(lang,'bestRunLbl')} (${uLbl})`} sub={bestDay?.date || null} accent="#e0a44a" />
+        <Stat val={roGal > 0 ? fmt(roGal,0) : '—'} lbl={`${t(lang,'rodLbl')} (${uLbl})`} sub={roGal > 0 && evapGal > 0 ? `${(roGal/evapGal*100).toFixed(0)}% util` : null} accent="#2dd4a7" />
         <Stat val={avgBrix != null ? avgBrix.toFixed(2)+'°' : sapBrix+'°'} lbl={t(lang,'avgBrixLbl')} sub={maxBrix != null ? `${minBrix?.toFixed(2)}–${maxBrix?.toFixed(2)}°` : t(lang,'estimatedLbl')} accent="#a78bfa" />
       </div>
 
@@ -8769,7 +8723,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
       {(slog.sapCollected||[]).length > 1 && (
         <Sec title={t(lang,'sapCollByRun')} icon={<I.droplet size={12} color="#2dd4a7"/>}>
           <SapChart />
-          <div style={{ fontSize:13, color:'#3d5068', marginTop:6 }}>
+          <div style={{ fontSize:13, color:'#7f92a6', marginTop:6 }}>
             {t(lang,'peakRunNote')}
           </div>
         </Sec>
@@ -8777,9 +8731,9 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
 
       {/* ── Brix trend ── */}
       {bVals.length >= 2 && (
-        <Sec title={t(lang,'sapBrixTrend')} icon={<I.percent size={12} color="#a78bfa"/>}>
+        <Sec title={t(lang,'sapBrixTrend')} icon={<I.percent size={12} color="#7f92a6"/>}>
           <BrixLine />
-          <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#5a6a7a', marginTop:6 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#7f92a6', marginTop:6 }}>
             <span>{t(lang,'lowLbl')}: {minBrix?.toFixed(2)}°Bx</span>
             <span>{t(lang,'avgLbl')}: {avgBrix?.toFixed(2)}°Bx</span>
             <span>{t(lang,'highLbl')}: {maxBrix?.toFixed(2)}°Bx</span>
@@ -8792,7 +8746,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
         <Sec title={t(lang,'vsLastSeason').replace('{year}',season-1)} icon={<I.trendUp size={12} color="#58a6ff"/>}>
           <YoYBadge pct={sapChg}   label={`${t(lang,'sapCollectedLbl')} (${uLbl})`} />
           <YoYBadge pct={syrupChg} label={`${t(lang,'syrupProducedLbl')} (${uLbl})`} />
-          <div style={{ display:'flex', justifyContent:'space-between', paddingTop:8, fontSize:12, color:'#3d5068' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', paddingTop:8, fontSize:12, color:'#7f92a6' }}>
             <span>{season-1}: {prevSap.toFixed(1)} gal sap / {prevSyrup.toFixed(1)} gal syrup</span>
           </div>
         </Sec>
@@ -8800,25 +8754,25 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
 
       {/* ── Conversion notes ── */}
       {actualRatio > 0 && theorRatio > 0 && (
-        <Sec title={t(lang,'convEfficiency')} icon={<I.scale size={12} color="#f59e0b"/>}>
+        <Sec title={t(lang,'convEfficiency')} icon={<I.scale size={12} color="#7f92a6"/>}>
           <div style={{ display:'flex', gap:12, justifyContent:'space-between', marginBottom:8 }}>
             <div style={{ textAlign:'center', flex:1 }}>
-              <div style={{ fontSize:18, fontWeight:800, color: actualRatio <= theorRatio*1.12 ? '#2dd4a7' : '#f59e0b' }}>{actualRatio.toFixed(1)}:1</div>
-              <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'actualRatioShort')}</div>
+              <div style={{ fontSize:20, fontWeight:700, color:'#e6edf3' }}>{actualRatio.toFixed(1)}:1</div>
+              <div style={{ fontSize:13, color:'#7f92a6' }}>{t(lang,'actualRatioShort')}</div>
             </div>
             <div style={{ textAlign:'center', flex:1 }}>
-              <div style={{ fontSize:18, fontWeight:800, color:'#8a9ab0' }}>{theorRatio.toFixed(1)}:1</div>
-              <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'rule86Lbl')} ({sapBrix}°Brix)</div>
+              <div style={{ fontSize:20, fontWeight:700, color:'#e6edf3' }}>{theorRatio.toFixed(1)}:1</div>
+              <div style={{ fontSize:13, color:'#7f92a6' }}>{t(lang,'rule86Lbl')} ({sapBrix}°Brix)</div>
             </div>
             <div style={{ textAlign:'center', flex:1 }}>
-              <div style={{ fontSize:18, fontWeight:800, color: actualRatio <= theorRatio*1.12 ? '#2dd4a7' : '#f59e0b' }}>
+              <div style={{ fontSize:20, fontWeight:700, color: actualRatio <= theorRatio*1.12 ? '#3fb950' : '#e0a44a' }}>
                 {actualRatio > 0 ? ((actualRatio - theorRatio)/theorRatio*100).toFixed(0) : '—'}%
               </div>
-              <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'vsTheoretical')}</div>
+              <div style={{ fontSize:13, color:'#7f92a6' }}>{t(lang,'vsTheoretical')}</div>
             </div>
           </div>
           {actualRatio > theorRatio * 1.15 && (
-            <div style={{ fontSize:12, color:'#f59e0b', lineHeight:1.5 }}>
+            <div style={{ fontSize:13, color:'#8b949e', lineHeight:1.5 }}>
               Your ratio is {((actualRatio - theorRatio)/theorRatio*100).toFixed(0)}% above theoretical — check for foam loss, evaporator leaks, or thin drawoff.
             </div>
           )}
@@ -8852,15 +8806,15 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
           const BAR_W = Math.round(W * pct);
           return (
             <div style={{ marginBottom:10 }}>
-              <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#8a9ab0', marginBottom:3 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#8b949e', marginBottom:3 }}>
                 <span style={{ fontWeight:600 }}>{label}</span>
-                <span style={{ color, fontWeight:700 }}>{value >= 10 ? value.toFixed(0) : value.toFixed(1)} {unit}</span>
+                <span style={{ color:'#e6edf3', fontWeight:700 }}>{value >= 10 ? value.toFixed(0) : value.toFixed(1)} <span style={{ color:'#7f92a6', fontWeight:500 }}>{unit}</span></span>
               </div>
               <div style={{ background:'rgba(255,255,255,0.06)', borderRadius:4, height:16, overflow:'hidden' }}>
                 <div style={{ width: BAR_W, height:'100%', background: color, borderRadius:4, display:'flex', alignItems:'center', justifyContent:'flex-end', paddingRight:4 }}>
                 </div>
               </div>
-              {secondary && <div style={{ fontSize:13, color:'#3d5068', marginTop:2, textAlign:'right' }}>{secondary}</div>}
+              {secondary && <div style={{ fontSize:13, color:'#7f92a6', marginTop:2, textAlign:'right' }}>{secondary}</div>}
             </div>
           );
         };
@@ -8870,71 +8824,71 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
             {/* Inputs toggle */}
             <div style={{ marginBottom:12 }}>
               <button onClick={() => setShowROInputs(s=>!s)}
-                style={{ background:'none', border:'none', color:'#3d5068', fontSize:12, cursor:'pointer', textDecoration:'underline', padding:0 }}>
+                style={{ background:'none', border:'none', color:'#7f92a6', fontSize:12, cursor:'pointer', textDecoration:'underline', padding:0 }}>
                 {showROInputs ? `▲ ${t(lang,'hideInputs')}` : `▼ ${t(lang,'adjustInputs')}`}
               </button>
               {showROInputs && (
                 <div style={{ marginTop:10, display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
                   <div>
-                    <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>{t(lang,'evapRateInput')}</div>
+                    <div style={{ fontSize:13, color:'#7f92a6', marginBottom:3 }}>{t(lang,'evapRateInput')}</div>
                     <input type="number" value={recapEvapRate} min={1} max={500} step={5}
                       onChange={e => saveR('sg_recap_evap', setRecapEvapRate)(parseFloat(e.target.value)||50)}
-                      style={{ width:'100%', boxSizing:'border-box', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'6px 10px', color:'#e2eaf4', fontSize:13 }} />
+                      style={{ width:'100%', boxSizing:'border-box', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'6px 10px', color:'#e6edf3', fontSize:13 }} />
                   </div>
                   <div>
-                    <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>{t(lang,'woodBurnInput')}</div>
+                    <div style={{ fontSize:13, color:'#7f92a6', marginBottom:3 }}>{t(lang,'woodBurnInput')}</div>
                     <input type="number" value={burnLbsHr} min={5} max={100} step={1}
                       onChange={e => saveR('sg_recap_burn', setBurnLbsHr)(parseFloat(e.target.value)||23)}
-                      style={{ width:'100%', boxSizing:'border-box', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'6px 10px', color:'#e2eaf4', fontSize:13 }} />
+                      style={{ width:'100%', boxSizing:'border-box', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'6px 10px', color:'#e6edf3', fontSize:13 }} />
                   </div>
                   <div>
-                    <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:3 }}>{t(lang,'roBrixInput')}</div>
+                    <div style={{ fontSize:13, color:'#7f92a6', marginBottom:3 }}>{t(lang,'roBrixInput')}</div>
                     <input type="number" value={recapRoBrix} min={1} max={20} step={0.5}
                       onChange={e => saveR('sg_dx_robrix', setRecapRoBrix)(parseFloat(e.target.value)||8)}
-                      style={{ width:'100%', boxSizing:'border-box', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'6px 10px', color:'#e2eaf4', fontSize:13 }} />
+                      style={{ width:'100%', boxSizing:'border-box', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'6px 10px', color:'#e6edf3', fontSize:13 }} />
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:8, paddingTop:18 }}>
                     <input type="checkbox" id="preheat-chk" checked={hasPreheater}
                       onChange={e => saveR('sg_recap_preheat', setHasPreheater)(e.target.checked)}
-                      style={{ accentColor:'#58a6ff', width:16, height:16 }} />
-                    <label htmlFor="preheat-chk" style={{ fontSize:13, color:'#8a9ab0', cursor:'pointer' }}>{t(lang,'preheaterLbl')}</label>
+                      style={{ accentColor:'#2dd4a7', width:16, height:16 }} />
+                    <label htmlFor="preheat-chk" style={{ fontSize:13, color:'#8b949e', cursor:'pointer' }}>{t(lang,'preheaterLbl')}</label>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Boil time bars */}
-            <div style={{ fontSize:13, fontWeight:700, color:'#3d5068', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:6 }}>{t(lang,'boilTimeLbl')}</div>
-            <Bar label={t(lang,'straightBoilLbl')} value={straightHrs} max={maxHrs} color="#f85149" unit="hrs" />
-            <Bar label={hasPreheater?t(lang,'withROPreLbl'):t(lang,'withROLbl')} value={roHrs} max={maxHrs} color="#58a6ff" unit="hrs"
+            <div style={{ fontSize:13, fontWeight:700, color:'#7f92a6', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:6 }}>{t(lang,'boilTimeLbl')}</div>
+            <Bar label={t(lang,'straightBoilLbl')} value={straightHrs} max={maxHrs} color="#7f92a6" unit="hrs" />
+            <Bar label={hasPreheater?t(lang,'withROPreLbl'):t(lang,'withROLbl')} value={roHrs} max={maxHrs} color="#2dd4a7" unit="hrs"
               secondary={roGal > 0 ? t(lang,'roConcentratedNote').replace('{ro}',roGal.toFixed(0)).replace('{conc}',roConc.toFixed(0)) : t(lang,'noRODataNote')} />
 
             {/* Wood bars */}
-            <div style={{ fontSize:13, fontWeight:700, color:'#3d5068', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:6, marginTop:14 }}>{t(lang,'woodUsedLbl')}</div>
-            <Bar label={t(lang,'straightBoilLbl')} value={straightWood} max={maxWood} color="#f85149" unit="lbs" />
-            <Bar label={hasPreheater?t(lang,'withROPreLbl'):t(lang,'withROLbl')} value={roWood} max={maxWood} color="#58a6ff" unit="lbs" />
+            <div style={{ fontSize:13, fontWeight:700, color:'#7f92a6', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:6, marginTop:14 }}>{t(lang,'woodUsedLbl')}</div>
+            <Bar label={t(lang,'straightBoilLbl')} value={straightWood} max={maxWood} color="#7f92a6" unit="lbs" />
+            <Bar label={hasPreheater?t(lang,'withROPreLbl'):t(lang,'withROLbl')} value={roWood} max={maxWood} color="#2dd4a7" unit="lbs" />
 
             {/* Savings summary */}
             {savedHrs > 0 && (
-              <div style={{ background:'rgba(45,212,167,0.08)', border:'1px solid rgba(45,212,167,0.25)', borderRadius:10, padding:'10px 14px', marginTop:14, display:'flex', gap:20, justifyContent:'center' }}>
+              <div style={{ background:'#0d1a2b', borderRadius:12, padding:'12px 14px', marginTop:14, display:'flex', gap:20, justifyContent:'center' }}>
                 <div style={{ textAlign:'center' }}>
-                  <div style={{ fontSize:20, fontWeight:800, color:'#2dd4a7' }}>{savedHrs.toFixed(0)} hrs</div>
-                  <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'savedBoilingLbl')}</div>
+                  <div style={{ fontSize:20, fontWeight:700, color:'#3fb950' }}>{savedHrs.toFixed(0)} hrs</div>
+                  <div style={{ fontSize:13, color:'#7f92a6' }}>{t(lang,'savedBoilingLbl')}</div>
                 </div>
                 <div style={{ width:1, background:'rgba(255,255,255,0.08)' }} />
                 <div style={{ textAlign:'center' }}>
-                  <div style={{ fontSize:20, fontWeight:800, color:'#2dd4a7' }}>{savedWood >= 1000 ? (savedWood/1000).toFixed(1)+'k' : savedWood.toFixed(0)} lbs</div>
-                  <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'woodSavedLbl')}</div>
+                  <div style={{ fontSize:20, fontWeight:700, color:'#3fb950' }}>{savedWood >= 1000 ? (savedWood/1000).toFixed(1)+'k' : savedWood.toFixed(0)} lbs</div>
+                  <div style={{ fontSize:13, color:'#7f92a6' }}>{t(lang,'woodSavedLbl')}</div>
                 </div>
                 <div style={{ width:1, background:'rgba(255,255,255,0.08)' }} />
                 <div style={{ textAlign:'center' }}>
                   <div style={{ fontSize:20, fontWeight:800, color:'#2dd4a7' }}>{(savedWood/2000).toFixed(2)}</div>
-                  <div style={{ fontSize:13, color:'#5a6a7a' }}>{t(lang,'cordsSavedLbl')}</div>
+                  <div style={{ fontSize:13, color:'#7f92a6' }}>{t(lang,'cordsSavedLbl')}</div>
                 </div>
               </div>
             )}
             {roGal === 0 && (
-              <div style={{ fontSize:12, color:'#3d5068', marginTop:8, lineHeight:1.5 }}>
+              <div style={{ fontSize:12, color:'#7f92a6', marginTop:8, lineHeight:1.5 }}>
                 {t(lang,'logRONote')}
               </div>
             )}
@@ -8953,7 +8907,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
         if (!hasTagged) return null;
         const uLbl2 = units === 'GAL' ? 'gal' : 'L';
         return (
-          <Sec title={t(lang,'byCollPoint')} icon={<I.circle size={12} color="#a78bfa"/>}>
+          <Sec title={t(lang,'byCollPoint')} icon={<I.circle size={12} color="#7f92a6"/>}>
             {cpoints.map(pt => {
               const ptSap   = sapEntries.filter(e => e.point === pt.id).reduce((s,e)=>s+(parseFloat(e.val)||0),0);
               const ptSyrup = syrupEntries.filter(e => e.point === pt.id).reduce((s,e)=>s+(parseFloat(e.val)||0),0);
@@ -8963,12 +8917,12 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
                 <div key={pt.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 0', borderBottom:'1px solid #131e2c' }}>
                   <div style={{ width:11, height:11, borderRadius:'50%', background:pt.color, flexShrink:0 }} />
                   <div style={{ flex:1 }}>
-                    <div style={{ fontWeight:700, fontSize:14, color:'#e2eaf4' }}>{pt.name}</div>
-                    <div style={{ fontSize:12, color:'#5a6a7a', marginTop:2 }}>{ptRuns} {t(lang,'runsLbl')} · {t(lang,'ratioLbl')} {ptRatio}</div>
+                    <div style={{ fontWeight:700, fontSize:14, color:'#e6edf3' }}>{pt.name}</div>
+                    <div style={{ fontSize:12, color:'#7f92a6', marginTop:2 }}>{ptRuns} {t(lang,'runsLbl')} · {t(lang,'ratioLbl')} {ptRatio}</div>
                   </div>
                   <div style={{ textAlign:'right' }}>
                     <div style={{ fontWeight:700, fontSize:15, color:pt.color }}>{ptSap.toFixed(1)} <span style={{ fontSize:13, fontWeight:400 }}>{uLbl2} {t(lang,'sapShort')}</span></div>
-                    {ptSyrup > 0 && <div style={{ fontSize:12, color:'#8a9ab0' }}>{ptSyrup.toFixed(1)} {uLbl2} {t(lang,'syrupShort')}</div>}
+                    {ptSyrup > 0 && <div style={{ fontSize:12, color:'#8b949e' }}>{ptSyrup.toFixed(1)} {uLbl2} {t(lang,'syrupShort')}</div>}
                   </div>
                 </div>
               );
@@ -8980,13 +8934,13 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
               if (unSap === 0 && unSyrup === 0) return null;
               return (
                 <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 0' }}>
-                  <div style={{ width:11, height:11, borderRadius:'50%', background:'#3d5068', flexShrink:0 }} />
+                  <div style={{ width:11, height:11, borderRadius:'50%', background:'#7f92a6', flexShrink:0 }} />
                   <div style={{ flex:1 }}>
-                    <div style={{ fontWeight:600, fontSize:13, color:'#5a6a7a' }}>Unassigned / shared</div>
+                    <div style={{ fontWeight:600, fontSize:13, color:'#7f92a6' }}>Unassigned / shared</div>
                   </div>
                   <div style={{ textAlign:'right' }}>
-                    <div style={{ fontWeight:600, fontSize:13, color:'#5a6a7a' }}>{unSap.toFixed(1)} {uLbl} sap</div>
-                    {unSyrup > 0 && <div style={{ fontSize:12, color:'#3d5068' }}>{unSyrup.toFixed(1)} {uLbl} syrup</div>}
+                    <div style={{ fontWeight:600, fontSize:13, color:'#7f92a6' }}>{unSap.toFixed(1)} {uLbl} sap</div>
+                    {unSyrup > 0 && <div style={{ fontSize:12, color:'#7f92a6' }}>{unSyrup.toFixed(1)} {uLbl} syrup</div>}
                   </div>
                 </div>
               );
@@ -9016,7 +8970,7 @@ function SettingsSheet({ units, setUnits, lang, setLang, season, setSeason,
       padding:'14px 0', borderBottom:'1px solid #131e2c' }}>
       <div style={{ minWidth:0 }}>
         <div style={{ fontSize:14, fontWeight:650, color:'#e6edf3' }}>{label}</div>
-        {hint && <div style={{ fontSize:12, color:'#5a6a7a', marginTop:2 }}>{hint}</div>}
+        {hint && <div style={{ fontSize:12, color:'#7f92a6', marginTop:2 }}>{hint}</div>}
       </div>
       <div style={{ flexShrink:0 }}>{children}</div>
     </div>
@@ -9025,7 +8979,7 @@ function SettingsSheet({ units, setUnits, lang, setLang, season, setSeason,
     <div style={{ display:'flex', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:2 }}>
       {opts.map(o => (
         <button key={o.v} onClick={()=>set(o.v)} aria-pressed={val===o.v}
-          style={{ background: val===o.v ? tint : 'transparent', color: val===o.v ? '#07090f' : '#8a9ab5',
+          style={{ background: val===o.v ? 'rgba(45,212,167,0.16)' : 'transparent', color: val===o.v ? '#2dd4a7' : '#8b949e',
             border:'none', borderRadius:8, padding:'8px 15px', fontSize:13, fontWeight:700,
             cursor:'pointer', minHeight:38 }}>{o.l}</button>
       ))}
@@ -9038,23 +8992,19 @@ function SettingsSheet({ units, setUnits, lang, setLang, season, setSeason,
       <Icon size={18} color={tint} />
       <span style={{ flex:1, minWidth:0 }}>
         <span style={{ display:'block', fontSize:14, fontWeight:650, color:'#e6edf3' }}>{label}</span>
-        <span style={{ display:'block', fontSize:12, color:'#5a6a7a', marginTop:1 }}>{hint}</span>
+        <span style={{ display:'block', fontSize:12, color:'#7f92a6', marginTop:1 }}>{hint}</span>
       </span>
-      <span style={{ color:'#3d5068' }}>›</span>
+      <span style={{ color:'#7f92a6' }}>›</span>
     </button>
   );
   return (
-    <div onClick={onClose} role="dialog" aria-modal="true" aria-label="Settings"
-      style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.72)', zIndex:1000,
-        display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:'#0d1521', borderTop:'1px solid #1e2d3d',
-        borderRadius:'20px 20px 0 0', padding:'12px 18px calc(28px + env(safe-area-inset-bottom,0px))',
-        width:'100%', maxWidth:540, maxHeight:'82vh', overflowY:'auto' }}>
-        <div style={{ width:36, height:3.5, background:'rgba(255,255,255,0.15)', borderRadius:2, margin:'0 auto 16px' }} />
+    <div onClick={onClose} role="dialog" aria-modal="true" aria-label="Settings" className="scrim">
+      <div onClick={e=>e.stopPropagation()} className="sheet">
+        <div className="sheet-handle" />
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
           <div style={{ fontWeight:800, fontSize:17 }}>Settings</div>
           <button onClick={onClose} aria-label="Close settings"
-            style={{ background:'none', border:'none', color:'#3d5068', cursor:'pointer', padding:6 }}>
+            style={{ background:'none', border:'none', color:'#7f92a6', cursor:'pointer', padding:6 }}>
             <I.x size={17} />
           </button>
         </div>
@@ -9063,20 +9013,20 @@ function SettingsSheet({ units, setUnits, lang, setLang, season, setSeason,
           <Seg opts={[{v:'GAL',l:'GAL'},{v:'L',l:'L'}]} val={units} set={setUnits} tint="#2dd4a7" />
         </Row>
         <Row label="Language">
-          <Seg opts={[{v:'en',l:'EN'},{v:'fr',l:'FR'}]} val={lang} set={setLang} tint="#a855f7" />
+          <Seg opts={[{v:'en',l:'EN'},{v:'fr',l:'FR'}]} val={lang} set={setLang} tint="#2dd4a7" />
         </Row>
         <Row label="Season" hint="Which year your log and recap show">
           <div style={{ display:'flex', alignItems:'center', gap:4 }}>
             <button onClick={()=>setSeason(s=>s-1)} aria-label="Previous season"
-              style={{ background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:9, width:38, height:38,
-                color:'#8a9ab5', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <I.chevDown size={15} color="#8a9ab5" />
+              style={{ background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, width:44, height:44,
+                color:'#8b949e', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <I.chevDown size={15} color="#8b949e" />
             </button>
             <span style={{ fontSize:15, fontWeight:700, minWidth:48, textAlign:'center' }}>{season}</span>
             <button onClick={()=>setSeason(s=>s+1)} aria-label="Next season"
-              style={{ background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:9, width:38, height:38,
-                color:'#8a9ab5', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <I.chevUp size={15} color="#8a9ab5" />
+              style={{ background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, width:44, height:44,
+                color:'#8b949e', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <I.chevUp size={15} color="#8b949e" />
             </button>
           </div>
         </Row>
@@ -9084,7 +9034,7 @@ function SettingsSheet({ units, setUnits, lang, setLang, season, setSeason,
         <div style={{ marginTop:16 }}>
           <Action Icon={I.compass} tint="#2dd4a7" label="Season setup"
             hint="Trees, tap system, evaporator and costs" onClick={()=>{ onClose(); onWizard(); }} />
-          <Action Icon={I.save} tint="#58a6ff" label="Data and backup"
+          <Action Icon={I.save} tint="#2dd4a7" label="Data and backup"
             hint="Download a copy, or restore one" onClick={()=>{ onClose(); onBackup(); }} />
         </div>
       </div>
@@ -9114,6 +9064,7 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
   const last = entries.length
     ? entries.reduce((a, b) => (new Date(b.date) > new Date(a.date) ? b : a))
     : null;
+  const recent = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date) || (b.id||0) - (a.id||0)).slice(0, 5);
   const KIND = { sapCollected:'sap collected', syrupMade:'syrup made', sapRO:'sap through R/O',
                  sapEvap:'sap in the evaporator', fuelUsed:'fuel burned', boilHours:'hours boiling' };
 
@@ -9121,35 +9072,35 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
   const dateLine = today.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-US',
     { weekday:'long', month:'long', day:'numeric' });
 
-  const Stat = ({ label, value, unit, tint }) => (
-    <div style={{ flex:1, minWidth:0 }}>
-      <div style={{ fontSize:12, fontWeight:700, color:'#3d5068', letterSpacing:'0.08em',
-        textTransform:'uppercase', marginBottom:4 }}>{label}</div>
-      <div style={{ fontSize:26, fontWeight:800, color:tint, lineHeight:1.05 }}>{value}</div>
-      {unit && <div style={{ fontSize:12, color:'#5a6a7a', marginTop:2 }}>{unit}</div>}
+  // One figure carries the accent and the size; the other two are set in text colour.
+  const Eyebrow = ({ children }) => (
+    <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', letterSpacing:'0.08em', textTransform:'uppercase' }}>{children}</div>
+  );
+  const Fig = ({ value, unit, sub, lead }) => (
+    <div style={{ minWidth:0 }}>
+      <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
+        <span style={{ fontSize:lead?28:20, fontWeight:lead?800:700, color:lead?'#2dd4a7':'#e6edf3', lineHeight:1.05, letterSpacing:'-0.01em' }}>{value}</span>
+        {unit && <span style={{ fontSize:13, color:'#7f92a6', fontWeight:500, whiteSpace:'nowrap' }}>{unit}</span>}
+      </div>
+      {sub && <div style={{ fontSize:12, color:'#7f92a6', marginTop:3, whiteSpace:'nowrap' }}>{sub}</div>}
     </div>
   );
 
-  const Jump = ({ to, Icon, title, sub }) => (
-    <button onClick={() => go(to)} style={{ width:'100%', background:'#0f1720', border:'1px solid #1e2d3d',
-      borderRadius:14, padding:'14px 16px', display:'flex', alignItems:'center', gap:12,
-      cursor:'pointer', textAlign:'left', minHeight:64, marginBottom:8 }}>
-      <span style={{ width:38, height:38, borderRadius:11, background:'#0d1a2b', display:'flex',
-        alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-        <Icon size={19} color="#2dd4a7" />
-      </span>
-      <span style={{ flex:1, minWidth:0 }}>
-        <span style={{ display:'block', fontSize:14, fontWeight:700, color:'#e6edf3' }}>{title}</span>
-        <span style={{ display:'block', fontSize:13, color:'#5a6a7a', marginTop:1 }}>{sub}</span>
-      </span>
-      <span style={{ color:'#3d5068', fontSize:16, flexShrink:0 }}>›</span>
-    </button>
-  );
+  // The one thing Today can say that no other screen says first: where this season's yield per tap
+  // stands against the benchmark for the producer's own system. Every input is already on the device.
+  const perTap = taps > 0 && syT > 0 ? syT / taps : null;
+  const standing = perTap == null ? null
+    : perTap >= model.high ? 'above the range' : perTap >= model.low ? 'inside the range' : 'below the range';
+
+  const SHORT = { sapCollected:'Sap collected', syrupMade:'Syrup made', sapRO:'Sap through R/O',
+                  sapEvap:'Sap evaporated', fuelUsed:'Fuel burned', boilHours:'Hours boiling' };
+  const unitOf = k => k === 'fuelUsed' ? (FUELS.find(f=>f.label===ls.get('sg_fuel','Firewood (cord)'))||FUELS[0]).unit : k === 'boilHours' ? 'hr' : u;
+  const dpOf   = k => k === 'syrupMade' || k === 'fuelUsed' || k === 'boilHours' ? 1 : 0;
 
   return (
-    <div>
+    <div className="today-fill">
       <div style={{ marginBottom:18 }}>
-        <div style={{ fontSize:12, fontWeight:700, color:'#2dd4a7', letterSpacing:'0.14em',
+        <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', letterSpacing:'0.14em',
           textTransform:'uppercase', marginBottom:5 }}>{season} season</div>
         <div style={{ fontSize:22, fontWeight:800, color:'#e6edf3', letterSpacing:'-0.01em' }}>{dateLine}</div>
       </div>
@@ -9157,38 +9108,67 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
       {/* Where the season stands */}
       <div className="card">
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:8 }}>
-          <span style={{ fontWeight:700, fontSize:14 }}>Season goal</span>
-          <span style={{ color:'#5a6a7a', fontSize:14 }}>{fmt(conv(syT),1)} / {fmt(conv(goal),1)} {u}</span>
+          <Eyebrow>Season goal</Eyebrow>
+          <span style={{ color:'#7f92a6', fontSize:14 }}>{fmt(conv(syT),1)} / {fmt(conv(goal),1)} {u}</span>
         </div>
         <div className="progress-bar-bg"><div className="progress-bar-fill"
           style={{ width:`${pct}%`, background:'#2dd4a7' }} /></div>
-        <div style={{ fontSize:12, color:'#5a6a7a', marginTop:7 }}>
-          {taps} tap{taps!==1?'s':''} at {yieldMidOf(model)} {u}/tap ({model.label})
+        <div style={{ fontSize:12, color:'#7f92a6', marginTop:7 }}>
+          {fmt(taps,0)} tap{taps!==1?'s':''} at {yieldMidOf(model)} {u}/tap ({model.label})
         </div>
-        <div style={{ display:'flex', gap:14, marginTop:16, paddingTop:16, borderTop:'1px solid #1e2d3d' }}>
-          <Stat label="Sap"   value={fmt(conv(sapT),0)} unit={u} tint="#58a6ff" />
-          <Stat label="Syrup" value={fmt(conv(syT),1)}  unit={u} tint="#2dd4a7" />
-          <Stat label="Ratio" value={ratio ? `${ratio.toFixed(0)}:1` : '—'}
-            unit={ratio ? `theory ${fmt(theor,0)}:1` : 'no syrup logged'} tint="#e0a44a" />
+        <div className="stat3" style={{ marginTop:14, paddingTop:14, borderTop:'1px solid #131e2c' }}>
+          <Eyebrow>Syrup</Eyebrow><Eyebrow>Sap</Eyebrow><Eyebrow>Ratio</Eyebrow>
+          <Fig value={fmt(conv(syT),1)}  unit={u} lead />
+          <Fig value={fmt(conv(sapT),0)} unit={u} />
+          <Fig value={ratio ? `${ratio.toFixed(0)}:1` : '—'} sub={ratio ? `theory ${fmt(theor,0)}:1` : 'no syrup logged'} />
         </div>
       </div>
 
-      {last ? (
-        <div style={{ fontSize:13, color:'#5a6a7a', margin:'0 2px 16px', lineHeight:1.5 }}>
-          Last entry: {fmt(conv(parseFloat(last.val)||0),1)} {u} {KIND[last.kind] || last.kind} on {last.date}.
+      {/* The comparison: yield per tap against the benchmark for this system */}
+      <div className="card">
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', gap:12 }}>
+          <div style={{ minWidth:0 }}>
+            <Eyebrow>Per tap so far</Eyebrow>
+            <div style={{ display:'flex', alignItems:'baseline', gap:4, marginTop:4 }}>
+              <span style={{ fontSize:20, fontWeight:700, color:'#e6edf3', lineHeight:1.05 }}>{perTap != null ? fmt(conv(perTap),2) : '—'}</span>
+              <span style={{ fontSize:13, color:'#7f92a6', fontWeight:500 }}>{u}/tap</span>
+            </div>
+          </div>
+          <div style={{ textAlign:'right', flexShrink:0 }}>
+            <Eyebrow>Benchmark</Eyebrow>
+            <div style={{ display:'flex', alignItems:'baseline', gap:4, marginTop:4, justifyContent:'flex-end' }}>
+              <span style={{ fontSize:20, fontWeight:700, color:'#e6edf3', lineHeight:1.05 }}>{model.low}–{model.high}</span>
+              <span style={{ fontSize:13, color:'#7f92a6', fontWeight:500 }}>{u}/tap</span>
+            </div>
+          </div>
         </div>
-      ) : (
-        <div style={{ fontSize:13, color:'#5a6a7a', margin:'0 2px 16px', lineHeight:1.5 }}>
-          Nothing logged this season yet. Every number above fills in once you start.
+        <div style={{ fontSize:13, color:'#7f92a6', marginTop:10, paddingTop:10, borderTop:'1px solid #131e2c', lineHeight:1.5 }}>
+          {standing ? `${standing.charAt(0).toUpperCase()+standing.slice(1)} for ${model.label}.` : `Benchmark for ${model.label}. Fills in with the first syrup entry.`}
+          {last ? '' : ' Nothing logged this season yet.'}
+        </div>
+      </div>
+
+      {/* The landing screen remembers: the last three runs, plain rows, no card */}
+      {recent.length > 0 && (
+        <div style={{ margin:'4px 2px 0' }}>
+          <Eyebrow>Recent runs</Eyebrow>
+          <div style={{ marginTop:6 }}>
+            {recent.map(e => (
+              <div key={e.id} style={{ display:'grid', gridTemplateColumns:'76px 1fr auto', columnGap:12, alignItems:'baseline', minHeight:44, padding:'10px 0', borderBottom:'1px solid #131e2c', fontSize:14 }}>
+                <span style={{ color:'#7f92a6', whiteSpace:'nowrap' }}>{e.date}</span>
+                <span style={{ color:'#e6edf3', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{SHORT[e.kind] || e.kind}</span>
+                <span style={{ fontWeight:700, textAlign:'right', whiteSpace:'nowrap' }}>{fmt(e.kind==='syrupMade'||e.kind==='sapCollected'||e.kind==='sapRO'||e.kind==='sapEvap' ? conv(parseFloat(e.val)||0) : parseFloat(e.val)||0, dpOf(e.kind))} <span style={{ fontWeight:500, color:'#7f92a6' }}>{unitOf(e.kind)}</span></span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
-      <div style={{ fontSize:12, fontWeight:700, color:'#3d5068', letterSpacing:'0.1em',
-        textTransform:'uppercase', margin:'0 2px 10px' }}>Get to work</div>
-      <Jump to="log"     Icon={I.clipboard} title="Log today's run"   sub="Sap, syrup, fuel and hours" />
-      <Jump to="lines"   Icon={I.mapPin}    title="Open the map"      sub="Pins, mainlines and routes" />
-      <Jump to="weather" Icon={I.cloudSun}  title="Check the forecast" sub="Freeze-thaw and flow score" />
-      <Jump to="sap"     Icon={I.calculator} title="Run the numbers"  sub="Sap, boil, R/O and finishing" />
+      <div className="primary-bar">
+        <button className="btn-primary" onClick={() => go('log')}>
+          <I.clipboard size={18} color="#07090f" /> Log today's run
+        </button>
+      </div>
     </div>
   );
 }
@@ -9551,8 +9531,8 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
 
   // ── Severity styling ───────────────────────────────────────────────────────
   const sevStyle = {
-    high:   { bg:'rgba(239,68,68,0.12)',   border:'rgba(239,68,68,0.35)',   dot:'#ef4444', label:'High Priority'   },
-    medium: { bg:'rgba(245,158,11,0.12)',  border:'rgba(245,158,11,0.35)',  dot:'#f59e0b', label:'Opportunity'     },
+    high:   { bg:'rgba(248,81,73,0.12)',   border:'rgba(248,81,73,0.35)',   dot:'#ef4444', label:'High Priority'   },
+    medium: { bg:'rgba(245,158,11,0.12)',  border:'rgba(245,158,11,0.35)',  dot:'#e0a44a', label:'Opportunity'     },
     low:    { bg:'rgba(99,102,241,0.12)',  border:'rgba(99,102,241,0.35)',  dot:'#6366f1', label:'Watch'           },
     good:   { bg:'rgba(45,212,167,0.08)', border:'rgba(45,212,167,0.25)', dot:'#2dd4a7', label:'Looking Good'    },
   };
@@ -9569,18 +9549,18 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
           <div style={{ width:10, height:10, borderRadius:'50%', background:s.dot, flexShrink:0, marginTop:4 }} />
           <div style={{ flex:1 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
-              <div style={{ fontWeight:700, fontSize:14, color:'#e2eaf4', lineHeight:1.3 }}>{f.title}</div>
+              <div style={{ fontWeight:700, fontSize:14, color:'#e6edf3', lineHeight:1.3 }}>{f.title}</div>
               <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
                 {f.roi > 0 && (
                   <span style={{ background:'rgba(45,212,167,0.15)', border:'1px solid rgba(45,212,167,0.3)', borderRadius:10, padding:'2px 8px', fontSize:13, fontWeight:700, color:'#2dd4a7' }}>
                     ${f.roi >= 1000 ? (f.roi/1000).toFixed(1)+'k' : f.roi.toFixed(0)} ROI
                   </span>
                 )}
-                <span style={{ background:'rgba(255,255,255,0.06)', borderRadius:8, padding:'2px 8px', fontSize:13, color:'#5a6a7a', fontWeight:600 }}>{s.label}</span>
-                <I.chevDown size={14} color="#3d5068" style={{ transform: open ? 'rotate(180deg)' : 'none', transition:'0.18s' }} />
+                <span style={{ background:'rgba(255,255,255,0.06)', borderRadius:8, padding:'2px 8px', fontSize:13, color:'#7f92a6', fontWeight:600 }}>{s.label}</span>
+                <I.chevDown size={14} color="#7f92a6" style={{ transform: open ? 'rotate(180deg)' : 'none', transition:'0.18s' }} />
               </div>
             </div>
-            <div style={{ fontSize:12, color:'#8a9ab0', marginTop:4, lineHeight:1.5 }}>{f.summary}</div>
+            <div style={{ fontSize:12, color:'#8b949e', marginTop:4, lineHeight:1.5 }}>{f.summary}</div>
           </div>
         </button>
         {open && (
@@ -9592,18 +9572,18 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
               </div>
             )}
             {f.payback && (
-              <div style={{ fontSize:12, color:'#f59e0b', fontWeight:600, marginBottom:10 }}>
+              <div style={{ fontSize:12, color:'#e0a44a', fontWeight:600, marginBottom:10 }}>
                 <I.dollar size={14} color="#3fb950" /> {f.payback}
               </div>
             )}
             {f.effort && (
-              <div style={{ fontSize:12, color:'#5a6a7a', marginBottom:10 }}>
-                <span style={{ color:'#8a9ab0', fontWeight:600 }}>Effort: </span>{f.effort}
+              <div style={{ fontSize:12, color:'#7f92a6', marginBottom:10 }}>
+                <span style={{ color:'#8b949e', fontWeight:600 }}>Effort: </span>{f.effort}
               </div>
             )}
             {f.details && f.details.length > 0 && (
               <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', paddingTop:10, marginTop:4 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:'#3d5068', marginBottom:6, letterSpacing:'0.05em', textTransform:'uppercase' }}>Details & Sources</div>
+                <div style={{ fontSize:13, fontWeight:700, color:'#7f92a6', marginBottom:6, letterSpacing:'0.05em', textTransform:'uppercase' }}>Details & Sources</div>
                 {f.details.map((d, i) => (
                   <div key={i} style={{ fontSize:12, color:'#6a7a8a', lineHeight:1.5, marginBottom:3, paddingLeft:8, borderLeft:'2px solid rgba(255,255,255,0.06)' }}>{d}</div>
                 ))}
@@ -9623,42 +9603,42 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
   return (
     <div style={{ padding:'16px 14px 40px' }}>
       <div style={{ fontWeight:800, fontSize:20, marginBottom:4 }}>Diagnose My Operation</div>
-      <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:18, lineHeight:1.5 }}>
+      <div style={{ fontSize:13, color:'#7f92a6', marginBottom:18, lineHeight:1.5 }}>
         Rule-based bottleneck analysis using your {season} log data and industry benchmarks.
       </div>
 
       {/* ── Inputs ── */}
-      <div style={{ background:'#0d1a2b', border:'1px solid #1a304a', borderRadius:14, padding:'14px 16px', marginBottom:16 }}>
-        <div style={{ fontSize:12, fontWeight:700, color:'#3d5068', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:12 }}>Operation Inputs</div>
+      <div style={{ background:'#0d1a2b', border:'1px solid #1e2d3d', borderRadius:14, padding:'14px 16px', marginBottom:16 }}>
+        <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:12 }}>Operation Inputs</div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
           <div>
-            <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:4 }}>Syrup price ($/gal)</div>
+            <div style={{ fontSize:13, color:'#7f92a6', marginBottom:4 }}>Syrup price ($/gal)</div>
             <input aria-label="Syrup price in dollars per gallon" type="number" value={syrupPrice} onChange={e => save('sg_dx_price', setSyrupPrice)(parseFloat(e.target.value)||0)}
-              style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e2eaf4', fontSize:14, fontWeight:600, boxSizing:'border-box' }} />
+              style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e6edf3', fontSize:14, fontWeight:600, boxSizing:'border-box' }} />
           </div>
           <div>
-            <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:4 }}>Wood cost ($/cord)</div>
+            <div style={{ fontSize:13, color:'#7f92a6', marginBottom:4 }}>Wood cost ($/cord)</div>
             <input aria-label="Wood cost in dollars per cord" type="number" value={woodCost} onChange={e => save('sg_dx_wood', setWoodCost)(parseFloat(e.target.value)||0)}
-              style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e2eaf4', fontSize:14, fontWeight:600, boxSizing:'border-box' }} />
+              style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e6edf3', fontSize:14, fontWeight:600, boxSizing:'border-box' }} />
           </div>
           <div>
-            <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:4 }}>Labor rate ($/hr)</div>
+            <div style={{ fontSize:13, color:'#7f92a6', marginBottom:4 }}>Labor rate ($/hr)</div>
             <input aria-label="Labor rate in dollars per hour" type="number" value={laborRate} onChange={e => save('sg_dx_labor', setLaborRate)(parseFloat(e.target.value)||0)}
-              style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e2eaf4', fontSize:14, fontWeight:600, boxSizing:'border-box' }} />
+              style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e6edf3', fontSize:14, fontWeight:600, boxSizing:'border-box' }} />
           </div>
           <div>
-            <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:4 }}>RO output (°Brix)</div>
+            <div style={{ fontSize:13, color:'#7f92a6', marginBottom:4 }}>RO output (°Brix)</div>
             <input aria-label="R/O output in degrees Brix, 0 for no R/O" type="number" value={roOutBrix} onChange={e => save('sg_dx_robrix', setRoOutBrix)(parseFloat(e.target.value)||0)}
-              style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e2eaf4', fontSize:14, fontWeight:600, boxSizing:'border-box' }}
+              style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e6edf3', fontSize:14, fontWeight:600, boxSizing:'border-box' }}
               placeholder="0 = no RO" />
           </div>
         </div>
         <div style={{ marginTop:10 }}>
-          <div style={{ fontSize:13, color:'#5a6a7a', marginBottom:4 }}>Vacuum system</div>
+          <div style={{ fontSize:13, color:'#7f92a6', marginBottom:4 }}>Vacuum system</div>
           <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
             {[['gravity','Gravity'],['vac15','15" Vacuum'],['high','High Vac (25"+)']].map(([val,lbl]) => (
               <button key={val} onClick={() => save('sg_dx_vac', setVacLevel)(val)}
-                style={{ background: vacLevel===val ? 'rgba(45,212,167,0.2)' : '#0a1420', border:`1px solid ${vacLevel===val ? '#2dd4a7' : '#1e2d3d'}`, borderRadius:8, padding:'6px 12px', color: vacLevel===val ? '#2dd4a7' : '#5a6a7a', fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                style={{ background: vacLevel===val ? 'rgba(45,212,167,0.2)' : '#0a1420', border:`1px solid ${vacLevel===val ? '#2dd4a7' : '#1e2d3d'}`, borderRadius:8, padding:'6px 12px', color: vacLevel===val ? '#2dd4a7' : '#7f92a6', fontSize:12, fontWeight:700, cursor:'pointer' }}>
                 {lbl}
               </button>
             ))}
@@ -9668,14 +9648,14 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
 
       {/* ── Run button ── */}
       {!hasLogs && (
-        <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.25)', borderRadius:12, padding:'12px 16px', marginBottom:14, fontSize:13, color:'#f59e0b', lineHeight:1.5 }}>
+        <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.25)', borderRadius:12, padding:'12px 16px', marginBottom:14, fontSize:13, color:'#e0a44a', lineHeight:1.5 }}>
           <I.alert size={14} color="currentColor" /> No {season} log data found. Add sap and syrup entries in the Log tab first for a full diagnosis.
         </div>
       )}
 
       <button
         onClick={runDiagnostics}
-        style={{ width:'100%', background:'linear-gradient(135deg,#2dd4a7,#1fbf94)', border:'none', borderRadius:12, padding:'14px', fontWeight:800, fontSize:15, color:'#07090f', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, marginBottom:20, boxShadow:'0 4px 20px rgba(45,212,167,0.3)' }}
+        style={{ width:'100%', background:'#2dd4a7', border:'none', borderRadius:12, padding:'14px', fontWeight:800, fontSize:15, color:'#07090f', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, marginBottom:20 }}
       >
         <I.zap size={18} color="#07090f" />
         Run Diagnosis — {season} Season
@@ -9692,14 +9672,14 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
               return (
                 <div key={sev} style={{ background:s.bg, border:`1px solid ${s.border}`, borderRadius:10, padding:'8px 6px', textAlign:'center' }}>
                   <div style={{ fontSize:20, fontWeight:800, color:s.dot }}>{count}</div>
-                  <div style={{ fontSize:12, color:'#5a6a7a', fontWeight:600, lineHeight:1.3 }}>{s.label}</div>
+                  <div style={{ fontSize:12, color:'#7f92a6', fontWeight:600, lineHeight:1.3 }}>{s.label}</div>
                 </div>
               );
             })}
           </div>
 
           {findings.length === 0 && (
-            <div style={{ textAlign:'center', color:'#5a6a7a', padding:'30px 0', fontSize:14 }}>
+            <div style={{ textAlign:'center', color:'#7f92a6', padding:'30px 0', fontSize:14 }}>
               No issues detected — add more log data for a richer diagnosis.
             </div>
           )}
@@ -9709,11 +9689,11 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
           {/* Total ROI banner */}
           {findings.reduce((s, f) => s + (f.roi || 0), 0) > 0 && (
             <div style={{ background:'rgba(45,212,167,0.1)', border:'1px solid rgba(45,212,167,0.3)', borderRadius:14, padding:'14px 16px', marginTop:8, textAlign:'center' }}>
-              <div style={{ fontSize:12, color:'#5a6a7a', marginBottom:4 }}>Total identified opportunity</div>
+              <div style={{ fontSize:12, color:'#7f92a6', marginBottom:4 }}>Total identified opportunity</div>
               <div style={{ fontSize:26, fontWeight:800, color:'#2dd4a7' }}>
                 ${findings.reduce((s, f) => s + (f.roi || 0), 0).toLocaleString('en-US', { maximumFractionDigits:0 })}
               </div>
-              <div style={{ fontSize:13, color:'#3d5068', marginTop:4 }}>estimated annual improvement potential</div>
+              <div style={{ fontSize:13, color:'#7f92a6', marginTop:4 }}>estimated annual improvement potential</div>
             </div>
           )}
 
@@ -9726,7 +9706,7 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
               'Maine Maple Producers Association (MPA) — tapping and operation guides',
               'USDA NASS — Annual Maple Syrup Production Survey',
             ].map((s, i) => (
-              <div key={i} style={{ fontSize:13, color:'#3d5068', lineHeight:1.5, marginBottom:2 }}>• {s}</div>
+              <div key={i} style={{ fontSize:13, color:'#7f92a6', lineHeight:1.5, marginBottom:2 }}>• {s}</div>
             ))}
           </div>
         </>
@@ -9760,16 +9740,17 @@ function LicenseModal({ onClose, lic, onLicenseSaved }) {
 
   const inp = { width:'100%', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:'12px 14px', color:'#e6edf3', fontSize:14, marginBottom:8, boxSizing:'border-box' };
   return (
-    <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:'#0d1521', border:'1px solid #1e2d3d', borderRadius:16, padding:'22px 20px', width:'100%', maxWidth:420, boxShadow:'0 12px 48px rgba(0,0,0,0.6)', maxHeight:'85vh', overflowY:'auto' }}>
+    <div onClick={onClose} className="scrim" role="dialog" aria-modal="true" aria-label="Season Pass">
+      <div onClick={e=>e.stopPropagation()} className="sheet">
+        <div className="sheet-handle" />
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
           <div style={{ fontWeight:800, fontSize:17 }}><I.mapleLeaf size={18} color="#2dd4a7" /> Season Pass</div>
-          <button onClick={onClose} style={{ background:'none', border:'none', color:'#3d5068', cursor:'pointer', padding:4 }}><I.x size={16}/></button>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:'#7f92a6', cursor:'pointer', padding:4 }}><I.x size={16}/></button>
         </div>
         {lic.status === 'licensed' ? (
           <div style={{ fontSize:13.5, color:'#3fb950', lineHeight:1.6, marginBottom:8 }}>✓ Your Season Pass is active through {lic.until}. Thank you for supporting a one-person project.</div>
         ) : (
-          <div style={{ fontSize:13, color:'#8a9ab5', lineHeight:1.5, marginBottom:14 }}>
+          <div style={{ fontSize:13, color:'#8b949e', lineHeight:1.5, marginBottom:14 }}>
             {lic.status === 'expired'
               ? 'Your Season Trial has ended. Your data is safe — viewing and export always work — but new entries need a pass.'
               : `You're on a free Season Trial (${lic.daysLeft} days left — and it never ends before you've had 3 real sap days). Every feature is unlocked.`}
@@ -9777,20 +9758,20 @@ function LicenseModal({ onClose, lic, onLicenseSaved }) {
         )}
         {lic.status !== 'licensed' && (
           <a href={STRIPE_BUY_URL} target="_blank" rel="noopener"
-            style={{ display:'block', textAlign:'center', background:'linear-gradient(135deg,#2dd4a7,#1fbf94)', borderRadius:10, padding:'13px 16px', fontWeight:800, fontSize:14, color:'#07090f', textDecoration:'none', marginBottom:14 }}>
+            style={{ display:'block', textAlign:'center', background:'#2dd4a7', borderRadius:10, padding:'13px 16px', fontWeight:800, fontSize:14, color:'#07090f', textDecoration:'none', marginBottom:14 }}>
             Get your Season Pass — $49.99/year
           </a>
         )}
-        <div style={{ fontSize:13, fontWeight:800, letterSpacing:'0.1em', textTransform:'uppercase', color:'#3d5068', marginBottom:6 }}>Have a pass key?</div>
+        <div style={{ fontSize:13, fontWeight:800, letterSpacing:'0.1em', textTransform:'uppercase', color:'#7f92a6', marginBottom:6 }}>Have a pass key?</div>
         <textarea value={key} onChange={e=>setKey(e.target.value)} placeholder="Paste your Season Pass key here" rows={2} style={{ ...inp, resize:'vertical', fontFamily:'monospace', fontSize:12 }} />
         <button onClick={applyKey} style={{ width:'100%', background:'#0f1720', border:'1px solid #2dd4a7', borderRadius:10, padding:'11px 16px', fontWeight:700, fontSize:13.5, color:'#2dd4a7', cursor:'pointer' }}>Activate</button>
-        {msg && <div style={{ marginTop:8, fontSize:12.5, lineHeight:1.5, color: msg.ok ? '#3fb950' : '#f47067' }}>{msg.text}</div>}
+        {msg && <div style={{ marginTop:8, fontSize:12.5, lineHeight:1.5, color: msg.ok ? '#3fb950' : '#f85149' }}>{msg.text}</div>}
         {lic.status !== 'licensed' && (
           <div style={{ marginTop:16, paddingTop:14, borderTop:'1px solid #131e2c' }}>
-            <div style={{ fontSize:12.5, color:'#8a9ab5', lineHeight:1.5, marginBottom:8 }}>Want sap-season tips and a heads-up before your trial ends? <span style={{color:'#3d5068'}}>(optional)</span></div>
+            <div style={{ fontSize:12.5, color:'#8b949e', lineHeight:1.5, marginBottom:8 }}>Want sap-season tips and a heads-up before your trial ends? <span style={{color:'#7f92a6'}}>(optional)</span></div>
             <input aria-label="you@sugarbush.com" type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@sugarbush.com" style={inp} />
-            <button onClick={saveEmail} style={{ width:'100%', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:'10px 16px', fontWeight:700, fontSize:13, color:'#8a9ab5', cursor:'pointer' }}>Keep me posted</button>
-            {emailMsg && <div style={{ marginTop:6, fontSize:12, color:'#8a9ab5' }}>{emailMsg}</div>}
+            <button onClick={saveEmail} style={{ width:'100%', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:'10px 16px', fontWeight:700, fontSize:13, color:'#8b949e', cursor:'pointer' }}>Keep me posted</button>
+            {emailMsg && <div style={{ marginTop:6, fontSize:12, color:'#8b949e' }}>{emailMsg}</div>}
           </div>
         )}
       </div>
@@ -9843,29 +9824,30 @@ function BackupModal({ onClose }) {
   };
 
   return (
-    <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ background:'#0d1521', border:'1px solid #1e2d3d', borderRadius:16, padding:'22px 20px', width:'100%', maxWidth:420, boxShadow:'0 12px 48px rgba(0,0,0,0.6)' }}>
+    <div onClick={onClose} className="scrim" role="dialog" aria-modal="true" aria-label="Data and backup">
+      <div onClick={e=>e.stopPropagation()} className="sheet">
+        <div className="sheet-handle" />
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
           <div style={{ fontWeight:800, fontSize:17 }}><I.save size={18} color="#2dd4a7" /> Data &amp; Backup</div>
-          <button onClick={onClose} style={{ background:'none', border:'none', color:'#3d5068', cursor:'pointer', padding:4 }}><I.x size={16}/></button>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:'#7f92a6', cursor:'pointer', padding:4 }}><I.x size={16}/></button>
         </div>
-        <div style={{ fontSize:13, color:'#8a9ab5', lineHeight:1.5, marginBottom:14 }}>
+        <div style={{ fontSize:13, color:'#8b949e', lineHeight:1.5, marginBottom:14 }}>
           All your SweetRun data lives on this device only ({keyCount} entries). Download a backup after each session you care about — it's the only copy that exists.
         </div>
         {persisted === false && (
-          <div style={{ background:'rgba(244,164,74,0.08)', border:'1px solid rgba(244,164,74,0.3)', borderRadius:10, padding:'10px 12px', fontSize:12, color:'#f4a44a', lineHeight:1.5, marginBottom:14 }}>
+          <div style={{ background:'rgba(244,164,74,0.08)', border:'1px solid rgba(244,164,74,0.3)', borderRadius:10, padding:'10px 12px', fontSize:12, color:'#e0a44a', lineHeight:1.5, marginBottom:14 }}>
             <I.alert size={13} color="currentColor" /> Your browser hasn't guaranteed persistent storage. If you use SweetRun in a browser tab (not installed to your home screen) and don't open it for a while, the browser may erase your data. Install the app and keep backups.
           </div>
         )}
-        <button onClick={doExport} style={{ width:'100%', background:'linear-gradient(135deg,#2dd4a7,#1fbf94)', border:'none', borderRadius:10, padding:'12px 16px', fontWeight:700, fontSize:14, color:'#07090f', cursor:'pointer', marginBottom:10 }}>
+        <button onClick={doExport} style={{ width:'100%', background:'#2dd4a7', border:'none', borderRadius:10, padding:'12px 16px', fontWeight:700, fontSize:14, color:'#07090f', cursor:'pointer', marginBottom:10 }}>
           ⬇ Download backup (.json)
         </button>
-        <label style={{ display:'block', width:'100%', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:'12px 16px', fontWeight:700, fontSize:14, color:'#8a9ab5', cursor:'pointer', textAlign:'center' }}>
-          <I.upload size={15} color="#8a9ab5" /> Restore from backup…
+        <label style={{ display:'block', width:'100%', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:'12px 16px', fontWeight:700, fontSize:14, color:'#8b949e', cursor:'pointer', textAlign:'center' }}>
+          <I.upload size={15} color="#8b949e" /> Restore from backup…
           <input type="file" accept=".json,application/json" onChange={doImport} style={{ display:'none' }} />
         </label>
         {msg && (
-          <div style={{ marginTop:12, fontSize:12.5, lineHeight:1.5, color: msg.ok ? '#3fb950' : '#f47067' }}>{msg.text}</div>
+          <div style={{ marginTop:12, fontSize:12.5, lineHeight:1.5, color: msg.ok ? '#3fb950' : '#f85149' }}>{msg.text}</div>
         )}
       </div>
     </div>
@@ -10013,32 +9995,31 @@ function App() {
   return (
     <div className="app-wrap" style={{ maxWidth:540, margin:'0 auto' }}>
       {/* ── Header / Desktop Sidebar ── */}
-      <div className="app-header" style={{ background:'#07090f', borderBottom:'1px solid #131e2c', padding:'14px 16px 0', position:'sticky', top:0, zIndex:100, boxShadow:'0 4px 20px rgba(0,0,0,0.5)' }}>
+      <div className="app-header" style={{ background:'#07090f', borderBottom:'1px solid #131e2c', padding:'14px 16px 0', position:'sticky', top:0, zIndex:100 }}>
         {/* One row. The mark, the name, what the licence is doing, and a gear.
             Everything that used to sit here in four pill groups is behind it,
             because 250px of chrome on an 844px phone is a quarter of the screen. */}
         <div className="app-header-top" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:10, marginBottom:10 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
-            <div style={{ width:34, height:34, background:'linear-gradient(135deg,#1a4a3a,#0d2e26)', borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <div style={{ width:36, height:36, background:'#0f2a22', borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
               <I.mapleLeaf size={19} color="#2dd4a7" />
             </div>
             <div style={{ fontWeight:800, fontSize:18, letterSpacing:'-0.4px', whiteSpace:'nowrap' }}>SweetRun</div>
-            <div style={{ fontSize:12, color:'#3d5068', fontWeight:600, whiteSpace:'nowrap' }}>{season}</div>
           </div>
           <div className="app-header-controls" style={{ display:'flex', alignItems:'center', gap:7, flexShrink:0 }}>
             {lic.status !== 'checking' && (
               <button onClick={()=>setShowLicense(true)} style={{
-                background: lic.status==='licensed' ? 'rgba(63,185,80,0.12)' : lic.status==='expired' ? 'rgba(244,112,103,0.12)' : 'rgba(88,166,255,0.1)',
-                border: `1px solid ${lic.status==='licensed' ? 'rgba(63,185,80,0.35)' : lic.status==='expired' ? 'rgba(244,112,103,0.4)' : 'rgba(88,166,255,0.25)'}`,
-                borderRadius:20, padding:'6px 11px', fontSize:12, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap',
-                color: lic.status==='licensed' ? '#3fb950' : lic.status==='expired' ? '#f47067' : '#58a6ff' }}>
+                background: lic.status==='licensed' ? 'rgba(63,185,80,0.12)' : lic.status==='expired' ? 'rgba(248,81,73,0.12)' : '#0f1720',
+                border: 'none',
+                borderRadius:18, padding:'0 12px', height:36, display:'flex', alignItems:'center', fontSize:12, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap',
+                color: lic.status==='licensed' ? '#3fb950' : lic.status==='expired' ? '#f85149' : '#8b949e' }}>
                 {lic.status==='licensed' ? '✓ Pass' : lic.status==='expired' ? 'Unlock' : `Trial · ${lic.daysLeft}d`}
               </button>
             )}
             <button onClick={()=>setShowSettings(true)} aria-label="Settings and data" title="Settings"
               style={{ background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10,
-                width:38, height:38, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-              <I.settings size={17} color="#8a9ab5" />
+                width:36, height:36, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <I.settings size={17} color="#8b949e" />
             </button>
           </div>
         </div>
@@ -10050,7 +10031,6 @@ function App() {
               {subTabs.map(t => (
                 <button key={t.id} role="tab" aria-selected={tab===t.id}
                   className={`tab-btn${tab===t.id?' active':''}`} onClick={()=>setTab(t.id)}>
-                  <t.Icon size={16} color={tab===t.id?'#07090f':'#3d5068'} />
                   <span>{t.label}</span>
                 </button>
               ))}
@@ -10068,7 +10048,7 @@ function App() {
             <button key={d.id} onClick={() => goDest(d.id)}
               aria-label={d.label} aria-current={on ? 'page' : undefined}
               className={`bnav-btn${on ? ' active' : ''}`}>
-              <d.Icon size={21} color={on ? '#2dd4a7' : '#5a6a7a'} />
+              <d.Icon size={21} color={on ? '#2dd4a7' : '#7f92a6'} />
               <span>{d.label}</span>
             </button>
           );
@@ -10092,7 +10072,7 @@ function App() {
               <div style={{ fontSize:13, fontWeight:700, color:'#3fb950', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:2 }}>
                 <I.tree size={16} color="#2dd4a7" /> First Season?
               </div>
-              <div style={{ fontSize:13, color:'#8a9ab5' }}>Get a personalized season plan in 2 minutes.</div>
+              <div style={{ fontSize:13, color:'#8b949e' }}>Get a personalized season plan in 2 minutes.</div>
             </div>
             <button onClick={()=>setShowWizard(true)}
               style={{ background:'#3fb950', border:'none', borderRadius:10, padding:'9px 16px',
@@ -10105,8 +10085,8 @@ function App() {
         {/* ── Trial-expired banner ── */}
         {lic.status === 'expired' && (
           <div style={{ background:'#1f0e0c', border:'1px solid #4a1e1a', padding:'11px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', gap:10 }}>
-            <span style={{ fontSize:13, color:'#f4a44a', lineHeight:1.45 }}>Season Trial ended — your data is safe and export works, but new entries aren't saved.</span>
-            <button onClick={()=>setShowLicense(true)} style={{ background:'#f4a44a', border:'none', borderRadius:10, padding:'8px 14px', fontWeight:800, fontSize:12.5, color:'#07090f', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>Get a Pass</button>
+            <span style={{ fontSize:13, color:'#e0a44a', lineHeight:1.45 }}>Season Trial ended — your data is safe and export works, but new entries aren't saved.</span>
+            <button onClick={()=>setShowLicense(true)} style={{ background:'#e0a44a', border:'none', borderRadius:10, padding:'8px 14px', fontWeight:800, fontSize:12.5, color:'#07090f', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>Get a Pass</button>
           </div>
         )}
 
@@ -10114,7 +10094,7 @@ function App() {
         {notifBanner && (
           <div style={{ background:'#081e0e', border:'1px solid #1a4a25', borderRadius:0, padding:'10px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <span style={{ fontSize:13, color:'#3fb950', fontWeight:600 }}>{notifBanner}</span>
-            <button onClick={()=>setNotifBanner(null)} style={{ background:'none', border:'none', color:'#3d5068', cursor:'pointer', padding:'0 4px' }}><I.x size={14}/></button>
+            <button onClick={()=>setNotifBanner(null)} style={{ background:'none', border:'none', color:'#7f92a6', cursor:'pointer', padding:'0 4px' }}><I.x size={14}/></button>
           </div>
         )}
 
@@ -10164,10 +10144,10 @@ function App() {
 
           {/* ── Notification enable prompt ── */}
           {'Notification' in window && Notification.permission === 'default' && ls.get('sg_ddlat',null) && (
-            <div style={{ background:'#0d1a2b', border:'1px solid #1a304a', borderRadius:12, padding:'14px 16px', marginTop:8, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <div style={{ background:'#0d1a2b', border:'1px solid #1e2d3d', borderRadius:12, padding:'14px 16px', marginTop:8, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <div>
                 <div style={{ fontWeight:600, fontSize:14, color:'#58a6ff' }}>{t(lang,'runAlertTitle')}</div>
-                <div style={{ fontSize:12, color:'#5a6a7a', marginTop:2 }}>{t(lang,'runAlertDesc')}</div>
+                <div style={{ fontSize:12, color:'#7f92a6', marginTop:2 }}>{t(lang,'runAlertDesc')}</div>
               </div>
               <button onClick={()=>Notification.requestPermission()} style={{ background:'#58a6ff', border:'none', borderRadius:10, padding:'8px 14px', fontWeight:600, fontSize:13, color:'#07090f', flexShrink:0, marginLeft:12 }}>{t(lang,'enable')}</button>
             </div>
