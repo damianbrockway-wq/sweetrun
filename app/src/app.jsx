@@ -4477,6 +4477,40 @@ const _mlColor = id => (mainlinesSaved().find(m => m.id === id) || {}).color || 
 const _SPECIES_COLORS = { sugar_maple:'#f97316', red_maple:'#ef4444', silver_maple:'#94a3b8', black_maple:'#44403c', other:'#6b7280' };
 const _SPECIES_LABELS = { sugar_maple:'Sugar Maple', red_maple:'Red Maple', silver_maple:'Silver Maple', black_maple:'Black Maple', other:'Other' };
 const _HEALTH_COLORS = { excellent:'#22c55e', good:'#84cc16', fair:'#eab308', poor:'#f97316', dead:'#ef4444' };
+// A faceted maple tree for the map: a five-lobe geometric leaf as the canopy, split light/dark down
+// the midrib with two facets a side, on a thin trunk with two branches. 28×36 grid. One colour — the
+// health tone — drives the whole tree; the four facet shades are derived from it. Drawn from the
+// client's reference; the source of truth is design/tree-markers/trees.js.
+function _sbTreeSvg(tone, opts = {}) {
+  const rgb = h => { h = String(h).replace('#',''); return [0,2,4].map(i => parseInt(h.slice(i,i+2),16)); };
+  const mix = (a, b, t) => '#' + a.map((v,i) => Math.round(v + (b[i]-v)*t).toString(16).padStart(2,'0')).join('');
+  const c = rgb(tone);
+  const s = { light: mix(c,[255,255,255],0.28), base: tone, dark: mix(c,[0,0,0],0.32), deep: mix(c,[0,0,0],0.52) };
+  const pts = a => a.map(p => p.join(',')).join(' ');
+  const leftUpper  = [[14,2],[11.4,7.2],[8.2,5.6],[9.2,10.4],[4.2,9.6],[7,13.6],[14,12]];
+  const leftLower  = [[14,12],[7,13.6],[3,15.6],[8.8,17.6],[12.6,21.2],[14,20.4]];
+  const rightUpper = leftUpper.map(([x,y]) => [28-x,y]);
+  const rightLower = leftLower.map(([x,y]) => [28-x,y]);
+  const trunk = opts.trunk || '#5c6470', sw = opts.stroke || '#07090f';
+  const w = opts.width || 30, h = opts.height || 39;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <g stroke="${sw}" stroke-width="0.6" stroke-linejoin="round">
+      <polygon points="${pts(leftUpper)}" fill="${s.light}"/>
+      <polygon points="${pts(leftLower)}" fill="${s.base}"/>
+      <polygon points="${pts(rightUpper)}" fill="${s.dark}"/>
+      <polygon points="${pts(rightLower)}" fill="${s.deep}"/>
+    </g>
+    <g stroke="${trunk}" stroke-width="1.5" stroke-linecap="round" fill="none">
+      <line x1="14" y1="20.4" x2="14" y2="34"/>
+      <line x1="14" y1="26" x2="10.5" y2="22.8"/>
+      <line x1="14" y1="28.5" x2="17.5" y2="25.2"/>
+    </g>
+  </svg>`;
+}
+// Selection and zoom are read at icon time, so a re-icon is all a change needs.
+let _sbSelectedId = null;
+let _sbLastZoomLabels = true;
+const _SB_LABEL_MIN_ZOOM = 16;
 const _HEALTH_LABELS = { excellent:'Excellent', good:'Good', fair:'Fair', poor:'Poor', dead:'Dead' };
 const _PIN_TYPE_CFG = [
   { id:'tree',       label:'Tap Tree',    Icon:I.mapleLeaf,  bg:'#3fb950', radius:'50%',  size:30 },
@@ -4492,25 +4526,31 @@ function _sbMakeIcon(pin) {
   const font = "font-family:Inter,-apple-system,sans-serif";
 
   if (pin.type === 'tree') {
-    // ── Horizontal chip label: species dot · code · taps · mainline dot ──
-    const sColor  = _SPECIES_COLORS[pin.species || 'sugar_maple'] || '#f97316';
-    const hColor  = _HEALTH_COLORS[pin.health   || 'good']        || '#84cc16';
-    const mlColor = pin.mainline ? _mlColor(pin.mainline) : null;
+    // ── The faceted maple, standing on its coordinate; code and taps beneath ──
+    // Health drives the tree's colour (a dead tree is grey and stays on the map — it is information);
+    // selection turns the trunk and the label teal. Species and mainline live in the pin panel.
+    const health  = pin.health || 'good';
+    const tone    = health === 'dead' ? '#6b7280' : (_HEALTH_COLORS[health] || '#84cc16');
+    const selected= _sbSelectedId != null && _sbSelectedId === pin.id;
     const taps    = parseInt(pin.taps) || 0;
-    // Shorten: "Tree 1" → "T1", keep max 4 chars
+    // Shorten: "Tree 1" → "T1", keep max 5 chars
     const code = _sbEsc(String(pin.label || '').replace(/^(Tap\s+)?Tree\s*/i,'T').replace(/\s+/g,'').slice(0,5));
-    const mlDot  = mlColor ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${mlColor};flex-shrink:0"></span>` : '';
-    const tapPart= taps > 0 ? `<span style="color:#34d399;font-size:8.5px;font-weight:700;${font}">${taps}t</span>` : '';
+    const zoom = _lMap && typeof _lMap.getZoom === 'function' ? _lMap.getZoom() : 99;
+    const showLabel = zoom >= _SB_LABEL_MIN_ZOOM;
+    const labelColor = selected ? '#2dd4a7' : '#f0f0f0';
+    const shadow = 'text-shadow:0 0 3px #07090f,0 0 3px #07090f,0 1px 2px #07090f';
+    const label = showLabel
+      ? `<div style="position:absolute;left:50%;top:39px;transform:translateX(-50%);white-space:nowrap;pointer-events:none;font-size:10px;font-weight:800;line-height:1.1;color:${labelColor};${shadow};${font}">${code}${taps > 0 ? ` <span style="font-weight:800">${taps}t</span>` : ''}</div>`
+      : '';
     return window.L.divIcon({
       className: '',
-      html: `<div style="display:inline-flex;align-items:center;gap:4px;background:rgba(8,14,24,0.93);border:1.5px solid ${hColor};border-radius:20px;padding:3px 8px 3px 6px;box-shadow:0 2px 10px rgba(0,0,0,0.7);white-space:nowrap">
-        <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${sColor};flex-shrink:0"></span>
-        <span style="font-size:10px;font-weight:800;color:#f0f0f0;letter-spacing:-.01em;${font}">${code}</span>
-        ${tapPart}${mlDot}
+      html: `<div style="position:relative;width:30px;height:39px;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.6))">
+        ${_sbTreeSvg(tone, { trunk: selected ? '#2dd4a7' : '#5c6470' })}
+        ${label}
       </div>`,
-      iconSize:   [1,1],
-      iconAnchor: [0,0],
-      popupAnchor:[36,-8],
+      iconSize:   [30,39],
+      iconAnchor: [15,37],
+      popupAnchor:[0,-40],
     });
   }
 
@@ -4849,6 +4889,7 @@ function LinesTab({ lang='en' }) {
     if (!leafletReady || !mapRef.current || _lMap) return;
     _lMap = window.L.map(mapRef.current, { zoomControl:true });
     if (_lMap.attributionControl) _lMap.attributionControl.setPrefix(false);
+    window._sgMap = _lMap;   // for the headless suites, which zoom and read the map
     _lMap._sat = window.L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       { attribution:'Imagery © Esri', maxZoom:20 }
@@ -4878,6 +4919,8 @@ function LinesTab({ lang='en' }) {
 
     // Wire up pin-click callback to show detail panel
     window._sgMapPinClick = (pinId) => { setSelectedPinId(pinId); setShowPinPanel(true); };
+    // labels come and go with zoom
+    _lMap.on('zoomend', () => { const z = _lMap.getZoom(); if ((z >= _SB_LABEL_MIN_ZOOM) !== (_sbLastZoomLabels)) { _sbLastZoomLabels = z >= _SB_LABEL_MIN_ZOOM; pinsRef.current.forEach(p => { if (p.type === 'tree') _sbUpdateMarker(p); }); } });
 
     // Tear the map down when the tab unmounts so it can be rebuilt next time
     return () => {
@@ -5249,6 +5292,9 @@ function LinesTab({ lang='en' }) {
   React.useEffect(() => {
     const p = pinsRef.current.find(x => x.id === selectedPinId);
     setElevDraft(p && p.elev != null ? String(p.elev) : '');
+    // the tree that was selected and the one that is now: both re-drawn
+    const was = _sbSelectedId; _sbSelectedId = selectedPinId;
+    [was, selectedPinId].forEach(id => { if (id == null) return; const q = pinsRef.current.find(x => x.id === id); if (q && q.type === 'tree') _sbUpdateMarker(q); });
   }, [selectedPinId]);
 
   const updatePinField = (id, field, val) => {
