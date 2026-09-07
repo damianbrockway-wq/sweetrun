@@ -9240,7 +9240,7 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
   const last = entries.length
     ? entries.reduce((a, b) => (new Date(b.date) > new Date(a.date) ? b : a))
     : null;
-  const recent = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date) || (b.id||0) - (a.id||0)).slice(0, 5);
+  const recent = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date) || (b.id||0) - (a.id||0)).slice(0, 3);
   const KIND = { sapCollected:'sap collected', syrupMade:'syrup made', sapRO:'sap through R/O',
                  sapEvap:'sap in the evaporator', fuelUsed:'fuel burned', boilHours:'hours boiling' };
 
@@ -9274,14 +9274,13 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
   const dpOf   = k => k === 'syrupMade' || k === 'fuelUsed' || k === 'boilHours' ? 1 : 0;
 
   return (
-    <div className="today-fill">
-      <div style={{ marginBottom:18 }}>
-        <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', letterSpacing:'0.14em',
-          textTransform:'uppercase', marginBottom:5 }}>{season} season</div>
-        <div style={{ fontSize:22, fontWeight:800, color:'#e6edf3', letterSpacing:'-0.01em' }}>{dateLine}</div>
+    <div style={{ paddingBottom:48 }}>
+      {/* One line: the day and the season. The producer knows what day it is. */}
+      <div style={{ fontSize:13, color:'#7f92a6', margin:'0 0 12px', lineHeight:1.4 }}>
+        {dateLine} · <span style={{ fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', fontSize:12 }}>{season} {lang==='fr' ? 'saison' : 'season'}</span>
       </div>
 
-      {/* Where the season stands */}
+      {/* How the season is doing: one card — goal, figures, per tap against the benchmark, the verdict */}
       <div className="card">
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:8 }}>
           <Eyebrow>Season goal</Eyebrow>
@@ -9289,20 +9288,13 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
         </div>
         <div className="progress-bar-bg"><div className="progress-bar-fill"
           style={{ width:`${pct}%`, background:'#2dd4a7' }} /></div>
-        <div style={{ fontSize:12, color:'#7f92a6', marginTop:7 }}>
-          {fmt(taps,0)} tap{taps!==1?'s':''} at {yieldMidOf(model)} {u}/tap ({model.label})
-        </div>
         <div className="stat3" style={{ marginTop:14, paddingTop:14, borderTop:'1px solid #131e2c' }}>
           <Eyebrow>Syrup</Eyebrow><Eyebrow>Sap</Eyebrow><Eyebrow>Ratio</Eyebrow>
           <Fig value={fmt(conv(syT),1)}  unit={u} lead />
           <Fig value={fmt(conv(sapT),0)} unit={u} />
           <Fig value={ratio ? `${ratio.toFixed(0)}:1` : '—'} sub={ratio ? `theory ${fmt(theor,0)}:1` : 'no syrup logged'} />
         </div>
-      </div>
-
-      {/* The comparison: yield per tap against the benchmark for this system */}
-      <div className="card">
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', gap:12 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', gap:12, marginTop:14, paddingTop:14, borderTop:'1px solid #131e2c' }}>
           <div style={{ minWidth:0 }}>
             <Eyebrow>Per tap so far</Eyebrow>
             <div style={{ display:'flex', alignItems:'baseline', gap:4, marginTop:4 }}>
@@ -9318,9 +9310,9 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
             </div>
           </div>
         </div>
-        <div style={{ fontSize:13, color:'#7f92a6', marginTop:10, paddingTop:10, borderTop:'1px solid #131e2c', lineHeight:1.5 }}>
-          {standing ? `${standing.charAt(0).toUpperCase()+standing.slice(1)} for ${model.label}.` : `Benchmark for ${model.label}. Fills in with the first syrup entry.`}
-          {last ? '' : ' Nothing logged this season yet.'}
+        <div style={{ fontSize:13, color:'#7f92a6', marginTop:10, lineHeight:1.5 }}>
+          {standing ? `${standing.charAt(0).toUpperCase()+standing.slice(1)} for ${model.label}` : `Benchmark for ${model.label}`} · {fmt(taps,0)} tap{taps!==1?'s':''}
+          {last ? '' : ' · nothing logged this season yet'}
         </div>
       </div>
 
@@ -9340,7 +9332,8 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
         </div>
       )}
 
-      <div className="primary-bar">
+      {/* The landing screen's action is never below the fold */}
+      <div className="primary-bar pinned">
         <button className="btn-primary" onClick={() => go('log')}>
           <I.plus size={18} color="#07090f" /> {lang==='fr' ? 'Noter une coulée' : 'Log a run'}
         </button>
