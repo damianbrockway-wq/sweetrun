@@ -658,7 +658,7 @@ const I = {
     </svg>
   ),
   // Cards & UI
-  calculator:  (p) => <Svg {...p}><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="14" y2="14"/></Svg>,
+  calculator:  (p) => <Svg {...p}><rect x="4" y="2" width="16" height="20" rx="2"/><rect x="7" y="5" width="10" height="4" rx="1"/><line x1="8" y1="13" x2="8.01" y2="13"/><line x1="12" y1="13" x2="12.01" y2="13"/><line x1="16" y1="13" x2="16.01" y2="13"/><line x1="8" y1="17" x2="8.01" y2="17"/><line x1="12" y1="17" x2="12.01" y2="17"/><line x1="16" y1="17" x2="16.01" y2="17"/></Svg>,
   clock:       (p) => <Svg {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></Svg>,
   dollar:      (p) => <Svg {...p}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></Svg>,
   trendUp:     (p) => <Svg {...p}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></Svg>,
@@ -687,7 +687,7 @@ const I = {
   info:        (p) => <Svg {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></Svg>,
   home:        (p) => <Svg {...p}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Svg>,
   // pump house: small centre circle + 8 spoke rays (matches map pin)
-  settings:    (p) => <Svg {...p}><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></Svg>,
+  settings:    (p) => <Svg {...p}><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.3a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.54 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.7 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6h.08A1.7 1.7 0 0 0 10 3.06V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v.08a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></Svg>,
   // junction: outer ring + inner dot + 4 arms (matches map pin)
   crosshair:   (p) => <Svg {...p}><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="4" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="20"/><line x1="4" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="20" y2="12"/></Svg>,
   // season wizard / new setup
@@ -9003,6 +9003,196 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
   );
 }
 
+
+
+// ─── SETTINGS SHEET ───────────────────────────────────────────────────────────
+// Units, language, the setup wizard and backup used to live as four pill groups
+// in the header, which pushed the header to 250px on a 390px phone. They are
+// here now, one tap behind the gear.
+function SettingsSheet({ units, setUnits, lang, setLang, season, setSeason,
+                         onWizard, onBackup, onClose }) {
+  const Row = ({ label, hint, children }) => (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12,
+      padding:'14px 0', borderBottom:'1px solid #131e2c' }}>
+      <div style={{ minWidth:0 }}>
+        <div style={{ fontSize:14, fontWeight:650, color:'#e6edf3' }}>{label}</div>
+        {hint && <div style={{ fontSize:12, color:'#5a6a7a', marginTop:2 }}>{hint}</div>}
+      </div>
+      <div style={{ flexShrink:0 }}>{children}</div>
+    </div>
+  );
+  const Seg = ({ opts, val, set, tint }) => (
+    <div style={{ display:'flex', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10, padding:2 }}>
+      {opts.map(o => (
+        <button key={o.v} onClick={()=>set(o.v)} aria-pressed={val===o.v}
+          style={{ background: val===o.v ? tint : 'transparent', color: val===o.v ? '#07090f' : '#8a9ab5',
+            border:'none', borderRadius:8, padding:'8px 15px', fontSize:13, fontWeight:700,
+            cursor:'pointer', minHeight:38 }}>{o.l}</button>
+      ))}
+    </div>
+  );
+  const Action = ({ Icon, label, hint, tint, onClick }) => (
+    <button onClick={onClick} style={{ width:'100%', background:'#0f1720', border:'1px solid #1e2d3d',
+      borderRadius:12, padding:'13px 14px', display:'flex', alignItems:'center', gap:11,
+      cursor:'pointer', textAlign:'left', minHeight:58, marginTop:8 }}>
+      <Icon size={18} color={tint} />
+      <span style={{ flex:1, minWidth:0 }}>
+        <span style={{ display:'block', fontSize:14, fontWeight:650, color:'#e6edf3' }}>{label}</span>
+        <span style={{ display:'block', fontSize:12, color:'#5a6a7a', marginTop:1 }}>{hint}</span>
+      </span>
+      <span style={{ color:'#3d5068' }}>›</span>
+    </button>
+  );
+  return (
+    <div onClick={onClose} role="dialog" aria-modal="true" aria-label="Settings"
+      style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.72)', zIndex:1000,
+        display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:'#0d1521', borderTop:'1px solid #1e2d3d',
+        borderRadius:'20px 20px 0 0', padding:'12px 18px calc(28px + env(safe-area-inset-bottom,0px))',
+        width:'100%', maxWidth:540, maxHeight:'82vh', overflowY:'auto' }}>
+        <div style={{ width:36, height:3.5, background:'rgba(255,255,255,0.15)', borderRadius:2, margin:'0 auto 16px' }} />
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+          <div style={{ fontWeight:800, fontSize:17 }}>Settings</div>
+          <button onClick={onClose} aria-label="Close settings"
+            style={{ background:'none', border:'none', color:'#3d5068', cursor:'pointer', padding:6 }}>
+            <I.x size={17} />
+          </button>
+        </div>
+
+        <Row label="Units" hint="Gallons or litres, everywhere">
+          <Seg opts={[{v:'GAL',l:'GAL'},{v:'L',l:'L'}]} val={units} set={setUnits} tint="#2dd4a7" />
+        </Row>
+        <Row label="Language">
+          <Seg opts={[{v:'en',l:'EN'},{v:'fr',l:'FR'}]} val={lang} set={setLang} tint="#a855f7" />
+        </Row>
+        <Row label="Season" hint="Which year your log and recap show">
+          <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+            <button onClick={()=>setSeason(s=>s-1)} aria-label="Previous season"
+              style={{ background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:9, width:38, height:38,
+                color:'#8a9ab5', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <I.chevDown size={15} color="#8a9ab5" />
+            </button>
+            <span style={{ fontSize:15, fontWeight:700, minWidth:48, textAlign:'center' }}>{season}</span>
+            <button onClick={()=>setSeason(s=>s+1)} aria-label="Next season"
+              style={{ background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:9, width:38, height:38,
+                color:'#8a9ab5', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <I.chevUp size={15} color="#8a9ab5" />
+            </button>
+          </div>
+        </Row>
+
+        <div style={{ marginTop:16 }}>
+          <Action Icon={I.compass} tint="#2dd4a7" label="Season setup"
+            hint="Trees, tap system, evaporator and costs" onClick={()=>{ onClose(); onWizard(); }} />
+          <Action Icon={I.save} tint="#58a6ff" label="Data and backup"
+            hint="Download a copy, or restore one" onClick={()=>{ onClose(); onBackup(); }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── TODAY ────────────────────────────────────────────────────────────────────
+// The landing screen. Every number on it comes from what is already on the
+// device, so it is the same with no signal as with five bars.
+function TodayTab({ lang, units, season, trees, sapBrix, go }) {
+  const u     = units === 'L' ? 'L' : 'gal';
+  const conv  = v => units === 'L' ? v * 3.78541 : v;
+  const logs  = ls.get('sg_logs2', {});
+  const slog  = logs[season] || {};
+  const tot   = k => (slog[k] || []).reduce((a, e) => a + (parseFloat(e.val) || 0), 0);
+  const sapT  = tot('sapCollected'), syT = tot('syrupMade');
+  const model = yieldModelSaved();
+  const taps  = parseInt(trees) || 0;
+  const goal  = taps * yieldMidOf(model);
+  const pct   = goal > 0 ? Math.min(100, (syT / goal) * 100) : 0;
+  const ratio = syT > 0 ? sapT / syT : null;
+  const theor = 86.4 / (parseFloat(sapBrix) || 2);
+
+  const entries = ['sapCollected','syrupMade','sapRO','sapEvap','fuelUsed','boilHours']
+    .flatMap(k => (slog[k] || []).map(e => ({ ...e, kind:k })));
+  const last = entries.length
+    ? entries.reduce((a, b) => (new Date(b.date) > new Date(a.date) ? b : a))
+    : null;
+  const KIND = { sapCollected:'sap collected', syrupMade:'syrup made', sapRO:'sap through R/O',
+                 sapEvap:'sap in the evaporator', fuelUsed:'fuel burned', boilHours:'hours boiling' };
+
+  const today = new Date();
+  const dateLine = today.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-US',
+    { weekday:'long', month:'long', day:'numeric' });
+
+  const Stat = ({ label, value, unit, tint }) => (
+    <div style={{ flex:1, minWidth:0 }}>
+      <div style={{ fontSize:12, fontWeight:700, color:'#3d5068', letterSpacing:'0.08em',
+        textTransform:'uppercase', marginBottom:4 }}>{label}</div>
+      <div style={{ fontSize:26, fontWeight:800, color:tint, lineHeight:1.05 }}>{value}</div>
+      {unit && <div style={{ fontSize:12, color:'#5a6a7a', marginTop:2 }}>{unit}</div>}
+    </div>
+  );
+
+  const Jump = ({ to, Icon, title, sub }) => (
+    <button onClick={() => go(to)} style={{ width:'100%', background:'#0f1720', border:'1px solid #1e2d3d',
+      borderRadius:14, padding:'14px 16px', display:'flex', alignItems:'center', gap:12,
+      cursor:'pointer', textAlign:'left', minHeight:64, marginBottom:8 }}>
+      <span style={{ width:38, height:38, borderRadius:11, background:'#0d1a2b', display:'flex',
+        alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+        <Icon size={19} color="#2dd4a7" />
+      </span>
+      <span style={{ flex:1, minWidth:0 }}>
+        <span style={{ display:'block', fontSize:14, fontWeight:700, color:'#e6edf3' }}>{title}</span>
+        <span style={{ display:'block', fontSize:13, color:'#5a6a7a', marginTop:1 }}>{sub}</span>
+      </span>
+      <span style={{ color:'#3d5068', fontSize:16, flexShrink:0 }}>›</span>
+    </button>
+  );
+
+  return (
+    <div>
+      <div style={{ marginBottom:18 }}>
+        <div style={{ fontSize:12, fontWeight:700, color:'#2dd4a7', letterSpacing:'0.14em',
+          textTransform:'uppercase', marginBottom:5 }}>{season} season</div>
+        <div style={{ fontSize:22, fontWeight:800, color:'#e6edf3', letterSpacing:'-0.01em' }}>{dateLine}</div>
+      </div>
+
+      {/* Where the season stands */}
+      <div className="card">
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:8 }}>
+          <span style={{ fontWeight:700, fontSize:14 }}>Season goal</span>
+          <span style={{ color:'#5a6a7a', fontSize:14 }}>{fmt(conv(syT),1)} / {fmt(conv(goal),1)} {u}</span>
+        </div>
+        <div className="progress-bar-bg"><div className="progress-bar-fill"
+          style={{ width:`${pct}%`, background:'#2dd4a7' }} /></div>
+        <div style={{ fontSize:12, color:'#5a6a7a', marginTop:7 }}>
+          {taps} tap{taps!==1?'s':''} at {yieldMidOf(model)} {u}/tap ({model.label})
+        </div>
+        <div style={{ display:'flex', gap:14, marginTop:16, paddingTop:16, borderTop:'1px solid #1e2d3d' }}>
+          <Stat label="Sap"   value={fmt(conv(sapT),0)} unit={u} tint="#58a6ff" />
+          <Stat label="Syrup" value={fmt(conv(syT),1)}  unit={u} tint="#2dd4a7" />
+          <Stat label="Ratio" value={ratio ? `${ratio.toFixed(0)}:1` : '—'}
+            unit={ratio ? `theory ${fmt(theor,0)}:1` : 'no syrup logged'} tint="#e0a44a" />
+        </div>
+      </div>
+
+      {last ? (
+        <div style={{ fontSize:13, color:'#5a6a7a', margin:'0 2px 16px', lineHeight:1.5 }}>
+          Last entry: {fmt(conv(parseFloat(last.val)||0),1)} {u} {KIND[last.kind] || last.kind} on {last.date}.
+        </div>
+      ) : (
+        <div style={{ fontSize:13, color:'#5a6a7a', margin:'0 2px 16px', lineHeight:1.5 }}>
+          Nothing logged this season yet. Every number above fills in once you start.
+        </div>
+      )}
+
+      <div style={{ fontSize:12, fontWeight:700, color:'#3d5068', letterSpacing:'0.1em',
+        textTransform:'uppercase', margin:'0 2px 10px' }}>Get to work</div>
+      <Jump to="log"     Icon={I.clipboard} title="Log today's run"   sub="Sap, syrup, fuel and hours" />
+      <Jump to="lines"   Icon={I.mapPin}    title="Open the map"      sub="Pins, mainlines and routes" />
+      <Jump to="weather" Icon={I.cloudSun}  title="Check the forecast" sub="Freeze-thaw and flow score" />
+      <Jump to="sap"     Icon={I.calculator} title="Run the numbers"  sub="Sap, boil, R/O and finishing" />
+    </div>
+  );
+}
+
 // ─── DIAGNOSE TAB (BETA) ──────────────────────────────────────────────────────
 function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
   const [syrupPrice, setSyrupPrice] = React.useState(() => ls.get('sg_dx_price', 65));
@@ -9683,7 +9873,9 @@ function BackupModal({ onClose }) {
 }
 
 function App() {
-  const [tab,      setTab]      = useState('sap');
+  // The app used to open on Sap every time, whatever you were doing yesterday.
+  const [tab,      setTab]      = useState(() => ls.get('sg_last_tab', 'today'));
+  useEffect(() => { ls.set('sg_last_tab', tab); }, [tab]);
   const [writeFail, setWriteFail] = useState(null);
   useEffect(() => {
     const h = () => setWriteFail(SR_WRITE_FAIL);
@@ -9710,6 +9902,7 @@ function App() {
   const [notifBanner, setNotifBanner] = useState(null);
   const [lang,      setLang]      = useState(()=>ls.get('sg_lang','en'));
   const [showBackup, setShowBackup] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [showLicense, setShowLicense] = useState(false);
   const [lic, setLic] = useState({ status: 'checking' });
 
@@ -9778,85 +9971,113 @@ function App() {
       }).catch(() => {});
   }, []);
 
-  const tabs = [
-    { id:'sap',     Icon:I.droplet,     label:t(lang,'tabSap')     },
-    { id:'evap',    Icon:I.flame,       label:t(lang,'tabEvap')    },
-    { id:'ro',      Icon:I.filter,      label:t(lang,'tabRO')      },
-    { id:'finish',  Icon:I.thermometer, label:t(lang,'tabFinish')  },
-    { id:'tapping', Icon:I.mapleLeaf,   label:t(lang,'tabTapping') },
-    { id:'boilpt',  Icon:I.mapPin,      label:t(lang,'tabBoilPt')  },
-    { id:'season',  Icon:I.trendUp,     label:t(lang,'tabSeason')  },
-    { id:'recap',   Icon:I.mapleLeaf,   label:'Season Recap'       },
-    { id:'tubing',    Icon:I.wrench,    label:'Tubing'             },
-    { id:'sugarsage', Icon:I.leaf,      label:'SugarSage'          },
-    { id:'log',     Icon:I.package,     label:t(lang,'tabLog')     },
-    { id:'equip',   Icon:I.wrench,      label:t(lang,'tabEquip')   },
-    { id:'tasks',   Icon:I.clipboard,   label:t(lang,'tabTasks')   },
-    { id:'weather', Icon:I.snowflake,   label:'Weather'            },
-    ...(BETA_FEATURES ? [{ id:'lines',    Icon:I.tree, label:'Map β'       }] : []),
-    ...(BETA_FEATURES ? [{ id:'diagnose', Icon:I.flask, label:'Diagnose' }] : []),
+  // Sixteen tabs in one scrolling strip measured 1,032px inside a 362px box: six
+  // fit, the active one was never scrolled into view, and the app always opened
+  // on Sap. Five destinations along the bottom instead, each holding the screens
+  // that belong together. Nothing was removed — every old tab still has a home.
+  const DESTS = [
+    { id:'today', Icon:I.sun,        label:'Today',
+      tabs:[ { id:'today', Icon:I.sun, label:'Today' } ] },
+    { id:'record', Icon:I.clipboard, label:'Log',
+      tabs:[ { id:'log',    Icon:I.clipboard, label:t(lang,'tabLog')  },
+             { id:'season', Icon:I.calendar,  label:t(lang,'tabSeason') },
+             { id:'recap',  Icon:I.trendUp,   label:'Recap'           },
+             ...(BETA_FEATURES ? [{ id:'diagnose', Icon:I.flask, label:'Diagnose' }] : []) ] },
+    { id:'bush', Icon:I.mapPin,      label:'Bush',
+      tabs:[ ...(BETA_FEATURES ? [{ id:'lines', Icon:I.mapPin, label:'Map' }] : []),
+             { id:'tapping', Icon:I.tree,    label:t(lang,'tabTapping') },
+             { id:'tubing',  Icon:I.network, label:'Tubing'  } ] },
+    { id:'boil', Icon:I.calculator,  label:'Numbers',
+      tabs:[ { id:'sap',    Icon:I.droplet,     label:t(lang,'tabSap')    },
+             { id:'evap',   Icon:I.flame,       label:t(lang,'tabEvap')   },
+             { id:'ro',     Icon:I.filter,      label:t(lang,'tabRO')     },
+             { id:'finish', Icon:I.thermometer, label:t(lang,'tabFinish') },
+             { id:'boilpt', Icon:I.mountain,    label:t(lang,'tabBoilPt') } ] },
+    { id:'shed', Icon:I.wrench,      label:'Shed',
+      tabs:[ { id:'weather',   Icon:I.cloudSun,  label:'Weather' },
+             { id:'tasks',     Icon:I.check,     label:t(lang,'tabTasks') },
+             { id:'equip',     Icon:I.wrench,    label:t(lang,'tabEquip') },
+             { id:'sugarsage', Icon:I.brain,     label:'SugarSage' } ] },
   ];
+  const destOf = id => (DESTS.find(d => d.tabs.some(x => x.id === id)) || DESTS[0]).id;
+  const dest   = destOf(tab);
+  const subTabs = (DESTS.find(d => d.id === dest) || DESTS[0]).tabs;
+  // Landing on a destination opens the screen you were last on inside it.
+  const lastInDest = React.useRef({});
+  const goDest = d => {
+    const grp = DESTS.find(x => x.id === d) || DESTS[0];
+    setTab(lastInDest.current[d] || grp.tabs[0].id);
+  };
+  React.useEffect(() => { lastInDest.current[dest] = tab; }, [tab, dest]);
 
   return (
     <div className="app-wrap" style={{ maxWidth:540, margin:'0 auto' }}>
       {/* ── Header / Desktop Sidebar ── */}
       <div className="app-header" style={{ background:'#07090f', borderBottom:'1px solid #131e2c', padding:'14px 16px 0', position:'sticky', top:0, zIndex:100, boxShadow:'0 4px 20px rgba(0,0,0,0.5)' }}>
-        <div className="app-header-top" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-            <div style={{ width:42, height:42, background:'linear-gradient(135deg,#1a4a3a,#0d2e26)', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:'0 3px 12px rgba(45,212,167,0.2)' }}>
-              <I.mapleLeaf size={22} color="#2dd4a7" />
+        {/* One row. The mark, the name, what the licence is doing, and a gear.
+            Everything that used to sit here in four pill groups is behind it,
+            because 250px of chrome on an 844px phone is a quarter of the screen. */}
+        <div className="app-header-top" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:10, marginBottom:10 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+            <div style={{ width:34, height:34, background:'linear-gradient(135deg,#1a4a3a,#0d2e26)', borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <I.mapleLeaf size={19} color="#2dd4a7" />
             </div>
-            <div>
-              <div style={{ fontWeight:800, fontSize:21, letterSpacing:'-0.6px', lineHeight:1.1, marginBottom:3 }}>SweetRun</div>
-              <div style={{ fontSize:12, color:'#2dd4a7', fontWeight:700, letterSpacing:'0.12em', opacity:0.9 }}>{t(lang,'appSub')}</div>
-            </div>
+            <div style={{ fontWeight:800, fontSize:18, letterSpacing:'-0.4px', whiteSpace:'nowrap' }}>SweetRun</div>
+            <div style={{ fontSize:12, color:'#3d5068', fontWeight:600, whiteSpace:'nowrap' }}>{season}</div>
           </div>
-          <div className="app-header-controls" style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <div className="app-header-controls" style={{ display:'flex', alignItems:'center', gap:7, flexShrink:0 }}>
             {lic.status !== 'checking' && (
               <button onClick={()=>setShowLicense(true)} style={{
                 background: lic.status==='licensed' ? 'rgba(63,185,80,0.12)' : lic.status==='expired' ? 'rgba(244,112,103,0.12)' : 'rgba(88,166,255,0.1)',
                 border: `1px solid ${lic.status==='licensed' ? 'rgba(63,185,80,0.35)' : lic.status==='expired' ? 'rgba(244,112,103,0.4)' : 'rgba(88,166,255,0.25)'}`,
-                borderRadius:20, padding:'5px 11px', fontSize:12, fontWeight:700, cursor:'pointer',
+                borderRadius:20, padding:'6px 11px', fontSize:12, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap',
                 color: lic.status==='licensed' ? '#3fb950' : lic.status==='expired' ? '#f47067' : '#58a6ff' }}>
                 {lic.status==='licensed' ? '✓ Pass' : lic.status==='expired' ? 'Unlock' : `Trial · ${lic.daysLeft}d`}
               </button>
             )}
-            <div style={{ background:'rgba(45,212,167,0.1)', border:'1px solid rgba(45,212,167,0.2)', borderRadius:20, padding:'5px 12px', fontSize:12, fontWeight:700, color:'#2dd4a7', letterSpacing:'0.02em' }}>{season}</div>
-            <div style={{ display:'flex', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:20, padding:2 }}>
-              {['GAL','L'].map(u=>(
-                <button key={u} onClick={()=>setUnits(u)} style={{ background:units===u?'linear-gradient(135deg,#2dd4a7,#1fbf94)':'transparent', color:units===u?'#07090f':'#5a6a7a', border:'none', borderRadius:18, padding:'4px 12px', fontWeight:700, fontSize:13, transition:'all 0.18s', boxShadow:units===u?'0 2px 8px rgba(45,212,167,0.25)':'none' }}>{u}</button>
-              ))}
-            </div>
-            <div style={{ display:'flex', background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:20, padding:2 }}>
-              {['EN','FR'].map(l=>(
-                <button key={l} onClick={()=>setLang(l.toLowerCase())} style={{ background:lang===l.toLowerCase()?'linear-gradient(135deg,#a855f7,#9333ea)':'transparent', color:lang===l.toLowerCase()?'#fff':'#5a6a7a', border:'none', borderRadius:18, padding:'4px 10px', fontWeight:700, fontSize:13, transition:'all 0.18s', boxShadow:lang===l.toLowerCase()?'0 2px 8px rgba(168,85,247,0.25)':'none' }}>{l}</button>
-              ))}
-            </div>
-            <button onClick={()=>setShowWizard(true)} title="Season Setup Wizard"
-              style={{ background:'rgba(45,212,167,0.08)', border:'1px solid rgba(45,212,167,0.2)', borderRadius:10,
-                padding:'6px 10px', cursor:'pointer', display:'flex', alignItems:'center', gap:4, flexShrink:0 }}>
-              <I.compass size={16} color="#2dd4a7" />
-            </button>
-            <button onClick={()=>setShowBackup(true)} title="Data & Backup"
-              style={{ background:'rgba(88,166,255,0.08)', border:'1px solid rgba(88,166,255,0.2)', borderRadius:10,
-                padding:'6px 10px', cursor:'pointer', display:'flex', alignItems:'center', gap:4, flexShrink:0 }}>
-              <I.download size={16} color="#58a6ff" />
+            <button onClick={()=>setShowSettings(true)} aria-label="Settings and data" title="Settings"
+              style={{ background:'#0f1720', border:'1px solid #1e2d3d', borderRadius:10,
+                width:38, height:38, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <I.settings size={17} color="#8a9ab5" />
             </button>
           </div>
         </div>
         {/* Scrollable nav (horizontal on mobile/tablet, vertical on desktop) */}
-        <div className="tab-bar-wrap">
-          <div className="tab-bar">
-            {tabs.map(t => (
-              <button key={t.id} className={`tab-btn${tab===t.id?' active':''}`} onClick={()=>setTab(t.id)}>
-                <t.Icon size={16} color={tab===t.id?'#07090f':'#3d5068'} />
-                <span>{t.label}</span>
-              </button>
-            ))}
+        {/* Screens inside the destination you are in. One screen, no row. */}
+        {subTabs.length > 1 && (
+          <div className="tab-bar-wrap">
+            <div className="tab-bar" role="tablist" aria-label="Screens in this section">
+              {subTabs.map(t => (
+                <button key={t.id} role="tab" aria-selected={tab===t.id}
+                  className={`tab-btn${tab===t.id?' active':''}`} onClick={()=>setTab(t.id)}>
+                  <t.Icon size={16} color={tab===t.id?'#07090f':'#3d5068'} />
+                  <span>{t.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+        {subTabs.length <= 1 && <div style={{ height:6 }} />}
       </div>
 
+      {/* ── Five destinations, fixed to the bottom where a thumb reaches ── */}
+      <nav className="bottom-nav" aria-label="Main sections">
+        {DESTS.map(d => {
+          const on = dest === d.id;
+          return (
+            <button key={d.id} onClick={() => goDest(d.id)}
+              aria-label={d.label} aria-current={on ? 'page' : undefined}
+              className={`bnav-btn${on ? ' active' : ''}`}>
+              <d.Icon size={21} color={on ? '#2dd4a7' : '#5a6a7a'} />
+              <span>{d.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {showSettings && <SettingsSheet units={units} setUnits={setUnits} lang={lang} setLang={setLang}
+        season={season} setSeason={setSeason} onWizard={()=>setShowWizard(true)}
+        onBackup={()=>setShowBackup(true)} onClose={()=>setShowSettings(false)} />}
       {showBackup && <BackupModal onClose={()=>setShowBackup(false)} />}
       {showLicense && <LicenseModal lic={lic} onClose={()=>setShowLicense(false)}
         onLicenseSaved={p=>setLic({ status:'licensed', until:p.x })} />}
@@ -9923,6 +10144,7 @@ function App() {
               }}
             />
           )}
+          {tab==='today'   && <TodayTab   lang={lang} units={units} season={season} trees={trees} sapBrix={sapBrix} go={setTab} />}
           {tab==='sap'     && <SapTab     sapBrix={sapBrix} setSapBrix={setSapBrix} trees={trees} units={units} lang={lang} />}
           {tab==='evap'    && <EvapTab    sapBrix={sapBrix} setSapBrix={setSapBrix} units={units} setEvapRate={setEvapRate} fuelType={fuelType} setFuelType={setFuelType} fuelCost={fuelCost} setFuelCost={setFuelCost} season={season} trees={trees} lang={lang} />}
           {tab==='ro'      && <ROTab      sapBrix={sapBrix} setSapBrix={setSapBrix} evapRate={evapRate} fuelType={fuelType} fuelCost={fuelCost} units={units} lang={lang} />}
