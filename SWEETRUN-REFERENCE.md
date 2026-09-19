@@ -1,5 +1,9 @@
 # SweetRun — Master Reference Document
-**Last updated: May 28, 2026**
+**Last updated: September 19, 2026**
+
+> **Sept 19, 2026 update:** Added free public SEO calculator pages (`/calculators`, `/draw-off-calculator`, `/sap-to-syrup-calculator`, `/tap-calculator`, `/de-filter-calculator` + shared `calc-shared.css`), all linked from the landing page nav/footer and sitemap.xml. New app icon set (amber leaf + teal sap drop): `icon-512.png`, `app/icon-512.png`, `icon-192.png`, `icon-512-maskable.png`, `apple-touch-icon.png`, `favicon.png/.ico/.svg`, regenerated the inline manifest in `app/index.html`, and bumped the service worker cache to `sweetrun-v11`. Competitive analysis of Sap Spy in `SAPSPY-TEARDOWN.md`.
+
+> **Icon v2 ("Amber Glass"), Sept 19 evening:** Final icon is AI-generated (Recraft V4.1 via Higgsfield, ~2K render; prompt: dimensional maple leaf in polished amber glass, golden syrup drop falling from stem, dark green background), then graded toward the brand green (#0D2216) with PIL. Master: 1024px. All sizes regenerated (icon-512, icon-192, apple-touch-icon, favicon.png/.ico, favicon.svg wraps the PNG, icon-512-maskable at 76% safe zone) and re-embedded in the `app/index.html` inline manifest. Service worker at `sweetrun-v11`. Earlier hand-drawn vector version preserved in `icon-source.svg`. Disclosure: the icon is generated art, not a photograph of anything real.
 Keep this file current. Update it any time a service, key, URL, or password changes.
 
 ---

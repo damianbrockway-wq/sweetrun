@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maple Tree Tap Calculator — How Many Taps? | Free | SweetRun</title>
+  <meta name="description" content="Free maple tap calculator: enter your tree count, trunk diameter, and collection system to see how many taps you can run and how much sap and syrup to expect. Research-based tapping guidelines included." />
+  <link rel="canonical" href="https://sweetrun.app/tap-calculator" />
+  <meta property="og:title" content="Maple Tree Tap Calculator" />
+  <meta property="og:description" content="How many taps can your trees support, and how much syrup will they make? Free, no account." />
+  <meta property="og:url" content="https://sweetrun.app/tap-calculator" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://sweetrun.app/og-image.png" />
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="stylesheet" href="/calc-shared.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How big does a maple tree need to be to tap?",
+        "acceptedAnswer": { "@type": "Answer", "text": "At least 10 inches in diameter at breast height (DBH), measured about 4.5 feet up the trunk. Trees 10–17 inches take one tap, 18–24 inches take two, and 25 inches or larger can support three. Tapping smaller trees stresses them and yields little sap." }
+      },
+      {
+        "@type": "Question",
+        "name": "How much syrup do you get per tap?",
+        "acceptedAnswer": { "@type": "Answer", "text": "It depends on your collection system. Buckets typically yield 0.20–0.30 gallons of syrup per tap per season, gravity tubing 0.30–0.45, 3/16-inch natural-vacuum tubing 0.35–0.50, and mechanical vacuum systems 0.45–0.70. The US average across all methods is about 0.33 gallons per tap (USDA)." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does vacuum let me put more taps in a tree?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No — tap count is based on tree size only. Vacuum increases the sap yield from each tap; it does not raise the number of taps a tree can safely support." }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/"><span>🍁</span> SweetRun</a>
+  <div class="nav-links">
+    <a href="/calculators">All Calculators</a>
+    <a href="/#features">Features</a>
+    <a href="/#pricing">Pricing</a>
+  </div>
+  <a class="nav-cta" href="/#pricing">Try Free — 14 Days</a>
+</nav>
+
+<header class="calc-hero">
+  <span class="free-pill">Free · No account</span>
+  <h1>Maple Tap <em>Calculator</em></h1>
+  <p>How many taps your trees can support — and how much sap and syrup to expect this season.</p>
+</header>
+
+<main>
+  <div class="calc-card">
+    <label class="field-label" for="trees-in">Number of tappable maples</label>
+    <input type="number" id="trees-in" value="25" min="1" step="1" inputmode="numeric" oninput="calc()" />
+
+    <label class="field-label">Average trunk diameter (DBH, at 4.5 ft)</label>
+    <div class="seg" id="dbh-seg">
+      <button type="button" data-v="8"  onclick="pick('dbh',this)">Under 10"</button>
+      <button type="button" data-v="14" class="on" onclick="pick('dbh',this)">10–17"</button>
+      <button type="button" data-v="20" onclick="pick('dbh',this)">18–24"</button>
+      <button type="button" data-v="26" onclick="pick('dbh',this)">25"+</button>
+    </div>
+
+    <label class="field-label">Collection system</label>
+    <div class="seg" id="sys-seg">
+      <button type="button" data-v="buckets" onclick="pick('sys',this)">Buckets</button>
+      <button type="button" data-v="gravity" class="on" onclick="pick('sys',this)">Gravity tubing</button>
+      <button type="button" data-v="natural" onclick="pick('sys',this)">3/16" natural vac</button>
+      <button type="button" data-v="vacuum"  onclick="pick('sys',this)">Mechanical vacuum</button>
+    </div>
+
+    <div class="result-box">
+      <div class="result-label">Total taps</div>
+      <div class="result-value" id="taps-out">25</div>
+      <div class="result-sub" id="taps-sub">1 tap per tree at 10–17"</div>
+    </div>
+    <div class="result-grid">
+      <div class="mini-result">
+        <div class="mr-label">Expected syrup / season</div>
+        <div class="mr-value" id="syrup-out">7.5–11.3 gal</div>
+        <div class="mr-sub" id="syrup-sub">gravity tubing · 0.30–0.45 gal/tap</div>
+      </div>
+      <div class="mini-result">
+        <div class="mr-label">Sap to collect (~2°Brix)</div>
+        <div class="mr-value" id="sap-out">323–484 gal</div>
+        <div class="mr-sub">at a 43:1 ratio</div>
+      </div>
+    </div>
+    <div class="loc-note" id="warn-note" style="display:none;color:#b45309;font-weight:600;margin-top:12px;">⚠️ Trees under 10" DBH should not be tapped — they're too small to heal the tap hole and yield very little sap.</div>
+  </div>
+
+  <div class="prose">
+    <h2>Tapping guidelines</h2>
+    <table class="ref-table">
+      <thead><tr><th>Trunk diameter (DBH)</th><th>Taps</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td>Under 10"</td><td>0</td><td>Too small — let it grow</td></tr>
+        <tr><td>10–17"</td><td>1</td><td>Standard single tap</td></tr>
+        <tr><td>18–24"</td><td>2</td><td>Opposite sides of the trunk</td></tr>
+        <tr><td>25"+</td><td>3</td><td>Mature, healthy crowns only</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Why the system changes your yield, not your tap count</h2>
+    <p>Tap count comes from tree size alone — a tap hole is a wound, and the tree needs enough living wood to compartmentalize it. What your collection system changes is how much sap each tap gives. Buckets catch what drips. Gravity tubing catches more by keeping a sealed run to the tank. Vacuum — whether the natural vacuum a 3/16" line generates on a slope or a mechanical pump holding 20+ inches — pulls measurably more sap from the same hole, nearly doubling bucket yields in a good year.</p>
+    <p>The ranges this calculator uses come from published research: Cornell and Penn State for buckets, Cornell's Childs studies for tubing, and UVM Proctor's vacuum trials. The honest caveat from those same sources: the normal band is wide. Weather swings a season 25% either way, so treat the range as a planning envelope, not a promise.</p>
+    <h3>Rotate your tap holes</h3>
+    <p>Each year, drill at least 6 inches above or below and 4 inches to the side of old holes — many producers simply work around the trunk in a spiral. A tree tapped thoughtfully will outlive the sugarmaker.</p>
+    <p class="cite">Sources: Cornell Maple Program; Penn State Extension; UVM Proctor Maple Research Center; USDA NASS.</p>
+  </div>
+
+  <div class="cta-band">
+    <h2>Know every tree, not just <em>the average</em>.</h2>
+    <p>SweetRun maps your sugarbush pin by pin, tracks tap rotation per tree, analyzes gravity flow on your lines, and estimates your tubing order — offline, on your phone, no account.</p>
+    <a class="btn-primary" href="/#pricing">Try SweetRun Free — 14 Days</a>
+    <div class="cta-free-note">This calculator stays free, forever. No signup needed.</div>
+  </div>
+
+  <div class="more-calcs">
+    <h2>More free maple calculators</h2>
+    <div class="calc-links">
+      <a class="calc-link" href="/sap-to-syrup-calculator"><div class="cl-icon">🥞</div><div class="cl-name">Sap to Syrup Ratio</div><div class="cl-desc">Rule of 86 — how much syrup your sap will make</div></a>
+      <a class="calc-link" href="/draw-off-calculator"><div class="cl-icon">🌡️</div><div class="cl-name">Draw-Off Temperature</div><div class="cl-desc">Your finishing temp by elevation</div></a>
+      <a class="calc-link" href="/de-filter-calculator"><div class="cl-icon">🧪</div><div class="cl-name">DE Filter Press</div><div class="cl-desc">Exactly how much DE to use</div></a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p style="margin-bottom:8px;"><strong style="color:#fff;">SweetRun</strong> — The Maple Production Platform</p>
+  <p><a href="/">sweetrun.app</a> · <a href="/calculators">Free calculators</a> · <a href="mailto:hello@sweetrun.app">hello@sweetrun.app</a></p>
+  <p style="margin-top:12px;font-size:11px;">© 2026 SweetRun · Knowledge sourced from UVM Proctor Maple Research Center, Cornell Maple Program, USDA Forest Service, and IMSI</p>
+</footer>
+
+<script>
+  // Same logic as the SweetRun app (app.jsx): tapsPer(dbh) + YIELD_MODELS
+  const tapsPer = dbh => dbh < 10 ? 0 : dbh < 18 ? 1 : dbh < 25 ? 2 : 3;
+  const YIELD_MODELS = {
+    buckets: { low: 0.20, high: 0.30, label: 'buckets' },
+    gravity: { low: 0.30, high: 0.45, label: 'gravity tubing' },
+    natural: { low: 0.35, high: 0.50, label: '3/16" natural vacuum' },
+    vacuum:  { low: 0.45, high: 0.70, label: 'mechanical vacuum' },
+  };
+  const RATIO_2BRIX = 43; // 86 / 2.0°Brix
+
+  let dbh = 14, sys = 'gravity';
+  function pick(kind, btn) {
+    const seg = btn.parentElement;
+    seg.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    if (kind === 'dbh') dbh = parseFloat(btn.dataset.v);
+    else sys = btn.dataset.v;
+    calc();
+  }
+
+  function calc() {
+    const trees = Math.max(0, parseFloat(document.getElementById('trees-in').value) || 0);
+    const tpt = tapsPer(dbh);
+    const taps = trees * tpt;
+    const m = YIELD_MODELS[sys];
+    const lo = taps * m.low, hi = taps * m.high;
+
+    document.getElementById('taps-out').textContent = taps.toLocaleString();
+    document.getElementById('taps-sub').textContent = tpt === 0
+      ? 'trees under 10" should not be tapped'
+      : tpt + (tpt === 1 ? ' tap' : ' taps') + ' per tree at this size';
+    document.getElementById('warn-note').style.display = tpt === 0 ? '' : 'none';
+
+    const fmt = v => v >= 100 ? Math.round(v).toLocaleString() : v >= 10 ? v.toFixed(1) : v.toFixed(2);
+    if (taps > 0) {
+      document.getElementById('syrup-out').textContent = fmt(lo) + '–' + fmt(hi) + ' gal';
+      document.getElementById('syrup-sub').textContent = m.label + ' · ' + m.low.toFixed(2) + '–' + m.high.toFixed(2) + ' gal/tap';
+      document.getElementById('sap-out').textContent = Math.round(lo * RATIO_2BRIX).toLocaleString() + '–' + Math.round(hi * RATIO_2BRIX).toLocaleString() + ' gal';
+    } else {
+      document.getElementById('syrup-out').textContent = '—';
+      document.getElementById('syrup-sub').textContent = m.label;
+      document.getElementById('sap-out').textContent = '—';
+    }
+  }
+  calc();
+</script>
+</body>
+</html>

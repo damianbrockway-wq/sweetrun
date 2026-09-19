@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DE Filter Press Calculator for Maple Syrup — How Much DE? | Free | SweetRun</title>
+  <meta name="description" content="Free diatomaceous earth (DE) calculator for maple syrup filter presses. Enter your batch size, season, and plate setup to get exactly how many cups of DE to use — straight mix or precharge method." />
+  <link rel="canonical" href="https://sweetrun.app/de-filter-calculator" />
+  <meta property="og:title" content="DE Filter Press Calculator for Maple Syrup" />
+  <meta property="og:description" content="Exactly how much DE for your filter press — straight mix or precharge. Free, no account." />
+  <meta property="og:url" content="https://sweetrun.app/de-filter-calculator" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://sweetrun.app/og-image.png" />
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="stylesheet" href="/calc-shared.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How much DE do I use in a maple syrup filter press?",
+        "acceptedAnswer": { "@type": "Answer", "text": "For straight mix, use about 0.5 cups of food-grade DE per gallon of syrup early season, and 0.75 cups per gallon late season when niter is heavier. For the precharge method, coat the plates first (about 3.25 cups per 7-inch plate) and cross-check against 0.2 cups per gallon early or 0.5 late — use whichever is larger." }
+      },
+      {
+        "@type": "Question",
+        "name": "Straight mix or precharge — which DE method should I use?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Under 10 gallons, straight mix is simpler and works perfectly: stir DE into hot syrup and press. From 10–25 gallons either works. Over 25 gallons, precharging the plates first gives a cleaner first pour and longer press runs." }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does late-season syrup need more DE?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Late-season sap carries more minerals, so the syrup throws more niter (sugar sand). More suspended solids clog the filter cake faster, so you compensate with a heavier DE dose — roughly 50% more than early season." }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/"><span>🍁</span> SweetRun</a>
+  <div class="nav-links">
+    <a href="/calculators">All Calculators</a>
+    <a href="/#features">Features</a>
+    <a href="/#pricing">Pricing</a>
+  </div>
+  <a class="nav-cta" href="/#pricing">Try Free — 14 Days</a>
+</nav>
+
+<header class="calc-hero">
+  <span class="free-pill">Free · No account</span>
+  <h1>DE Filter Press <em>Calculator</em></h1>
+  <p>Exactly how much diatomaceous earth your batch needs — no more guessing, no more clogged plates.</p>
+</header>
+
+<main>
+  <div class="calc-card">
+    <label class="field-label" for="gal-in">Syrup to filter (gallons)</label>
+    <input type="number" id="gal-in" value="10" min="0.5" step="0.5" inputmode="decimal" oninput="calc()" />
+    <div class="loc-note" id="rec-note"></div>
+
+    <label class="field-label">Time of season</label>
+    <div class="seg" id="szn-seg">
+      <button type="button" data-v="early" class="on" onclick="pick('szn',this)">Early (Golden/Amber)</button>
+      <button type="button" data-v="late" onclick="pick('szn',this)">Late (Dark) — more niter</button>
+    </div>
+
+    <label class="field-label">Method</label>
+    <div class="seg" id="mode-seg">
+      <button type="button" data-v="straight" class="on" onclick="pick('mode',this)">Straight Mix</button>
+      <button type="button" data-v="precoat" onclick="pick('mode',this)">Precharge First</button>
+    </div>
+
+    <div id="press-fields" style="display:none;">
+      <div class="row2">
+        <div>
+          <label class="field-label" for="plates-in">Number of plates</label>
+          <input type="number" id="plates-in" value="9" min="1" max="30" step="1" inputmode="numeric" oninput="calc()" />
+        </div>
+        <div>
+          <label class="field-label" for="psize-in">Plate size</label>
+          <select id="psize-in" onchange="calc()">
+            <option value="3.25" selected>7" plates</option>
+            <option value="6.6">10" plates</option>
+            <option value="9.5">12" plates</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-box">
+      <div class="result-label">You need</div>
+      <div class="result-value" id="cups-out">5.0 cups</div>
+      <div class="result-sub" id="alt-units">≈ 0.5 lbs · 8 oz of food-grade DE</div>
+    </div>
+    <div class="result-grid">
+      <div class="mini-result">
+        <div class="mr-label">Rate used</div>
+        <div class="mr-value" id="rate-out">0.5 c/gal</div>
+        <div class="mr-sub" id="rate-sub">straight mix, early season</div>
+      </div>
+      <div class="mini-result">
+        <div class="mr-label">Method</div>
+        <div class="mr-value" id="method-out" style="font-size:18px;line-height:1.3;padding-top:6px;">Straight Mix</div>
+        <div class="mr-sub" id="method-sub">stir into hot syrup, then press</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="prose">
+    <h2>How to do it</h2>
+    <h3 id="howto-straight-h">Straight mix (easiest — best under 25 gal)</h3>
+    <p>Bring your syrup to filtering temperature (180–190°F). Stir the full DE amount directly into the hot syrup until no dry clumps remain. Pump through the press; recirculate the first quart or two back into the batch until the output runs bright and clear — the cloudy first pass is just the filter cake forming. Then run to your finishing tank. Stop when the pressure gauge reaches 40 PSI: the plates are full.</p>
+    <h3 id="howto-precoat-h">Precharge method (cleaner first pour — best over 25 gal)</h3>
+    <p>Heat a few gallons of water, stir the precharge DE into it, and pump the DE-water through the press to coat the plates. Drain the water without disturbing the cake. Now run your hot syrup through — it hits a ready-made filter bed, so the first pour comes out clear. Keep a light ongoing dose in the syrup for long runs, and re-charge whenever pressure hits 40 PSI.</p>
+
+    <h2>If something goes wrong</h2>
+    <p><strong>Pressure spikes immediately:</strong> too much niter for the cake — add more DE to the batch, or switch to the late-season rate. <strong>Syrup stays cloudy:</strong> cake hasn't formed yet; keep recirculating, and check that plate papers are seated. <strong>Press "fills" after a gallon or two:</strong> late-season niter load — use 0.75 cups/gal and consider precharging even for small batches. <strong>Flow slows to a trickle below 40 PSI:</strong> syrup has cooled — filtering below ~180°F thickens syrup and blinds the cake fast.</p>
+    <p class="cite">Rates scaled from the Smoky Lake filter-press baseline (3.25 cups per 7" plate, area-proportional for larger plates); food-grade DE only.</p>
+  </div>
+
+  <div class="cta-band">
+    <h2>The full walkthrough lives in <em>SweetRun</em>.</h2>
+    <p>Step-by-step press instructions, density check, finishing temps, canning guide, grade reference — plus your whole season's logs and economics. Offline, no account, your data stays yours.</p>
+    <a class="btn-primary" href="/#pricing">Try SweetRun Free — 14 Days</a>
+    <div class="cta-free-note">This calculator stays free, forever. No signup needed.</div>
+  </div>
+
+  <div class="more-calcs">
+    <h2>More free maple calculators</h2>
+    <div class="calc-links">
+      <a class="calc-link" href="/draw-off-calculator"><div class="cl-icon">🌡️</div><div class="cl-name">Draw-Off Temperature</div><div class="cl-desc">Your finishing temp by elevation</div></a>
+      <a class="calc-link" href="/sap-to-syrup-calculator"><div class="cl-icon">🥞</div><div class="cl-name">Sap to Syrup Ratio</div><div class="cl-desc">Rule of 86 — how much syrup your sap will make</div></a>
+      <a class="calc-link" href="/tap-calculator"><div class="cl-icon">🌳</div><div class="cl-name">Tap Calculator</div><div class="cl-desc">How many taps your trees support</div></a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p style="margin-bottom:8px;"><strong style="color:#fff;">SweetRun</strong> — The Maple Production Platform</p>
+  <p><a href="/">sweetrun.app</a> · <a href="/calculators">Free calculators</a> · <a href="mailto:hello@sweetrun.app">hello@sweetrun.app</a></p>
+  <p style="margin-top:12px;font-size:11px;">© 2026 SweetRun · Knowledge sourced from UVM Proctor Maple Research Center, Cornell Maple Program, USDA Forest Service, and IMSI</p>
+</footer>
+
+<script>
+  // Same logic as the SweetRun app (app.jsx DE calculator)
+  let szn = 'early', mode = 'straight';
+
+  function pick(kind, btn) {
+    btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    if (kind === 'szn') szn = btn.dataset.v;
+    else mode = btn.dataset.v;
+    document.getElementById('press-fields').style.display = mode === 'precoat' ? '' : 'none';
+    calc();
+  }
+
+  function calc() {
+    const gal    = Math.max(0, parseFloat(document.getElementById('gal-in').value) || 0);
+    const plates = Math.max(1, parseFloat(document.getElementById('plates-in').value) || 9);
+    const cpP    = parseFloat(document.getElementById('psize-in').value) || 3.25;
+
+    // Recommendation by batch size (matches app: >25 gal → precharge)
+    const rec = document.getElementById('rec-note');
+    if (gal > 0 && gal <= 10)      rec.textContent = 'Small batch — Straight Mix recommended (skip the precharge).';
+    else if (gal > 10 && gal <= 25) rec.textContent = 'Medium batch — Straight Mix works great; Precharge optional.';
+    else if (gal > 25)              rec.textContent = 'Large batch — Precharge recommended for best results.';
+    else rec.textContent = '';
+
+    // Per-gallon rates: straight early 0.5 / late 0.75 · precoat cross-check early 0.2 / late 0.5
+    const galRate = szn === 'late'
+      ? (mode === 'straight' ? 0.75 : 0.5)
+      : (mode === 'straight' ? 0.5  : 0.2);
+    const cupsPerGal   = gal * galRate;
+    const cupsPerPlate = plates * cpP;
+    const cups = mode === 'straight'
+      ? cupsPerGal
+      : (gal > 0 ? Math.max(cupsPerPlate, cupsPerGal) : cupsPerPlate);
+    const lbs = cups * 0.1; // filter-grade DE ≈ 0.1 lb/cup
+
+    document.getElementById('cups-out').textContent = cups.toFixed(1) + ' cups';
+    document.getElementById('alt-units').textContent = '≈ ' + lbs.toFixed(1) + ' lbs · ' + (lbs * 16).toFixed(0) + ' oz of food-grade DE';
+    document.getElementById('rate-out').textContent = galRate + ' c/gal';
+    document.getElementById('rate-sub').textContent = (mode === 'straight' ? 'straight mix' : 'precharge cross-check') + ', ' + szn + ' season';
+    document.getElementById('method-out').textContent = mode === 'straight' ? 'Straight Mix' : 'Precharge First';
+    document.getElementById('method-sub').textContent = mode === 'straight'
+      ? 'stir into hot syrup, then press'
+      : 'coat plates with DE-water first' + (cups === cupsPerPlate && cups > cupsPerGal ? ' · plate minimum governs' : '');
+  }
+  calc();
+</script>
+</body>
+</html>

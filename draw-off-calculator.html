@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maple Syrup Draw-Off Temperature Calculator — Free, By Elevation | SweetRun</title>
+  <meta name="description" content="Free draw-off temperature calculator for maple syrup. Enter your elevation or barometric pressure — or use your location — and get your exact finishing temperature (boiling point + 7.1°F). No account needed." />
+  <link rel="canonical" href="https://sweetrun.app/draw-off-calculator" />
+  <meta property="og:title" content="Maple Syrup Draw-Off Temperature Calculator" />
+  <meta property="og:description" content="Your exact syrup finishing temperature from your elevation or barometric pressure. Free, no account." />
+  <meta property="og:url" content="https://sweetrun.app/draw-off-calculator" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://sweetrun.app/og-image.png" />
+  <link rel="icon" href="/favicon.ico" sizes="48x48" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="stylesheet" href="/calc-shared.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What temperature do I draw off maple syrup?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Draw off at 7.1°F above the boiling point of water at your location. At sea level that's about 219.1°F, but water's boiling point drops roughly 1.8°F per 1,000 feet of elevation and shifts with barometric pressure, so your number changes with altitude and the day's weather." }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does elevation change my draw-off temperature?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Water boils at a lower temperature as air pressure drops. At 1,000 ft elevation water boils near 210.2°F instead of 212°F, so syrup reaches proper density at about 217.3°F instead of 219.1°F. Drawing off at the sea-level number at elevation gives you overly dense syrup." }
+      },
+      {
+        "@type": "Question",
+        "name": "Should I re-check my boiling point every boil day?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Barometric pressure swings between storm systems can move water's boiling point by a degree or more. Many producers boil a pot of water at the start of each boil and set draw-off 7.1°F above whatever it reads that day." }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="/"><span>🍁</span> SweetRun</a>
+  <div class="nav-links">
+    <a href="/calculators">All Calculators</a>
+    <a href="/#features">Features</a>
+    <a href="/#pricing">Pricing</a>
+  </div>
+  <a class="nav-cta" href="/#pricing">Try Free — 14 Days</a>
+</nav>
+
+<header class="calc-hero">
+  <span class="free-pill">Free · No account</span>
+  <h1>Draw-Off Temperature <em>Calculator</em></h1>
+  <p>Your exact maple syrup finishing temperature, from your elevation or today's barometric pressure.</p>
+</header>
+
+<main>
+  <div class="calc-card">
+    <label class="field-label">How do you want to find it?</label>
+    <div class="seg" role="tablist">
+      <button type="button" class="on" id="mode-alt" onclick="setMode('alt')">Elevation</button>
+      <button type="button" id="mode-pres" onclick="setMode('pres')">Barometric pressure</button>
+    </div>
+
+    <div id="pane-alt">
+      <label class="field-label" for="alt-in">Your elevation (feet)</label>
+      <input type="number" id="alt-in" value="0" min="0" max="10000" step="50" inputmode="numeric" oninput="calc()" />
+      <div style="margin-top:12px;">
+        <button type="button" class="btn-loc" id="loc-btn" onclick="useLocation()">📍 Use my location</button>
+        <div class="loc-note" id="loc-note">Looks up your elevation — nothing is stored or sent to SweetRun.</div>
+      </div>
+    </div>
+
+    <div id="pane-pres" style="display:none;">
+      <label class="field-label" for="pres-in">Barometric pressure (inHg)</label>
+      <input type="number" id="pres-in" value="29.92" min="27" max="32" step="0.01" inputmode="decimal" oninput="calc()" />
+      <div class="loc-note">From your barometer or local weather report. Standard is 29.92 inHg.</div>
+    </div>
+
+    <div class="result-box">
+      <div class="result-label">Draw off your syrup at</div>
+      <div class="result-value" id="fin-f">219.1°F</div>
+      <div class="result-sub" id="fin-c">104.0°C</div>
+    </div>
+    <div class="result-grid">
+      <div class="mini-result">
+        <div class="mr-label">Water boils at</div>
+        <div class="mr-value" id="bp-f">212.0°F</div>
+        <div class="mr-sub" id="bp-c">100.0°C</div>
+      </div>
+      <div class="mini-result">
+        <div class="mr-label">The rule</div>
+        <div class="mr-value">BP + 7.1°F</div>
+        <div class="mr-sub">syrup finishes 7.1°F above water</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="prose">
+    <h2>Altitude quick reference</h2>
+    <table class="ref-table" id="alt-table">
+      <thead><tr><th>Elevation</th><th>Water boils</th><th>Draw off at</th></tr></thead>
+      <tbody>
+        <tr data-alt="0"><td>Sea level</td><td>212.0°F</td><td>219.1°F</td></tr>
+        <tr data-alt="500"><td>500 ft</td><td>211.1°F</td><td>218.2°F</td></tr>
+        <tr data-alt="1000"><td>1,000 ft</td><td>210.2°F</td><td>217.3°F</td></tr>
+        <tr data-alt="1500"><td>1,500 ft</td><td>209.3°F</td><td>216.4°F</td></tr>
+        <tr data-alt="2000"><td>2,000 ft</td><td>208.4°F</td><td>215.5°F</td></tr>
+        <tr data-alt="2500"><td>2,500 ft</td><td>207.5°F</td><td>214.6°F</td></tr>
+        <tr data-alt="3000"><td>3,000 ft</td><td>206.6°F</td><td>213.7°F</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Why 7.1°F above boiling?</h2>
+    <p>Finished maple syrup is a sugar solution of 66–68.9°Brix, and a solution at that density boils 7.1°F hotter than pure water. That offset holds anywhere — what changes is the boiling point of water itself. It drops about 1.8°F for every 1,000 feet you climb, and it moves day to day with barometric pressure. A cold front rolling through can shift your draw-off point by a full degree while your pan is running.</p>
+    <p>That's why experienced sugarmakers don't memorize "219." They find water's boiling point at their sugarhouse — with this calculator, or by boiling a pot of water — and finish 7.1°F above it. Drawing too early gives thin syrup that can ferment; drawing late gives syrup that's over-density and can crystallize in the jar.</p>
+    <h3>Verify with a hydrometer</h3>
+    <p>Temperature gets you to the draw; a hydrometer or refractometer confirms density (66–68.9°Brix, legal minimum 66.0 in most jurisdictions). Use both — the thermometer to run the pan, the hydrometer to check the barrel.</p>
+    <p class="cite">Method sourced from UVM Proctor Maple Research Center and the North American Maple Syrup Producers Manual.</p>
+  </div>
+
+  <div class="cta-band">
+    <h2>This is one screen of <em>SweetRun</em>.</h2>
+    <p>The full app finds your boiling point by GPS, tracks every batch and Brix reading, scores your sap-run forecast, and works completely offline in the sugarbush. No account. Your data stays on your phone.</p>
+    <a class="btn-primary" href="/#pricing">Try SweetRun Free — 14 Days</a>
+    <div class="cta-free-note">This calculator stays free, forever. No signup needed.</div>
+  </div>
+
+  <div class="more-calcs">
+    <h2>More free maple calculators</h2>
+    <div class="calc-links">
+      <a class="calc-link" href="/sap-to-syrup-calculator"><div class="cl-icon">🥞</div><div class="cl-name">Sap to Syrup Ratio</div><div class="cl-desc">Rule of 86 — how much syrup your sap will make</div></a>
+      <a class="calc-link" href="/tap-calculator"><div class="cl-icon">🌳</div><div class="cl-name">Tap Calculator</div><div class="cl-desc">How many taps your trees support</div></a>
+      <a class="calc-link" href="/de-filter-calculator"><div class="cl-icon">🧪</div><div class="cl-name">DE Filter Press</div><div class="cl-desc">Exactly how much DE to use</div></a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p style="margin-bottom:8px;"><strong style="color:#fff;">SweetRun</strong> — The Maple Production Platform</p>
+  <p><a href="/">sweetrun.app</a> · <a href="/calculators">Free calculators</a> · <a href="mailto:hello@sweetrun.app">hello@sweetrun.app</a></p>
+  <p style="margin-top:12px;font-size:11px;">© 2026 SweetRun · Knowledge sourced from UVM Proctor Maple Research Center, Cornell Maple Program, USDA Forest Service, and IMSI</p>
+</footer>
+
+<script>
+  // Same formulas as the SweetRun app (app.jsx)
+  const altToBP  = ft => 212 - ft * 0.0018;
+  const presToBP = p  => 212 + (p - 29.92) * 1.8;
+  const finTemp  = bp => bp + 7.1;
+  const f2c = f => (f - 32) * 5 / 9;
+
+  let mode = 'alt';
+  function setMode(m) {
+    mode = m;
+    document.getElementById('mode-alt').classList.toggle('on', m === 'alt');
+    document.getElementById('mode-pres').classList.toggle('on', m === 'pres');
+    document.getElementById('pane-alt').style.display  = m === 'alt'  ? '' : 'none';
+    document.getElementById('pane-pres').style.display = m === 'pres' ? '' : 'none';
+    calc();
+  }
+
+  function calc() {
+    let bp;
+    if (mode === 'alt') {
+      const ft = Math.max(0, parseFloat(document.getElementById('alt-in').value) || 0);
+      bp = altToBP(ft);
+      highlightRow(ft);
+    } else {
+      const p = parseFloat(document.getElementById('pres-in').value) || 29.92;
+      bp = presToBP(p);
+      highlightRow(null);
+    }
+    const fin = finTemp(bp);
+    document.getElementById('bp-f').textContent  = bp.toFixed(1) + '°F';
+    document.getElementById('bp-c').textContent  = f2c(bp).toFixed(1) + '°C';
+    document.getElementById('fin-f').textContent = fin.toFixed(1) + '°F';
+    document.getElementById('fin-c').textContent = f2c(fin).toFixed(1) + '°C';
+  }
+
+  function highlightRow(ft) {
+    document.querySelectorAll('#alt-table tbody tr').forEach(tr => {
+      const a = parseFloat(tr.dataset.alt);
+      tr.classList.toggle('hl', ft !== null && Math.abs(ft - a) <= 250);
+    });
+  }
+
+  function useLocation() {
+    const btn = document.getElementById('loc-btn');
+    const note = document.getElementById('loc-note');
+    if (!navigator.geolocation) { note.textContent = 'Location not available in this browser — enter elevation manually.'; return; }
+    btn.textContent = 'Finding elevation…'; btn.disabled = true;
+    navigator.geolocation.getCurrentPosition(async pos => {
+      try {
+        const { latitude, longitude } = pos.coords;
+        const r = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${latitude.toFixed(4)}&longitude=${longitude.toFixed(4)}`);
+        const d = await r.json();
+        const ft = Math.round((d.elevation && d.elevation[0] ? d.elevation[0] : 0) * 3.28084);
+        setMode('alt');
+        document.getElementById('alt-in').value = ft;
+        note.textContent = `Your elevation: ${ft.toLocaleString()} ft`;
+        calc();
+      } catch (_) {
+        note.textContent = 'Could not look up elevation — enter it manually.';
+      }
+      btn.textContent = '📍 Use my location'; btn.disabled = false;
+    }, () => {
+      note.textContent = 'Location permission denied — enter elevation manually.';
+      btn.textContent = '📍 Use my location'; btn.disabled = false;
+    }, { timeout: 10000 });
+  }
+
+  calc();
+</script>
+</body>
+</html>

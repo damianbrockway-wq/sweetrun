@@ -1,0 +1,17 @@
+Today: one card, one date line, pinned Log a run
+
+The landing screen was clustered at the top and its primary action sat
+behind the bottom nav on a real phone. Five subtractions, nothing added:
+
+- Eyebrow and H1 merged into one 13px line: date, then season in caps.
+- Season Goal and Per Tap are one card; the benchmark caption moved into
+  the verdict line with the tap count.
+- Recent runs shows three; the Log holds the rest.
+- "Log a run" is pinned above the nav on Today at every viewport height
+  (measured at 390x844, 390x664, 375x553, 430x740, 360x640).
+- Card top at 121px; CTA clears the nav by 27px unscrolled.
+
+sw.js cache bumped to v10. All 95 headless checks green.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_0136mCYVTF6sygYp8ykuamKg
