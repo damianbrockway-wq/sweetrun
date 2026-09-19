@@ -10164,7 +10164,7 @@ function App() {
   return (
     <div className="app-wrap" style={{ maxWidth:540, margin:'0 auto' }}>
       {/* ── Header / Desktop Sidebar ── */}
-      <div className="app-header" style={{ background:'#07090f', borderBottom:'1px solid #131e2c', padding:'14px 16px 0', position:'sticky', top:0, zIndex:100 }}>
+      <div className="app-header" style={{ background:'#07090f', borderBottom:'1px solid #131e2c', padding:'calc(14px + env(safe-area-inset-top, 0px)) 16px 0', position:'sticky', top:0, zIndex:100 }}>
         {/* One row. The mark, the name, what the licence is doing, and a gear.
             Everything that used to sit here in four pill groups is behind it,
             because 250px of chrome on an 844px phone is a quarter of the screen. */}
