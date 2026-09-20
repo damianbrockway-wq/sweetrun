@@ -4487,13 +4487,16 @@ function _sbTreeSvg(tone, opts = {}) {
   const c = rgb(tone);
   const s = { light: mix(c,[255,255,255],0.28), base: tone, dark: mix(c,[0,0,0],0.32), deep: mix(c,[0,0,0],0.52) };
   const pts = a => a.map(p => p.join(',')).join(' ');
-  const leftUpper  = [[14,2],[11.4,7.2],[8.2,5.6],[9.2,10.4],[4.2,9.6],[7,13.6],[14,12]];
-  const leftLower  = [[14,12],[7,13.6],[3,15.6],[8.8,17.6],[12.6,21.2],[14,20.4]];
+  const leftUpper  = [[14,2],[12.2,6.4],[8.4,4.4],[9.4,9],[3.6,8.2],[6.6,12.4],[14,11.4]];
+  const leftLower  = [[14,11.4],[6.6,12.4],[1.8,15.2],[8,16.6],[6.4,20.6],[12.4,19.2],[14,20.2]];
   const rightUpper = leftUpper.map(([x,y]) => [28-x,y]);
   const rightLower = leftLower.map(([x,y]) => [28-x,y]);
   const trunk = opts.trunk || '#5c6470', sw = opts.stroke || '#07090f';
   const w = opts.width || 30, h = opts.height || 39;
-  return `<svg width="${w}" height="${h}" viewBox="0 0 28 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  return `<svg width="${w}" height="${h}" viewBox="-2 -2 32 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <g stroke="#07090f" stroke-width="2.8" stroke-linejoin="round" fill="#07090f">
+      <polygon points="${pts(leftUpper)}"/><polygon points="${pts(leftLower)}"/><polygon points="${pts(rightUpper)}"/><polygon points="${pts(rightLower)}"/></g>
+    <line x1="14" y1="20" x2="14" y2="34" stroke="#07090f" stroke-width="4.2" stroke-linecap="round"/>
     <g stroke="${sw}" stroke-width="0.6" stroke-linejoin="round">
       <polygon points="${pts(leftUpper)}" fill="${s.light}"/>
       <polygon points="${pts(leftLower)}" fill="${s.base}"/>
