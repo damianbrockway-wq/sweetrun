@@ -2,7 +2,7 @@
 // Cache name: bump this string on every deploy to force all clients to update cleanly.
 // localStorage data is NEVER touched by this file — it is purely cache management.
 
-const CACHE      = 'sweetrun-v19';
+const CACHE      = 'sweetrun-v21';
 const TILE_CACHE = 'sweetrun-tiles-v1';   // kept separately — never auto-purged on app update
 
 // Core app shell — everything SweetRun needs to run fully offline
@@ -22,7 +22,16 @@ const ASSETS = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE)
-      .then(cache => cache.addAll(ASSETS))
+      // Same-origin shell files fetch with cache:'reload' so a stale HTTP cache can never
+      // be precached into a fresh SW version (field bug, 2026-09-20: v19 precached a stale
+      // app.js straight out of the browser's HTTP cache). CDN URLs are version-pinned.
+      .then(cache => Promise.all(ASSETS.map(url => {
+        const req = url.startsWith('/') ? new Request(url, { cache: 'reload' }) : url;
+        return fetch(req).then(res => {
+          if (!res.ok && res.type !== 'opaque') throw new Error('precache failed: ' + url);
+          return cache.put(url, res);
+        });
+      })))
       .then(() => self.skipWaiting())   // activate immediately, don't wait for old SW to die
   );
 });

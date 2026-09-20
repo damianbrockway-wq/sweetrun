@@ -16,6 +16,10 @@
 /batch.html
   Cache-Control: public, max-age=0, must-revalidate
 
+# App bundle — must-revalidate so deploys reach browsers and SW precache immediately
+/app/app.js
+  Cache-Control: public, max-age=0, must-revalidate
+
 # Service worker — never cache
 /sw.js
   Cache-Control: no-cache, no-store, must-revalidate

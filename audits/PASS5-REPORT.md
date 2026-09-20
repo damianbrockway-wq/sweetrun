@@ -1,0 +1,47 @@
+# Pass 5 — Visual quick wins
+**Executed 2026-09-20. Edits in `app/src/app.jsx` and `app/index.html` (CSS) only, plus the `app/sw.js` cache bump v20→v21 (once, at the end). Never touched `app/app.js`. No new dependencies.**
+
+**Verification after every batch:** `cp app/src/app.jsx /tmp/app.jsx && SWEETRUN_SRC=/tmp/app.jsx node tests/formulas.test.mjs` → **59 passed, 0 failed** (no formula-band changes this pass); `/tmp/sr-check` full compile (`COMPILE OK` 683,172 bytes final) and stubbed end-to-end eval (`RENDER CALLED` / `EVAL OK`). The sandbox cannot serve these files to a browser, so **nothing was visually verified** — eyes-on list at the bottom.
+
+---
+
+## 1. Micro-delight: log a run — DONE
+- **Where:** `srReducedMotion` + `RollNum` helpers just above `LogTab`; `moment` state + the overlay JSX inside `LogTab` (grep `sr-save-moment`); CSS `.sr-save-moment`/`.sr-save-drop` + `srMomentDrop`/`srMomentFade` keyframes in app/index.html.
+- **How:** when `saveEntry` runs (the LogEntrySheet's only save path for new entries), it sets `{id, kind}` render state **after** the existing writes — the write code itself is untouched, the set is wrapped in try/catch, and nothing reads the state back. For ~700ms a fixed, `pointer-events:none` overlay shows the M.bucket outline mark (48px — above the BIBLE 32px floor, amber #EB9A33) with a teal #2DD4A7 sap drop falling into the rim (translateY+opacity only), then the whole thing fades. Simultaneously the new entry's row amount renders through `RollNum` — a 400ms rAF count-up 0→value with `font-variant-numeric: tabular-nums` (no layout shift while rolling). State auto-clears at 900ms.
+- **Reduced motion:** the overlay is not rendered at all (JS gate) and is `display:none` in CSS as belt-and-braces; `RollNum` renders the final value immediately. Net: the value just appears — identical to before this pass.
+- **Honest notes:** the roll is JS-driven text (rAF), not compositor — it is the one place the brief explicitly asked for a number roll; it runs once for 400ms on a single span. Edits (`onUpdate`) deliberately get no moment — the celebration is for logging a run, not fixing a typo. A ~1px width change is possible at the 900ms tabular→default numeral swap; invisible in testing fonts, worth one glance live.
+- **EN/FR:** the moment is text-free (mark + drop); no strings needed.
+
+## 2. Today: the season jar — DONE
+- **Where:** `SeasonJar` component just above `TodayTab`; the goal-card block that held `.progress-bar-bg` (grep `SeasonJar`); CSS `.sr-jar-fill`/`.sr-jar-tilt` + keyframes.
+- **How:** the flat teal bar is replaced in place by a 44px SVG jar — the **M.jug outline paths byte-for-byte** (BIBLE outline set v4), with the jug's own body path as a `clipPath` so the amber (#EB9A33, 0.88 opacity) fill can never escape the outline. Fill level = goal percentage, set as an inline `translateY` end-state on the fill rect; CSS animates `from { translateY(31px) }` (empty) to that end-state over 600ms, once. Then one barely-there surface settle: the fill's parent `g` rotates 2°→0° over 700ms, once, transform only (`transform-box: fill-box`, origin bottom-center). The header line beside it — `{fmt(pct,0)}% of {fmt(conv(goal),0)} {u}` — is **byte-identical**; numbers stay the truth.
+- **Layout rhythm:** the old block was header row (≈17px) + 8px + 7px bar; the new block is one 44px flex row (jar left, the same eyebrow + % line vertically centered right). Card grows ≈12px; the stat3 grid below and its border/margins are untouched.
+- **Reduced motion:** both animations `animation:none` in CSS → static fill at the correct level (the inline transform IS the end-state; nothing depends on the animation running).
+- **Honest notes:** at 0% the fill sits fully below the clip (invisible) — correct; at 100% the fill tops out at the jug shoulder, under the neck, which reads as "full" without lying about overflow.
+
+## 3. Map: yield heat view — DONE (the honest v1)
+- **Data reality, resolved as briefed:** collection points (`sg_cpoints`, tagged on log entries via `e.point`) have season sap totals but **no coordinates**; tree pins have coordinates but **no per-tree yield** (nothing in the app records sap per tree). So v1 = *assignment*: tank and pump pins get a **Collection point** picker in the pin detail sheet (pump included because collection points are described in-app as "pumphouses or gathering tanks"); the choice is stored as `cpoint` on the pin in `sg_lines_pins` — inside the `sg_*` backup sweep, no new keys. No geo data is invented anywhere.
+- **Where:** `_sbYieldTotals`/`_sbDrawYieldHeat`/`_sbClearYieldHeat` + `_lYieldLayers` in the map band; `yieldHeat` state + draw effect in `LinesTab`; the Layers panel's new **Yield** section; the picker in the pin sheet (grep `pinCpoint`); CSS `.sr-yield-thumb`/`.ly-note`.
+- **How:** toggle ON → for each tank/pump pin with an assignment, the point's season **sap** total is computed through the shared path — `seasonTotals({sapCollected: entries.filter(e => e.point === id)})`, the exact filter+metric LogTab uses (invariant 4: reused, not restated) — and the pin wears a soft radial amber halo (core `rgba(235,154,51,0.5)` → transparent at 72%) sized by **sqrt scale, radius 20–60px** relative to the largest point, with a tabular-nums monospace “N gal” (or “N L” — label follows `sg_units`, since stored values are in the display unit per the Pass-1 litre-semantics decision) dark-rimmed label at center. Halos live in their own Leaflet pane (z450, `pointer-events:none`) so they sit **under** every pin and never intercept a tap. Unassigned pins and zero-sap points draw nothing. The Layers panel row explains it in one line (EN+FR: `lyYieldNote`). Halos redraw on any pin change while ON; cleared on toggle-off and in the unmount cleanup.
+- **Reduced motion:** nothing animates — static by construction.
+- **Honest notes:** (a) halos are **pixel**-sized (magnitude badges), not geographic areas — they don't grow with zoom, deliberately, because they represent gallons, not acres; (b) the toggle is per-visit (ephemeral state, no new storage key); (c) it is "yield heat" only in the loose sense — it's per-collection-point sap totals worn by the pins the producer says stand for those points. That is everything the data can honestly support today. Total added UI is well under the 150-line budget.
+
+## 4. Weather: freeze/thaw ribbon — DONE
+- **Where:** `FreezeThawRibbon` component just above `WeatherTab`, rendered between the summary banner and the scored strip (which is untouched — the ribbon augments).
+- **How:** one SVG (`viewBox 0 0 100 64`, `preserveAspectRatio="none"`, full card width, 64px tall; all strokes `vector-effect="non-scaling-stroke"` so stretching never fattens a line). The 7-day hi/lo polylines are Catmull-Rom-smoothed (tension 1/6 → cubic beziers) in the existing hi/lo data colours (#e0a44a / #58a6ff), the area between them shaded with a warm-to-cold vertical gradient. The 32°F freeze line is a dashed hairline with a small monospace “32°F” tag. Run-day columns — computed with **exactly the Freeze/Thaw list's `ideal` expression, `hiF ≥ 40 && loF ≤ 28`** (one definition, two renders; consecutive days merged) — glow amber from below with a crisp 2px amber baseline. Beneath: a 7-column grid of tabular day labels (the same localized `dayLabel`s the strip uses), run days in amber. One-line legend under the card (`wxRibbonNote`, EN+FR). Pure render from the already-fetched `days` array — **zero new network**.
+- **Reduced motion:** nothing animates; no rules needed.
+- **Honest notes:** the y-domain always includes 28 and 40 so the freeze line and run-band thresholds are always on-canvas even in warm/cold weeks; with fewer than 2 forecast days the ribbon renders nothing.
+
+## Housekeeping
+- `app/sw.js` cache `sweetrun-v20` → **`sweetrun-v21`** (once, at the end; the v20 `cache:'reload'` precache fix is untouched).
+- 16 new TR keys, EN + FR both tables (`lyYield*`, `pinCpoint*`, `wxRibbon*`).
+- New pin field `cpoint` rides `sg_lines_pins` (backup-safe, invariant 2); no other storage shape changes; `ls.set` remains the only writer touched, via the existing `updatePinField`.
+- Data palette untouched; every new colour is brand amber #EB9A33, teal #2DD4A7, or the existing hi/lo data colours in their existing roles.
+
+## Needs eyes-on after deploy
+1. **The save moment on a phone:** drop lands in the bucket rim (not beside it), reads at a glance, never blocks a tap; fires correctly when the sheet closes and the list re-sorts. Check the row roll on a value with thousands grouping (e.g. 1,250).
+2. **Season jar** at 0%, ~40%, 100%; the one-time tilt should be barely perceptible (if it reads as a wobble, delete the `.sr-jar-tilt` animation line — the fill alone carries it). Card rhythm at 375px vs the old bar.
+3. **Yield heat:** assign two points with very different totals — 20 vs 60px halos should read proportionate; label legible over satellite AND terrain-multiply modes; pin taps still land on the pins through the halos; toggle off leaves no orphans after tab switches.
+4. **Ribbon** on a real forecast: smoothing shouldn't overshoot on a sharp cold snap (Catmull-Rom can wiggle ±1–2°F between points — cosmetic); 32°F tag placement in very warm and very cold weeks; FR day labels fit their columns at 375px.
+5. **Reduced-motion device pass:** no moment overlay, value appears instantly, jar static at level, nothing else new moves.
+6. RollNum swap at 900ms (tabular → default numerals): confirm no visible 1px shimmy in the row.

@@ -393,6 +393,14 @@ const TR = {
     lyLeafOff:'Leaf-off', lyLeafOffSub:'Bare trees — ground visible',
     lyCompare:'Compare', lyCompareSub:'Leaf-on vs leaf-off slider',
     lyTerrainStrength:'Terrain strength',
+    // Yield heat + freeze/thaw ribbon (Pass 5)
+    lyYield:'Yield', lyYieldHeat:'Yield heat',
+    lyYieldSub:'Amber halos on tank pins, sized by season sap',
+    lyYieldNote:'Assign a collection point to a tank or pump pin (tap the pin) — its season sap total draws the halo. Collection points aren’t geolocated, so the pin carries the number.',
+    pinCpoint:'Collection point', pinCpointNone:'None',
+    pinCpointSub:'Links this pin to a Log collection point for the map’s yield view.',
+    wxRibbonTitle:'FREEZE–THAW · 7 DAYS',
+    wxRibbonNote:'Amber = run-day pattern (freeze ≤ 28°F · thaw ≥ 40°F). The 32°F line is where sap starts and stops.',
     // Measure tool (Pass 4)
     msMeasure:'Measure', msTapToStart:'Tap the map to lay the tape',
     msDistance:'Distance', msArea:'Area', msPerimeter:'Perimeter',
@@ -672,6 +680,14 @@ const TR = {
     lyLeafOff:'Sans feuilles', lyLeafOffSub:'Arbres nus — sol visible',
     lyCompare:'Comparer', lyCompareSub:'Curseur avec vs sans feuilles',
     lyTerrainStrength:'Intensité du relief',
+    // Halo de rendement + bande gel–dégel (passe 5)
+    lyYield:'Rendement', lyYieldHeat:'Halo de rendement',
+    lyYieldSub:'Halos ambrés sur les réservoirs, selon la sève de la saison',
+    lyYieldNote:'Associez un point de collecte à une épingle réservoir ou pompe (touchez l’épingle) — son total de sève de la saison dessine le halo. Les points de collecte n’ont pas de coordonnées; c’est l’épingle qui porte le chiffre.',
+    pinCpoint:'Point de collecte', pinCpointNone:'Aucun',
+    pinCpointSub:'Relie cette épingle à un point de collecte du journal pour la vue rendement de la carte.',
+    wxRibbonTitle:'GEL–DÉGEL · 7 JOURS',
+    wxRibbonNote:'Ambre = profil de journée de coulée (gel ≤ 28 °F · dégel ≥ 40 °F). La ligne de 32 °F est là où la sève démarre et s’arrête.',
     // Outil de mesure (passe 4)
     msMeasure:'Mesurer', msTapToStart:'Touchez la carte pour dérouler le ruban',
     msDistance:'Distance', msArea:'Superficie', msPerimeter:'Périmètre',
@@ -3295,6 +3311,33 @@ function SapImportModal({ season, onClose, onImport, lang='en' }) {
 }
 
 // ─── LOG TAB ──────────────────────────────────────────────────────────────────
+// ─── Log micro-delight helpers (Pass 5) ─────────────────────────────────────
+// Presentation only. The saved-entry "moment" (teal drop into the bucket mark)
+// and the number roll are fire-and-forget renders; the save path itself is
+// untouched. Both collapse to the static end-state under reduced motion.
+const srReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// A number that rolls 0 → value over ~400ms. tabular-nums so digits don't
+// shift the row while rolling. Reduced motion: renders the value immediately.
+function RollNum({ value, dp = 0 }) {
+  const target = parseFloat(value) || 0;
+  const [disp, setDisp] = React.useState(() => (srReducedMotion() ? target : 0));
+  React.useEffect(() => {
+    if (srReducedMotion()) { setDisp(target); return; }
+    let raf; const t0 = performance.now(), DUR = 400;
+    const step = now => {
+      const k = Math.min(1, (now - t0) / DUR);
+      const eased = 1 - Math.pow(1 - k, 3);
+      setDisp(target * eased);
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target]);
+  return <span style={{ fontVariantNumeric:'tabular-nums' }}>{fmt(disp, dp)}</span>;
+}
+
 function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' }) {
   const u    = units === 'L' ? 'L' : 'gal';
   const conv = v => units === 'L' ? +(v*3.78541).toFixed(1) : +v.toFixed(1);
@@ -3512,9 +3555,19 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
     window.addEventListener('sr-log-a-run', h);
     return () => window.removeEventListener('sr-log-a-run', h);
   }, []);
+  // The saved-entry moment (Pass 5): id+kind of the entry the sheet just
+  // saved. Set AFTER the writes below run — pure render state, auto-clears.
+  const [moment, setMoment] = useState(null);
+  useEffect(() => {
+    if (!moment) return;
+    const tm = setTimeout(() => setMoment(null), 900);
+    return () => clearTimeout(tm);
+  }, [moment]);
   const saveEntry = (kind, entry) => {
     updLog(kind, [...(slog[kind] || []), entry]);
     ls.set('sg_log_last_kind', kind);
+    // Micro-delight — fire-and-forget; nothing below reads it, nothing above waits on it.
+    try { setMoment({ id: entry.id, kind }); } catch {}
     // Auto-copy sap collected into R/O and/or the evaporator, exactly as the old section did:
     // a functional update so both targets are written atomically.
     if (kind === 'sapCollected' && (autoCopy.ro || autoCopy.evap)) {
@@ -3610,7 +3663,9 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
             {pt && <span className="log-chip" style={{ color:pt.color }}>{pt.name}</span>}
             {e.note && <span className="log-note">{e.note}</span>}
           </span>
-          <span className="log-amt">{fmt(e.val, K.dp)} <span className="u">{K.unit}</span></span>
+          <span className="log-amt">{moment && moment.id === e.id && moment.kind === e.kind
+            ? <RollNum value={e.val} dp={K.dp} />
+            : fmt(e.val, K.dp)} <span className="u">{K.unit}</span></span>
         </button>
       ); })}
 
@@ -3832,6 +3887,20 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
           <button className="btn-primary" onClick={openSheet} id="log-a-run">
             <I.plus size={18} color="#07090f" /> {lang==='fr' ? 'Noter une coulée' : 'Log a run'}
           </button>
+        </div>
+      )}
+
+      {/* The moment: a teal sap drop falls into the bucket mark for ~700ms.
+          Non-blocking (pointer-events none), skipped under reduced motion —
+          the rolled number in the row is the static story there. */}
+      {moment && !srReducedMotion() && (
+        <div className="sr-save-moment" key={`${moment.kind}${moment.id}`} aria-hidden="true">
+          <span className="sr-save-drop">
+            <svg width="13" height="17" viewBox="0 0 13 17" fill="none" aria-hidden="true">
+              <path fill="#2DD4A7" d="M6.5 0.8 C9.2 4.9 10.9 7.4 10.9 9.9 A4.4 4.4 0 1 1 2.1 9.9 C2.1 7.4 3.8 4.9 6.5 0.8 Z"/>
+            </svg>
+          </span>
+          <M.bucket size={48} color="#EB9A33" />
         </div>
       )}
 
@@ -4645,6 +4714,7 @@ let _lSliderEl = null;
 let _lGpsMarker = null;
 let _lGpsCircle = null;
 let _lMeasureLayers = [];
+let _lYieldLayers = [];        // yield-heat halos (Pass 5) — cleared on toggle-off and unmount
 let _lTerrainActive = false;   // terrain modes brighten the route glow so lines stay legible
 
 // New tile surfaces (Pass 4). Both verified live 2026-09-20 (real 256×256 tiles
@@ -5090,6 +5160,59 @@ function _sbUpdateMarker(pin) {
 // Shim for old code paths that called _renderMarker
 function _renderMarker(pin) { _sbRenderMarker(pin); }
 
+// ─── Yield heat (Pass 5) ─────────────────────────────────────────────────────
+// The honest v1: collection points carry the season sap totals but no
+// coordinates; tank/pump pins carry coordinates but no yield. So the user
+// assigns a collection point to a tank or pump pin (pin sheet; stored as
+// `cpoint` on the pin in sg_lines_pins — inside the sg_* backup sweep), and
+// the pin wears that point's season sap total as an amber halo. Unassigned
+// pins, and points with no sap yet, draw nothing. No geo data is invented.
+function _sbYieldTotals(pointIds) {
+  // Same shared path LogTab uses: seasonTotals over entries filtered by
+  // `e.point === id` (invariant 4 — reuse the metric, don't restate it).
+  const season = ls.get('sg_season', new Date().getFullYear());
+  const slog = (ls.get('sg_logs2', {})[season]) || {};
+  const out = {};
+  pointIds.forEach(pid => {
+    out[pid] = seasonTotals({ sapCollected: (slog.sapCollected || []).filter(e => e.point === pid) }).sapT;
+  });
+  return out;
+}
+
+function _sbClearYieldHeat() {
+  _lYieldLayers.forEach(l => { try { l.remove(); } catch {} });
+  _lYieldLayers = [];
+}
+
+function _sbDrawYieldHeat(pins, unitLbl) {
+  _sbClearYieldHeat();
+  if (!_lMap || !window.L) return;
+  const withPt = pins.filter(p => (p.type === 'tank' || p.type === 'pump') && p.cpoint);
+  if (!withPt.length) return;
+  // Own pane below the marker pane (600) so halos never block pin taps.
+  if (!_lMap.getPane('sr-yield')) {
+    const pane = _lMap.createPane('sr-yield');
+    pane.style.zIndex = 450;
+    pane.style.pointerEvents = 'none';
+  }
+  const totals = _sbYieldTotals([...new Set(withPt.map(p => p.cpoint))]);
+  const max = Math.max(0, ...Object.values(totals));
+  if (max <= 0) return;   // assigned, but no sap logged yet — nothing to show, honestly
+  withPt.forEach(p => {
+    const v = totals[p.cpoint] || 0;
+    if (v <= 0) return;
+    const r = Math.round(20 + 40 * Math.sqrt(v / max));   // sqrt scale, 20–60px
+    const d = r * 2;
+    const html = `<div style="width:${d}px;height:${d}px;border-radius:50%;background:radial-gradient(circle, rgba(235,154,51,0.5) 0%, rgba(235,154,51,0.26) 45%, rgba(235,154,51,0) 72%)"></div>`
+      + `<div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;font-size:11px;font-weight:800;color:#EB9A33;text-shadow:0 0 3px #07090f,0 0 3px #07090f,0 1px 2px #07090f;white-space:nowrap">${fmt(v,0)} ${unitLbl}</div>`;
+    const m = window.L.marker([p.lat, p.lon], {
+      pane: 'sr-yield', interactive: false, keyboard: false,
+      icon: window.L.divIcon({ className: 'sr-yield-halo', html, iconSize: [d, d], iconAnchor: [r, r] }),
+    }).addTo(_lMap);
+    _lYieldLayers.push(m);
+  });
+}
+
 function _dropPin(lat, lon, type, pinsRef, setPins, extra = {}) {
   const id = Date.now();
   const count = pinsRef.current.filter(p => p.type === type).length + 1;
@@ -5329,6 +5452,9 @@ function LinesTab({ lang='en' }) {
   const [seasonMode, setSeasonMode] = React.useState('off');
   // Measure tool — ephemeral by design: armed mode routes map taps to the tape
   // (pin drops suppressed); Done/unmount clears everything. Never persisted.
+  // Yield heat (Pass 5) — view-only toggle; halos derive from sg_logs2 +
+  // pin.cpoint assignments and are redrawn whenever either changes.
+  const [yieldHeat, setYieldHeat] = React.useState(false);
   const [measuring, setMeasuring] = React.useState(false);
   const [mVerts, setMVerts]       = React.useState([]);
   const [mClosed, setMClosed]     = React.useState(false);
@@ -5466,10 +5592,19 @@ function LinesTab({ lang='en' }) {
       _lGpsMarker = null;
       _lGpsCircle = null;
       _lMeasureLayers = [];
+      _lYieldLayers = [];
       _lTerrainActive = false;
       window._sgMapPinClick = null;
     };
   }, [leafletReady]);
+
+  // Yield heat: draw/clear the halos. Depends on pins so a new collection-point
+  // assignment (or a deleted pin) redraws while the view is on.
+  React.useEffect(() => {
+    if (!leafletReady || !_lMap) return;
+    if (yieldHeat) _sbDrawYieldHeat(pinsRef.current, ls.get('sg_units','GAL') === 'L' ? 'L' : 'gal');
+    else _sbClearYieldHeat();
+  }, [yieldHeat, pins, leafletReady]);
 
   // Base-layer switching (satellite / sat+terrain / terrain / topo / street)
   React.useEffect(() => {
@@ -6071,6 +6206,17 @@ function LinesTab({ lang='en' }) {
             <_LyRow active={seasonMode === 'compare'} onClick={() => setSeasonMode('compare')}
               thumbs={[{ src:_SB_THUMB.naip }, { src:_SB_THUMB.clarity, cls:'half' }]}
               name={t(lang,'lyCompare')} sub={t(lang,'lyCompareSub')} />
+            {/* Yield heat (Pass 5) */}
+            <div className="ly-cap">{t(lang,'lyYield')}</div>
+            <button className={`ly-row${yieldHeat ? ' on' : ''}`} onClick={() => setYieldHeat(v => !v)} aria-pressed={yieldHeat}>
+              <span className="ly-thumb sr-yield-thumb" aria-hidden="true" />
+              <span style={{ flex:1, minWidth:0 }}>
+                <span className="ly-name">{t(lang,'lyYieldHeat')}</span>
+                <span className="ly-sub">{t(lang,'lyYieldSub')}</span>
+              </span>
+              {yieldHeat ? <I.check size={18} color="#2dd4a7" /> : null}
+            </button>
+            <div className="ly-note">{t(lang,'lyYieldNote')}</div>
           </div>
         </div>
       )}
@@ -6829,6 +6975,35 @@ function LinesTab({ lang='en' }) {
             </div>
           )}
 
+          {/* Collection point assignment (Pass 5) — tank/pump pins only, and only
+              once collection points exist in the Log. Powers the yield-heat view. */}
+          {(selectedPin.type === 'tank' || selectedPin.type === 'pump') && (() => {
+            const cps = ls.get('sg_cpoints', []);
+            if (!cps.length) return null;
+            return (
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', marginBottom:4, letterSpacing:'0.06em', textTransform:'uppercase' }}>{t(lang,'pinCpoint')}</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                  {[{ id:'', name:t(lang,'pinCpointNone'), color:'#7f92a6' }, ...cps].map(pt => {
+                    const on = (selectedPin.cpoint || '') === pt.id;
+                    return (
+                      <button key={pt.id || 'none'} onClick={() => updatePinField(selectedPin.id, 'cpoint', pt.id || null)}
+                        aria-pressed={on}
+                        style={{ flex:'1 1 90px', minWidth:72, minHeight:38,
+                          background: on ? pt.color + '26' : 'transparent',
+                          border:`1px solid ${on ? pt.color : '#1e2d3d'}`,
+                          borderRadius:8, padding:'7px 8px', fontSize:12.5, fontWeight:700,
+                          color: on ? pt.color : '#7f92a6', cursor:'pointer' }}>
+                        {pt.name}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ fontSize:12, color:'#7f92a6', marginTop:5, lineHeight:1.4 }}>{t(lang,'pinCpointSub')}</div>
+              </div>
+            );
+          })()}
+
           {/* Label (rename) */}
           <div style={{ marginBottom:10 }}>
             <div style={{ fontSize:12, fontWeight:700, color:'#7f92a6', marginBottom:4, letterSpacing:'0.06em' }}>LABEL</div>
@@ -6959,6 +7134,90 @@ function _sapRunScore(hiF, loF, windMph, precipIn, sunSec, prevHiF, runStreak) {
 }
 
 // ─── WEATHER TAB ──────────────────────────────────────────────────────────────
+// ─── Freeze/thaw ribbon (Pass 5) ─────────────────────────────────────────────
+// A compact SVG band above the scored strip: the 7-day hi/lo as a smoothed
+// shaded area, the 32°F freeze line as a hairline, and amber glow under the
+// run-day columns. "Run day" here is EXACTLY the Freeze/Thaw list's `ideal`
+// (hiF ≥ 40 && loF ≤ 28) — one definition, two renders. Pure render from the
+// forecast already fetched; nothing animates (reduced motion needs no rules).
+function FreezeThawRibbon({ days, lang }) {
+  if (!days || days.length < 2) return null;
+  const N = days.length;
+  const W = 100, H = 64;                       // stretched viewBox; strokes are non-scaling
+  const lows = days.map(d => d.loF), his = days.map(d => d.hiF);
+  const lo = Math.min(...lows, 28) - 4, hi = Math.max(...his, 40) + 4;
+  const y = v => +((4 + (hi - v) / (hi - lo) * (H - 8)).toFixed(2));
+  const x = i => +(((i + 0.5) * (W / N)).toFixed(2));
+  // Catmull-Rom → cubic bezier (tension 1/6): one smooth pass per polyline.
+  const smooth = pts => pts.map((p, i, a) => {
+    if (!i) return `M${p[0]} ${p[1]}`;
+    const pm = a[i - 2] || a[i - 1], p0 = a[i - 1], p2 = a[i + 1] || p;
+    const c1 = [+(p0[0] + (p[0] - pm[0]) / 6).toFixed(2), +(p0[1] + (p[1] - pm[1]) / 6).toFixed(2)];
+    const c2 = [+(p[0] - (p2[0] - p0[0]) / 6).toFixed(2), +(p[1] - (p2[1] - p0[1]) / 6).toFixed(2)];
+    return `C${c1[0]} ${c1[1]},${c2[0]} ${c2[1]},${p[0]} ${p[1]}`;
+  }).join('');
+  const hiPts = his.map((v, i) => [x(i), y(v)]);
+  const loPts = lows.map((v, i) => [x(i), y(v)]);
+  const area = smooth(hiPts) + smooth(loPts.slice().reverse()).replace(/^M/, 'L') + 'Z';
+  // Run-day columns (consecutive days merged into one segment)
+  const ideal = days.map(d => d.hiF >= 40 && d.loF <= 28);
+  const runs = [];
+  for (let i = 0; i < N; i++) {
+    if (!ideal[i]) continue;
+    const last = runs[runs.length - 1];
+    if (last && last.to === i - 1) last.to = i; else runs.push({ from: i, to: i });
+  }
+  const y32 = y(32);
+  return (
+    <div className="card" style={{ padding:'14px 12px' }}>
+      <div style={{ fontSize:13, fontWeight:700, color:'#7f92a6', letterSpacing:'0.08em', marginBottom:10 }}>
+        {t(lang,'wxRibbonTitle')}
+      </div>
+      <div style={{ position:'relative' }}>
+        <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
+          style={{ display:'block' }} aria-hidden="true">
+          <defs>
+            <linearGradient id="srFtBand" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"  stopColor="rgba(224,164,74,0.30)" />
+              <stop offset="100%" stopColor="rgba(88,166,255,0.22)" />
+            </linearGradient>
+            <linearGradient id="srFtRun" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"  stopColor="rgba(235,154,51,0)" />
+              <stop offset="100%" stopColor="rgba(235,154,51,0.30)" />
+            </linearGradient>
+          </defs>
+          {/* Amber glow under run-day columns — drawn first, beneath everything */}
+          {runs.map(r => (
+            <g key={r.from}>
+              <rect x={(r.from * W / N).toFixed(2)} y="0" width={((r.to - r.from + 1) * W / N).toFixed(2)} height={H} fill="url(#srFtRun)" />
+              <rect x={(r.from * W / N).toFixed(2)} y={H - 2} width={((r.to - r.from + 1) * W / N).toFixed(2)} height="2" fill="rgba(235,154,51,0.85)" />
+            </g>
+          ))}
+          {/* The hi–lo band */}
+          <path d={area} fill="url(#srFtBand)" />
+          {/* 32°F freeze hairline */}
+          <line x1="0" y1={y32} x2={W} y2={y32} stroke="rgba(230,237,243,0.30)" strokeWidth="1" vectorEffect="non-scaling-stroke" strokeDasharray="4 3" />
+          {/* Hi and lo polylines, smoothed — the existing hi/lo data colours */}
+          <path d={smooth(hiPts)} fill="none" stroke="#e0a44a" strokeWidth="1.6" vectorEffect="non-scaling-stroke" strokeLinecap="round" />
+          <path d={smooth(loPts)} fill="none" stroke="#58a6ff" strokeWidth="1.6" vectorEffect="non-scaling-stroke" strokeLinecap="round" />
+        </svg>
+        <span style={{ position:'absolute', right:2, top:`calc(${(y32 / H * 100).toFixed(1)}% - 15px)`,
+          fontSize:10, fontWeight:700, color:'rgba(230,237,243,0.55)',
+          fontFamily:"ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace", fontVariantNumeric:'tabular-nums' }}>32°F</span>
+      </div>
+      {/* Day labels beneath — same columns as the ribbon, tabular */}
+      <div style={{ display:'grid', gridTemplateColumns:`repeat(${N}, 1fr)`, marginTop:4 }}>
+        {days.map((d, i) => (
+          <span key={d.date} style={{ textAlign:'center', fontSize:11, fontWeight: ideal[i] ? 700 : 600,
+            color: ideal[i] ? '#EB9A33' : '#7f92a6', fontVariantNumeric:'tabular-nums',
+            overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.dayLabel}</span>
+        ))}
+      </div>
+      <div style={{ fontSize:12, color:'#7f92a6', marginTop:8, lineHeight:1.4 }}>{t(lang,'wxRibbonNote')}</div>
+    </div>
+  );
+}
+
 function WeatherTab({ lang='en', trees=0, units='GAL' }) {
   const [locName,    setLocName]    = useState(() => ls.get('sg_wx_name',''));
   const [wxLat,      setWxLat]      = useState(() => ls.get('sg_wx_lat', null));
@@ -7175,6 +7434,9 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
               ? <I.mapleLeaf size={26} color="#2dd4a7" />
               : <I.snowflake size={26} color="#58a6ff" />}</div>
           </div>
+
+          {/* Freeze/thaw ribbon (Pass 5) — augments the strip below, never replaces it */}
+          <FreezeThawRibbon days={days} lang={lang} />
 
           {/* 7-day score bar strip */}
           <div className="card" style={{ padding:'14px 12px' }}>
@@ -9903,6 +10165,38 @@ function SettingsSheet({ units, setUnits, lang, setLang, season, setSeason,
 // ─── TODAY ────────────────────────────────────────────────────────────────────
 // The landing screen. Every number on it comes from what is already on the
 // device, so it is the same with no signal as with five bars.
+// ─── Season jar (Pass 5) ─────────────────────────────────────────────────────
+// The Today goal card's progress indicator: the M.jug outline, its interior
+// filling with amber to the goal percentage. Garnish only — the "% of N gal"
+// text beside it is unchanged and stays the truth. The fill rises once over
+// 600ms (CSS animates from the empty offset to this inline end-state), then
+// the surface settles with one tiny tilt. Reduced motion: both animations are
+// off in CSS, leaving the static fill at the right level.
+function SeasonJar({ pct }) {
+  const p = Math.max(0, Math.min(100, pct || 0));
+  const IH = 27;                       // jug interior height in the 48 grid (body y≈15.7→42.7 inside the stroke)
+  const off = +(((100 - p) / 100) * IH).toFixed(2);
+  return (
+    <svg width={44} height={44} viewBox="0 0 48 48" fill="none" aria-hidden="true" style={{ flexShrink:0, display:'block', color:'#EB9A33' }}>
+      <defs>
+        <clipPath id="sr-jar-clip">
+          {/* The jug body path from M.jug — the fill can never escape the outline */}
+          <path d="M23 14 C30.5 14 36 20 36 28.5 C36 37.5 30.5 43 23 43 C15.5 43 10 37.5 10 28.5 C10 20 15.5 14 23 14 Z"/>
+        </clipPath>
+      </defs>
+      <g clipPath="url(#sr-jar-clip)">
+        <g className="sr-jar-tilt">
+          <rect className="sr-jar-fill" x="7" y="15.7" width="34" height="31" rx="0"
+            fill="#EB9A33" opacity="0.88" style={{ transform:`translateY(${off}px)` }} />
+        </g>
+      </g>
+      {/* Outline strokes — byte-for-byte the M.jug mark (BIBLE outline set v4) */}
+      <rect stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" x="18.5" y="4.5" width="9" height="4" rx="2" fill="none"/>
+      <path stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" d="M20.7 8.5 C20.5 10.3 20.5 12 20.6 13.5 M25.3 8.5 C25.5 10.3 25.5 12 25.4 13.5 M23 14 C30.5 14 36 20 36 28.5 C36 37.5 30.5 43 23 43 C15.5 43 10 37.5 10 28.5 C10 20 15.5 14 23 14 Z M35 18.5 Q40 19.5 39.5 24 Q39.2 27 35.8 27.5"/>
+    </svg>
+  );
+}
+
 function TodayTab({ lang, units, season, trees, sapBrix, go }) {
   const u     = units === 'L' ? 'L' : 'gal';
   const conv  = v => units === 'L' ? v * 3.78541 : v;
@@ -9964,12 +10258,17 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
 
       {/* How the season is doing: one card — goal, figures, per tap against the benchmark, the verdict */}
       <div className="card">
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:8 }}>
-          <Eyebrow>Season goal</Eyebrow>
-          <span style={{ color:'#7f92a6', fontSize:14 }}>{fmt(pct,0)}% of {fmt(conv(goal),0)} {u}</span>
+        {/* Pass 5: the flat progress bar became the season jar — same slot, same
+            text (numbers are the truth; the jar is garnish). */}
+        <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+          <SeasonJar pct={pct} />
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
+              <Eyebrow>Season goal</Eyebrow>
+              <span style={{ color:'#7f92a6', fontSize:14 }}>{fmt(pct,0)}% of {fmt(conv(goal),0)} {u}</span>
+            </div>
+          </div>
         </div>
-        <div className="progress-bar-bg"><div className="progress-bar-fill"
-          style={{ width:`${pct}%`, background:'#2dd4a7' }} /></div>
         <div className="stat3" style={{ marginTop:14, paddingTop:14, borderTop:'1px solid #131e2c' }}>
           <Eyebrow>Syrup</Eyebrow><Eyebrow>Sap</Eyebrow><Eyebrow>Ratio</Eyebrow>
           <Fig value={fmt(syT,1)}  unit={u} lead />
