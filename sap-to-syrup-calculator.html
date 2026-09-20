@@ -23,7 +23,7 @@
       {
         "@type": "Question",
         "name": "What is the Rule of 86 in maple syrup?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Divide 86 by your sap's sugar content in °Brix to get your sap-to-syrup ratio. Sap at 2.0°Brix gives 86 ÷ 2 = 43, meaning about 43 gallons of sap boil down to 1 gallon of syrup." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Divide 86.4 by your sap's sugar content in °Brix to get your sap-to-syrup ratio. Sap at 2.0°Brix gives 86.4 ÷ 2.0 = 43.2, meaning about 43 gallons of sap boil down to 1 gallon of syrup." }
       },
       {
         "@type": "Question",
@@ -74,7 +74,7 @@
 
     <div class="result-box">
       <div class="result-label">Your sap-to-syrup ratio</div>
-      <div class="result-value" id="ratio-out">43:1</div>
+      <div class="result-value" id="ratio-out">43.2:1</div>
       <div class="result-sub" id="jones-out">Jones Rule of 87: 43.5:1</div>
     </div>
     <div class="result-grid">
@@ -96,15 +96,15 @@
     <table class="ref-table" id="brix-table">
       <thead><tr><th>Sap °Brix</th><th>Ratio (Rule of 86)</th><th>Sap for 1 gal syrup</th></tr></thead>
       <tbody>
-        <tr data-b="1.5"><td>1.5°</td><td>57:1</td><td>57 gallons</td></tr>
-        <tr data-b="2.0"><td>2.0°</td><td>43:1</td><td>43 gallons</td></tr>
-        <tr data-b="2.5"><td>2.5°</td><td>34:1</td><td>34 gallons</td></tr>
-        <tr data-b="3.0"><td>3.0°</td><td>29:1</td><td>29 gallons</td></tr>
+        <tr data-b="1.5"><td>1.5°</td><td>57.6:1</td><td>57.6 gallons</td></tr>
+        <tr data-b="2.0"><td>2.0°</td><td>43.2:1</td><td>43.2 gallons</td></tr>
+        <tr data-b="2.5"><td>2.5°</td><td>34.6:1</td><td>34.6 gallons</td></tr>
+        <tr data-b="3.0"><td>3.0°</td><td>28.8:1</td><td>28.8 gallons</td></tr>
       </tbody>
     </table>
 
     <h2>How the Rule of 86 works</h2>
-    <p>Maple sap is mostly water with a little sugar — usually around 2% (2°Brix). Finished syrup is about 66.9% sugar. The Rule of 86 is the shortcut sugarmakers have used for a century to bridge those two numbers: divide 86 by your sap's °Brix and you get the gallons of sap needed per gallon of syrup. Sweet sap from healthy, open-grown trees can run 3° and cut your boiling nearly in half; late-season or stressed trees can drop below 1.5° and double it.</p>
+    <p>Maple sap is mostly water with a little sugar — usually around 2% (2°Brix). Finished syrup is about 66.9% sugar. The Rule of 86 is the shortcut sugarmakers have used for a century to bridge those two numbers: divide 86.4 by your sap's °Brix and you get the gallons of sap needed per gallon of syrup. Sweet sap from healthy, open-grown trees can run 3° and cut your boiling nearly in half; late-season or stressed trees can drop below 1.5° and double it.</p>
     <p>The Jones Rule of 87 is the modern correction. When C.H. Jones worked out the original rule in the 1940s, syrup was finished at a slightly lower density than today's 66.9°Brix standard. UVM researchers revisited the math and found 87 fits the modern standard better. The difference is small, but if you sell in bulk, it's the honest number.</p>
     <h3>Measure your sap, don't guess</h3>
     <p>A $30 sap hydrometer or refractometer pays for itself the first week. Producers who assume "2 percent" often discover their bush runs 1.6° — which means 54 gallons per gallon of syrup, not 43, and every fuel and revenue estimate built on the guess is off by 25%.</p>
@@ -136,7 +136,7 @@
 
 <script>
   // Same formulas as the SweetRun app (app.jsx)
-  const rule86  = b => b > 0 ? 86 / b : 0;
+  const rule86  = b => b > 0 ? 86.4 / b : 0;
   const jones87 = b => b > 0 ? 87 / b : 0;
   const syrupY  = (sap, b) => b > 0 ? sap / rule86(b) : 0;
 

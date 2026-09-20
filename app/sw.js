@@ -2,7 +2,7 @@
 // Cache name: bump this string on every deploy to force all clients to update cleanly.
 // localStorage data is NEVER touched by this file — it is purely cache management.
 
-const CACHE      = 'sweetrun-v13';
+const CACHE      = 'sweetrun-v14';
 const TILE_CACHE = 'sweetrun-tiles-v1';   // kept separately — never auto-purged on app update
 
 // Core app shell — everything SweetRun needs to run fully offline
@@ -57,6 +57,7 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(event.request).catch(() =>
         new Response(JSON.stringify({ error: 'offline' }), {
+          status: 503, statusText: 'Offline',
           headers: { 'Content-Type': 'application/json' }
         })
       )

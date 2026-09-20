@@ -1,0 +1,105 @@
+# SweetRun — Architecture Ledger
+**Kept by Plumb. Read before structural work; update after.**
+**STATUS: first full read complete — 2026-09-19. Every line of app/src/app.jsx (10,339 lines) was read, not scanned. Companion detail: audits/PLUMB-REPORT.md.**
+
+---
+
+## 1. The map (full read, 2026-09-19)
+
+### The shape of the building
+One single-file React 18 app, compiled by Babel (JSX transform only — no bundler, no minifier, no router, no state library) from `app/src/app.jsx` (10,339 lines) to `app/app.js` (639 KB raw, 165 KB gzipped), served as a PWA from Cloudflare Pages. Around it: a static marketing site at the repo root, four standalone free-calculator pages, and a small Cloudflare Worker for licensing (written but **not wired up** — `LICENSE_API = ''` at app.jsx:32).
+
+### Inside app.jsx, top to bottom (the file has real internal bands)
+| Lines (approx) | What lives there |
+|---|---|
+| 1–90 | localStorage helper `ls` (JSON get/set, quota + trial-lock failure events), license verify (Ed25519 in-browser), season-trial logic, lead pings |
+| 93–605 | Formatters + the full EN/FR translation table (`TR`, ~350 keys per language, hand-kept in parallel) |
+| 607–697 | SVG icon library (`I`, ~70 icons) |
+| 699–830 | **The formula layer**: rule86, jones87, syrupY, boilTime, finTemp, denCorr, Brix↔Baumé, altToBP, presToBP, roConc, PAN_SIZES, FUELS, YIELD_MODELS, tapsPer — all pure, all testable without the UI, none tested |
+| 832–1217 | Shared inputs (`NumInput` with comma-decimal parsing) + FirstSeasonWizard |
+| 1219–2354 | FreezeThawWidget, SapTab, batch-label PNG generator (canvas + external QR service), EvapTab, ROTab, FinishTab (incl. DE calculator, canning, candy) |
+| 2356–3004 | TappingTab, SapImportModal (CSV + SugarCalc-PDF import via CDN PDF.js) |
+| 3006–3631 | LogTab (the record) + LogEntrySheet |
+| 3633–3889 | EquipTab (incl. transfer-time calc), TasksTab |
+| 3891–4308 | SeasonTab (degree days, brix trend), exportSeasonPDF (jsPDF) |
+| 4310–6228 | **The Map** (LinesTab): Leaflet loaded on demand, module-level mutable globals (`_lMap`, `_lMarkers`…), pin system, elevation fetch (OpenTopoData→USGS EPQS fallback), route/grade analysis, tank-spot finder, materials estimator, KML/GPX/GeoJSON property import, offline tile cache |
+| 6230–6284 | Error boundary + sap-run scoring model |
+| 6286–6676 | WeatherTab (Open-Meteo 7-day scored forecast) |
+| 6678–8145 | SugarSage: ~45-entry hardcoded knowledge base + keyword search, SeasonIntelligence, BreakevenCalculator, SapFreshnessTracker |
+| 8147–8358 | TubingTab (mainline sizing, vacuum, pump) |
+| 8360–9137 | RecapTab + SweetRunScore + YieldGapAnalyzer |
+| 9139–9346 | SettingsSheet, TodayTab |
+| 9348–9888 | DiagnoseTab (9 rule-based checks with ROI figures) |
+| 9890–10027 | LicenseModal, BackupModal (export/restore every `sg_*` key as JSON, `format:1`) |
+| 10029–10339 | App shell: 5 bottom destinations × 16 screens, header, banners, SW-adjacent boot |
+
+41 top-level function components; 1,540 inline `style={{…}}` objects; 7 `window.confirm` dialogs; zero test files anywhere in the repo.
+
+### State: localStorage is the database
+**80 unique `sg_*` keys** (exact inventory in audits/PLUMB-REPORT.md §Appendix). Structured records: `sg_logs2` (seasons→4 entry arrays), `sg_batches`, `sg_lines_pins`, `sg_mainlines`, `sg_cpoints`, `sg_brixlog`, `sg_equip2`, `sg_checks2/custom2`, `sg_treenotes`, `sg_rotation`, `sg_property_geo`. Everything else is a scalar setting. No schema version key; the backup file has `format:1` but the live store does not. Entry IDs are `Date.now()` (with `+1` offsets when two are written together).
+
+### External surfaces (all called from the browser)
+- Open-Meteo: forecast, archive, geocoding, elevation (no key)
+- Nominatim reverse-geocode; OpenTopoData + USGS EPQS elevation
+- Esri/USDA/OSM tile servers (map imagery; cached in a never-purged SW tile cache)
+- api.qrserver.com (batch-label QR), api.web3forms.com (lead capture — public access key hardcoded at app.jsx:83)
+- Stripe payment link (buy URL hardcoded); Worker endpoints exist (`/webhook`, `/key`, `/event`, `/stats`) but the app's `LICENSE_API` is empty, so pings/lookup are off and leads go via Web3Forms.
+
+### Build & deploy path
+`npm run build` = `babel app/src/app.jsx -o app/app.js` (the whole build). Compiled `app.js` is **committed** to the repo. Cloudflare Pages auto-deploys from GitHub main. Cache control: `_headers` (HTML no-cache, SW never-cache, images 1yr) + `app/sw.js` cache name hand-bumped (`sweetrun-v13`) to push updates to installed PWAs. A root `sw.js` exists solely as a kill switch for the legacy `sugarcalc-*` cache.
+
+---
+
+## 2. Invariants (confirmed on full read)
+
+1. **`app/app.js` is GENERATED — never hand-edit.** (Exception logged 2026-09-19; must not recur. Local `npm run build` reconciles.)
+2. **All user data stays on-device under `sg_*` keys.** This is a marketed promise ("your data lives on this device only" — BackupModal copy), not just an implementation choice. The backup sweeps every `sg_*` key; any new feature that stores data outside that prefix silently escapes backup.
+3. **SW cache bump (`sweetrun-vN`) is required for any app-shell change to reach installed users.** The tile cache (`sweetrun-tiles-v1`) is deliberately never purged.
+4. **The formula layer at the top of app.jsx is the single source of truth for the money math** — the yield-model comment (app.jsx:787) records that five divergent copies were once consolidated. New screens must import from it, not restate it. (Currently violated by the 86-vs-86.4 divisor split and the four static calculator pages — see debt #1/#2.)
+5. **`ls.set` is the only sanctioned localStorage writer** — it enforces the trial soft-lock and quota failure banner. Direct `localStorage.setItem` is reserved for the two boot-time exceptions (trial start, session count) and the backup restore.
+6. **Dates in log entries are display strings** (`toLocaleDateString()`), re-parsed with `new Date()` for sorting. This is load-bearing and fragile (debt #6); do not add new code that stores locale-formatted dates.
+
+---
+
+## 3. Debt register (severity-ranked; evidence → cost of carry → sized fix)
+
+| # | Sev | Debt | Evidence | Cost of carry | Sized fix |
+|---|---|---|---|---|---|
+| 1 | ~~RETIRED 09-20~~ | Zero automated tests (fixed: tests/formulas.test.mjs, 37 assertions), including the money math users act on | No test files in repo (`find` = 0); pure formula layer at app.jsx:699–830 is trivially testable | Every edit to a 10k-line file risks silently changing figures producers bet fuel and money on; debt #2 and #3 already happened unnoticed | ~half a day: a plain Node test file asserting ~20 known values (rule86, syrupY, boilTime, finTemp, denCorr, brixToBe, altToBP, yield models), run before every deploy |
+| 2 | ~~RETIRED 09-20~~ | Two divisors (fixed: RULE_DIVISOR=86.4 everywhere) in one app | `rule86 = 86/b` (app.jsx:700) and RecapTab `86/sapBrix` (:8717) vs `86.4/brix` in 7 places (:2390, 7269, 7280, 8391, 8402, 8484, 9239); RecapTab renders both on the same screen | Same season shows two different "theoretical" ratios; user trust erodes when the numbers disagree with each other | ~1 hr: one `RULE_DIVISOR` constant (pick 86.4 per Jones), used everywhere, locked by the tests in #1 |
+| 3 | ~~RETIRED 09-20~~ | `sg_brixlog` wrong-shape read (fixed) → SeasonIntelligence brix sparkline can never render | Written as flat array of `{brix}` (SeasonTab :3971); read as `ls.get('sg_brixlog',{})[season]` mapping `e.val` (SeasonIntelligence :7221–7222) → always `[]` | A shipped feature (SugarSage "Brix trend this season") is silently dead for every user | ~30 min fix + this is the exhibit A for #5 (shared accessors) |
+| 4 | **HIGH** | Formula duplication across 4 static calculator pages + landing | draw-off-calculator.html:3–6 restates altToBP/presToBP/finTemp; sap-to-syrup:139–141 restates rule86/syrupY; tap-calculator:153 hardcodes ratio 43 | Fix-in-one-forget-the-others; already 3+ locations for boiling-point math the day after they shipped (decision logged, deliberate) | ~2 hrs: one `formulas.js` served statically, `<script src>` from every page and imported (or pasted by build step) into app.jsx |
+| 5 | **MED** | 80-key localStorage store with no schema version and duplicate facts | 80 unique `sg_*` keys; syrup price lives in `sg_syrup_price`, `sg_dx_price`, `sg_bev_price`, and `sg_wizard_data.syrupPrice`; labor rate in `sg_laborrate`, `sg_bev_lrate`, `sg_dx_labor`; `sg_lines_results` is read (Diagnose :9565) but **never written** — that diagnostic can never fire | Shape changes can strand long-time seasons; cloud sync (roadmap) has no stable schema to sync; dead reads hide broken features | ~1 day: write `sg_schema_version`, a one-file key registry with typed get/set per key, and a migration function run at boot; delete or wire `sg_lines_results` |
+| 6 | **MED** | Log dates stored as locale-formatted display strings | `date: new Date().toLocaleDateString()` (:3093, 3553); sorted by `new Date(b.date)` (:3075, 3207) | On a device set to fr-FR (roadmap: French market), `19/09/2026` misparses → wrong sort order, wrong "season length", wrong YoY; invisible on en-US devices | ~half a day: store ISO `yyyy-mm-dd` going forward + one boot migration converting old entries; format only at render |
+| 7 | **MED** | Hand-bumped SW cache version | `sweetrun-v13` at app/sw.js:5; v11→v12→v13 all manual in one day (git log a9b7c1c, ce0b994, d6e5acd) | One forgotten bump = installed phones stuck on a stale app after a formula fix | ~1 hr: build step stamps a git hash/date into the cache name during `npm run build` |
+| 8 | **MED** | Single 10,339-line file; map subsystem uses module-level mutable globals | wc = 10,339; `_lMap`, `_lMarkers`, `_lRouteLines` etc. (:4312–4326) shared across renders | Every change loads one giant file; the compiled-file hand-patch incident is a symptom; second person cannot work here without collisions | Strangle, don't demolish: extract in this order — (a) formulas.js (also fixes #4), (b) storage.js (registry from #5), (c) the map, (d) SugarSage KB data. Each step ships alone; Babel CLI accepts multiple files or simple concatenation |
+| 9 | **LOW** | Contradictory numbers in UI copy and KB | Custom-pan code computes `area*2.5` GPH (:2559) but the caption says "at 1.5 gal/ft²/hr" (:2630); KB entry evap_01 claims "10–15 gal/hr per square foot" (:6808) vs the app's own 2–3 elsewhere | An expert user spots it and doubts everything else | ~1 hr copy pass on numeric claims |
+| 10 | **LOW** | License worker written but unwired; enforcement is client-side only | `LICENSE_API=''` (:32); Ed25519 verify silently degrades to structure-only on old Safari (:49); trial lock is a JS flag | Purchases mint keys via Stripe webhook but key delivery depends on worker being deployed; a determined user bypasses the trial — acceptable for a $50 hobbyist tool, but the revenue path has an unverified leg | Deploy the worker, set `LICENSE_API`, do one live end-to-end purchase test |
+| 11 | **LOW** | Sandbox cannot run Babel against mounted node_modules | cp/node deadlocks (Sept 19 session) | Cloud sessions can't compile → pressure to hand-patch app.js (invariant #1 exception) | Either vendor a tiny standalone JSX transform script, or drop the committed app.js and let Cloudflare build from source only |
+| 12 | **LOW** | Unminified 639 KB app.js + 1,540 inline style objects | wc -c app/app.js; grep -c "style={{" | 165 KB gzip over the wire is acceptable for now; inline styles churn per render but the app is small; watch, don't act | Free win later: add `--minified` to the babel command (~40% smaller) when touching the build anyway |
+
+---
+
+## 4. Bench-mark scores (2026-09-19; evidence before number)
+
+- **Boundaries** — one file holds 16 screens, the DB helper, the design tokens' consumers and a Leaflet subsystem on mutable globals; a change to shared state can touch anything: **3/10**
+- **State & data** — 80 unversioned keys, one fact in up to four keys, one key read in a shape never written, one key never written at all: **3/10**
+- **Error paths** — genuinely better than the rest of the structure: quota/lock write failures surface a red banner, offline map has a typed-elevation fallback, an error boundary plus an init-crash catch wrap the app, SW returns a JSON offline sentinel: **6/10**
+- **Testability & tests** — the math is pure and sits in one band (excellent), and none of it is tested (zero test files) while divisor drift proves the cost: **2/10**
+- **Build & deploy** — one honest command, but a committed generated artifact, a hand-bumped cache name, and a sandbox that can't build: **4/10**
+- **Dependencies** — five CDN libraries, all version-pinned in URLs, cached by the SW after first visit; two unpinned external *services* (qrserver, web3forms) that can die silently: **6/10**
+- **Performance** — 165 KB gzipped app + ~90 KB React over CDN, Leaflet lazy-loaded; unminified and unmeasured at runtime, but nothing observed pathological at this scale: **5/10**
+- **Evolvability** (vs. roadmap: in-app free tier, cloud sync, mesh sensors, French market) — free-tier calculators already forked the formulas; sync has no schema/versioning/stable IDs to build on; sensors have no ingestion seam; French market walks straight into the locale-date bug and a hand-kept 350-key translation table: **3/10**
+- **Security & privacy posture** — no secrets tracked in git (`worker/.dev.vars` gitignored, verified untracked), Stripe webhook signature verified, map popup input escaped (`_sbEsc`), data-on-device promise honored; client-only license enforcement and no CSP header are known, accepted trade-offs; deep audit → `security-review` skill if the worker goes live: **6/10**
+
+---
+
+## 5. Decision log
+
+- **2026-09-19 — Hand-patch compiled app.js in sandbox.** Accepted as exception (Babel unrunnable in sandbox; identical string edits to source + compiled; local rebuild reconciles). Rejected: pushing source-only and trusting CF build, because repo app.js would drift from source. Follow-up owed: make sandbox builds possible or eliminate the compiled file from the repo.
+- **2026-09-19 — Calculator pages duplicate formulas rather than share a module.** Chosen for zero-build static pages shipped same-day before competitor launch. Debt #4 opened deliberately. Revisit when touching formulas next.
+- **2026-09-19 (Plumb, first full read) — Characterization tests before any restructuring.** The formula layer is pure and one file; tests cost half a day and are the precondition for fixing debts #2–#8 safely. Rejected: starting with the file split, because moving untested math is how the divisor drift happened in the first place.
+- **2026-09-19 (Plumb) — Single-file app is a constraint to respect, not demolish.** No framework/bundler is a deliberate choice (offline PWA, one-person shop, CDN React). Any splitting must keep the no-bundler build (multiple Babel inputs or concatenation), and each extraction ships alone.
+
+- **2026-09-20 — Pass 0+1 executed (truth fixes).** RULE_DIVISOR = 86.4 adopted as the single theoretical-ratio constant (app + all four calculator pages; KB prose already agreed; jones87 stays as its own labeled reference). Litre semantics codified: stored log values are in the user's display unit; benchmarks are gallons; convert the benchmark or normalize to gal for comparison — never convert stored data for display. Diagnose normalizes inputs to gal; wood math rebuilt on FUELS.spu (retires the /128 dollar-leak). srParseNum handles US thousands groups; French decimal wins ambiguity. sg_brixlog reader fixed to the writer's flat shape. SW returns 503 offline (error paths reachable); cache → sweetrun-v14. 72 literal \uXXXX JSX-text escapes converted to real characters. Test net: tests/formulas.test.mjs, 37 assertions, `npm test` — run before every deploy.
+- **2026-09-20 — Compiled-file hand-parity ABANDONED.** app/app.js was discovered to be a STALE build (contains code absent from current source, e.g. duplicate Diagnose totals, an old theorRatio form). All Pass-1 fixes are source-only. Production safety: Cloudflare Pages compiles fresh from app.jsx at deploy; Damian's local `npm run build` before commit reconciles the committed file. The Sept-19 hand-patch exception is hereby closed — never again; invariant #1 restored to absolute.

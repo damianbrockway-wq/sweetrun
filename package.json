@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "babel app/src/app.jsx -o app/app.js"
+    "build": "babel app/src/app.jsx -o app/app.js",
+    "test": "node tests/formulas.test.mjs"
   },
   "devDependencies": {
     "@babel/cli": "^7.23.0",

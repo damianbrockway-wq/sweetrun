@@ -272,20 +272,20 @@ const TR = {
     badgeIdeal:'Ideal Run', badgeFreezeThaw:'Freeze/Thaw',
     badgeTooWarm:'Too Warm', badgeAllFreeze:'All Freeze',
     ftWarmStretch:'Warm stretch',
-    ftLegend:'\u2713 Ideal: hi \u2265 40\u00b0F & lo \u2264 28\u00b0F \u00b7 Freeze/Thaw: crossing 32\u00b0F',
+    ftLegend:'✓ Ideal: hi ≥ 40°F & lo ≤ 28°F · Freeze/Thaw: crossing 32°F',
     taskOf:'of', taskDone:'complete',
     gradeGolden:'Golden Delicate', gradeAmber:'Amber Rich',
     gradeDark:'Dark Robust', gradeVeryDark:'Very Dark Strong',
-    equipNamePh:'Name (e.g. Evaporator, R/O Machine\u2026)',
+    equipNamePh:'Name (e.g. Evaporator, R/O Machine…)',
     equipBrandPh:'Brand / Model', equipQtyPh:'Qty',
     equipYearPh:'Year purchased', equipQtyLabel:'Qty:',
     wxSetLoc:'SET YOUR LOCATION', wxUseGPS:'Use My Location (GPS)',
-    wxOr:'\u2014 or \u2014', wxCityPh:'City or zip (e.g. 05401, Burlington VT)',
-    wxChange:'Change', wxLoadingForecast:'Loading forecast\u2026',
-    wxSapForecast:'SAP RUN FORECAST \u2014 SCORE 0\u201399',
+    wxOr:'— or —', wxCityPh:'City or zip (e.g. 05401, Burlington VT)',
+    wxChange:'Change', wxLoadingForecast:'Loading forecast…',
+    wxSapForecast:'SAP RUN FORECAST — SCORE 0–99',
     wxScoringFactors:'SCORING FACTORS',
     wxNightFreeze:'Night Freeze', wxDayThaw:'Day Thaw',
-    wxDtSwing:'\u0394T Swing', wxWind:'Wind', wxPrecip:'Precip', wxSunshine:'Sunshine',
+    wxDtSwing:'ΔT Swing', wxWind:'Wind', wxPrecip:'Precip', wxSunshine:'Sunshine',
     wxIdealRange:'Ideal range', wxVeryCold:'Very cold', wxLightFreeze:'Light freeze',
     wxNoFreeze:'No freeze', wxBuddyRunRisk:'Buddy run risk',
     wxMarginalThaw:'Marginal thaw', wxNoThaw:'No thaw',
@@ -524,20 +524,20 @@ const TR = {
     badgeIdeal:'Coulée idéale', badgeFreezeThaw:'Gel/Dégel',
     badgeTooWarm:'Trop chaud', badgeAllFreeze:'Gel total',
     ftWarmStretch:'Période chaude',
-    ftLegend:'\u2713 Idéal : max \u2265 40\u00b0F et min \u2264 28\u00b0F \u00b7 Gel/Dégel : croise 32\u00b0F',
+    ftLegend:'✓ Idéal : max ≥ 40°F et min ≤ 28°F · Gel/Dégel : croise 32°F',
     taskOf:'sur', taskDone:'complété',
     gradeGolden:'Doré délicat', gradeAmber:'Ambré riche',
     gradeDark:'Foncé robuste', gradeVeryDark:'Très foncé fort',
-    equipNamePh:'Nom (p. ex. Évaporateur, machine O/I\u2026)',
+    equipNamePh:'Nom (p. ex. Évaporateur, machine O/I…)',
     equipBrandPh:'Marque / Modèle', equipQtyPh:'Qté',
     equipYearPh:'Année d\'achat', equipQtyLabel:'Qté :',
     wxSetLoc:'DÉFINIR MON EMPLACEMENT', wxUseGPS:'Utiliser ma position (GPS)',
-    wxOr:'\u2014 ou \u2014', wxCityPh:'Ville ou code postal (p. ex. 05401)',
-    wxChange:'Modifier', wxLoadingForecast:'Chargement des prévisions\u2026',
-    wxSapForecast:'PRÉVISION DE COULÉE \u2014 SCORE 0\u201399',
+    wxOr:'— ou —', wxCityPh:'Ville ou code postal (p. ex. 05401)',
+    wxChange:'Modifier', wxLoadingForecast:'Chargement des prévisions…',
+    wxSapForecast:'PRÉVISION DE COULÉE — SCORE 0–99',
     wxScoringFactors:'FACTEURS',
     wxNightFreeze:'Gel nocturne', wxDayThaw:'Dégel diurne',
-    wxDtSwing:'Amplitude \u0394T', wxWind:'Vent', wxPrecip:'Précip.', wxSunshine:'Ensoleillement',
+    wxDtSwing:'Amplitude ΔT', wxWind:'Vent', wxPrecip:'Précip.', wxSunshine:'Ensoleillement',
     wxIdealRange:'Plage idéale', wxVeryCold:'Très froid', wxLightFreeze:'Gel léger',
     wxNoFreeze:'Pas de gel', wxBuddyRunRisk:'Risque sève dégel',
     wxMarginalThaw:'Dégel marginal', wxNoThaw:'Pas de dégel',
@@ -697,7 +697,8 @@ const I = {
 };
 
 // ─── Formulas ─────────────────────────────────────────────────────────────────
-const rule86   = b => b > 0 ? 86 / b : 0;
+const RULE_DIVISOR = 86.4;   // one divisor for the theoretical ratio, everywhere (Jones-derived, 66°Bx)
+const rule86   = b => b > 0 ? RULE_DIVISOR / b : 0;
 const jones87  = b => b > 0 ? 87 / b : 0;
 const syrupY   = (sap, b) => b > 0 ? sap / rule86(b) : 0;
 const boilTime = (sap, b, r) => r > 0 && b > 0 ? (sap - syrupY(sap, b)) / r : 0;
@@ -835,7 +836,11 @@ function tapsPer(dbh) {
 // Clamps to the field's own min/max on blur.
 function srParseNum(raw) {
   if (raw == null) return null;
-  const s = String(raw).trim().replace(/\s/g, '').replace(',', '.');
+  let s = String(raw).trim().replace(/\s/g, '');
+  // "1,500" / "12,345.67" are US thousands groups — strip the commas.
+  // A lone comma not forming 3-digit groups is a French decimal ("2,5" → 2.5).
+  if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)) s = s.replace(/,/g, '');
+  else s = s.replace(',', '.');
   if (s === '' || s === '.' || s === '-') return null;
   if (!/^-?\d*\.?\d*$/.test(s)) return null;
   const n = parseFloat(s);
@@ -1300,7 +1305,7 @@ function FreezeThawWidget({ lang='en' }) {
                       {idealCount>0 ? (lang==='fr' ? idealCount + (idealCount!==1?' jours de coulée':' jour de coulée') + ' à venir' : idealCount + ' run day' + (idealCount!==1?'s':'') + ' ahead') : '—'}
                     </div>
                     <div style={{ fontSize:12, color:'#7f92a6', marginTop:2 }}>
-                      {tooWarmCount >= 4 ? t(lang,'ftWarmStretch') : 'hi \u2265 40\u00b0F \u00b7 lo \u2264 28\u00b0F'}
+                      {tooWarmCount >= 4 ? t(lang,'ftWarmStretch') : 'hi ≥ 40°F · lo ≤ 28°F'}
                     </div>
                   </div>
                   <div style={{ display:'flex' }}>{idealCount>0
@@ -1312,7 +1317,7 @@ function FreezeThawWidget({ lang='en' }) {
                   const d = new Date(date + 'T12:00:00');
                   const i = days.findIndex(x=>x.date===date);
                   let badge = null;
-                  if (ideal)      badge = <span style={{ background:'rgba(63,185,80,0.15)', color:'#3fb950', fontSize:13, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(63,185,80,0.25)' }}>\u2713 {t(lang,'badgeIdeal')}</span>;
+                  if (ideal)      badge = <span style={{ background:'rgba(63,185,80,0.15)', color:'#3fb950', fontSize:13, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(63,185,80,0.25)' }}>✓ {t(lang,'badgeIdeal')}</span>;
                   else if (freezeThaw) badge = <span className="good-badge">{t(lang,'badgeFreezeThaw')}</span>;
                   else if (tooWarm)    badge = <span style={{ background:'rgba(240,136,62,0.13)', color:'#e0a44a', fontSize:13, fontWeight:700, padding:'2px 9px', borderRadius:12, border:'1px solid rgba(240,136,62,0.22)' }}>{t(lang,'badgeTooWarm')}</span>;
                   else if (allFreeze)  badge = <span className="freeze-badge">{t(lang,'badgeAllFreeze')}</span>;
@@ -2236,10 +2241,10 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
         <div className="card-title" style={{ marginBottom:12 }}><CardIcon bg="#2d1f0a" icon="scale" />{t(lang,'gradeTitle')}</div>
         <div className="section-header" style={{ marginBottom:8 }}>{t(lang,'gradeA')}</div>
         {[
-          { l:t(lang,'gradeGolden'), light:'>75%',   brix:'66.0\u201366.5\u00b0', color:'#f5c842', bg:'#1c1600', border:'#4a3d00', note:lang==='fr'?'Saveur très douce — début de saison':'Very mild flavour \u2014 early season' },
-          { l:t(lang,'gradeAmber'),  light:'25\u201375%', brix:'66.5\u201367.5\u00b0', color:'#e0a44a', bg:'#2d1f0a', border:'#4a3020', note:lang==='fr'?'Saveur classique d\'érable':'Classic maple flavour' },
-          { l:t(lang,'gradeDark'),   light:'<25%',   brix:'67.0\u201368.9\u00b0', color:'#c47a28', bg:'#2b1505', border:'#6b3010', note:lang==='fr'?'Corsé — fin de saison':'Strong \u2014 late season' },
-          { l:t(lang,'gradeVeryDark'), light:'<10%', brix:'67.0\u201368.9\u00b0', color:'#8b4513', bg:'#1a0a04', border:'#5a2800', note:lang==='fr'?'Intense — très fin de saison':'Intense \u2014 very late season' },
+          { l:t(lang,'gradeGolden'), light:'>75%',   brix:'66.0–66.5°', color:'#f5c842', bg:'#1c1600', border:'#4a3d00', note:lang==='fr'?'Saveur très douce — début de saison':'Very mild flavour — early season' },
+          { l:t(lang,'gradeAmber'),  light:'25–75%', brix:'66.5–67.5°', color:'#e0a44a', bg:'#2d1f0a', border:'#4a3020', note:lang==='fr'?'Saveur classique d\'érable':'Classic maple flavour' },
+          { l:t(lang,'gradeDark'),   light:'<25%',   brix:'67.0–68.9°', color:'#c47a28', bg:'#2b1505', border:'#6b3010', note:lang==='fr'?'Corsé — fin de saison':'Strong — late season' },
+          { l:t(lang,'gradeVeryDark'), light:'<10%', brix:'67.0–68.9°', color:'#8b4513', bg:'#1a0a04', border:'#5a2800', note:lang==='fr'?'Intense — très fin de saison':'Intense — very late season' },
         ].map(g=>(
           <div key={g.l} style={{ background:g.bg, borderRadius:10, padding:'11px 14px', border:`1px solid ${g.border}`, marginBottom:7 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
@@ -2387,7 +2392,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
   const tot  = tpt * trees;
   // was a flat 10 gal of sap per tap, which ignored the tap system completely
   const tapModel = yieldModelSaved();
-  const sap  = Math.round(tot * yieldMidOf(tapModel) * (86.4 / (parseFloat(sapBrix) || 2)));
+  const sap  = Math.round(tot * yieldMidOf(tapModel) * (RULE_DIVISOR / (parseFloat(sapBrix) || 2)));
   const sy   = syrupY(sap, sapBrix);
   const sp   = SPOUTS[spoutIdx];
   const sizeGuide = (l) => [
@@ -3237,7 +3242,8 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
   // The verdict: yield per tap so far against the producer's own benchmark
   const yModel = yieldModelSaved();
   const perTap = trees > 0 && syT > 0 ? syT / trees : null;
-  const standing = perTap == null ? null : perTap >= yModel.high ? 'above the range' : perTap >= yModel.low ? 'inside the range' : 'below the range';
+  const perTapGal = perTap == null ? null : (units === 'L' ? perTap / 3.78541 : perTap);
+  const standing = perTapGal == null ? null : perTapGal >= yModel.high ? 'above the range' : perTapGal >= yModel.low ? 'inside the range' : 'below the range';
   const [showMore, setShowMore] = useState(false);
   const tracking = ls.get('sg_fresh_status', 'idle') === 'tracking';
 
@@ -3255,7 +3261,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
       </div>
       <div style={{ fontSize:13, color:'#7f92a6', lineHeight:1.5, padding:'10px 0 0' }}>
         {standing
-          ? <><b style={{ color:'#e6edf3' }}>{fmt(units==='L' ? perTap*3.78541 : perTap,2)} {u}/tap</b> so far · {fmt(trees,0)} taps</>
+          ? <><b style={{ color:'#e6edf3' }}>{fmt(perTap,2)} {u}/tap</b> so far · {fmt(trees,0)} taps</>
           : <>No syrup logged yet · {fmt(trees,0)} taps</>}
       </div>
 
@@ -4223,8 +4229,8 @@ function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix }) {
 
   const summaryRows = [
     ['Trees Tapped',    `${trees} trees`],
-    ['Sap Collected',   `${conv(sapT)} ${u}`],
-    ['Syrup Produced',  `${conv(syT)} ${u}`],
+    ['Sap Collected',   `${(+sapT).toFixed(0)} ${u}`],
+    ['Syrup Produced',  `${(+syT).toFixed(1)} ${u}`],
     ['Sap:Syrup Ratio', `${ratio}:1`],
     ['Season Target',   `${conv(goal)} ${u}  (${syT>0?Math.round((syT/goal)*100):'0'}% of goal)`],
     ['Sap °Brix',       `${sapBrix}° avg`],
@@ -4250,7 +4256,7 @@ function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix }) {
       const pct = syT > 0 ? ((vol/syT)*100).toFixed(0) : 0;
       doc.setTextColor(100,100,100); doc.text(grade, M, y);
       doc.setTextColor(20,20,20); doc.setFont('helvetica','bold');
-      doc.text(`${conv(vol)} ${u}  (${pct}%)`, W/2, y);
+      doc.text(`${(+vol).toFixed(1)} ${u}  (${pct}%)`, W/2, y);
       doc.setFont('helvetica','normal'); y += 7;
     });
     y += 4;
@@ -4643,7 +4649,7 @@ function _sbApplySeasonLayer(map, mode) {
     const container = map.getContainer();
     const slider = document.createElement('div');
     slider.style.cssText = 'position:absolute;top:0;left:50%;height:100%;z-index:800;cursor:ew-resize;user-select:none;pointer-events:all';
-    slider.innerHTML = '<div style="position:absolute;top:0;left:-1.5px;width:3px;height:100%;background:rgba(255,255,255,0.85)"></div><div style="position:absolute;top:50%;left:-32px;transform:translateY(-50%);background:rgba(0,0,0,0.65);color:#fff;border-radius:16px;padding:5px 8px;font-size:11px;font-weight:700;white-space:nowrap;border:1px solid rgba(255,255,255,0.25);pointer-events:none">LEAF ON &nbsp;\u27FA&nbsp; LEAF OFF</div>';
+    slider.innerHTML = '<div style="position:absolute;top:0;left:-1.5px;width:3px;height:100%;background:rgba(255,255,255,0.85)"></div><div style="position:absolute;top:50%;left:-32px;transform:translateY(-50%);background:rgba(0,0,0,0.65);color:#fff;border-radius:16px;padding:5px 8px;font-size:11px;font-weight:700;white-space:nowrap;border:1px solid rgba(255,255,255,0.25);pointer-events:none">LEAF ON &nbsp;⟺&nbsp; LEAF OFF</div>';
     container.appendChild(slider);
     _lSliderEl = slider;
     let dragging = false;
@@ -5256,8 +5262,8 @@ function LinesTab({ lang='en' }) {
           + '</div>',
         iconSize:[30,40], iconAnchor:[15,40], popupAnchor:[0,-42],
       })}).addTo(_lMap);
-      m.bindPopup('<b>\u2605 Spot ' + (i+1) + '</b><br/>Elev: ' + s.elev.toFixed(1) + ' ft<br/>'
-        + s.treesAbove + '/' + trees.length + ' trees with \u22651% gravity flow<br/>'
+      m.bindPopup('<b>★ Spot ' + (i+1) + '</b><br/>Elev: ' + s.elev.toFixed(1) + ' ft<br/>'
+        + s.treesAbove + '/' + trees.length + ' trees with ≥1% gravity flow<br/>'
         + s.lat.toFixed(5) + ', ' + s.lon.toFixed(5));
       _lSpotMarkers.push(m);
     });
@@ -6492,7 +6498,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
               </div>
               <div style={{ fontSize:12, color:'#7f92a6', marginTop:2 }}>
                 {goodDays > 0
-                  ? (lang==='fr' ? 'Meilleur score\u00a0: ' + bestScore + '/100 \u00b7 Appuyez pour les détails' : 'Best score: ' + bestScore + '/100 \u00b7 Tap a day for details')
+                  ? (lang==='fr' ? 'Meilleur score : ' + bestScore + '/100 · Appuyez pour les détails' : 'Best score: ' + bestScore + '/100 · Tap a day for details')
                   : t(lang,'wxNoRunDaysHint')}
               </div>
             </div>
@@ -6529,10 +6535,10 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                     )}
                   </div>
                   <span style={{ fontSize:12, fontWeight:700, color: scoreColor(day.score) }}>
-                    {day.score > 0 ? day.score : '\u2014'}
+                    {day.score > 0 ? day.score : '—'}
                   </span>
-                  <span style={{ fontSize:12, color:'#e0a44a', fontWeight:600 }}>{day.hiF}\u00b0</span>
-                  <span style={{ fontSize:12, color:'#58a6ff' }}>{day.loF}\u00b0</span>
+                  <span style={{ fontSize:12, color:'#e0a44a', fontWeight:600 }}>{day.hiF}°</span>
+                  <span style={{ fontSize:12, color:'#58a6ff' }}>{day.loF}°</span>
                 </button>
               ))}
             </div>
@@ -6552,7 +6558,7 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
             <div className="card">
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12 }}>
                 <div>
-                  <div style={{ fontWeight:700, fontSize:17 }}>{sel.dayLabel} \u2014 {sel.dateLabel}</div>
+                  <div style={{ fontWeight:700, fontSize:17 }}>{sel.dayLabel} — {sel.dateLabel}</div>
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:4 }}>
                     <span style={{ fontSize:14, fontWeight:700, color: scoreColor(sel.score) }}>
                       {({'Excellent':t(lang,'qualExcellent'),'Good':t(lang,'qualGood'),'Fair':t(lang,'qualFair'),'Poor':t(lang,'qualPoor'),'No Flow':t(lang,'qualNoFlow')}[sel.quality]||sel.quality)} ({sel.score}/100)
@@ -6565,17 +6571,17 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                   </div>
                 </div>
                 <div style={{ textAlign:'right' }}>
-                  <div style={{ fontSize:24, fontWeight:700, color:'#e0a44a', lineHeight:1.1 }}>{sel.hiF}\u00b0F</div>
-                  <div style={{ fontSize:17, fontWeight:700, color:'#58a6ff' }}>{sel.loF}\u00b0F</div>
+                  <div style={{ fontSize:24, fontWeight:700, color:'#e0a44a', lineHeight:1.1 }}>{sel.hiF}°F</div>
+                  <div style={{ fontSize:17, fontWeight:700, color:'#58a6ff' }}>{sel.loF}°F</div>
                 </div>
               </div>
               <div style={{ fontSize:13, fontWeight:700, color:'#7f92a6', letterSpacing:'0.08em', marginBottom:6 }}>{t(lang,'wxScoringFactors')}</div>
               {[
-                { Icon:I.snowflake, tint:'#58a6ff', label:t(lang,'wxNightFreeze'), val:sel.loF+'\u00b0F',
+                { Icon:I.snowflake, tint:'#58a6ff', label:t(lang,'wxNightFreeze'), val:sel.loF+'°F',
                   note: sel.loF >= 18 && sel.loF <= 28 ? t(lang,'wxIdealRange') : sel.loF < 18 ? t(lang,'wxVeryCold') : sel.loF < 32 ? t(lang,'wxLightFreeze') : t(lang,'wxNoFreeze') },
-                { Icon:I.sun, tint:'#e0a44a', label:t(lang,'wxDayThaw'),    val:sel.hiF+'\u00b0F',
+                { Icon:I.sun, tint:'#e0a44a', label:t(lang,'wxDayThaw'),    val:sel.hiF+'°F',
                   note: sel.hiF >= 40 && sel.hiF < 46 ? t(lang,'wxIdealRange') : sel.hiF >= 50 ? t(lang,'wxBuddyRunRisk') : sel.hiF >= 33 ? t(lang,'wxMarginalThaw') : t(lang,'wxNoThaw') },
-                { Icon:I.barChart, tint:'#2dd4a7', label:t(lang,'wxDtSwing'), val:(sel.hiF-sel.loF)+'\u00b0F',
+                { Icon:I.barChart, tint:'#2dd4a7', label:t(lang,'wxDtSwing'), val:(sel.hiF-sel.loF)+'°F',
                   note: (sel.hiF-sel.loF) >= 25 ? t(lang,'wxExcellent') : (sel.hiF-sel.loF) >= 18 ? t(lang,'wxGood') : t(lang,'wxLimited') },
                 { Icon:I.wind, tint:'#7f92a6', label:t(lang,'wxWind'),       val:sel.windMph+' mph',
                   note: sel.windMph <= 10 ? t(lang,'wxCalm') : sel.windMph <= 20 ? t(lang,'wxLightWind') : t(lang,'wxReducesFlow') },
@@ -6599,11 +6605,11 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
               ))}
               {sel.buddyRisk && (
                 <div style={{ marginTop:12, background:'rgba(240,136,62,0.08)', border:'1px solid rgba(240,136,62,0.2)', borderRadius:8, padding:'9px 12px', fontSize:12, color:'#e0a44a', lineHeight:1.5 }}>
-                  <strong><I.alert size={13} color="currentColor" /> Buddy Run:</strong> High temps above 50\u00b0F can trigger bud break, turning sap bitter and ending the season. Taste your sap and watch the trees closely.
+                  <strong><I.alert size={13} color="currentColor" /> Buddy Run:</strong> High temps above 50°F can trigger bud break, turning sap bitter and ending the season. Taste your sap and watch the trees closely.
                 </div>
               )}
               <div style={{ marginTop:10, fontSize:13, color:'#7f92a6', lineHeight:1.6 }}>
-                Model based on Acer saccharum physiology (Cornell/UVM Proctor research). Factors: freeze depth, thaw quality, \u0394T swing, sunshine, wind, precipitation, run streak. Individual sugarbush conditions vary.
+                Model based on Acer saccharum physiology (Cornell/UVM Proctor research). Factors: freeze depth, thaw quality, ΔT swing, sunshine, wind, precipitation, run streak. Individual sugarbush conditions vary.
               </div>
             </div>
           )}
@@ -6630,9 +6636,9 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
                     <div style={{ color:'#7f92a6', fontSize:12 }}>{day.dateLabel}</div>
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                    <span style={{ color:'#e0a44a', fontWeight:600 }}>{day.hiF}\u00b0</span>
+                    <span style={{ color:'#e0a44a', fontWeight:600 }}>{day.hiF}°</span>
                     <span style={{ color:'#7f92a6', fontSize:13 }}>/</span>
-                    <span style={{ color:'#58a6ff', fontWeight:600 }}>{day.loF}\u00b0</span>
+                    <span style={{ color:'#58a6ff', fontWeight:600 }}>{day.loF}°</span>
                     {badge}
                   </div>
                 </div>
@@ -6658,9 +6664,9 @@ function WeatherTab({ lang='en', trees=0, units='GAL' }) {
           </div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:8, justifyContent:'center' }}>
             {[
-              [I.snowflake,'#58a6ff','Ideal freeze: 18\u201328\u00b0F'],
-              [I.sun,'#e0a44a','Ideal thaw: 40\u201346\u00b0F'],
-              [I.barChart,'#2dd4a7','\u0394T swing \u2265 25\u00b0F = excellent'],
+              [I.snowflake,'#58a6ff','Ideal freeze: 18–28°F'],
+              [I.sun,'#e0a44a','Ideal thaw: 40–46°F'],
+              [I.barChart,'#2dd4a7','ΔT swing ≥ 25°F = excellent'],
               [I.wind,'#7f92a6','High wind reduces flow']
             ].map(([Ico, tint, tx]) => (
               <div key={tx} style={{ background:'#161b22', border:'1px solid #1e2d3d', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#7f92a6', display:'flex', alignItems:'center', gap:6 }}>
@@ -7218,8 +7224,8 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
   const taps  = parseInt(trees)||0;
   const brix  = parseFloat(sapBrix)||2.0;
   const runLogs  = slog.sapCollected||[];
-  const brixLog  = (ls.get('sg_brixlog',{})[season]||[]);
-  const sparkData= brixLog.map(e=>parseFloat(e.val)||0).filter(v=>v>0).slice(-12);
+  const brixLog  = ls.get('sg_brixlog', []);   // flat array — same shape SeasonTab writes
+  const sparkData= brixLog.map(e=>parseFloat(e.brix)||0).filter(v=>v>0).slice(-12);
   const dataPoints=[sapGal>0,syrupGal>0,taps>0,brixLog.length>2,fuelGal>0,roGal>0].filter(Boolean).length;
   const confidence= dataPoints<=1?'low':dataPoints<=3?'medium':'high';
   const confColor = confidence==='high'?'#3fb950':confidence==='medium'?'#e0a44a':'#7f92a6';
@@ -7266,7 +7272,7 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
   }
   if (sapGal>0&&syrupGal>0) {
     const ratio=sapGal/syrupGal;
-    const theoretical=86.4/brix;
+    const theoretical=RULE_DIVISOR/brix;
     const eff=Math.min(100,Math.round((theoretical/ratio)*100));
     effScore=eff;
     if (eff>=95)       insights.push({type:'success',title:'Excellent evaporation efficiency',  body:`${ratio.toFixed(0)}:1 ratio — ${eff}% of theoretical max for ${brix}°Brix sap.`,       action:'Document your evaporator setup — this is benchmark-quality operation.'});
@@ -7277,7 +7283,7 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
     const fuelDef=FUELS.find(f=>f.label===ls.get('sg_fuel','Firewood (cord)'))||FUELS[0];
     const fuelU=fuelDef.unit;
     const fr=fuelGal/syrupGal;
-    const bench=(86.4/(parseFloat(sapBrix)||2))/fuelDef.spu;
+    const bench=(RULE_DIVISOR/(parseFloat(sapBrix)||2))/fuelDef.spu;
     fuelScore=Math.min(100,Math.round((bench/fr)*100));
     if (fr < bench*0.8)   insights.push({type:'success',title:'Fuel-efficient operation',  body:`${fr.toFixed(2)} ${fuelU}/gal syrup — below the ${bench.toFixed(2)} expected for your fuel.`,  action:'If not already using RO, your evaporator is dialed in. Consider adding a preheater.'});
     else if(fr > bench*1.5) insights.push({type:'warn', title:'High fuel consumption',     body:`${fr.toFixed(2)} ${fuelU}/gal syrup — above the ${bench.toFixed(2)} expected for your fuel.`,                   action:'RO preconcentration to 8–10°Brix could cut fuel use 60–70%.'});
@@ -8388,7 +8394,7 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
   let effScore = null;
   if (sapGal > 0 && syrupGal > 0 && brix > 0) {
     const ratio = sapGal / syrupGal;
-    const theoretical = 86.4 / brix;
+    const theoretical = RULE_DIVISOR / brix;
     effScore = Math.min(100, Math.round((theoretical / ratio) * 100));
     scores.push({ label:'Evap Efficiency', score: effScore, weight:40, color: barColor(effScore),
       detail: `${ratio.toFixed(0)}:1 actual vs ${theoretical.toFixed(0)}:1 theoretical` });
@@ -8399,7 +8405,7 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
   if (fuelGal > 0 && syrupGal > 0) {
     const fuelDef = FUELS.find(f => f.label === ls.get('sg_fuel','Firewood (cord)')) || FUELS[0];
     const fr    = fuelGal / syrupGal;                       // units of fuel per gal syrup
-    const bench = (86.4 / brix) / fuelDef.spu;              // what that fuel should take
+    const bench = (RULE_DIVISOR / brix) / fuelDef.spu;              // what that fuel should take
     fuelScore = Math.min(100, Math.round((bench / fr) * 100));
     scores.push({ label:'Fuel Efficiency', score: fuelScore, weight:20, color: barColor(fuelScore),
       detail: `${fr.toFixed(2)} ${fuelDef.unit}/gal syrup · expect ${bench.toFixed(2)}` });
@@ -8481,7 +8487,7 @@ function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
 
   if (!taps || !syrupGal) return null;
 
-  const theoretical      = 86.4 / brix;                         // theoretical sap:syrup ratio
+  const theoretical      = RULE_DIVISOR / brix;                         // theoretical sap:syrup ratio
   const gModel           = yieldModelSaved();                   // benchmark follows the tap system
   const theorMaxSyrup    = taps * gModel.high;
   const theorMaxSyrupLow = taps * gModel.low;
@@ -8714,7 +8720,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
   const prevSap   = sumLog(prevLog.sapCollected);
   const prevSyrup = sumLog(prevLog.syrupMade);
 
-  const theorRatio  = sapBrix > 0 ? (86 / sapBrix) : 0;
+  const theorRatio  = sapBrix > 0 ? (RULE_DIVISOR / sapBrix) : 0;
   const actualRatio = syrupGal > 0 ? sapGal / syrupGal : 0;
 
   // Best single collection day
@@ -9236,7 +9242,7 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
   const goal  = taps * yieldMidOf(model);
   const pct   = goal > 0 ? Math.min(100, (syT / goal) * 100) : 0;
   const ratio = syT > 0 ? sapT / syT : null;
-  const theor = 86.4 / (parseFloat(sapBrix) || 2);
+  const theor = RULE_DIVISOR / (parseFloat(sapBrix) || 2);
 
   const entries = ['sapCollected','syrupMade','sapRO','sapEvap','fuelUsed','boilHours']
     .flatMap(k => (slog[k] || []).map(e => ({ ...e, kind:k })));
@@ -9268,8 +9274,9 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
   // The one thing Today can say that no other screen says first: where this season's yield per tap
   // stands against the benchmark for the producer's own system. Every input is already on the device.
   const perTap = taps > 0 && syT > 0 ? syT / taps : null;
+  const perTapGal = perTap == null ? null : (units === 'L' ? perTap / 3.78541 : perTap);
   const standing = perTap == null ? null
-    : perTap >= model.high ? 'above the range' : perTap >= model.low ? 'inside the range' : 'below the range';
+    : perTapGal >= model.high ? 'above the range' : perTapGal >= model.low ? 'inside the range' : 'below the range';
 
   const SHORT = { sapCollected:'Sap collected', syrupMade:'Syrup made', sapRO:'Sap through R/O',
                   sapEvap:'Sap evaporated', fuelUsed:'Fuel burned', boilHours:'Hours boiling' };
@@ -9293,22 +9300,22 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
           style={{ width:`${pct}%`, background:'#2dd4a7' }} /></div>
         <div className="stat3" style={{ marginTop:14, paddingTop:14, borderTop:'1px solid #131e2c' }}>
           <Eyebrow>Syrup</Eyebrow><Eyebrow>Sap</Eyebrow><Eyebrow>Ratio</Eyebrow>
-          <Fig value={fmt(conv(syT),1)}  unit={u} lead />
-          <Fig value={fmt(conv(sapT),0)} unit={u} />
+          <Fig value={fmt(syT,1)}  unit={u} lead />
+          <Fig value={fmt(sapT,0)} unit={u} />
           <Fig value={ratio ? `${ratio.toFixed(0)}:1` : '—'} sub={ratio ? `theory ${fmt(theor,0)}:1` : 'no syrup logged'} />
         </div>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', gap:12, marginTop:14, paddingTop:14, borderTop:'1px solid #131e2c' }}>
           <div style={{ minWidth:0 }}>
             <Eyebrow>Per tap so far</Eyebrow>
             <div style={{ display:'flex', alignItems:'baseline', gap:4, marginTop:4 }}>
-              <span style={{ fontSize:20, fontWeight:700, color:'#e6edf3', lineHeight:1.05 }}>{perTap != null ? fmt(conv(perTap),2) : '—'}</span>
+              <span style={{ fontSize:20, fontWeight:700, color:'#e6edf3', lineHeight:1.05 }}>{perTap != null ? fmt(perTap,2) : '—'}</span>
               <span style={{ fontSize:13, color:'#7f92a6', fontWeight:500 }}>{u}/tap</span>
             </div>
           </div>
           <div style={{ textAlign:'right', flexShrink:0 }}>
             <Eyebrow>Benchmark</Eyebrow>
             <div style={{ display:'flex', alignItems:'baseline', gap:4, marginTop:4, justifyContent:'flex-end' }}>
-              <span style={{ fontSize:20, fontWeight:700, color:'#e6edf3', lineHeight:1.05 }}>{model.low.toFixed(2)}–{model.high.toFixed(2)}</span>
+              <span style={{ fontSize:20, fontWeight:700, color:'#e6edf3', lineHeight:1.05 }}>{conv(model.low).toFixed(2)}–{conv(model.high).toFixed(2)}</span>
               <span style={{ fontSize:13, color:'#7f92a6', fontWeight:500 }}>{u}/tap</span>
             </div>
           </div>
@@ -9369,10 +9376,12 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
 
     // Helper: sum an array of log entries
     const sumLog = arr => (arr || []).reduce((s, e) => s + (parseFloat(e.val) || 0), 0);
-    const sapGal  = sumLog(slog.sapCollected);
-    const roGal   = sumLog(slog.sapRO);
-    const evapGal = sumLog(slog.sapEvap);
-    const syrupGal = sumLog(slog.syrupMade);
+    // Stored log values are in the user's display unit; every benchmark below is gallons.
+    const _gal    = v => units === 'L' ? v / 3.78541 : v;
+    const sapGal  = _gal(sumLog(slog.sapCollected));
+    const roGal   = _gal(sumLog(slog.sapRO));
+    const evapGal = _gal(sumLog(slog.sapEvap));
+    const syrupGal = _gal(sumLog(slog.syrupMade));
 
     // ── 1. Yield-per-tap ────────────────────────────────────────────────────
     const numTrees = parseInt(trees) || 0;
@@ -9384,7 +9393,7 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
       const benchHigh = vacLevel === 'high' ? 45 : vacLevel === 'vac15' ? 28 : 15;
       const pct = Math.round(((yieldPerTap - benchLow) / (benchLow)) * 100);
       const gap = Math.max(0, benchLow - yieldPerTap);
-      const potentialSyrup = gap * tapCount / (units === 'GAL' ? 86 / sapBrix : 86 / sapBrix * 3.785);
+      const potentialSyrup = (gap * tapCount) / (RULE_DIVISOR / sapBrix);   // gal (inputs normalized above)
       const roiVal = potentialSyrup * syrupPrice;
       if (yieldPerTap < benchLow) {
         results.push({
@@ -9456,7 +9465,7 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
     if (roGal > 0 && evapGal > 0) {
       const roUtil = roGal / evapGal;
       if (roUtil < 0.7) {
-        const potentialFuelSave = (evapGal - roGal) * 0.6 * (woodCost / 128); // cords saved estimate
+        const potentialFuelSave = (evapGal - roGal) * 0.6 / FUELS[0].spu; // cords saved (1 cord boils ~1,000 gal sap)
         results.push({
           id: 'ro_util',
           severity: 'medium',
@@ -9484,7 +9493,8 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
         });
       }
     } else if (evapGal > 50 && roGal === 0) {
-      const potentialSave = evapGal * 0.65 * (woodCost / 128);
+      const potentialCords = evapGal * 0.65 / FUELS[0].spu;
+      const potentialSave  = potentialCords * woodCost;
       results.push({
         id: 'ro_util',
         severity: 'high',
@@ -9497,7 +9507,7 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
         details: [
           `Total evaporated: ${evapGal.toFixed(1)} gal with no RO`,
           `RO reduces evaporation workload by 60–75%`,
-          `Estimated wood saved: ${(evapGal * 0.65 / 128).toFixed(1)} cords × $${woodCost} = $${potentialSave.toFixed(0)}`,
+          `Estimated wood saved: ${potentialCords.toFixed(1)} cords × $${woodCost} = $${potentialSave.toFixed(0)}`,
           'Source: Maine Maple Producers Association — RO Economics Guide',
         ],
       });
@@ -9515,7 +9525,7 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
           action: 'Run a second pass, increase RO pressure, or slow feed rate. Check membrane condition if output is consistently low.',
           effort: 'Low',
           payback: 'Doubling output Brix halves evaporation time and fuel cost',
-          roi: evapGal > 0 ? ((8 - roBrix) / roBrix) * evapGal * 0.5 * (woodCost / 128) * woodCost : 50,
+          roi: evapGal > 0 ? ((8 - roBrix) / roBrix) * evapGal * 0.5 / FUELS[0].spu * woodCost : 50,
           details: [
             `Current output: ${roBrix}°Brix  |  Target: 8–12°Brix`,
             'Low output Brix means membranes may need cleaning or replacement',
