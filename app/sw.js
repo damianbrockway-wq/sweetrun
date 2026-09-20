@@ -2,7 +2,7 @@
 // Cache name: bump this string on every deploy to force all clients to update cleanly.
 // localStorage data is NEVER touched by this file — it is purely cache management.
 
-const CACHE      = 'sweetrun-v18';
+const CACHE      = 'sweetrun-v19';
 const TILE_CACHE = 'sweetrun-tiles-v1';   // kept separately — never auto-purged on app update
 
 // Core app shell — everything SweetRun needs to run fully offline
@@ -67,7 +67,8 @@ self.addEventListener('fetch', event => {
 
   // Map tiles — cache-first so the sugarbush map works offline after a save
   const isTile = url.hostname === 'server.arcgisonline.com'
-              || url.hostname === 'services.arcgisonline.com'
+              || url.hostname === 'services.arcgisonline.com'   // Esri World Hillshade (terrain layer)
+              || url.hostname === 'basemap.nationalmap.gov'      // USGS Topo (+ shaded-relief fallback)
               || url.hostname === 'clarity.maptiles.arcgis.com'
               || url.hostname === 'gis.apfo.usda.gov'
               || url.hostname.endsWith('openstreetmap.org');

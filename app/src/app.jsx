@@ -382,6 +382,22 @@ const TR = {
     // Import dedupe
     importDupNote:'{n} new · {m} duplicates will be skipped',
     importAllDup:'Already imported — 0 new entries',
+    // Map layers panel (Pass 4)
+    lyTitle:'Layers', lyBase:'Base map', lySeasonal:'Seasonal imagery',
+    lySat:'Satellite', lySatSub:'Live Esri imagery',
+    lySatTerrain:'Satellite + Terrain', lySatTerrainSub:'Hillshade over imagery — see the land under the trees',
+    lyTerrain:'Terrain only', lyTerrainSub:'Pure hillshade — ridges, gullies, slope',
+    lyTopo:'USGS Topo', lyTopoSub:'Contours, water, names · US coverage',
+    lyStreet:'Street', lyStreetSub:'OpenStreetMap',
+    lyLive:'Live', lyLeafOn:'Leaf-on', lyLeafOnSub:'Summer NAIP — crowns visible',
+    lyLeafOff:'Leaf-off', lyLeafOffSub:'Bare trees — ground visible',
+    lyCompare:'Compare', lyCompareSub:'Leaf-on vs leaf-off slider',
+    lyTerrainStrength:'Terrain strength',
+    // Measure tool (Pass 4)
+    msMeasure:'Measure', msTapToStart:'Tap the map to lay the tape',
+    msDistance:'Distance', msArea:'Area', msPerimeter:'Perimeter',
+    msUndo:'Undo last', msClear:'Clear', msDone:'Done', msCloseRing:'Close the loop',
+    msCloseHint:'Tap the first dot (or Close the loop) to get acreage',
       },
   fr: {
     // Header
@@ -645,6 +661,22 @@ const TR = {
     // Doublons à l’importation
     importDupNote:'{n} nouvelles · {m} doublons seront ignorés',
     importAllDup:'Déjà importé — 0 nouvelle entrée',
+    // Panneau des couches (passe 4)
+    lyTitle:'Couches', lyBase:'Fond de carte', lySeasonal:'Imagerie saisonnière',
+    lySat:'Satellite', lySatSub:'Imagerie Esri en direct',
+    lySatTerrain:'Satellite + Relief', lySatTerrainSub:'Ombrage sur l\'imagerie — voyez le terrain sous les arbres',
+    lyTerrain:'Relief seul', lyTerrainSub:'Ombrage pur — crêtes, ravins, pentes',
+    lyTopo:'Topo USGS', lyTopoSub:'Courbes, eau, noms · Couverture É.-U.',
+    lyStreet:'Carte routière', lyStreetSub:'OpenStreetMap',
+    lyLive:'En direct', lyLeafOn:'Avec feuilles', lyLeafOnSub:'NAIP d\'été — cimes visibles',
+    lyLeafOff:'Sans feuilles', lyLeafOffSub:'Arbres nus — sol visible',
+    lyCompare:'Comparer', lyCompareSub:'Curseur avec vs sans feuilles',
+    lyTerrainStrength:'Intensité du relief',
+    // Outil de mesure (passe 4)
+    msMeasure:'Mesurer', msTapToStart:'Touchez la carte pour dérouler le ruban',
+    msDistance:'Distance', msArea:'Superficie', msPerimeter:'Périmètre',
+    msUndo:'Annuler le dernier', msClear:'Effacer', msDone:'Terminé', msCloseRing:'Fermer la boucle',
+    msCloseHint:'Touchez le premier point (ou Fermer la boucle) pour la superficie',
       }
 };
 const t = (lang, key) => TR[lang]?.[key] ?? TR.en[key] ?? key;
@@ -1002,6 +1034,32 @@ function dedupeImport(existingSlog, additions) {
     });
   });
   return { added, addedCount, skippedCount };
+}
+
+// ─── Measure math (map measure tool) ─────────────────────────────────────────
+// Producers order tubing and price leases off these numbers, so they live in
+// the tested formula band. Sphere radius 6,378,137 m — the same radius the
+// map's haversineFt uses (20,925,524 ft), so the two never disagree.
+const SR_EARTH_M = 6378137;
+const SR_M2_PER_ACRE = 4046.8564224;
+const SR_M2_PER_HA   = 10000;
+function srHaversineM(lat1, lon1, lat2, lon2) {
+  const dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return 2 * SR_EARTH_M * Math.asin(Math.sqrt(a));
+}
+// Spherical shoelace (Chamberlain–Duquette): signed area of a lat/lon ring in
+// m², returned absolute. Points are {lat,lon}; the ring closes itself.
+function srPolyAreaM2(pts) {
+  if (!pts || pts.length < 3) return 0;
+  const rad = d => d * Math.PI / 180;
+  let sum = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const p1 = pts[i], p2 = pts[(i + 1) % pts.length];
+    sum += rad(p2.lon - p1.lon) * (2 + Math.sin(rad(p1.lat)) + Math.sin(rad(p2.lat)));
+  }
+  return Math.abs(sum * SR_EARTH_M * SR_EARTH_M / 2);
 }
 
 // ─── Shared settings store ───────────────────────────────────────────────────
@@ -4586,6 +4644,114 @@ let _lSeasonLayer = null;
 let _lSliderEl = null;
 let _lGpsMarker = null;
 let _lGpsCircle = null;
+let _lMeasureLayers = [];
+let _lTerrainActive = false;   // terrain modes brighten the route glow so lines stay legible
+
+// New tile surfaces (Pass 4). Both verified live 2026-09-20 (real 256×256 tiles
+// over Maine, z13). Hillshade is Esri World Hillshade — the "LiDAR look";
+// topo is USGS (US coverage only; outside the US Leaflet shows blanks).
+const _SB_HILLSHADE_URL = 'https://services.arcgisonline.com/arcgis/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}';
+const _SB_TOPO_URL      = 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}';
+// One representative tile per source for the Layers panel thumbnails (Sugarloaf, z13).
+const _SB_THUMB = {
+  sat:       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/13/2945/2496',
+  hillshade: 'https://services.arcgisonline.com/arcgis/rest/services/Elevation/World_Hillshade/MapServer/tile/13/2945/2496',
+  topo:      'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/13/2945/2496',
+  street:    'https://tile.openstreetmap.org/13/2496/2945.png',
+  naip:      'https://gis.apfo.usda.gov/arcgis/rest/services/NAIP/USDA_CONUS_PRIME/ImageServer/tile/13/2945/2496',
+  clarity:   'https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/13/2945/2496',
+};
+
+// ── BASE-LAYER SWITCHING (Pass 4) ──
+// mapType: 'satellite' | 'sat-terrain' | 'terrain' | 'topo' | 'street'.
+// The hillshade overlay lives in its own pane above the imagery tiles with
+// CSS mix-blend-mode: multiply (overlay was tested too: satellite greens sit
+// near mid-gray, so overlay's brightening half cancels most of the relief —
+// multiply keeps every shadow and the ridges actually carve). Terrain-only
+// re-uses the same tiles as a normal base, tinted warm via CSS so it doesn't
+// read clinical-gray.
+function _sbApplyBase(map, mapType, terrainOpacity) {
+  if (!map || !window.L) return;
+  if (!map.getPane('sr-terrain')) {
+    const pane = map.createPane('sr-terrain');
+    pane.style.zIndex = 250;                  // above tilePane (200), below overlayPane (400)
+    pane.classList.add('sr-terrain-pane');
+  }
+  if (!map._terrain) map._terrain = window.L.tileLayer(_SB_HILLSHADE_URL,
+    { attribution:'Hillshade © Esri', pane:'sr-terrain', maxNativeZoom:16, maxZoom:20, opacity: terrainOpacity });
+  if (!map._terrainBase) map._terrainBase = window.L.tileLayer(_SB_HILLSHADE_URL,
+    { attribution:'Hillshade © Esri', className:'sr-terrain-tint', maxNativeZoom:16, maxZoom:20 });
+  if (!map._topo) map._topo = window.L.tileLayer(_SB_TOPO_URL,
+    { attribution:'USGS The National Map', maxNativeZoom:16, maxZoom:19 });
+  const want = {
+    _sat:         mapType === 'satellite' || mapType === 'sat-terrain',
+    _labels:      mapType === 'satellite' || mapType === 'sat-terrain',
+    _street:      mapType === 'street',
+    _topo:        mapType === 'topo',
+    _terrain:     mapType === 'sat-terrain',
+    _terrainBase: mapType === 'terrain',
+  };
+  Object.keys(want).forEach(k => {
+    const layer = map[k];
+    if (!layer) return;
+    if (want[k]) { if (!map.hasLayer(layer)) layer.addTo(map); }
+    else if (map.hasLayer(layer)) map.removeLayer(layer);
+  });
+  _sbTuneRouteGlow(mapType === 'sat-terrain' || mapType === 'terrain');
+}
+
+// Multiply dims what sits under it; when a terrain mode is active the mainline
+// glow + flow layers get a touch more opacity so Pass 3.5's lines stay fully
+// legible. The core grade-colored stroke is data and is never touched.
+function _sbTuneRouteGlow(active) {
+  _lTerrainActive = !!active;
+  _lRouteLines.forEach(l => {
+    try {
+      const cn = l.options && l.options.className;
+      if (cn === 'sr-line-glow') l.setStyle({ opacity: _lTerrainActive ? 0.5 : 0.3 });
+      else if (cn === 'sr-flow-dash') l.setStyle({ opacity: _lTerrainActive ? 0.75 : 0.55 });
+    } catch {}
+  });
+}
+
+// ── MEASURE TOOL DRAWING (Pass 4) ──
+// Ephemeral by design: never written to storage, cleared on Done/unmount.
+function _sbClearMeasure() {
+  _lMeasureLayers.forEach(l => { try { l.remove(); } catch {} });
+  _lMeasureLayers = [];
+}
+function _sbDrawMeasure(verts, closed, onFirstDot) {
+  _sbClearMeasure();
+  if (!_lMap || !window.L || !verts.length) return;
+  const latlngs = verts.map(v => [v.lat, v.lon]);
+  if (closed && verts.length >= 3) {
+    const ring = window.L.polygon(latlngs, { color:'#EB9A33', weight:2.5, opacity:0.9,
+      dashArray:'6,6', fillColor:'#EB9A33', fillOpacity:0.12, interactive:false });
+    ring.addTo(_lMap); _lMeasureLayers.push(ring);
+  } else if (latlngs.length >= 2) {
+    const tape = window.L.polyline(latlngs, { color:'#EB9A33', weight:2.5, opacity:0.9,
+      dashArray:'6,6', interactive:false });
+    tape.addTo(_lMap); _lMeasureLayers.push(tape);
+  }
+  verts.forEach((v, i) => {
+    const closable = i === 0 && !closed && verts.length >= 3;
+    const dot = window.L.circleMarker([v.lat, v.lon], {
+      radius: i === 0 ? 7 : 5, color:'#EB9A33', weight:2,
+      fillColor: closable ? '#EB9A33' : '#0d1521', fillOpacity:1,
+      interactive: i === 0 && !closed,
+      // Paths bubble clicks to the map by default — that would close the ring
+      // AND lay a vertex on the same tap. The dot swallows its click instead.
+      bubblingMouseEvents: false,
+    }).addTo(_lMap);
+    if (i === 0 && !closed && onFirstDot) {
+      dot.on('click', e => {
+        try { if (e && e.originalEvent) window.L.DomEvent.stop(e.originalEvent); } catch {}
+        onFirstDot();
+      });
+    }
+    _lMeasureLayers.push(dot);
+  });
+}
 
 function haversineFt(lat1, lon1, lat2, lon2) {
   const R = 20925524;
@@ -4667,6 +4833,25 @@ function _analyzeSegGrades(pts) {
 // Instrument-panel numerals: numeric readouts in the map band share this style.
 const _MONO = { fontFamily: "ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace", fontVariantNumeric: 'tabular-nums' };
 
+// One row of the Layers panel: 44px tile thumbnail, name + sub, active check.
+// thumbs: array of { src, cls } stacked in the thumbnail box (the Sat+Terrain
+// row stacks the hillshade over the imagery with the same multiply blend the
+// live pane uses, so the thumbnail IS the preview).
+function _LyRow({ active, onClick, thumbs, name, sub }) {
+  return (
+    <button className={`ly-row${active ? ' on' : ''}`} onClick={onClick} aria-pressed={active}>
+      <span className="ly-thumb" aria-hidden="true">
+        {thumbs.map((th, i) => <img key={i} src={th.src} alt="" loading="lazy" className={th.cls || ''} />)}
+      </span>
+      <span style={{ flex:1, minWidth:0 }}>
+        <span className="ly-name">{name}</span>
+        {sub ? <span className="ly-sub">{sub}</span> : null}
+      </span>
+      {active ? <I.check size={18} color="#2dd4a7" /> : null}
+    </button>
+  );
+}
+
 // One-sweep radar scan over the viewport when route analysis kicks off.
 // Pure presentation: appended, animated by CSS, removed. Skipped entirely
 // under prefers-reduced-motion. Never touches map state.
@@ -4698,7 +4883,7 @@ function _drawRouteLines(results) {
       const color = _gradeColor(seg.grade);
       const latlngs = [[seg.from.lat, seg.from.lon], [seg.to.lat, seg.to.lon]];
       const glow = window.L.polyline(latlngs,
-        { color, weight: (seg.isToTank ? 5 : 3) + 7, opacity: 0.3,
+        { color, weight: (seg.isToTank ? 5 : 3) + 7, opacity: _lTerrainActive ? 0.5 : 0.3,
           interactive: false, className: 'sr-line-glow' }
       ).addTo(_lMap);
       _lRouteLines.push(glow);
@@ -4717,7 +4902,7 @@ function _drawRouteLines(results) {
       _lRouteLines.push(line);
       if (seg.grade >= 1.0) {
         const flow = window.L.polyline(latlngs,
-          { color: '#ffffff', weight: 2, opacity: 0.55, dashArray: '5,17',
+          { color: '#ffffff', weight: 2, opacity: _lTerrainActive ? 0.75 : 0.55, dashArray: '5,17',
             interactive: false, className: 'sr-flow-dash' }
         ).addTo(_lMap);
         _lRouteLines.push(flow);
@@ -5075,31 +5260,50 @@ function _sbTileXY(lat, lng, z) {
   return { x: Math.max(0, Math.min(n - 1, x)), y: Math.max(0, Math.min(n - 1, y)) };
 }
 
-// Pre-fetch every satellite + label tile visible at current zoom ±1 so the
-// service worker caches them and the map works offline next time.
-async function _sbCacheTiles(map, onProgress) {
+// Pre-fetch the ACTIVE layer mode's tiles at current zoom ±1 so the service
+// worker caches them and the map works offline next time. Satellite (and
+// street, which has always cached the satellite set as its offline fallback)
+// keeps the original sat + labels pair; the Pass 4 modes add or swap in their
+// own sources. Hillshade/topo are native to z16 — above that Leaflet upsamples
+// from cached z16 tiles, so those sources are only fetched up to 16.
+async function _sbCacheTiles(map, onProgress, mode = 'satellite') {
   if (!map) return { error: 'Map not ready.' };
   const bounds = map.getBounds();
   const z      = Math.round(map.getZoom());
   const minZ   = Math.max(12, z - 1);
   const maxZ   = Math.min(18, z + 1);
+  const hsOnly   = mode === 'terrain';
+  const topoOnly = mode === 'topo';
+  const withHs   = mode === 'sat-terrain';
 
   const urls = [];
+  let tileCount = 0;
   for (let zoom = minZ; zoom <= maxZ; zoom++) {
     const nw = _sbTileXY(bounds.getNorth(), bounds.getWest(), zoom);
     const se = _sbTileXY(bounds.getSouth(), bounds.getEast(), zoom);
     for (let tx = nw.x; tx <= se.x; tx++) {
       for (let ty = nw.y; ty <= se.y; ty++) {
+        tileCount++;
+        if (hsOnly || topoOnly) {
+          if (zoom <= 16) urls.push((hsOnly ? _SB_HILLSHADE_URL : _SB_TOPO_URL)
+            .replace('{z}', zoom).replace('{y}', ty).replace('{x}', tx));
+          continue;
+        }
         // Esri uses z/y/x tile order
         urls.push(`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${zoom}/${ty}/${tx}`);
         urls.push(`https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/${zoom}/${ty}/${tx}`);
+        if (withHs && zoom <= 16) urls.push(_SB_HILLSHADE_URL.replace('{z}', zoom).replace('{y}', ty).replace('{x}', tx));
       }
     }
   }
+  if (!urls.length) return { error: 'Nothing to save at this zoom. Zoom out a step and try again.' };
+  // Average fetches per tile position for this mode — keeps the reported tile
+  // count honest across 1-, 2- and 3-source modes.
+  const per = urls.length / tileCount;
 
   const MAX = 600;
   if (urls.length > MAX) {
-    return { error: `Area too large (${Math.round(urls.length / 2)} tiles). Zoom in closer and try again.` };
+    return { error: `Area too large (${Math.round(urls.length / per)} tiles). Zoom in closer and try again.` };
   }
 
   let done = 0, errors = 0;
@@ -5108,8 +5312,8 @@ async function _sbCacheTiles(map, onProgress) {
     done++;
     onProgress(Math.round(done / urls.length * 100), done, urls.length);
   }
-  const count = Math.round(urls.length / 2);
-  const saved = Math.max(0, Math.round((urls.length - errors) / 2));
+  const count = Math.round(urls.length / per);
+  const saved = Math.max(0, Math.round((urls.length - errors) / per));
   return { count, saved, errors };
 }
 
@@ -5118,8 +5322,17 @@ function LinesTab({ lang='en' }) {
   const [leafletError, setLeafletError] = React.useState(false);
   const [pins, setPins]           = React.useState(() => ls.get('sg_lines_pins', []));
   const [mode, setMode]           = React.useState('tree');
+  // Base map: 'satellite' | 'sat-terrain' | 'terrain' | 'topo' | 'street' (Pass 4)
   const [mapType, setMapType]     = React.useState('satellite');
+  const [terrainOpacity, setTerrainOpacity] = React.useState(0.55);
+  const [showLayerPanel, setShowLayerPanel] = React.useState(false);
   const [seasonMode, setSeasonMode] = React.useState('off');
+  // Measure tool — ephemeral by design: armed mode routes map taps to the tape
+  // (pin drops suppressed); Done/unmount clears everything. Never persisted.
+  const [measuring, setMeasuring] = React.useState(false);
+  const [mVerts, setMVerts]       = React.useState([]);
+  const [mClosed, setMClosed]     = React.useState(false);
+  const measureRef = React.useRef({ on:false, closed:false });
   const [analyzing, setAnalyzing]       = React.useState(false);
   const [gpsLoading, setGpsLoading]     = React.useState(false);
   const [gpsTracking, setGpsTracking]   = React.useState(false);
@@ -5252,23 +5465,22 @@ function LinesTab({ lang='en' }) {
       _lSliderEl = null;
       _lGpsMarker = null;
       _lGpsCircle = null;
+      _lMeasureLayers = [];
+      _lTerrainActive = false;
       window._sgMapPinClick = null;
     };
   }, [leafletReady]);
 
-  // Toggle satellite/street base layer
+  // Base-layer switching (satellite / sat+terrain / terrain / topo / street)
   React.useEffect(() => {
     if (!_lMap) return;
-    if (mapType === 'satellite') {
-      if (!_lMap.hasLayer(_lMap._sat)) _lMap._sat.addTo(_lMap);
-      if (!_lMap.hasLayer(_lMap._labels)) _lMap._labels.addTo(_lMap);
-      if (_lMap.hasLayer(_lMap._street)) _lMap.removeLayer(_lMap._street);
-    } else {
-      if (_lMap.hasLayer(_lMap._sat)) _lMap.removeLayer(_lMap._sat);
-      if (_lMap.hasLayer(_lMap._labels)) _lMap.removeLayer(_lMap._labels);
-      if (!_lMap.hasLayer(_lMap._street)) _lMap._street.addTo(_lMap);
-    }
-  }, [mapType]);
+    _sbApplyBase(_lMap, mapType, terrainOpacity);
+  }, [mapType, leafletReady]);
+
+  // Terrain overlay strength — applied live, no re-add
+  React.useEffect(() => {
+    if (_lMap && _lMap._terrain) { try { _lMap._terrain.setOpacity(terrainOpacity); } catch {} }
+  }, [terrainOpacity]);
 
   // Seasonal imagery overlay
   React.useEffect(() => {
@@ -5276,13 +5488,42 @@ function LinesTab({ lang='en' }) {
     _sbApplySeasonLayer(_lMap, seasonMode);
   }, [seasonMode, leafletReady]);
 
-  // Map click → drop pin
+  // Map click → measure vertex while the tape is armed, else drop pin.
+  // Disarmed, the handler is byte-identical to the original pin drop.
   React.useEffect(() => {
     if (!_lMap) return;
-    const h = e => _dropPin(e.latlng.lat, e.latlng.lng, modeRef.current, pinsRef, setPins);
+    const h = e => {
+      const M = measureRef.current;
+      if (M.on) {
+        if (M.closed) return;   // ring closed: read the numbers, taps do nothing
+        setMVerts(vs => [...vs, { lat: e.latlng.lat, lon: e.latlng.lng }]);
+        return;
+      }
+      _dropPin(e.latlng.lat, e.latlng.lng, modeRef.current, pinsRef, setPins);
+    };
     _lMap.on('click', h);
     return () => { _lMap?.off('click', h); };
   }, [leafletReady]);
+
+  // Measure tape drawing — redraws on every vertex; clears when disarmed
+  React.useEffect(() => {
+    measureRef.current = { on: measuring, closed: mClosed };
+    if (!leafletReady) return;
+    if (!measuring) { _sbClearMeasure(); return; }
+    _sbDrawMeasure(mVerts, mClosed, () => { if (mVerts.length >= 3) setMClosed(true); });
+  }, [measuring, mVerts, mClosed, leafletReady]);
+
+  const measureUndo  = () => { setMVerts(vs => vs.slice(0, -1)); setMClosed(false); };
+  const measureClear = () => { setMVerts([]); setMClosed(false); };
+  const measureDone  = () => { setMeasuring(false); setMVerts([]); setMClosed(false); };
+  const measureToggle = () => { measuring ? measureDone() : setMeasuring(true); };
+  // Running numbers, both unit systems — tabular-nums in the readout
+  const mDistM  = mVerts.reduce((s, v, i) => i ? s + srHaversineM(mVerts[i-1].lat, mVerts[i-1].lon, v.lat, v.lon) : 0, 0);
+  const mPerimM = (mClosed && mVerts.length >= 3)
+    ? mDistM + srHaversineM(mVerts[mVerts.length-1].lat, mVerts[mVerts.length-1].lon, mVerts[0].lat, mVerts[0].lon)
+    : mDistM;
+  const mAreaM2 = (mClosed && mVerts.length >= 3) ? srPolyAreaM2(mVerts) : 0;
+  const _fmtN = (n, d = 0) => n.toLocaleString(lang === 'fr' ? 'fr-CA' : 'en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 
   // GPS — drop pin at current location
   const markGPS = () => {
@@ -5338,7 +5579,7 @@ function LinesTab({ lang='en' }) {
     const result = await _sbCacheTiles(_lMap, (pct, done, total) => {
       setCachePct(pct);
       setCacheMsg(`Saving… ${done} / ${total} tiles`);
-    });
+    }, mapType);
     setCaching(false);
     if (result.error) {
       setCacheMsg('! ' + result.error);
@@ -5686,17 +5927,30 @@ function LinesTab({ lang='en' }) {
               <span className="sep">·</span>
               <span>GPS {gpsTracking ? (gpsAcc != null ? <b>±{gpsAcc}m</b> : <b>live</b>) : '—'}</span>
               <span className="sep">·</span>
-              <span><b>{mapType !== 'satellite' ? 'Street'
+              <span><b>{mapType === 'street' ? 'Street'
+                : mapType === 'topo' ? 'Topo'
+                : mapType === 'terrain' ? 'Terrain'
+                : mapType === 'sat-terrain' ? 'Sat+Terrain'
                 : seasonMode === 'naip' ? 'Leaf-on'
                 : seasonMode === 'clarity' ? 'Leaf-off'
                 : seasonMode === 'compare' ? 'Compare' : 'Sat'}</b></span>
+              {measuring && (<React.Fragment>
+                <span className="sep">·</span>
+                <span><b>{mClosed && mVerts.length >= 3
+                  ? `${_fmtN(mAreaM2 / SR_M2_PER_ACRE, 2)} ac`
+                  : `${_fmtN(mDistM * 3.28084)} ft`}</b></span>
+              </React.Fragment>)}
             </div>
           </div>
         )}
         <div className="map-cluster">
-          <button className="mfab" onClick={() => setMapType(t => t === 'satellite' ? 'street' : 'satellite')}
-            aria-label={mapType === 'satellite' ? 'Switch to the street map' : 'Switch to satellite imagery'} title={mapType === 'satellite' ? 'Street map' : 'Satellite'}>
+          <button className={`mfab${mapType !== 'satellite' ? ' on' : ''}`} onClick={() => setShowLayerPanel(true)}
+            aria-label={t(lang,'lyTitle')} title={t(lang,'lyTitle')} aria-haspopup="dialog">
             <I.layers size={20} color="currentColor" />
+          </button>
+          <button className={`mfab${measuring ? ' on' : ''}`} onClick={measureToggle} aria-pressed={measuring}
+            aria-label={t(lang,'msMeasure')} title={t(lang,'msMeasure')}>
+            <I.ruler size={20} color="currentColor" />
           </button>
           <button className="mfab" onClick={markGPS} disabled={gpsLoading} aria-label="Drop a pin at my GPS position" title="Drop a pin at my GPS position">
             {gpsLoading ? <span style={{ fontSize:13, fontWeight:700 }}>…</span> : <I.crosshair size={20} color="currentColor" />}
@@ -5714,9 +5968,44 @@ function LinesTab({ lang='en' }) {
             <I.undo size={20} color="currentColor" />
           </button>
         </div>
-        <button className="map-add" onClick={() => setShowModePicker(true)} aria-label={`Choose what a tap on the map adds. Now: ${_activeCfg.label}`}>
-          <I.plus size={18} color="#07090f" /> {_activeCfg.label}
-        </button>
+        {!measuring && (
+          <button className="map-add" onClick={() => setShowModePicker(true)} aria-label={`Choose what a tap on the map adds. Now: ${_activeCfg.label}`}>
+            <I.plus size={18} color="#07090f" /> {_activeCfg.label}
+          </button>
+        )}
+        {/* ── Measure readout: glass instrument panel while the tape is armed ── */}
+        {measuring && (
+          <div className="map-measure" role="status">
+            {mVerts.length === 0 ? (
+              <div style={{ fontSize:13, color:'#e6edf3' }}>{t(lang,'msTapToStart')}</div>
+            ) : (
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                <div style={{ display:'flex', alignItems:'baseline', gap:10, flexWrap:'wrap' }}>
+                  <span className="mm-cap">{t(lang, mClosed && mVerts.length >= 3 ? 'msPerimeter' : 'msDistance')}</span>
+                  <span className="mm-val">{_fmtN(mPerimM * 3.28084)} ft</span>
+                  <span className="mm-alt">{_fmtN(mPerimM)} m</span>
+                </div>
+                {mClosed && mVerts.length >= 3 ? (
+                  <div style={{ display:'flex', alignItems:'baseline', gap:10, flexWrap:'wrap' }}>
+                    <span className="mm-cap">{t(lang,'msArea')}</span>
+                    <span className="mm-val" style={{ color:'#EB9A33' }}>{_fmtN(mAreaM2 / SR_M2_PER_ACRE, 2)} ac</span>
+                    <span className="mm-alt">{_fmtN(mAreaM2 / SR_M2_PER_HA, 2)} ha</span>
+                  </div>
+                ) : mVerts.length >= 3 ? (
+                  <div style={{ fontSize:11, color:'#7f92a6' }}>{t(lang,'msCloseHint')}</div>
+                ) : null}
+              </div>
+            )}
+            <div style={{ display:'flex', gap:6, marginTop:8, flexWrap:'wrap' }}>
+              <button className="mm-chip" onClick={measureUndo} disabled={mVerts.length === 0}>{t(lang,'msUndo')}</button>
+              <button className="mm-chip" onClick={measureClear} disabled={mVerts.length === 0}>{t(lang,'msClear')}</button>
+              {mVerts.length >= 3 && !mClosed && (
+                <button className="mm-chip mm-chip-amber" onClick={() => setMClosed(true)}>{t(lang,'msCloseRing')}</button>
+              )}
+              <button className="mm-chip mm-chip-teal" onClick={measureDone}>{t(lang,'msDone')}</button>
+            </div>
+          </div>
+        )}
         {cacheMsg ? (
           <div className="map-toast" style={{ display:'flex', alignItems:'center', gap:8 }}>
             {caching && (
@@ -5740,6 +6029,48 @@ function LinesTab({ lang='en' }) {
                 <Icon size={20} color="currentColor" /> {label}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Layers panel: glass sheet, every base + seasonal mode as a row ── */}
+      {showLayerPanel && (
+        <div className="scrim" onClick={() => setShowLayerPanel(false)} role="dialog" aria-modal="true" aria-label={t(lang,'lyTitle')}>
+          <div className="sheet sheet-glass" onClick={e => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <div style={{ fontWeight:800, fontSize:17, marginBottom:4 }}>{t(lang,'lyTitle')}</div>
+            <div className="ly-cap">{t(lang,'lyBase')}</div>
+            <_LyRow active={mapType === 'satellite'} onClick={() => setMapType('satellite')}
+              thumbs={[{ src:_SB_THUMB.sat }]} name={t(lang,'lySat')} sub={t(lang,'lySatSub')} />
+            <_LyRow active={mapType === 'sat-terrain'} onClick={() => setMapType('sat-terrain')}
+              thumbs={[{ src:_SB_THUMB.sat }, { src:_SB_THUMB.hillshade, cls:'blend' }]}
+              name={t(lang,'lySatTerrain')} sub={t(lang,'lySatTerrainSub')} />
+            {mapType === 'sat-terrain' && (
+              <div className="ly-slider">
+                <label htmlFor="sr-terrain-op" style={{ fontSize:12, fontWeight:700, color:'#7f92a6' }}>{t(lang,'lyTerrainStrength')}</label>
+                <input id="sr-terrain-op" type="range" min="0.2" max="0.9" step="0.05"
+                  value={terrainOpacity} onChange={e => setTerrainOpacity(parseFloat(e.target.value))} />
+                <span style={{ fontSize:12, fontWeight:700, color:'#e6edf3', minWidth:34, textAlign:'right', ..._MONO }}>
+                  {Math.round(terrainOpacity * 100)}%
+                </span>
+              </div>
+            )}
+            <_LyRow active={mapType === 'terrain'} onClick={() => setMapType('terrain')}
+              thumbs={[{ src:_SB_THUMB.hillshade, cls:'tint' }]} name={t(lang,'lyTerrain')} sub={t(lang,'lyTerrainSub')} />
+            <_LyRow active={mapType === 'topo'} onClick={() => setMapType('topo')}
+              thumbs={[{ src:_SB_THUMB.topo }]} name={t(lang,'lyTopo')} sub={t(lang,'lyTopoSub')} />
+            <_LyRow active={mapType === 'street'} onClick={() => setMapType('street')}
+              thumbs={[{ src:_SB_THUMB.street }]} name={t(lang,'lyStreet')} sub={t(lang,'lyStreetSub')} />
+            <div className="ly-cap">{t(lang,'lySeasonal')}</div>
+            <_LyRow active={seasonMode === 'off'} onClick={() => setSeasonMode('off')}
+              thumbs={[{ src:_SB_THUMB.sat }]} name={t(lang,'lyLive')} sub={t(lang,'lySatSub')} />
+            <_LyRow active={seasonMode === 'naip'} onClick={() => setSeasonMode('naip')}
+              thumbs={[{ src:_SB_THUMB.naip }]} name={t(lang,'lyLeafOn')} sub={t(lang,'lyLeafOnSub')} />
+            <_LyRow active={seasonMode === 'clarity'} onClick={() => setSeasonMode('clarity')}
+              thumbs={[{ src:_SB_THUMB.clarity }]} name={t(lang,'lyLeafOff')} sub={t(lang,'lyLeafOffSub')} />
+            <_LyRow active={seasonMode === 'compare'} onClick={() => setSeasonMode('compare')}
+              thumbs={[{ src:_SB_THUMB.naip }, { src:_SB_THUMB.clarity, cls:'half' }]}
+              name={t(lang,'lyCompare')} sub={t(lang,'lyCompareSub')} />
           </div>
         </div>
       )}

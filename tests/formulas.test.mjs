@@ -30,7 +30,8 @@ const sandbox = new Function('ls', `
   return { RULE_DIVISOR, rule86, jones87, syrupY, boilTime, finTemp, denCorr,
            brixToBe, beToBrix, altToBP, presToBP, roConc, PAN_SIZES, FUELS,
            PLATE_CUPS, YIELD_MODELS, yieldModelFor, yieldMidOf, tapsPer, srParseNum,
-           seasonTotals, actualRatio, seasonScore, dedupeImport };
+           seasonTotals, actualRatio, seasonScore, dedupeImport,
+           srHaversineM, srPolyAreaM2, SR_M2_PER_ACRE, SR_M2_PER_HA };
 `)({ get: (_k, d) => d, set: () => true });   // ls stub for yieldModelSaved's neighborhood
 
 const F = sandbox;
@@ -134,6 +135,23 @@ eq("srParseNum('-')", F.srParseNum('-'), null);
   eq('dedupeImport compares values numerically ("100" ≡ 100)',
      F.dedupeImport({ sapCollected: [{ date: 'd', val: '100' }] },
                     { sapCollected: [{ date: 'd', val: 100 }] }).skippedCount, 1);
+}
+
+// ── Measure math (map measure tool: tubing runs and lease acreage) ──
+{
+  // 1° of longitude at the equator on the R=6378137 sphere ≈ 111,319.49 m
+  eq('srHaversineM 1° lon at equator', F.srHaversineM(0, 0, 0, 1), 111319.49, 0.05);
+  // 1° of latitude is the same arc on a sphere, anywhere
+  eq('srHaversineM 1° lat at 45N', F.srHaversineM(45, -70, 46, -70), 111319.49, 0.05);
+  eq('srHaversineM zero distance', F.srHaversineM(45.5, -72.0, 45.5, -72.0), 0);
+  // A 100 m × 100 m square at 45°N ≈ 10,000 m² (1 ha ≈ 2.471 acres)
+  const dLat = 100 / 111319.49;
+  const dLon = 100 / (111319.49 * Math.cos(45 * Math.PI / 180));
+  const sq = [{ lat: 45, lon: -70 }, { lat: 45, lon: -70 + dLon },
+              { lat: 45 + dLat, lon: -70 + dLon }, { lat: 45 + dLat, lon: -70 }];
+  eq('srPolyAreaM2 100m square ≈ 1 ha', F.srPolyAreaM2(sq), 10000, 5);
+  eq('100m square in acres ≈ 2.471', F.srPolyAreaM2(sq) / F.SR_M2_PER_ACRE, 2.4711, 0.002);
+  eq('srPolyAreaM2 under 3 points = 0', F.srPolyAreaM2(sq.slice(0, 2)), 0);
 }
 
 // ── Trial-date edges (logic verified sound in the Sept 2026 audit — lock it) ──
