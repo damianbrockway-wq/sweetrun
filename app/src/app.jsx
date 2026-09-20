@@ -4,6 +4,22 @@ const { useState, useEffect } = React;
 // ─── localStorage helpers ────────────────────────────────────────────────────
 let SR_LOCKED = false; // set true when trial expired & unlicensed — soft edit-lock
 const SR_LOCK_ALLOW = ['sg_license','sg_trial_start','sg_trial_pinged','sg_email_prompted','sg_sessions','sg_lang','sg_units'];
+// Preference / UI-state keys keep persisting quietly even when the trial lock
+// is on. The lock exists to stop NEW season data (logs, batches, pins, brix
+// readings…) — remembering which tab was open or a calculator assumption is
+// not that, and firing the red "entry not saved" banner for a tab switch was
+// a false alarm (Debug H3). Data keys (sg_logs2, sg_batches, sg_lines_pins,
+// sg_brixlog, sg_treenotes, sg_equip2, sg_cpoints, sg_mainlines, sg_rotation,
+// sg_checks2, sg_custom2, sg_fresh_*, sg_wizard_data…) stay locked.
+const SR_PREF_KEYS = [
+  'sg_last_tab','sg_log_last_kind','sg_operator','sg_autocopy','sg_map_beta_dismissed','sg_notif_checked',
+  'sg_price_syrup','sg_cost_wood','sg_rate_labor','sg_syrup_price','sg_laborrate','sg_laborhrs',
+  'sg_fuel','sg_fuelcost','sg_brix','sg_bp','sg_trees','sg_season','sg_vacuum','sg_vacsystem','sg_dbh',
+  'sg_spoutidx','sg_spoutcost','sg_bottlecost','sg_filtercost','sg_othercost','sg_retailmargin',
+  'sg_mainsize','sg_matprices','sg_wx_name','sg_wx_lat','sg_wx_lon','sg_ddstart','sg_ddlat','sg_ddlon','sg_ddloc',
+];
+const SR_PREF_PREFIXES = ['sg_last_screen','sg_pan','sg_dx_','sg_bev_','sg_recap_'];
+const _srIsPref = k => SR_PREF_KEYS.includes(k) || SR_PREF_PREFIXES.some(p => k.startsWith(p));
 let SR_WRITE_FAIL = null; // null | 'locked' | 'quota'
 const _srFail = why => {
   SR_WRITE_FAIL = why;
@@ -18,7 +34,14 @@ const _srClear = () => {
 const ls = {
   get: (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set: (k, v) => {
-    if (SR_LOCKED && !SR_LOCK_ALLOW.includes(k)) return _srFail('locked');
+    if (SR_LOCKED && !SR_LOCK_ALLOW.includes(k) && !_srIsPref(k)) {
+      // Mount-persist effects re-write the value already stored (e.g. TasksTab
+      // writes sg_checks2 on open). Writing an identical value changes nothing,
+      // so it is a silent no-op — not a scary "entry not saved" alert (H3).
+      // A genuinely NEW value on a data key still locks and shows the banner.
+      try { if (localStorage.getItem(k) === JSON.stringify(v)) return true; } catch {}
+      return _srFail('locked');
+    }
     try {
       localStorage.setItem(k, JSON.stringify(v));
       if (SR_WRITE_FAIL === 'quota') _srClear();
@@ -348,6 +371,17 @@ const TR = {
     wxCollPoints:'Suggested Collection Points',
     qualExcellent:'Excellent', qualGood:'Good', qualFair:'Fair', qualPoor:'Poor', qualNoFlow:'No Flow',
     scoreLeg80:'80+ Excellent', scoreLeg62:'62+ Good', scoreLeg44:'44+ Fair', scoreLegNo:'No Flow',
+    // Empty states (Pass 3)
+    todayEmptySub:'The first sap you log starts the season\'s math.',
+    chipLogFirstSap:'Log first sap', chipSetLocation:'Set my location', chipPlanSeason:'Plan my season',
+    logEmptySub:'Every run you log builds the season recap.',
+    dropFirstPin:'Drop your first pin',
+    // Score before there is a season to judge
+    tooEarlyGrade:'Too early to grade',
+    tooEarlyGradeSub:'The score gets its letter once syrup is logged.',
+    // Import dedupe
+    importDupNote:'{n} new · {m} duplicates will be skipped',
+    importAllDup:'Already imported — 0 new entries',
       },
   fr: {
     // Header
@@ -600,6 +634,17 @@ const TR = {
     wxCollPoints:'Points de collecte suggérés',
     qualExcellent:'Excellent', qualGood:'Bon', qualFair:'Passable', qualPoor:'Faible', qualNoFlow:'Pas de coulée',
     scoreLeg80:'80+ Excellent', scoreLeg62:'62+ Bon', scoreLeg44:'44+ Passable', scoreLegNo:'Pas de coulée',
+    // États vides (passe 3)
+    todayEmptySub:'La première sève notée lance les calculs de la saison.',
+    chipLogFirstSap:'Noter la première sève', chipSetLocation:'Définir mon emplacement', chipPlanSeason:'Planifier ma saison',
+    logEmptySub:'Chaque coulée notée bâtit le bilan de saison.',
+    dropFirstPin:'Plantez votre premier repère',
+    // Note avant qu’il y ait une saison à évaluer
+    tooEarlyGrade:'Trop tôt pour évaluer',
+    tooEarlyGradeSub:'La note arrive dès que du sirop est enregistré.',
+    // Doublons à l’importation
+    importDupNote:'{n} nouvelles · {m} doublons seront ignorés',
+    importAllDup:'Déjà importé — 0 nouvelle entrée',
       }
 };
 const t = (lang, key) => TR[lang]?.[key] ?? TR.en[key] ?? key;
@@ -694,6 +739,70 @@ const I = {
   crosshair:   (p) => <Svg {...p}><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="4" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="20"/><line x1="4" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="20" y2="12"/></Svg>,
   // season wizard / new setup
   compass:     (p) => <Svg {...p}><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></Svg>,
+};
+
+// ─── Brand marks ─────────────────────────────────────────────────────────────
+// The hand-cut marks from brand/assets/marks/mark-*.svg, transcribed faithfully:
+// 48×48 grid, currentColor bodies, teal #2DD4A7 reserved for sap drops,
+// fill-rule evenodd holes. These are the "moment" tier (empty states, first-run
+// furniture); the stroke icons in `I` above remain the control tier. Amber
+// #EB9A33 on dark surfaces per brand/BIBLE.md. Readable at 48, survive 32 —
+// never render below 32.
+const MARK_TEAL = '#2DD4A7';
+function Mark({ size = 48, color = 'currentColor', children }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" aria-hidden="true" style={{ color }}>
+      {children}
+    </svg>
+  );
+}
+const M = {
+  // Sugar maple — the brand leaf as crown (same path as the app icon), rooted.
+  tree: (p) => <Mark {...p}>
+    <path fill="currentColor" fillRule="evenodd" d="M 17.8 7.1 C 18.4 7.6 18.8 8.1 19.6 8.4 C 21.5 8.9 22.6 6.8 23.2 5.4 C 23.5 4.6 23.7 3.8 23.9 3.0 C 24.3 5.0 25.9 9.7 28.8 8.1 C 29.3 7.9 29.6 7.5 30.0 7.1 C 29.7 8.3 29.3 9.5 29.0 10.7 C 28.5 12.4 27.9 14.1 28.0 15.9 C 28.0 17.0 29.3 17.0 29.9 16.4 C 30.9 15.5 31.6 14.3 32.3 13.2 C 32.7 12.6 33.1 12.0 33.6 11.3 C 33.5 13.1 33.6 15.0 36.0 14.8 C 37.4 14.7 38.7 14.1 40.0 13.5 C 38.9 14.9 38.0 16.1 37.6 17.9 C 37.3 19.8 38.4 20.4 40.0 20.7 C 40.0 20.7 40.6 20.7 40.2 20.8 C 39.6 21.0 38.9 21.3 38.3 21.5 C 37.0 22.1 33.6 23.7 33.1 25.1 C 32.9 25.4 32.9 25.8 33.1 26.1 C 33.5 27.1 34.7 27.8 35.6 28.3 C 36.0 28.5 36.3 28.6 36.6 28.8 C 37.1 29.0 36.1 28.9 36.0 28.9 C 35.8 28.9 35.1 28.9 34.8 28.9 C 33.5 29.0 32.2 29.0 31.0 29.3 C 29.2 29.8 29.3 31.1 29.7 32.6 C 28.5 31.4 27.4 30.1 26.1 29.0 C 25.5 28.4 25.1 27.9 24.2 27.6 C 24.2 31.3 24.2 35.2 24.5 39.0 L 23.3 39.0 C 23.3 38.5 23.4 38.0 23.4 37.5 L 23.6 34.0 C 23.7 31.9 23.7 29.7 23.7 27.6 C 22.7 27.9 21.6 29.1 20.8 29.8 L 18.1 32.6 C 18.2 32.1 18.3 31.7 18.3 31.2 C 18.4 30.7 18.3 30.3 17.9 29.9 C 16.9 28.8 13.4 29.0 11.9 28.9 C 11.8 28.9 11.1 28.9 11.1 28.9 L 11.1 28.9 C 11.1 28.9 11.1 28.9 11.2 28.8 C 12.3 28.3 14.3 27.3 14.8 26.0 C 14.9 25.7 14.9 25.3 14.8 25.0 C 14.1 23.7 11.0 22.2 9.7 21.6 C 8.9 21.3 8.2 21.0 7.4 20.7 C 9.6 20.4 10.8 19.8 10.1 17.4 C 9.6 15.8 8.9 14.7 7.8 13.5 C 8.8 14.0 9.7 14.4 10.9 14.7 C 13.8 15.3 14.3 14.0 14.3 11.4 C 14.8 12.0 15.2 12.7 15.7 13.4 C 16.3 14.3 17.1 15.9 18.1 16.5 C 18.4 16.7 18.8 16.9 19.2 16.8 C 19.4 16.7 19.7 16.6 19.8 16.4 C 20.4 15.3 19.0 11.1 18.6 9.9 L 17.8 7.1 Z"/>
+    <path fill="currentColor" d="M20.8 38 L20 41 Q19.6 43 21.6 43 L26.4 43 Q28.4 43 28 41 L27.2 38 Z"/>
+  </Mark>,
+  // Sap bucket on spile — trunk band left, angled spile, teal drop.
+  bucket: (p) => <Mark {...p}>
+    <rect fill="currentColor" x="4" y="2" width="7" height="44" rx="2.5"/>
+    <path fill="currentColor" d="M11 10.5 L21.5 14.2 Q23 14.8 22.4 16.2 L21.9 17.4 Q21.3 18.6 20 18.2 L11 15 Z"/>
+    <path fill={MARK_TEAL} d="M25.5 20 C27 22.4 28 23.9 28 25.4 A2.6 2.6 0 1 1 22.9 25.4 C22.9 23.9 24 22.4 25.5 20 Z"/>
+    <path fill="currentColor" d="M15.5 29 L35.5 29 L32.8 41.6 Q32.5 43 31 43 L20 43 Q18.5 43 18.2 41.6 Z"/>
+    <rect fill="currentColor" x="14" y="27" width="23" height="3.6" rx="1.8"/>
+    <path stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" d="M20.6 16.6 Q18.5 21.5 17.6 26.5"/>
+  </Mark>,
+  // Tubing run — two trunks, sagging mainline, tank, teal drop.
+  tubing: (p) => <Mark {...p}>
+    <rect fill="currentColor" x="5" y="5" width="6.5" height="37" rx="2.5"/>
+    <rect fill="currentColor" x="21" y="11" width="5.5" height="31" rx="2.2"/>
+    <path stroke="currentColor" strokeWidth="3" strokeLinecap="round" fill="none" d="M8.2 13 C14 20.5 18 21.5 23.7 21.5 C30 21.5 31.5 24 34 28.5"/>
+    <path fill={MARK_TEAL} d="M39 21.5 C40.3 23.6 41.2 24.9 41.2 26.2 A2.3 2.3 0 1 1 36.7 26.2 C36.7 24.9 37.7 23.6 39 21.5 Z"/>
+    <rect fill="currentColor" x="30" y="30" width="14" height="12" rx="2.5"/>
+  </Mark>,
+  // Evaporator — pan on arch firebox (door punched out), stack, steam.
+  evaporator: (p) => <Mark {...p}>
+    <path stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" fill="none" d="M13.5 15.5 Q15.5 12.5 13.5 9.5"/>
+    <path stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" fill="none" d="M21.5 15.5 Q23.5 12.5 21.5 9.5"/>
+    <path stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" fill="none" d="M29.5 15.5 Q31.5 12.5 29.5 9.5"/>
+    <rect fill="currentColor" x="5" y="19" width="33" height="7.5" rx="2"/>
+    <path fill="currentColor" fillRule="evenodd" d="M9 26.5 L34 26.5 Q35.5 26.5 35.5 28.5 L35.5 40 Q35.5 42 33.5 42 L9.5 42 Q7.5 42 7.5 40 L7.5 28.5 Q7.5 26.5 9 26.5 Z M16 42 L16 36.5 A5.5 5.5 0 0 1 27 36.5 L27 42 Z"/>
+    <rect fill="currentColor" x="38.5" y="6.5" width="5" height="20" rx="1.8"/>
+  </Mark>,
+  // Syrup jug — squat body, cap, finger loop punched out, syrup sheen.
+  jug: (p) => <Mark {...p}>
+    <rect fill="currentColor" x="19" y="4.5" width="10" height="4.6" rx="2.2"/>
+    <rect fill="currentColor" x="20.6" y="8.2" width="6.8" height="8" rx="1.6"/>
+    <path fill="currentColor" fillRule="evenodd" d="M24 14.5 C32 14.5 37.5 20.5 37.5 29 C37.5 38.5 32 43.5 24 43.5 C16 43.5 10.5 38.5 10.5 29 C10.5 20.5 16 14.5 24 14.5 Z M31.8 21.4 A3.2 3.2 0 1 0 31.8 27.9 A3.2 3.2 0 0 0 31.8 21.4 Z"/>
+    <path fill="currentColor" d="M36.5 20 Q39.5 22.5 38.8 26.8 L35.2 25.6 Q35.6 22.6 34.2 21 Z"/>
+  </Mark>,
+  // Sugarhouse — gable, cupola, steam, door punched out.
+  sugarhouse: (p) => <Mark {...p}>
+    <path stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" fill="none" d="M20.5 4.5 Q22 2.5 20.5 0.8"/>
+    <path stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" fill="none" d="M26.5 4.5 Q28 2.5 26.5 0.8"/>
+    <rect fill="currentColor" x="19" y="7" width="9" height="7" rx="1.2"/>
+    <rect fill="currentColor" x="17" y="5.5" width="13" height="3" rx="1.5"/>
+    <path fill="currentColor" fillRule="evenodd" d="M24 11.5 L42.5 26.5 L40 29.5 L38.5 28.3 L38.5 41 Q38.5 43 36.5 43 L11.5 43 Q9.5 43 9.5 41 L9.5 28.3 L8 29.5 L5.5 26.5 Z M20 43 L20 34.5 A4 4 0 0 1 28 34.5 L28 43 Z"/>
+  </Mark>,
 };
 
 // ─── Formulas ─────────────────────────────────────────────────────────────────
@@ -830,6 +939,106 @@ function tapsPer(dbh) {
   return 3;
 }
 
+// ─── Shared season metrics ───────────────────────────────────────────────────
+// ONE computation of the season totals. Today, Log, Recap, SugarSage and
+// Diagnose each used to sum the entry arrays themselves; five copies of the
+// same reduce is how 808 gal and 810 gal end up on screen for one season.
+// Every screen reads these. Diagnose wraps the results in its own gal
+// normalization (stored values are in the user's display unit).
+function seasonTotals(slog) {
+  const sum = arr => (arr || []).reduce((s, e) => s + (parseFloat(e.val) || 0), 0);
+  const s = slog || {};
+  return {
+    sapT:   sum(s.sapCollected),
+    syT:    sum(s.syrupMade),
+    roT:    sum(s.sapRO),
+    evapT:  sum(s.sapEvap),
+    fuelT:  sum(s.fuelUsed),
+    hoursT: sum(s.boilHours),
+  };
+}
+// The season's actual sap:syrup ratio; null until syrup has been made.
+function actualRatio(sapT, syT) { return syT > 0 ? sapT / syT : null; }
+
+// ─── Season score — one model for the whole app ──────────────────────────────
+// Recap's SweetRun Score and SugarSage's Season Intelligence each computed a
+// score; the same season graded 46 on one screen and 37 on the other. Both now
+// call this. Weighting is Recap's documented model: Yield/Tap 30 ·
+// Evap Efficiency 40 · Fuel 20 · Data Complete 10.
+function seasonScore({ sapT, syT, fuelT, taps, brix, yieldModel, fuelSpu }) {
+  const b = parseFloat(brix) || 2.0;
+  let yieldScore = null, effScore = null, fuelScore = null;
+  const parts = [];
+  if (taps > 0 && syT > 0 && yieldModel) {
+    yieldScore = Math.min(100, Math.round(((syT / taps) / yieldMidOf(yieldModel)) * 100));
+    parts.push({ score: yieldScore, weight: 30 });
+  }
+  if (sapT > 0 && syT > 0 && b > 0) {
+    effScore = Math.min(100, Math.round(((RULE_DIVISOR / b) / (sapT / syT)) * 100));
+    parts.push({ score: effScore, weight: 40 });
+  }
+  if (fuelT > 0 && syT > 0 && fuelSpu > 0) {
+    const bench = (RULE_DIVISOR / b) / fuelSpu;
+    fuelScore = Math.min(100, Math.round((bench / (fuelT / syT)) * 100));
+    parts.push({ score: fuelScore, weight: 20 });
+  }
+  const dataPts = [sapT > 0, syT > 0, taps > 0, fuelT > 0].filter(Boolean).length;
+  const dataScore = Math.round((dataPts / 4) * 100);
+  parts.push({ score: dataScore, weight: 10 });
+  const totalWeight = parts.reduce((s, x) => s + x.weight, 0);
+  const overall = totalWeight > 0
+    ? Math.round(parts.reduce((s, x) => s + x.score * x.weight, 0) / totalWeight) : 0;
+  // No letter until there is enough season to judge — same rule on both screens.
+  const graded = parts.length >= 3 && syT > 0;
+  const grade = !graded ? '—' : overall >= 90 ? 'A' : overall >= 80 ? 'B' : overall >= 70 ? 'C' : overall >= 60 ? 'D' : 'F';
+  return { yieldScore, effScore, fuelScore, dataScore, dataPts, overall, graded, grade };
+}
+
+// ─── Import dedupe ───────────────────────────────────────────────────────────
+// Re-importing the same file used to double a season (Debug M4). Two entries
+// are the same record when kind + date + value match exactly (imported rows
+// carry no ids). Dedupe is against the EXISTING store only — a file that
+// legitimately contains two identical rows still imports both the first time.
+const srEntryKey = (kind, e) => `${kind}|${e.date}|${parseFloat(e.val) || 0}`;
+function dedupeImport(existingSlog, additions) {
+  const seen = new Set();
+  Object.keys(additions).forEach(k =>
+    (existingSlog[k] || []).forEach(e => seen.add(srEntryKey(k, e))));
+  let addedCount = 0, skippedCount = 0;
+  const added = {};
+  Object.keys(additions).forEach(k => {
+    added[k] = (additions[k] || []).filter(e => {
+      const dup = seen.has(srEntryKey(k, e));
+      if (dup) skippedCount++; else addedCount++;
+      return !dup;
+    });
+  });
+  return { added, addedCount, skippedCount };
+}
+
+// ─── Shared settings store ───────────────────────────────────────────────────
+// One canonical key per cross-screen setting. Reads the canonical key first,
+// falls back through the legacy keys (migrating the first value found forward
+// via ls.set so old data keeps working), else the fallback. Syrup price used
+// to live in four keys with three different values on screen at once.
+function getSetting(key, legacyKeys, fallback) {
+  const v = ls.get(key, undefined);
+  if (v !== undefined && v !== null) return v;
+  for (const lk of (legacyKeys || [])) {
+    const lv = ls.get(lk, undefined);
+    if (lv !== undefined && lv !== null) { ls.set(key, lv); return lv; }
+  }
+  return fallback;
+}
+// Canonical accessors. Fallback order: deliberate user entries first
+// (change-only keys), then mount-persisted defaults, then the wizard's stored
+// answer, then one app-wide default — never a second default contradicting
+// the wizard.
+const getSyrupPrice = () => getSetting('sg_price_syrup', ['sg_syrup_price', 'sg_dx_price', 'sg_bev_price'],
+  parseFloat((ls.get('sg_wizard_data', {}) || {}).syrupPrice) || 40);
+const getWoodCost   = () => getSetting('sg_cost_wood', ['sg_dx_wood'], 80);
+const getLaborRate  = () => getSetting('sg_rate_labor', ['sg_dx_labor', 'sg_laborrate', 'sg_bev_lrate'], 15);
+
 // ─── Shared UI pieces ─────────────────────────────────────────────────────────
 // Accepts a comma decimal ("2,5" is how a French-Canadian producer types 2.5 —
 // parseFloat used to read that as 25). Rejects letters and a leading minus.
@@ -949,7 +1158,10 @@ function FirstSeasonWizard({ onClose, onComplete }) {
   const stepIcons  = [I.tree, I.wrench, I.flame, I.dollar, I.clipboard];
   const canNext    = [trees > 0, true, hasEvap !== null, true, true][step];
 
-  const Opt = ({ val, cur, set, accent='#2dd4a7', icon, Icon, label, sub, wide }) => {
+  // One selection color, app-wide: teal (#2dd4a7). The wizard used to switch
+  // accent per step (teal → blue → purple → amber) — same control, four looks.
+  const Opt = ({ val, cur, set, icon, Icon, label, sub, wide }) => {
+    const accent = '#2dd4a7';
     const glyph = Icon
       ? <Icon size={wide ? 21 : 23} color={cur===val ? accent : '#7d8ca3'} />
       : icon;
@@ -957,7 +1169,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
     <button onClick={()=>set(val)}
       style={{padding: wide ? '12px 14px' : '12px 8px', borderRadius:12,
         border:`2px solid ${cur===val ? accent : '#1e2d3d'}`,
-        background: cur===val ? `rgba(${accent==='#2dd4a7'?'45,212,167':accent==='#58a6ff'?'88,166,255':accent==='#a78bfa'?'167,139,250':accent==='#3fb950'?'63,185,80':accent==='#e0a44a'?'245,158,11':'45,212,167'},0.09)` : '#0a1420',
+        background: cur===val ? 'rgba(45,212,167,0.09)' : '#0a1420',
         cursor:'pointer', transition:'all 0.15s', textAlign: wide ? 'left' : 'center',
         display: wide ? 'flex' : 'block', alignItems: wide ? 'center' : undefined, gap: wide ? 10 : 0,
         width:'100%', minWidth:0, boxSizing:'border-box'}}>
@@ -994,9 +1206,9 @@ function FirstSeasonWizard({ onClose, onComplete }) {
         Average trunk diameter at chest height
       </label>
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,minWidth:0}}>
-        <Opt val="small"  cur={trunkSize} set={setTrunkSize} accent="#2dd4a7" Icon={I.leaf} label='Under 10"' sub="1 tap/tree"/>
-        <Opt val="medium" cur={trunkSize} set={setTrunkSize} accent="#2dd4a7" Icon={I.tree} label='10–18"'    sub="1–2 taps"/>
-        <Opt val="large"  cur={trunkSize} set={setTrunkSize} accent="#2dd4a7" Icon={I.mapleLeaf} label='Over 18"'  sub="2–3 taps"/>
+        <Opt val="small"  cur={trunkSize} set={setTrunkSize} Icon={I.leaf} label='Under 10"' sub="1 tap/tree"/>
+        <Opt val="medium" cur={trunkSize} set={setTrunkSize} Icon={I.tree} label='10–18"'    sub="1–2 taps"/>
+        <Opt val="large"  cur={trunkSize} set={setTrunkSize} Icon={I.mapleLeaf} label='Over 18"'  sub="2–3 taps"/>
       </div>
     </div>,
 
@@ -1007,13 +1219,13 @@ function FirstSeasonWizard({ onClose, onComplete }) {
       </p>
       <label style={{fontSize:13,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Tap system</label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:18}}>
-        <Opt val="gravity" cur={systemType} set={setSystemType} accent="#58a6ff" Icon={I.droplet} label="Gravity" sub={`Natural flow\n${YIELD_MODELS.gravity.low}–${YIELD_MODELS.gravity.high} gal/tap`}/>
-        <Opt val="vacuum"  cur={systemType} set={setSystemType} accent="#58a6ff" Icon={I.wind} label="Vacuum"  sub={`Pump-assisted\n${YIELD_MODELS.vacuum.low}–${YIELD_MODELS.vacuum.high} gal/tap`}/>
+        <Opt val="gravity" cur={systemType} set={setSystemType} Icon={I.droplet} label="Gravity" sub={`Natural flow\n${YIELD_MODELS.gravity.low}–${YIELD_MODELS.gravity.high} gal/tap`}/>
+        <Opt val="vacuum"  cur={systemType} set={setSystemType} Icon={I.wind} label="Vacuum"  sub={`Pump-assisted\n${YIELD_MODELS.vacuum.low}–${YIELD_MODELS.vacuum.high} gal/tap`}/>
       </div>
       <label style={{fontSize:13,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Collection method</label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-        <Opt val="buckets"  cur={collectionType} set={setCollectionType} accent="#a78bfa" Icon={I.bucket} label="Buckets"  sub="Classic, manual"/>
-        <Opt val="mainline" cur={collectionType} set={setCollectionType} accent="#a78bfa" Icon={I.link} label="Mainline" sub="Flows to tank"/>
+        <Opt val="buckets"  cur={collectionType} set={setCollectionType} Icon={I.bucket} label="Buckets"  sub="Classic, manual"/>
+        <Opt val="mainline" cur={collectionType} set={setCollectionType} Icon={I.link} label="Mainline" sub="Flows to tank"/>
       </div>
     </div>,
 
@@ -1024,17 +1236,17 @@ function FirstSeasonWizard({ onClose, onComplete }) {
       </p>
       <label style={{fontSize:13,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Do you have an evaporator?</label>
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:18}}>
-        <Opt val={true}  cur={hasEvap} set={setHasEvap} accent="#3fb950" Icon={I.check} label="Yes, I do"  sub="Ready to boil"/>
-        <Opt val={false} cur={hasEvap} set={setHasEvap} accent="#3fb950" Icon={I.clipboard} label="Not yet"    sub="Planning ahead"/>
+        <Opt val={true}  cur={hasEvap} set={setHasEvap} Icon={I.check} label="Yes, I do"  sub="Ready to boil"/>
+        <Opt val={false} cur={hasEvap} set={setHasEvap} Icon={I.clipboard} label="Not yet"    sub="Planning ahead"/>
       </div>
       {hasEvap && <>
         <label style={{fontSize:13,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',display:'block',marginBottom:10}}>Pan size</label>
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(56px,1fr))',gap:6,marginBottom:18}}>
           {['2x3','2x4','2x6','2x8','3x8','3x10','4x12','4x14','5x16'].map(sz=>(
             <button key={sz} onClick={()=>setPanSize(sz)}
-              style={{padding:'9px 4px',borderRadius:10,border:`2px solid ${panSize===sz?'#e0a44a':'#1e2d3d'}`,
-                background:panSize===sz?'rgba(245,158,11,0.08)':'#0a1420',cursor:'pointer',transition:'all 0.15s',textAlign:'center'}}>
-              <div style={{fontSize:13,fontWeight:700,color:panSize===sz?'#e0a44a':'#c9d1d9'}}>{sz}</div>
+              style={{padding:'9px 4px',borderRadius:10,border:`2px solid ${panSize===sz?'#2dd4a7':'#1e2d3d'}`,
+                background:panSize===sz?'rgba(45,212,167,0.09)':'#0a1420',cursor:'pointer',transition:'all 0.15s',textAlign:'center'}}>
+              <div style={{fontSize:13,fontWeight:700,color:panSize===sz?'#2dd4a7':'#c9d1d9'}}>{sz}</div>
               <div style={{fontSize:12,color:'#7f92a6',marginTop:2}}>{evapRates[sz]}gph</div>
             </button>
           ))}
@@ -1044,7 +1256,7 @@ function FirstSeasonWizard({ onClose, onComplete }) {
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
         {[['Firewood (cord)',I.firewood,'Wood-fired'],['Oil (gallon)',I.fuel,'Oil burner'],
           ['Propane (gallon)',I.flame,'Propane'],['Natural Gas (ccf)',I.zap,'Gas line']].map(([v,Ico,desc])=>(
-          <Opt key={v} val={v} cur={wizFuelType} set={setWizFuelType} accent="#e0a44a" Icon={Ico} label={v.split(' ')[0]} sub={desc} wide/>
+          <Opt key={v} val={v} cur={wizFuelType} set={setWizFuelType} Icon={Ico} label={v.split(' ')[0]} sub={desc} wide/>
         ))}
       </div>
     </div>,
@@ -1540,7 +1752,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
   const [bf, setBf] = useState({ date: new Date().toISOString().split('T')[0], sapIn:'', syrupOut:'', grade:'amber', loc:'', notes:'' });
   const [locLoading, setLocLoading] = useState(false);
   const [laborHrs,  setLaborHrs]  = useState(() => ls.get('sg_laborhrs', 0));
-  const [laborRate, setLaborRate] = useState(() => ls.get('sg_laborrate', 15));
+  const [laborRate, setLaborRate] = useState(() => getLaborRate());
   const [spoutCost, setSpoutCost] = useState(() => ls.get('sg_spoutcost', 0));
   const [bottleCost,setBottleCost]= useState(() => ls.get('sg_bottlecost', 0));
   const [filterCost,setFilterCost]= useState(() => ls.get('sg_filtercost', 0));
@@ -1552,7 +1764,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
   useEffect(()=>{ ls.set('sg_panH',   panH);   },[panH]);
   useEffect(()=>{ ls.set('sg_retailmargin', retailMargin); },[retailMargin]);
   useEffect(()=>{ ls.set('sg_laborhrs',  laborHrs);  },[laborHrs]);
-  useEffect(()=>{ ls.set('sg_laborrate', laborRate); },[laborRate]);
+  useEffect(()=>{ ls.set('sg_rate_labor', laborRate); },[laborRate]);
   useEffect(()=>{ ls.set('sg_spoutcost', spoutCost); },[spoutCost]);
   useEffect(()=>{ ls.set('sg_bottlecost',bottleCost);},[bottleCost]);
   useEffect(()=>{ ls.set('sg_filtercost',filterCost);},[filterCost]);
@@ -1968,7 +2180,9 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
   const [psKey,   setPsKey]   = useState('7" plates');
   const [gal2f,   setGal2f]   = useState(10);
   const [szn,     setSzn]     = useState('early'); // 'early' | 'late'
-  const [deMode,  setDeMode]  = useState('precoat'); // 'precoat' | 'straight'
+  // Default follows recMode for the initial 10 gal (≤25 gal → Straight Mix) —
+  // the card used to default to Precharge while recommending Straight Mix.
+  const [deMode,  setDeMode]  = useState('straight'); // 'precoat' | 'straight'
 
   const finT  = finTemp(waterBP);
   const corr  = denCorr(syTemp);
@@ -2110,10 +2324,11 @@ function FinishTab({ waterBP, setWaterBP, lang='en' }) {
                 flex:1, padding:'10px 10px 8px', borderRadius:12,
                 border:`1px solid ${isSel ? m.color : '#1e2d3d'}`,
                 background: isSel ? m.bg : 'transparent',
-                cursor:'pointer', textAlign:'left', transition:'all 0.15s', position:'relative'
+                cursor:'pointer', textAlign:'left', transition:'all 0.15s'
               }}>
-                {isRec && <div style={{ position:'absolute', top:6, right:8, fontSize:12, fontWeight:800, color:m.color, letterSpacing:'0.06em', opacity:0.8, display:'flex', alignItems:'center', gap:4 }}><I.star size={10} color={m.color} />RECOMMENDED</div>}
-                <div style={{ fontSize:13, fontWeight:700, color: isSel ? m.color : '#7f92a6', marginBottom:3, paddingRight:isRec?52:0 }}>{m.label}</div>
+                {/* Badge on its own line — it used to print on top of the title at 375px */}
+                {isRec && <div style={{ fontSize:10, fontWeight:800, color:m.color, letterSpacing:'0.08em', opacity:0.85, display:'flex', alignItems:'center', gap:4, marginBottom:4 }}><I.star size={10} color={m.color} />RECOMMENDED</div>}
+                <div style={{ fontSize:13, fontWeight:700, color: isSel ? m.color : '#7f92a6', marginBottom:3 }}>{m.label}</div>
                 <div style={{ fontSize:13, color:'#7f92a6', lineHeight:1.4 }}>{m.sub}</div>
               </button>
             );
@@ -2699,7 +2914,7 @@ function BoilPtTab({ waterBP, setWaterBP, lang='en' }) {
 
 
 // ─── SAP MONITOR IMPORT ───────────────────────────────────────────────────────
-function SapImportModal({ season, onClose, onImport }) {
+function SapImportModal({ season, onClose, onImport, lang='en' }) {
   const [csvText, setCsvText]   = React.useState('');
   const [preview, setPreview]   = React.useState(null);
   const [error, setError]       = React.useState('');
@@ -2811,12 +3026,9 @@ function SapImportModal({ season, onClose, onImport }) {
     });
   };
 
-  const doImport = () => {
-    if (!preview) return;
-    const targetSeason = preview.isPDF ? (preview.detectedYear || season) : season;
-    const existing = ls.get('sg_logs2', {});
-    const slog = existing[targetSeason] || { sapCollected:[], syrupMade:[], sapRO:[], sapEvap:[] };
-
+  // What this preview would add, keyed by log kind — used by both the dedupe
+  // report below and the import itself, so they can never disagree.
+  const buildAdditions = () => {
     let newSap=[], newSyrup=[], newRO=[], newEvap=[];
     if (preview.isPDF) {
       const label = 'SugarCalc PDF';
@@ -2832,15 +3044,34 @@ function SapImportModal({ season, onClose, onImport }) {
       newSyrup = preview.rows.filter(r=>r.syrup>0).map(r=>({ val:r.syrup,note:`Imported (${source})`, date:r.date }));
       newRO    = preview.rows.filter(r=>r.ro>0).map(r=>({ val:r.ro,     note:`Imported (${source})`, date:r.date }));
     }
+    return { sapCollected:newSap, syrupMade:newSyrup, sapRO:newRO, sapEvap:newEvap };
+  };
 
+  // Dedupe report for the preview (Debug M4 — re-importing a file used to
+  // double the season). Exact kind+date+value matches are skipped.
+  const dd = React.useMemo(() => {
+    if (!preview) return null;
+    const targetSeason = preview.isPDF ? (preview.detectedYear || season) : season;
+    const slog = ls.get('sg_logs2', {})[targetSeason] || {};
+    const { addedCount, skippedCount } = dedupeImport(slog, buildAdditions());
+    return { addedCount, skippedCount, targetSeason };
+  }, [preview, source, season]);
+
+  const doImport = () => {
+    if (!preview) return;
+    const targetSeason = preview.isPDF ? (preview.detectedYear || season) : season;
+    const existing = ls.get('sg_logs2', {});
+    const slog = existing[targetSeason] || { sapCollected:[], syrupMade:[], sapRO:[], sapEvap:[] };
+
+    const { added } = dedupeImport(slog, buildAdditions());
     const updated = {
       ...existing,
       [targetSeason]: {
         ...slog,
-        sapCollected: [...(slog.sapCollected||[]), ...newSap],
-        syrupMade:    [...(slog.syrupMade||[]),    ...newSyrup],
-        sapRO:        [...(slog.sapRO||[]),         ...newRO],
-        sapEvap:      [...(slog.sapEvap||[]),        ...newEvap],
+        sapCollected: [...(slog.sapCollected||[]), ...added.sapCollected],
+        syrupMade:    [...(slog.syrupMade||[]),    ...added.syrupMade],
+        sapRO:        [...(slog.sapRO||[]),         ...added.sapRO],
+        sapEvap:      [...(slog.sapEvap||[]),        ...added.sapEvap],
       }
     };
     ls.set('sg_logs2', updated);
@@ -2946,9 +3177,14 @@ function SapImportModal({ season, onClose, onImport }) {
                 </div>
               </div>
             )}
-            <div style={{fontSize:13,fontWeight:700,color:'#3fb950',marginBottom:12}}>
+            <div style={{fontSize:13,fontWeight:700,color:'#3fb950',marginBottom: dd && dd.skippedCount>0 ? 6 : 12}}>
               <I.check size={14} color="currentColor" /> Ready to import — {preview.rows.length} rows detected
             </div>
+            {dd && dd.skippedCount > 0 && (
+              <div style={{fontSize:12,fontWeight:600,color:'#e0a44a',marginBottom:12}}>
+                {t(lang,'importDupNote').replace('{n}', dd.addedCount).replace('{m}', dd.skippedCount)}
+              </div>
+            )}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:8,marginBottom:12}}>
               {[
                 {label:'Sap',   val:preview.totalSap   > 0 ? preview.totalSap.toFixed(0)+' gal'   : '—', color:'#58a6ff'},
@@ -2995,12 +3231,16 @@ function SapImportModal({ season, onClose, onImport }) {
               background:'#161b22',color:'#7f92a6',fontSize:15,cursor:'pointer',fontWeight:500}}>
             Cancel
           </button>
-          <button onClick={doImport} disabled={!preview || !!error}
+          <button onClick={doImport} disabled={!preview || !!error || (dd && dd.addedCount === 0)}
             style={{flex:2,padding:'13px',borderRadius:12,border:'none',
-              background: preview && !error ? '#238636' : '#1c2128',
-              color: preview && !error ? '#fff' : '#484f58',
-              fontSize:15,cursor: preview && !error ? 'pointer' : 'default',fontWeight:700}}>
-            {preview && !error ? `Import ${preview.rows.length} entries into ${preview.isPDF && preview.detectedYear ? preview.detectedYear : season}` : 'Import Data'}
+              background: preview && !error && (!dd || dd.addedCount > 0) ? '#238636' : '#1c2128',
+              color: preview && !error && (!dd || dd.addedCount > 0) ? '#fff' : '#484f58',
+              fontSize:15,cursor: preview && !error && (!dd || dd.addedCount > 0) ? 'pointer' : 'default',fontWeight:700}}>
+            {preview && !error
+              ? (dd && dd.addedCount === 0
+                  ? t(lang,'importAllDup')
+                  : `Import ${dd ? dd.addedCount : preview.rows.length} entries into ${preview.isPDF && preview.detectedYear ? preview.detectedYear : season}`)
+              : 'Import Data'}
           </button>
         </div>
       </div>
@@ -3051,18 +3291,21 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
     const up = { ...logs, [season]:{ ...slog, [k]:entries } };
     setLogs(up); ls.set('sg_logs2', up);
   };
-  const tot  = k => (slog[k]||[]).reduce((s,e)=>s+(parseFloat(e.val)||0),0);
-  const sapT = tot('sapCollected'), syT = tot('syrupMade'), roT = tot('sapRO'), evT = tot('sapEvap');
+  const { sapT, syT, roT, evapT: evT } = seasonTotals(slog);
   const goal = trees * yieldMidOf(yieldModelSaved()), pct = goal>0 ? Math.min(100,(syT/goal)*100) : 0;
   const seasons = Object.keys(logs).map(Number).sort((a,b)=>b-a);
 
   const exportCSV = () => {
-    const rows=[['Type','Date','Value (gal)','Note']];
-    ['sapCollected','syrupMade','sapRO','sapEvap'].forEach(k=>{
-      const label={sapCollected:t(lang,'sapCollected'),syrupMade:t(lang,'syrupMade'),sapRO:t(lang,'sapRO'),sapEvap:t(lang,'sapEvap')}[k];
-      (slog[k]||[]).forEach(e=>rows.push([label,e.date,e.val,e.note||'']));
+    // All six entry kinds (Debug M3 — Fuel and Hours used to be dropped), with a
+    // Unit column because fuel and hours aren't gallons, and RFC-4180 quote
+    // doubling so a note containing " can't break its row.
+    const esc = c => `"${String(c ?? '').replace(/"/g,'""')}"`;
+    const fuelUnit = (FUELS.find(f=>f.label===ls.get('sg_fuel','Firewood (cord)'))||FUELS[0]).unit;
+    const rows=[['Type','Date','Value','Unit','Note']];
+    [['sapCollected',u],['syrupMade',u],['sapRO',u],['sapEvap',u],['fuelUsed',fuelUnit],['boilHours','hr']].forEach(([k,unit])=>{
+      (slog[k]||[]).forEach(e=>rows.push([t(lang,k),e.date,e.val,unit,e.note||'']));
     });
-    const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+    const csv=rows.map(r=>r.map(esc).join(',')).join('\n');
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
     a.download=`sweetrun-${season}.csv`; a.click();
   };
@@ -3216,6 +3459,13 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
   const [showSheet, setShowSheet] = useState(false);
   const [sheetKind, setSheetKind] = useState(() => ls.get('sg_log_last_kind', 'sapCollected'));
   const openSheet = () => { setEditing(null); setSheetKind(ls.get('sg_log_last_kind', 'sapCollected')); setShowSheet(true); };
+  // The desktop sidebar's persistent "Log a run" navigates here then fires this
+  // event; opening the sheet directly saves the second tap.
+  useEffect(() => {
+    const h = () => openSheet();
+    window.addEventListener('sr-log-a-run', h);
+    return () => window.removeEventListener('sr-log-a-run', h);
+  }, []);
   const saveEntry = (kind, entry) => {
     updLog(kind, [...(slog[kind] || []), entry]);
     ls.set('sg_log_last_kind', kind);
@@ -3250,7 +3500,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
   return (
     <div style={{ paddingBottom: allEntries.length > 8 ? 84 : 0 }}>
 
-      {showImport && <SapImportModal season={season} onClose={()=>setShowImport(false)} onImport={updated=>{setLogs(updated);}} />}
+      {showImport && <SapImportModal season={season} lang={lang} onClose={()=>setShowImport(false)} onImport={updated=>{setLogs(updated);}} />}
 
       {/* ── Season totals: the Today figure treatment, the signature on Syrup ── */}
       <div className="stat3" style={{ padding:'2px 0 10px', borderBottom:'1px solid #131e2c' }}>
@@ -3287,9 +3537,22 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
 
       {/* ── Entries, newest first, on hairlines ── */}
       <div className="eyebrow" style={{ margin:'16px 0 4px' }}>{lang==='fr' ? 'Entrées' : 'Entries'}</div>
-      {allEntries.length === 0 && (
-        <div style={{ fontSize:14, color:'#7f92a6', padding:'14px 2px', lineHeight:1.5 }}>{activePoint ? 'No entries for this collection point yet.' : t(lang,'noEntries')}</div>
-      )}
+      {allEntries.length === 0 && (activePoint ? (
+        <div style={{ fontSize:14, color:'#7f92a6', padding:'14px 2px', lineHeight:1.5 }}>No entries for this collection point yet.</div>
+      ) : (
+        <div style={{ textAlign:'center', padding:'24px 20px 8px' }}>
+          <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}>
+            <M.jug size={72} color="#EB9A33" />
+          </div>
+          <div style={{ fontSize:15, fontWeight:700, color:'#e6edf3', marginBottom:4 }}>{t(lang,'noEntries')}</div>
+          <div style={{ fontSize:13, color:'#7f92a6', lineHeight:1.6, marginBottom:14 }}>{t(lang,'logEmptySub')}</div>
+          <button onClick={openSheet}
+            style={{ minHeight:44, padding:'0 18px', borderRadius:22, border:'1.5px solid #2dd4a7',
+              background:'transparent', color:'#2dd4a7', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+            {lang==='fr' ? 'Noter une coulée' : 'Log a run'}
+          </button>
+        </div>
+      ))}
       {allEntries.map(e => { const K = kindOf(e.kind); const pt = e.point && !activePoint ? cpoints.find(p=>p.id===e.point) : null; return (
         <button key={e.kind+e.id} className="log-row" onClick={()=>{ setEditing(e); setSheetKind(e.kind); setShowSheet(true); }}
           aria-label={`${sentence(K.long)}, ${fmt(e.val, K.dp)} ${K.unit}, ${e.date}. Tap to change or delete.`}>
@@ -3305,7 +3568,9 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
         </button>
       ); })}
 
-      {allEntries.length <= 8 && (
+      {/* The furnished empty state above carries its own Log-a-run chip; only
+          skip this bar in that exact case so the action never appears twice. */}
+      {allEntries.length <= 8 && (allEntries.length > 0 || activePoint) && (
         <div className="primary-bar" style={{ margin:'16px 0 4px' }}>
           <button className="btn-primary" onClick={openSheet} id="log-a-run" style={{ minHeight:52, fontSize:16 }}>
             <I.plus size={18} color="#07090f" /> {lang==='fr' ? 'Noter une coulée' : 'Log a run'}
@@ -3809,7 +4074,10 @@ function EquipTab({ lang='en' }) {
       )}
       {items.length===0 && !show && (
         <div className="card" style={{ textAlign:'center', padding:'28px 20px' }}>
-          <div style={{ fontWeight:600, fontSize:16, marginBottom:6, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}><I.wrench size={20} color="#7f92a6" /> {t(lang,'noEquipYet')}</div>
+          <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}>
+            <M.evaporator size={72} color="#EB9A33" />
+          </div>
+          <div style={{ fontWeight:600, fontSize:16, marginBottom:6 }}>{t(lang,'noEquipYet')}</div>
           <div style={{ color:'#7f92a6', fontSize:14 }}>{t(lang,'equipDesc')}</div>
         </div>
       )}
@@ -4408,16 +4676,46 @@ function _analyzeSegGrades(pts) {
   return { segs, minGrade: minGrade === Infinity ? 0 : minGrade, overallGrade, totalDist, totalDrop };
 }
 
+// Instrument-panel numerals: numeric readouts in the map band share this style.
+const _MONO = { fontFamily: "ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace", fontVariantNumeric: 'tabular-nums' };
+
+// One-sweep radar scan over the viewport when route analysis kicks off.
+// Pure presentation: appended, animated by CSS, removed. Skipped entirely
+// under prefers-reduced-motion. Never touches map state.
+function _sbScanSweep() {
+  try {
+    if (!_lMap) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const el = document.createElement('div');
+    el.className = 'sr-scan';
+    _lMap.getContainer().appendChild(el);
+    setTimeout(() => { try { el.remove(); } catch {} }, 1300);
+  } catch {}
+}
+
 // Draw route lines — one polyline per segment, colored by grade
 // results is an array of line objects from analyzeRoutes
+// Presentation layers around the core stroke (which is unchanged):
+//   1. a wider blurred glow underlay in the same grade colour (non-interactive)
+//   2. the core line, exactly as before — popups and colors identical
+//   3. on segments the analysis says flow downhill at a workable grade (≥1%),
+//      a thin animated white dash sliding from→to. The analysis builds each
+//      line high→low, so the path direction IS the downhill direction; uphill
+//      and flat segments keep their static warning dash and never get flow.
 function _drawRouteLines(results) {
   _clearRouteLines();
   if (!_lMap || !window.L) return;
   results.forEach(r => {
     r.segments.forEach(seg => {
       const color = _gradeColor(seg.grade);
+      const latlngs = [[seg.from.lat, seg.from.lon], [seg.to.lat, seg.to.lon]];
+      const glow = window.L.polyline(latlngs,
+        { color, weight: (seg.isToTank ? 5 : 3) + 7, opacity: 0.3,
+          interactive: false, className: 'sr-line-glow' }
+      ).addTo(_lMap);
+      _lRouteLines.push(glow);
       const line = window.L.polyline(
-        [[seg.from.lat, seg.from.lon], [seg.to.lat, seg.to.lon]],
+        latlngs,
         { color, weight: seg.isToTank ? 5 : 3, opacity: 0.92,
           dashArray: seg.grade < 1.0 ? '8,5' : null }
       ).addTo(_lMap);
@@ -4429,6 +4727,13 @@ function _drawRouteLines(results) {
         `Drop: ${Math.abs(seg.drop).toFixed(1)} ft &nbsp;·&nbsp; Dist: ${seg.dist.toFixed(0)} ft`
       );
       _lRouteLines.push(line);
+      if (seg.grade >= 1.0) {
+        const flow = window.L.polyline(latlngs,
+          { color: '#ffffff', weight: 2, opacity: 0.55, dashArray: '5,17',
+            interactive: false, className: 'sr-flow-dash' }
+        ).addTo(_lMap);
+        _lRouteLines.push(flow);
+      }
     });
   });
 }
@@ -4554,6 +4859,7 @@ function _sbMakeIcon(pin) {
     return window.L.divIcon({
       className: '',
       html: `<div style="position:relative;width:30px;height:39px;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.6))">
+        ${selected ? '<div class="sr-pulse"></div>' : ''}
         ${_sbTreeSvg(tone, { trunk: selected ? '#2dd4a7' : '#5c6470' })}
         ${label}
       </div>`,
@@ -4627,6 +4933,14 @@ function _dropPin(lat, lon, type, pinsRef, setPins, extra = {}) {
   const updated = [...pinsRef.current, pin];
   setPins(updated); ls.set('sg_lines_pins', updated);
   _sbRenderMarker(pin);
+  // Presentation: a 250ms scale-settle on the freshly dropped marker only —
+  // init-time renders don't animate. The class goes on the marker's inner
+  // wrapper, never the Leaflet icon element (Leaflet owns its transform).
+  try {
+    const el = _lMarkers[id] && _lMarkers[id]._icon;
+    const w = el && el.firstElementChild;
+    if (w && w.classList) w.classList.add('sr-drop');
+  } catch {}
   _fetchElev(lat, lon).then(elev => {
     const withElev = ls.get('sg_lines_pins', []).map(p => p.id === id ? { ...p, elev } : p);
     ls.set('sg_lines_pins', withElev); setPins(withElev);
@@ -4821,6 +5135,9 @@ function LinesTab({ lang='en' }) {
   const [analyzing, setAnalyzing]       = React.useState(false);
   const [gpsLoading, setGpsLoading]     = React.useState(false);
   const [gpsTracking, setGpsTracking]   = React.useState(false);
+  // HUD readout only (presentation): last reported live-tracking accuracy in m.
+  // React bails on same-value sets, so ~1 Hz GPS ticks rarely cause a render.
+  const [gpsAcc, setGpsAcc]             = React.useState(null);
   const [caching, setCaching]           = React.useState(false);
   const [cacheMsg, setCacheMsg]         = React.useState('');
   const [cachePct, setCachePct]         = React.useState(0);
@@ -5001,6 +5318,7 @@ function LinesTab({ lang='en' }) {
     setGpsTracking(true);
     const onPos = pos => {
       const { latitude:lat, longitude:lng, accuracy:acc } = pos.coords;
+      setGpsAcc(acc != null ? Math.round(acc) : null);
       if (!_lGpsMarker) {
         const myIcon = window.L.divIcon({ className:'', html:'<div style="width:16px;height:16px;background:#4285F4;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 4px rgba(66,133,244,0.25)"></div>', iconSize:[16,16], iconAnchor:[8,8] });
         _lGpsMarker = window.L.marker([lat, lng], { icon:myIcon, zIndexOffset:1000 }).addTo(_lMap);
@@ -5020,6 +5338,7 @@ function LinesTab({ lang='en' }) {
     if (_lGpsMarker) { try { _lMap?.removeLayer(_lGpsMarker); } catch {} _lGpsMarker = null; }
     if (_lGpsCircle) { try { _lMap?.removeLayer(_lGpsCircle); } catch {} _lGpsCircle = null; }
     setGpsTracking(false);
+    setGpsAcc(null);
   };
 
   // Save current map view tiles to offline cache
@@ -5134,6 +5453,7 @@ function LinesTab({ lang='en' }) {
     if (!allTanks.length) { setRouteMsg('Place at least 1 tank pin on the map first.'); return; }
 
     setRouteMsg(''); setRouteProgress(''); setAnalyzing(true); setRouteResults([]); _clearRouteLines();
+    _sbScanSweep();
 
     // 1. Ensure elevations for all pins
     try {
@@ -5252,7 +5572,7 @@ function LinesTab({ lang='en' }) {
       const rankLabel = ['#1','#2','#3'][i] || '';
       const m = window.L.marker([s.lat,s.lon], { icon: window.L.divIcon({
         className:'',
-        html: '<div style="position:relative;width:30px;height:40px;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.6))">'
+        html: '<div class="' + (i === 0 ? 'sr-spot-top' : '') + '" style="position:relative;width:30px;height:40px;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.6))">'
           + '<svg width="30" height="40" viewBox="0 0 30 40" xmlns="http://www.w3.org/2000/svg">'
           + '<path d="M15 39 C15 39,4 26,4 15 A11 11 0 1 1 26 15 C26 26,15 39,15 39 Z" fill="#d97706"/>'
           + '<path d="M9 10 A9 9 0 0 1 21 10" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2.5" stroke-linecap="round"/>'
@@ -5364,10 +5684,27 @@ function LinesTab({ lang='en' }) {
           ? <div style={{ height:'100%', display:'flex', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'0 24px', color:'#7f92a6', fontSize:13, lineHeight:1.5 }}>
               {leafletError
                 ? 'The map needs a connection the first time it opens. Open this tab once with signal and tap Save offline. Your pin list below still works.'
-                : 'Loading map…'}
+                : <span style={{ display:'inline-block' }}>
+                    <span className="sr-scanline" style={{ display:'block', width:120, margin:'0 auto 10px' }} />
+                    Loading map…
+                  </span>}
             </div>
           : <div ref={mapRef} style={{ height:'100%' }} />
         }
+        {leafletReady && (
+          <div className="map-hud" aria-hidden="true">
+            <div className="map-hud-inner">
+              <span><b>{pins.length}</b> pin{pins.length !== 1 ? 's' : ''}</span>
+              <span className="sep">·</span>
+              <span>GPS {gpsTracking ? (gpsAcc != null ? <b>±{gpsAcc}m</b> : <b>live</b>) : '—'}</span>
+              <span className="sep">·</span>
+              <span><b>{mapType !== 'satellite' ? 'Street'
+                : seasonMode === 'naip' ? 'Leaf-on'
+                : seasonMode === 'clarity' ? 'Leaf-off'
+                : seasonMode === 'compare' ? 'Compare' : 'Sat'}</b></span>
+            </div>
+          </div>
+        )}
         <div className="map-cluster">
           <button className="mfab" onClick={() => setMapType(t => t === 'satellite' ? 'street' : 'satellite')}
             aria-label={mapType === 'satellite' ? 'Switch to the street map' : 'Switch to satellite imagery'} title={mapType === 'satellite' ? 'Street map' : 'Satellite'}>
@@ -5570,10 +5907,11 @@ function LinesTab({ lang='en' }) {
           <div style={{ display:'flex', gap:8, marginBottom:8 }}>
             <button onClick={analyzeRoutes} disabled={analyzing||!treePins.length||!tankPins.length}
               style={{ flex:2, background:analyzing?'#0d1a2b':'#2dd4a7',
-                border:'none', borderRadius:10, padding:'13px', minHeight:44, fontSize:14, fontWeight:700,
-                color:'#07090f', cursor:'pointer', opacity:(!treePins.length||!tankPins.length)?0.4:1,
+                border:analyzing?'1px solid rgba(45,212,167,0.35)':'none', borderRadius:10, padding:'13px', minHeight:44, fontSize:14, fontWeight:700,
+                color:analyzing?'#2dd4a7':'#07090f', cursor:'pointer', opacity:(!treePins.length||!tankPins.length)?0.4:1,
+                boxShadow:(!analyzing&&treePins.length&&tankPins.length)?'0 0 16px rgba(45,212,167,0.25)':'none',
                 display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-              <I.ruler size={16} color="#07090f" /> {analyzing ? 'Analyzing…' : 'Analyze Routes'}
+              <I.ruler size={16} color={analyzing?'#2dd4a7':'#07090f'} /> {analyzing ? 'Analyzing…' : 'Analyze Routes'}
             </button>
             <button onClick={findTankSpots} disabled={findingSpots||treePins.length<2}
               style={{ flex:1, background:'#0f1720',
@@ -5586,7 +5924,10 @@ function LinesTab({ lang='en' }) {
 
           {/* Progress + messages */}
           {routeProgress && (
-            <div style={{ background:'rgba(63,185,80,0.1)', border:'1px solid #3fb950', borderRadius:10, padding:'8px 14px', marginBottom:8, fontSize:12, color:'#3fb950' }}>{routeProgress}</div>
+            <div style={{ background:'rgba(63,185,80,0.1)', border:'1px solid #3fb950', borderRadius:10, padding:'8px 14px', marginBottom:8, fontSize:12, color:'#3fb950' }}>
+              <div className="sr-scanline" style={{ marginBottom:6 }} />
+              {routeProgress}
+            </div>
           )}
           {routeMsg && (
             <div role="status" style={{ background: /…$/.test(routeMsg) ? 'rgba(88,166,255,0.08)' : 'rgba(248,81,73,0.1)',
@@ -5601,7 +5942,7 @@ function LinesTab({ lang='en' }) {
 
           {/* Route results */}
           {routeResults.length > 0 && (
-            <div className="card">
+            <div className="card sr-rise">
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
                 <div className="card-title" style={{ marginBottom:0 }}>
                   <CardIcon bg="#0d2b15" icon="trendUp" />
@@ -5619,7 +5960,7 @@ function LinesTab({ lang='en' }) {
                   : r.overallGrade > 6 ? 'Very steep — check fittings & connections'
                   : 'Good gravity flow';
                 return (
-                  <div key={r.tank.id} style={{ background:'#0f1720', borderRadius:12, padding:'12px 14px', marginBottom:10, border:`1px solid ${col}44` }}>
+                  <div key={r.tank.id} className="sr-rise" style={{ background:'#0f1720', borderRadius:12, padding:'12px 14px', marginBottom:10, border:`1px solid ${col}44`, animationDelay:`${ri*60}ms` }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10, cursor:'pointer' }}
                       onClick={() => {
                         if (!_lMap) return;
@@ -5633,7 +5974,7 @@ function LinesTab({ lang='en' }) {
                       </div>
                       <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
                         <span style={{ fontSize:12, color:'#7f92a6' }}>overall</span>
-                        <span style={{ fontWeight:800, color:col, fontSize:18 }}>{r.overallGrade.toFixed(1)}%</span>
+                        <span style={{ fontWeight:800, color:col, fontSize:18, ..._MONO }}>{r.overallGrade.toFixed(1)}%</span>
                       </div>
                     </div>
 
@@ -5647,17 +5988,17 @@ function LinesTab({ lang='en' }) {
                           return (
                             <React.Fragment key={node.id}>
                               <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, padding:'0 2px' }}>
-                                <div style={{ width:30, height:30, borderRadius:isTank?6:'50%', background:nc+'22', border:`2px solid ${nc}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                                <div style={{ width:30, height:30, borderRadius:isTank?6:'50%', background:nc+'22', border:`2px solid ${nc}`, boxShadow:`0 0 8px ${nc}33`, display:'flex', alignItems:'center', justifyContent:'center' }}>
                                   {isTank ? <I.tank size={13} color={nc} /> : <I.tree size={13} color={nc} />}
                                 </div>
                                 <span style={{ fontSize:12, color:'#7f92a6', maxWidth:52, textAlign:'center', lineHeight:1.2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{node.label}</span>
-                                <span style={{ fontSize:12, color:'#7f92a6' }}>{node.elev!=null ? node.elev.toFixed(0)+'ft' : '—'}</span>
+                                <span style={{ fontSize:12, color:'#7f92a6', ..._MONO }}>{node.elev!=null ? node.elev.toFixed(0)+'ft' : '—'}</span>
                               </div>
                               {seg && (
                                 <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flex:'0 0 auto', padding:'0 1px', marginTop:-12 }}>
-                                  <span style={{ fontSize:12, fontWeight:700, color:_gradeColor(seg.grade) }}>{seg.grade.toFixed(1)}%</span>
-                                  <div style={{ height:3, width:44, background:_gradeColor(seg.grade), borderRadius:2, opacity:0.9 }} />
-                                  <span style={{ fontSize:12, color:'#7f92a6' }}>
+                                  <span style={{ fontSize:12, fontWeight:700, color:_gradeColor(seg.grade), ..._MONO }}>{seg.grade.toFixed(1)}%</span>
+                                  <div style={{ height:3, width:44, background:_gradeColor(seg.grade), borderRadius:2, opacity:0.9, boxShadow:`0 0 6px ${_gradeColor(seg.grade)}55` }} />
+                                  <span style={{ fontSize:12, color:'#7f92a6', ..._MONO }}>
                                     {seg.dist < 5280 ? seg.dist.toFixed(0)+'ft' : (seg.dist/5280).toFixed(2)+'mi'}
                                   </span>
                                 </div>
@@ -5678,7 +6019,7 @@ function LinesTab({ lang='en' }) {
                       ].map(item => (
                         <div key={item.l} style={{ textAlign:'center', background:'#081622', borderRadius:6, padding:'5px 2px' }}>
                           <div style={{ fontSize:12, color:'#7f92a6', fontWeight:600, letterSpacing:'0.04em' }}>{item.l}</div>
-                          <div style={{ fontWeight:700, color:item.c, fontSize:12, marginTop:2 }}>{item.v}</div>
+                          <div style={{ fontWeight:700, color:item.c, fontSize:12, marginTop:2, ..._MONO }}>{item.v}</div>
                         </div>
                       ))}
                     </div>
@@ -5690,7 +6031,7 @@ function LinesTab({ lang='en' }) {
                       <div style={{ marginTop:4 }}>
                         {r.badSegs.map((s, bi) => (
                           <div key={bi} style={{ fontSize:13, color:'#e0a44a', display:'flex', alignItems:'center', gap:5, marginTop:2 }}>
-                            <span style={{ background:'#e0a44a22', borderRadius:4, padding:'1px 5px', fontWeight:700 }}>{s.grade.toFixed(2)}%</span>
+                            <span style={{ background:'#e0a44a22', borderRadius:4, padding:'1px 5px', fontWeight:700, ..._MONO }}>{s.grade.toFixed(2)}%</span>
                             {s.from.label} → {s.to.label}
                             <span style={{ color:'#7f92a6' }}>({s.dist.toFixed(0)} ft, {Math.abs(s.drop).toFixed(1)} ft drop)</span>
                           </div>
@@ -5738,7 +6079,7 @@ function LinesTab({ lang='en' }) {
             const mainTeeCost= numMainTees* matPrices.mainTee;
             const total      = latCost + mainCost + dropCost + spileCost + teeCost + mainTeeCost;
             return (
-              <div className="card">
+              <div className="card sr-rise" style={{ animationDelay:'120ms' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
                   <div className="card-title" style={{ marginBottom:0 }}><CardIcon bg="#0d1a2b" icon="ruler" />Materials Estimator</div>
                   <button onClick={()=>setShowMatPrices(v=>!v)}
@@ -5857,23 +6198,29 @@ function LinesTab({ lang='en' }) {
 
           {/* Tank spots */}
           {tankSpots.length > 0 && (
-            <div className="card">
+            <div className="card sr-rise">
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
                 <div className="card-title" style={{ marginBottom:0 }}><CardIcon bg="#1a1500" icon="mapPin" />Tank Spots</div>
                 <button className="btn-secondary" style={{ padding:'5px 12px', fontSize:12 }} onClick={clearSpots}>Clear</button>
               </div>
               <div style={{ fontSize:13, color:'#7f92a6', marginBottom:8 }}>Suggested collection points — ranked by gravity-flow score.</div>
               {tankSpots.map((s,i) => (
-                <div key={i} style={{ background:'#0f1720', borderRadius:10, padding:'10px 14px', marginBottom:6, border:'1px solid #2d2000' }}>
+                <div key={i} className="sr-rise" style={{ background:'#0f1720', borderRadius:10, padding:'10px 14px', marginBottom:6,
+                  border: i===0 ? '1px solid rgba(235,154,51,0.55)' : '1px solid #2d2000',
+                  boxShadow: i===0 ? '0 0 14px rgba(235,154,51,0.16)' : 'none',
+                  animationDelay:`${i*60}ms` }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                     <div>
-                      <div style={{ fontWeight:600, color:'#e6b800', fontSize:13, display:'flex', alignItems:'center', gap:5 }}><I.star size={13} color="#e6b800" /> Spot {i+1}</div>
-                      <div style={{ fontSize:13, color:'#7f92a6', marginTop:2 }}>
+                      <div style={{ fontWeight:600, color:'#e6b800', fontSize:13, display:'flex', alignItems:'center', gap:5 }}>
+                        <I.star size={13} color="#e6b800" /> Spot {i+1}
+                        {i===0 && <span style={{ background:'rgba(235,154,51,0.16)', border:'1px solid rgba(235,154,51,0.45)', color:'#eb9a33', borderRadius:5, padding:'1px 6px', fontSize:10, fontWeight:800, letterSpacing:'0.08em', textTransform:'uppercase' }}>Best</span>}
+                      </div>
+                      <div style={{ fontSize:13, color:'#7f92a6', marginTop:2, ..._MONO }}>
                         {s.lat.toFixed(5)}, {s.lon.toFixed(5)} · {s.treesAbove}/{treePins.filter(p=>p.elev!=null).length} trees ≥1% grade
                       </div>
                     </div>
                     <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4 }}>
-                      <div style={{ fontWeight:700, color:'#e0a44a', fontSize:15 }}>{s.elev.toFixed(1)} ft</div>
+                      <div style={{ fontWeight:700, color:'#e0a44a', fontSize:15, ..._MONO }}>{s.elev.toFixed(1)} ft</div>
                       <button onClick={()=>placeSpotAsTank(s)} style={{ background:'#2dd4a7', border:'none', borderRadius:7, padding:'4px 10px', fontSize:13, fontWeight:700, color:'#fff', cursor:'pointer', whiteSpace:'nowrap' }}>+ Place as Tank</button>
                     </div>
                   </div>
@@ -5890,7 +6237,10 @@ function LinesTab({ lang='en' }) {
           {treePins.length === 0 ? (
             <div className="card">
               <div className="empty-state">
-                <div className="empty-title" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8}}><I.mapleLeaf size={20} color="#7f92a6" /> No trees yet</div>
+                <div style={{display:'flex',justifyContent:'center',marginBottom:12}}>
+                  <M.tree size={72} color="#EB9A33" />
+                </div>
+                <div className="empty-title">{t(lang,'dropFirstPin')}</div>
                 Tap the map in Tap Tree mode to add your first tree.
               </div>
             </div>
@@ -6083,10 +6433,10 @@ function LinesTab({ lang='en' }) {
               <div>
                 <div style={{ fontWeight:800, fontSize:16, color:'#c9d1d9' }}>{selectedPin.label}</div>
                 <div style={{ fontSize:13, color:'#7f92a6', display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
-                  <span>{selectedPin.lat.toFixed(5)}, {selectedPin.lon.toFixed(5)}</span>
+                  <span style={_MONO}>{selectedPin.lat.toFixed(5)}, {selectedPin.lon.toFixed(5)}</span>
                   {selectedPin.accuracy != null && (
                     <span style={{
-                      fontWeight:700, fontSize:12, borderRadius:4, padding:'1px 5px',
+                      fontWeight:700, fontSize:12, borderRadius:4, padding:'1px 5px', ..._MONO,
                       background: selectedPin.accuracy <= 5 ? 'rgba(45,212,167,0.15)' : selectedPin.accuracy <= 15 ? 'rgba(244,164,74,0.15)' : 'rgba(248,113,113,0.15)',
                       color:       selectedPin.accuracy <= 5 ? '#2dd4a7'              : selectedPin.accuracy <= 15 ? '#e0a44a'              : '#f85149',
                     }}>± {selectedPin.accuracy} m</span>
@@ -6202,7 +6552,7 @@ function LinesTab({ lang='en' }) {
                   updatePinField(selectedPin.id, 'elev', clamped);
                   updatePinField(selectedPin.id, 'elevManual', true);
                 }}
-                style={{ flex:1, minHeight:40, background:'rgba(255,255,255,0.06)', border:'none', borderRadius:8, padding:'9px 12px', color:'#fbbf24', fontSize:13, fontWeight:700, outline:'none', boxSizing:'border-box' }} />
+                style={{ flex:1, minHeight:40, background:'rgba(255,255,255,0.06)', border:'none', borderRadius:8, padding:'9px 12px', color:'#fbbf24', fontSize:13, fontWeight:700, outline:'none', boxSizing:'border-box', ..._MONO }} />
               <button onClick={async () => {
                   setElevDraft('…');
                   const v = await _fetchElev(selectedPin.lat, selectedPin.lon);
@@ -7217,10 +7567,7 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
   },[season]);
 
   const slog     = ls.get('sg_logs2',{})[season]||{};
-  const sapGal   = (slog.sapCollected||[]).reduce((s,e)=>s+(parseFloat(e.val)||0),0);
-  const syrupGal = (slog.syrupMade||[]).reduce((s,e)=>s+(parseFloat(e.val)||0),0);
-  const roGal    = (slog.sapRO||[]).reduce((s,e)=>s+(parseFloat(e.val)||0),0);
-  const fuelGal  = (slog.fuelUsed||[]).reduce((s,e)=>s+(parseFloat(e.val)||0),0);
+  const { sapT: sapGal, syT: syrupGal, roT: roGal, fuelT: fuelGal } = seasonTotals(slog);
   const taps  = parseInt(trees)||0;
   const brix  = parseFloat(sapBrix)||2.0;
   const runLogs  = slog.sapCollected||[];
@@ -7258,33 +7605,29 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
     </div>
   );
 
-  // ── scores ──────────────────────────────────────────────────────────────────
-  let yieldScore=null, effScore=null, fuelScore=null;
+  // ── scores — ONE model, shared with Recap's SweetRun Score (seasonScore) ────
+  const fuelDef = FUELS.find(f=>f.label===ls.get('sg_fuel','Firewood (cord)'))||FUELS[0];
+  const sc = seasonScore({ sapT:sapGal, syT:syrupGal, fuelT:fuelGal, taps, brix, yieldModel:yieldModelSaved(), fuelSpu:fuelDef.spu });
+  const { yieldScore, effScore, fuelScore } = sc;
   const insights=[];
 
   if (taps>0&&syrupGal>0) {
     const ypp=syrupGal/taps;
-    const yM=yieldModelSaved();
-    yieldScore=Math.min(100,Math.round((ypp/yieldMidOf(yM))*100));
     if (ypp>=0.3)       insights.push({type:'success',title:'Strong yield per tap',       body:`${ypp.toFixed(2)} gal/tap — above the 0.25–0.3 industry benchmark. Excellent season.`,action:'Document your tap placement and vacuum settings — replicate this exact setup next year.'});
     else if (ypp>=0.2)  insights.push({type:'neutral',title:'Average yield per tap',       body:`${ypp.toFixed(2)} gal/tap — near industry average. Room to grow.`,                    action:'Upgrade to check-valve spouts and audit vacuum leaks at each lateral connection.'});
     else                insights.push({type:'warn',   title:'Below-average yield per tap', body:`${ypp.toFixed(2)} gal/tap is below the 0.25 benchmark.`,                              action:'Inspect spout health, verify tap placement in fresh white wood, and test vacuum at the tree.'});
   }
   if (sapGal>0&&syrupGal>0) {
     const ratio=sapGal/syrupGal;
-    const theoretical=RULE_DIVISOR/brix;
-    const eff=Math.min(100,Math.round((theoretical/ratio)*100));
-    effScore=eff;
+    const eff=effScore;
     if (eff>=95)       insights.push({type:'success',title:'Excellent evaporation efficiency',  body:`${ratio.toFixed(0)}:1 ratio — ${eff}% of theoretical max for ${brix}°Brix sap.`,       action:'Document your evaporator setup — this is benchmark-quality operation.'});
     else if (eff>=80)  insights.push({type:'neutral',title:'Good evaporation efficiency',       body:`${ratio.toFixed(0)}:1 at ${eff}% of theoretical.`,                                      action:'Check float valve levels and flue pan draw-off. Small adjustments can recover 5–10%.'});
     else               insights.push({type:'warn',   title:'Evaporation efficiency concern',    body:`${ratio.toFixed(0)}:1 is ${100-eff}% below theoretical for ${brix}°Brix sap.`,          action:'Check flue pan flow rate, evaporator level, and finisher draw-off timing.'});
   }
   if (fuelGal>0&&syrupGal>0) {
-    const fuelDef=FUELS.find(f=>f.label===ls.get('sg_fuel','Firewood (cord)'))||FUELS[0];
     const fuelU=fuelDef.unit;
     const fr=fuelGal/syrupGal;
-    const bench=(RULE_DIVISOR/(parseFloat(sapBrix)||2))/fuelDef.spu;
-    fuelScore=Math.min(100,Math.round((bench/fr)*100));
+    const bench=(RULE_DIVISOR/brix)/fuelDef.spu;
     if (fr < bench*0.8)   insights.push({type:'success',title:'Fuel-efficient operation',  body:`${fr.toFixed(2)} ${fuelU}/gal syrup — below the ${bench.toFixed(2)} expected for your fuel.`,  action:'If not already using RO, your evaporator is dialed in. Consider adding a preheater.'});
     else if(fr > bench*1.5) insights.push({type:'warn', title:'High fuel consumption',     body:`${fr.toFixed(2)} ${fuelU}/gal syrup — above the ${bench.toFixed(2)} expected for your fuel.`,                   action:'RO preconcentration to 8–10°Brix could cut fuel use 60–70%.'});
   }
@@ -7294,12 +7637,11 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
   }
 
   const activeSc=[yieldScore,effScore,fuelScore].filter(s=>s!==null);
-  const overall = activeSc.length>0 ? Math.round(activeSc.reduce((a,b)=>a+b,0)/activeSc.length) : 0;
-  // A season with one entry in it does not get a letter. Two of the three
-  // sub-scores have to be computable before a grade means anything.
-  const graded = activeSc.length >= 2;
-  const grade = !graded ? '—' : overall>=90?'A':overall>=80?'B':overall>=70?'C':overall>=60?'D':'F';
-  const gradeColor = overall>=90?'#3fb950':overall>=80?'#58a6ff':overall>=70?'#e0a44a':'#f85149';
+  const overall = sc.overall;
+  const graded  = sc.graded;
+  const grade   = sc.grade;
+  // No failing red before there is a season to judge — neutral until graded.
+  const gradeColor = !graded ? '#7f92a6' : overall>=90?'#3fb950':overall>=80?'#58a6ff':overall>=70?'#e0a44a':'#f85149';
 
   const bestRun = runLogs.length>0 ? runLogs.reduce((b,e)=>(parseFloat(e.val)||0)>(parseFloat(b.val)||0)?e:b, runLogs[0]) : null;
 
@@ -7349,7 +7691,9 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
         <div style={{background:'#07090f',borderRadius:12,padding:'14px 18px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',minWidth:76,border:`1.5px solid ${gradeColor}50`,flexShrink:0}}>
           <div style={{fontSize:28,fontWeight:800,color:gradeColor,lineHeight:1}}>{grade}</div>
           <div style={{fontSize:12,color:'#7f92a6',fontWeight:700,letterSpacing:'0.1em',marginTop:4,textTransform:'uppercase'}}>Season Score</div>
-          <div style={{fontSize:13,color:gradeColor,fontWeight:700,marginTop:2}}>{overall}%</div>
+          {graded
+            ? <div style={{fontSize:13,color:gradeColor,fontWeight:700,marginTop:2}}>{overall}%</div>
+            : <div style={{fontSize:11,color:'#7f92a6',fontWeight:600,marginTop:2,textAlign:'center',lineHeight:1.35}}>{t(ls.get('sg_lang','en'),'tooEarlyGrade')}</div>}
         </div>
         <div style={{flex:1,display:'flex',flexDirection:'column',gap:9,justifyContent:'center'}}>
           {yieldScore!==null && <SubScoreBar label="Yield / Tap" score={yieldScore} color="#3fb950"/>}
@@ -7430,23 +7774,44 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
 
 
 // ─── Breakeven Calculator ─────────────────────────────────────────────────────
+// BevInput lives at module scope. It was defined inside BreakevenCalculator's
+// body, so every keystroke created a new component type → React remounted the
+// input → keyboard focus dropped after each digit (Debug H5).
+const BevInput = ({ label, val, set, prefix, suffix, small }) => {
+  const [focused, setFocused] = React.useState(false);
+  return (
+    <div style={{marginBottom:12}}>
+      <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:5}}>{label}</div>
+      <div style={{display:'flex',alignItems:'center',gap:6,background:'#0a1420',border:`1.5px solid ${focused?'#3fb950':'#1e2d3d'}`,borderRadius:9,padding:'8px 12px',transition:'border-color 0.15s'}}>
+        {prefix && <span style={{color:'#7f92a6',fontSize:14,flexShrink:0}}>{prefix}</span>}
+        <input type="number" value={val||''} onChange={e=>set(parseFloat(e.target.value)||0)}
+          onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
+          aria-label={[label, prefix === '$' ? 'in dollars' : null, suffix].filter(Boolean).join(' ')}
+          placeholder="0" min="0"
+          style={{flex:1,background:'transparent',border:'none',outline:'none',color:'#e6edf3',fontSize:small?13:15,fontFamily:'inherit'}}/>
+        {suffix && <span style={{color:'#7f92a6',fontSize:13,flexShrink:0}}>{suffix}</span>}
+      </div>
+    </div>
+  );
+};
+
 function BreakevenCalculator({ trees, units }) {
   const wizData     = ls.get('sg_wizard_data', {});
   const [taps,      setTaps]      = React.useState(()=> ls.get('sg_bev_taps',   parseInt(trees)||0));
   const [fuelCost,  setFuelCost]  = React.useState(()=> ls.get('sg_bev_fuel',   wizData.fuelCost||300));
-  const [syrupPx,   setSyrupPx]   = React.useState(()=> ls.get('sg_bev_price',  wizData.syrupPrice||40));
+  const [syrupPx,   setSyrupPx]   = React.useState(()=> getSyrupPrice());
   const [supplies,  setSupplies]  = React.useState(()=> ls.get('sg_bev_supply', 0));
   const [laborHrs,  setLaborHrs]  = React.useState(()=> ls.get('sg_bev_lhrs',  0));
-  const [laborRate, setLaborRate] = React.useState(()=> ls.get('sg_bev_lrate', 15));
+  const [laborRate, setLaborRate] = React.useState(()=> getLaborRate());
   const [hobby,     setHobby]     = React.useState(()=> ls.get('sg_bev_hobby',  true));
 
   // persist on change
   React.useEffect(()=>{ ls.set('sg_bev_taps',   taps);     },[taps]);
   React.useEffect(()=>{ ls.set('sg_bev_fuel',   fuelCost); },[fuelCost]);
-  React.useEffect(()=>{ ls.set('sg_bev_price',  syrupPx);  },[syrupPx]);
+  React.useEffect(()=>{ ls.set('sg_price_syrup', syrupPx); },[syrupPx]);
   React.useEffect(()=>{ ls.set('sg_bev_supply', supplies); },[supplies]);
   React.useEffect(()=>{ ls.set('sg_bev_lhrs',   laborHrs); },[laborHrs]);
-  React.useEffect(()=>{ ls.set('sg_bev_lrate',  laborRate);},[laborRate]);
+  React.useEffect(()=>{ ls.set('sg_rate_labor', laborRate);},[laborRate]);
   React.useEffect(()=>{ ls.set('sg_bev_hobby',  hobby);    },[hobby]);
 
   const t        = Math.max(1, parseInt(taps)   || 1);
@@ -7464,24 +7829,6 @@ function BreakevenCalculator({ trees, units }) {
     { label:'Average',   yld:0.22, color:'#e0a44a', bgc:'rgba(245,158,11,0.06)' },
     { label:'Great Year',yld:0.30, color:'#3fb950', bgc:'rgba(63,185,80,0.06)'  },
   ];
-
-  const BevInput = ({ label, val, set, prefix, suffix, small }) => {
-    const [focused, setFocused] = React.useState(false);
-    return (
-      <div style={{marginBottom:12}}>
-        <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:5}}>{label}</div>
-        <div style={{display:'flex',alignItems:'center',gap:6,background:'#0a1420',border:`1.5px solid ${focused?'#3fb950':'#1e2d3d'}`,borderRadius:9,padding:'8px 12px',transition:'border-color 0.15s'}}>
-          {prefix && <span style={{color:'#7f92a6',fontSize:14,flexShrink:0}}>{prefix}</span>}
-          <input type="number" value={val||''} onChange={e=>set(parseFloat(e.target.value)||0)}
-            onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
-            aria-label={[label, prefix === '$' ? 'in dollars' : null, suffix].filter(Boolean).join(' ')}
-            placeholder="0" min="0"
-            style={{flex:1,background:'transparent',border:'none',outline:'none',color:'#e6edf3',fontSize:small?13:15,fontFamily:'inherit'}}/>
-          {suffix && <span style={{color:'#7f92a6',fontSize:13,flexShrink:0}}>{suffix}</span>}
-        </div>
-      </div>
-    );
-  };
 
   const maxYld = 0.35;
 
@@ -7960,6 +8307,8 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
 
   const catEntries  = activeCat==='all' ? SS_KB : SS_KB.filter(e=>e.cat===activeCat);
   const displayList = searched ? results : (activeCat!=='all' ? catEntries : []);
+  // An answer (or category browse) is on screen — results take the stage.
+  const showingResults = displayList.length > 0;
 
   const CAT_LABELS = {
     all:'All', biology:'Biology', tapping:'Tapping', vacuum:'Vacuum',
@@ -7990,24 +8339,26 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
             onChange={e=>{setQuery(e.target.value);setExpandedId(null);}}
             aria-label="Ask SugarSage a question about maple production"
             placeholder="Ask anything about maple production…"
-            style={{flex:1,padding:'14px 52px 14px 18px',fontSize:15,
+            style={{flex:1,padding:query?'14px 104px 14px 18px':'14px 64px 14px 18px',fontSize:15,
               border:'1.5px solid #1e2d3d',borderRadius:14,outline:'none',
               background:'#0d1a2b',color:'#c9d1d9',fontFamily:'inherit',
               transition:'border-color 0.15s,box-shadow 0.15s'}}
             onFocus={e=>{e.target.style.borderColor='#3fb950';e.target.style.boxShadow='0 0 0 3px #3fb95018';}}
             onBlur={e=>{e.target.style.borderColor='#1e2d3d';e.target.style.boxShadow='none';}}
           />
-          {query
-            ? <button type="button" onClick={clearSearch}
-                style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',
-                  background:'none',border:'none',cursor:'pointer',color:'#7f92a6',fontSize:18,
-                  display:'flex',alignItems:'center',padding:4}}>✕</button>
-            : <button type="submit"
-                style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',
-                  background:'#3fb950',border:'none',cursor:'pointer',color:'#07090f',
-                  borderRadius:8,padding:'5px 10px',fontSize:13,fontWeight:700,
-                  display:'flex',alignItems:'center',gap:4}}>Ask</button>
-          }
+          {/* The Ask action never disappears; clear is its own small ×.
+              Enter submits the form (this is the one submit button). */}
+          {query && (
+            <button type="button" onClick={clearSearch} aria-label="Clear question"
+              style={{position:'absolute',right:66,top:'50%',transform:'translateY(-50%)',
+                background:'none',border:'none',cursor:'pointer',color:'#7f92a6',fontSize:15,
+                display:'flex',alignItems:'center',justifyContent:'center',width:32,height:32,borderRadius:8}}>✕</button>
+          )}
+          <button type="submit"
+            style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',
+              background:'#3fb950',border:'none',cursor:'pointer',color:'#07090f',
+              borderRadius:8,padding:'6px 12px',fontSize:13,fontWeight:700,
+              display:'flex',alignItems:'center',gap:4}}>Ask</button>
         </form>
 
         {/* Suggestion chips */}
@@ -8046,7 +8397,27 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
         })}
       </div>
 
+      {/* ── Results — FIRST, directly under the question, so asking never
+          dead-ends below the dashboard. The dashboard and break-even step
+          aside while an answer is on screen and return on clear. ── */}
+      {showingResults && (
+        <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:16}}>
+          {displayList.map(entry=>(
+            <SageCard key={entry.id} entry={entry} expanded={expandedId===entry.id}
+              onToggle={()=>setExpandedId(expandedId===entry.id ? null : entry.id)}/>
+          ))}
+        </div>
+      )}
+
+      {searched && results.length===0 && (
+        <div style={{textAlign:'center',padding:'32px 20px'}}>
+          <div style={{fontSize:14,fontWeight:600,color:'#7f92a6',marginBottom:6}}>No results found</div>
+          <div style={{fontSize:12,color:'#7f92a6'}}>Try different keywords, or browse a category above.</div>
+        </div>
+      )}
+
       {/* ── Season intelligence toggle ── */}
+      {!showingResults && (<>
       <button onClick={()=>setShowSeason(v=>!v)}
         style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',
           background:'#0d1a2b',border:'1px solid #1e2d3d',borderRadius:10,
@@ -8075,21 +8446,7 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
           </div>
         </div>
       )}
-
-      {/* ── Results ── */}
-      <div style={{display:'flex',flexDirection:'column',gap:6}}>
-        {displayList.map(entry=>(
-          <SageCard key={entry.id} entry={entry} expanded={expandedId===entry.id}
-            onToggle={()=>setExpandedId(expandedId===entry.id ? null : entry.id)}/>
-        ))}
-      </div>
-
-      {searched && results.length===0 && (
-        <div style={{textAlign:'center',padding:'48px 20px'}}>
-          <div style={{fontSize:14,fontWeight:600,color:'#7f92a6',marginBottom:6}}>No results found</div>
-          <div style={{fontSize:12,color:'#7f92a6'}}>Try different keywords, or browse a category above.</div>
-        </div>
-      )}
+      </>)}
     </div>
   );
 }
@@ -8366,65 +8723,60 @@ function TubingTab({ trees }) {
 // ─── SEASON RECAP TAB ─────────────────────────────────────────────────────────
 
 // ─── SWEETRUN SCORE ────────────────────────────────────────────────────────────
-function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
+function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season, lang='en' }) {
   const taps    = parseInt(trees) || 0;
   const brix    = parseFloat(sapBrix) || 2.0;
   const [copied, setCopied] = React.useState(false);
 
-  // ── Sub-scores (each 0–100) ────────────────────────────────────────────
+  // ── Sub-scores (each 0–100) — computed by the shared seasonScore model, so
+  // this card and SugarSage's Season Intelligence always agree. This card only
+  // adds the display details.
+  const fuelDef = FUELS.find(f => f.label === ls.get('sg_fuel','Firewood (cord)')) || FUELS[0];
+  const yM = yieldModelSaved();
+  const sc = seasonScore({ sapT: sapGal, syT: syrupGal, fuelT: fuelGal, taps, brix, yieldModel: yM, fuelSpu: fuelDef.spu });
+
   const scores = [];
   // One colour rule for every bar, monotonic in the score.
   const barColor = s => s >= 80 ? '#3fb950' : s >= 60 ? '#e0a44a' : '#f85149';
 
   // 1. Yield per tap (30 pts weight)
-  let yieldScore = null, yieldLabel = '', yieldColor = '#7f92a6';
-  if (taps > 0 && syrupGal > 0) {
+  if (sc.yieldScore !== null) {
     const ypp = syrupGal / taps;
-    const yM = yieldModelSaved();
-    yieldScore = Math.min(100, Math.round((ypp / yieldMidOf(yM)) * 100));
-    if (ypp >= yM.high) { yieldLabel = `${ypp.toFixed(2)} gal/tap — top of the range for ${yM.label}`; yieldColor = '#3fb950'; }
-    else if (ypp >= yM.low) { yieldLabel = `${ypp.toFixed(2)} gal/tap — inside the ${yM.low}–${yM.high} range for ${yM.label}`; yieldColor = '#3fb950'; }
-    else { yieldLabel = `${ypp.toFixed(2)} gal/tap — below ${yM.low} for ${yM.label}`; yieldColor = '#e0a44a'; }
-    scores.push({ label:'Yield / Tap', score: yieldScore, weight:30, color: barColor(yieldScore), detail: yieldLabel });
+    let yieldLabel;
+    if (ypp >= yM.high) yieldLabel = `${ypp.toFixed(2)} gal/tap — top of the range for ${yM.label}`;
+    else if (ypp >= yM.low) yieldLabel = `${ypp.toFixed(2)} gal/tap — inside the ${yM.low}–${yM.high} range for ${yM.label}`;
+    else yieldLabel = `${ypp.toFixed(2)} gal/tap — below ${yM.low} for ${yM.label}`;
+    scores.push({ label:'Yield / Tap', score: sc.yieldScore, weight:30, color: barColor(sc.yieldScore), detail: yieldLabel });
   }
 
   // 2. Evaporation efficiency (40 pts weight). This and the former "Ratio Accuracy" row were the
   // same computation — theoretical ratio over actual ratio — counted twice at 25 + 15. Merged; the
   // weighted overall is unchanged.
-  let effScore = null;
-  if (sapGal > 0 && syrupGal > 0 && brix > 0) {
+  if (sc.effScore !== null) {
     const ratio = sapGal / syrupGal;
     const theoretical = RULE_DIVISOR / brix;
-    effScore = Math.min(100, Math.round((theoretical / ratio) * 100));
-    scores.push({ label:'Evap Efficiency', score: effScore, weight:40, color: barColor(effScore),
+    scores.push({ label:'Evap Efficiency', score: sc.effScore, weight:40, color: barColor(sc.effScore),
       detail: `${ratio.toFixed(0)}:1 actual vs ${theoretical.toFixed(0)}:1 theoretical` });
   }
 
   // 3. Fuel efficiency (20 pts weight)
-  let fuelScore = null;
-  if (fuelGal > 0 && syrupGal > 0) {
-    const fuelDef = FUELS.find(f => f.label === ls.get('sg_fuel','Firewood (cord)')) || FUELS[0];
+  if (sc.fuelScore !== null) {
     const fr    = fuelGal / syrupGal;                       // units of fuel per gal syrup
-    const bench = (RULE_DIVISOR / brix) / fuelDef.spu;              // what that fuel should take
-    fuelScore = Math.min(100, Math.round((bench / fr) * 100));
-    scores.push({ label:'Fuel Efficiency', score: fuelScore, weight:20, color: barColor(fuelScore),
+    const bench = (RULE_DIVISOR / brix) / fuelDef.spu;      // what that fuel should take
+    scores.push({ label:'Fuel Efficiency', score: sc.fuelScore, weight:20, color: barColor(sc.fuelScore),
       detail: `${fr.toFixed(2)} ${fuelDef.unit}/gal syrup · expect ${bench.toFixed(2)}` });
   }
 
   // 4. Data completeness (10 pts weight) — rewards logging
-  const dataPts = [sapGal>0, syrupGal>0, taps>0, fuelGal>0].filter(Boolean).length;
-  const dataScore = Math.round((dataPts / 4) * 100);
-  scores.push({ label:'Data Complete', score: dataScore, weight:10, color: barColor(dataScore),
-    detail:`${dataPts}/4 tracked fields` });
+  scores.push({ label:'Data Complete', score: sc.dataScore, weight:10, color: barColor(sc.dataScore),
+    detail:`${sc.dataPts}/4 tracked fields` });
 
-  // ── Weighted overall ──────────────────────────────────────────────────
-  const totalWeight = scores.reduce((s,x) => s + x.weight, 0);
-  const weighted    = scores.reduce((s,x) => s + (x.score * x.weight), 0);
-  const overall     = totalWeight > 0 ? Math.round(weighted / totalWeight) : 0;
+  // ── Weighted overall (from the shared model) ──────────────────────────
+  const overall = sc.overall;
 
   // Same rule as Diagnose: no letter until there is enough season to judge.
-  const graded = scores.length >= 3 && syrupGal > 0;
-  const grade = !graded ? '—' : overall >= 90 ? 'A' : overall >= 80 ? 'B' : overall >= 70 ? 'C' : overall >= 60 ? 'D' : 'F';
+  const graded = sc.graded;
+  const grade  = sc.grade;
   const gradeColor = barColor(overall);
 
   const shareText = `My ${season} maple season scored ${overall}/100 (${grade}) on SweetRun · sweetrun.app`;
@@ -8442,19 +8794,27 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
     <div className="card">
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
         <div style={{fontSize:12,fontWeight:700,color:'#7f92a6',letterSpacing:'0.12em',textTransform:'uppercase'}}>SweetRun Score</div>
-        <button onClick={copyShare} aria-label="Copy a one-line summary of this score"
+        {graded && <button onClick={copyShare} aria-label="Copy a one-line summary of this score"
           style={{background:'none', border:'none', padding:'0 2px', minHeight:44, fontSize:13, fontWeight:700, color: copied ? '#3fb950' : '#7f92a6', cursor:'pointer'}}>
           {copied ? 'Copied' : 'Share score'}
-        </button>
+        </button>}
       </div>
 
-      {/* Score, on the card */}
-      <div style={{display:'flex',alignItems:'baseline',gap:10,paddingBottom:14,marginBottom:14,borderBottom:'1px solid #131e2c'}}>
-        <span style={{fontSize:28,fontWeight:800,color: graded ? gradeColor : '#e6edf3',lineHeight:1,letterSpacing:'-0.01em'}}>{overall}</span>
-        <span style={{fontSize:13,color:'#7f92a6',fontWeight:500}}>out of 100</span>
-        {graded && <span style={{fontSize:13,fontWeight:800,color:gradeColor,background:`${gradeColor}1f`,
-          borderRadius:999,padding:'3px 12px',lineHeight:1.4,alignSelf:'center'}} aria-label={`Grade ${grade}`}>{grade}</span>}
-      </div>
+      {/* Score, on the card. Before there is a season to judge, no number and
+          no failing colour — a calm "too early" line instead of an F. */}
+      {graded ? (
+        <div style={{display:'flex',alignItems:'baseline',gap:10,paddingBottom:14,marginBottom:14,borderBottom:'1px solid #131e2c'}}>
+          <span style={{fontSize:28,fontWeight:800,color:gradeColor,lineHeight:1,letterSpacing:'-0.01em'}}>{overall}</span>
+          <span style={{fontSize:13,color:'#7f92a6',fontWeight:500}}>out of 100</span>
+          <span style={{fontSize:13,fontWeight:800,color:gradeColor,background:`${gradeColor}1f`,
+            borderRadius:999,padding:'3px 12px',lineHeight:1.4,alignSelf:'center'}} aria-label={`Grade ${grade}`}>{grade}</span>
+        </div>
+      ) : (
+        <div style={{paddingBottom:14,marginBottom:14,borderBottom:'1px solid #131e2c'}}>
+          <div style={{fontSize:16,fontWeight:700,color:'#e6edf3'}}>{t(lang,'tooEarlyGrade')}</div>
+          <div style={{fontSize:12,color:'#7f92a6',marginTop:3,lineHeight:1.5}}>{t(lang,'tooEarlyGradeSub')}</div>
+        </div>
+      )}
 
       <div>
         {/* Score bars */}
@@ -8481,7 +8841,7 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season }) {
 
 // ─── YIELD GAP ANALYZER ────────────────────────────────────────────────────────
 function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
-  const [pricePerGal, setPricePerGal] = React.useState(() => ls.get('sg_syrup_price', 40));
+  const [pricePerGal, setPricePerGal] = React.useState(() => getSyrupPrice());
   const taps = parseInt(trees) || 0;
   const brix = parseFloat(sapBrix) || 2.0;
 
@@ -8610,7 +8970,7 @@ function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,marginBottom:16}}>
         <span style={{fontSize:13,color:'#7f92a6'}}>Your retail price per gallon ($)</span>
         <input aria-label="Your retail price per gallon, in dollars" type="number" value={pricePerGal}
-          onChange={e=>{const v=parseFloat(e.target.value)||40; setPricePerGal(v); ls.set('sg_syrup_price',v);}}
+          onChange={e=>{const v=parseFloat(e.target.value)||40; setPricePerGal(v); ls.set('sg_price_syrup',v);}}
           style={{width:96,textAlign:'center',flexShrink:0}}/>
       </div>
 
@@ -8711,17 +9071,11 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
   const brixArr    = ls.get('sg_brixlog', []);
   const uLbl       = units === 'GAL' ? 'gal' : 'L';
 
-  const sumLog = arr => (arr || []).reduce((s, e) => s + (parseFloat(e.val) || 0), 0);
-  const sapGal    = sumLog(slog.sapCollected);
-  const syrupGal  = sumLog(slog.syrupMade);
-  const roGal     = sumLog(slog.sapRO);
-  const evapGal   = sumLog(slog.sapEvap);
-  const fuelGal   = sumLog(slog.fuelUsed);
-  const prevSap   = sumLog(prevLog.sapCollected);
-  const prevSyrup = sumLog(prevLog.syrupMade);
+  const { sapT: sapGal, syT: syrupGal, roT: roGal, evapT: evapGal, fuelT: fuelGal } = seasonTotals(slog);
+  const { sapT: prevSap, syT: prevSyrup } = seasonTotals(prevLog);
 
   const theorRatio  = sapBrix > 0 ? (RULE_DIVISOR / sapBrix) : 0;
-  const actualRatio = syrupGal > 0 ? sapGal / syrupGal : 0;
+  const ratioActual = actualRatio(sapGal, syrupGal) || 0;
 
   // Best single collection day
   const sapEntries = [...(slog.sapCollected || [])].sort((a, b) => (parseFloat(b.val)||0) - (parseFloat(a.val)||0));
@@ -8872,7 +9226,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
         </div>
       )}
 
-      {hasData && <SweetRunScore sapGal={sapGal} syrupGal={syrupGal} sapBrix={sapBrix} trees={parseInt(trees)||0} fuelGal={fuelGal} season={season} />}
+      {hasData && <SweetRunScore sapGal={sapGal} syrupGal={syrupGal} sapBrix={sapBrix} trees={parseInt(trees)||0} fuelGal={fuelGal} season={season} lang={lang} />}
       {hasData && <YieldGapAnalyzer sapGal={sapGal} syrupGal={syrupGal} sapBrix={sapBrix} trees={parseInt(trees)||0} season={season} />}
 
       {/* ── Operator name input ── */}
@@ -8893,7 +9247,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:12 }}>
         <Stat val={sapGal > 0 ? fmt(sapGal,0) : '—'} lbl={`${t(lang,'totalSapLbl')} (${uLbl})`} sub={`${(slog.sapCollected||[]).length} ${(slog.sapCollected||[]).length!==1?t(lang,'collectionPlur'):t(lang,'collectionSing')}`} />
         <Stat val={syrupGal > 0 ? fmt(syrupGal,1) : '—'} lbl={`${t(lang,'syrupMadeLbl')} (${uLbl})`} sub={`${(slog.syrupMade||[]).length} ${(slog.syrupMade||[]).length!==1?t(lang,'batchPlur'):t(lang,'batchSing')}`} accent="#a78bfa" />
-        <Stat val={actualRatio > 0 ? actualRatio.toFixed(1)+':1' : '—'} lbl={t(lang,'actualRatioLbl')} sub={theorRatio > 0 ? `${t(lang,'theoryPrefix')} ${theorRatio.toFixed(1)}:1` : null} accent={actualRatio > 0 && theorRatio > 0 && actualRatio <= theorRatio * 1.15 ? '#2dd4a7' : '#e0a44a'} />
+        <Stat val={ratioActual > 0 ? ratioActual.toFixed(1)+':1' : '—'} lbl={t(lang,'actualRatioLbl')} sub={theorRatio > 0 ? `${t(lang,'theoryPrefix')} ${theorRatio.toFixed(1)}:1` : null} accent={ratioActual > 0 && theorRatio > 0 && ratioActual <= theorRatio * 1.15 ? '#2dd4a7' : '#e0a44a'} />
         <Stat val={seasonDays != null ? `${seasonDays}d` : '—'} lbl={t(lang,'seasonLengthLbl')} sub={firstDate && lastDate ? `${firstDate} – ${lastDate}` : null} accent="#58a6ff" />
       </div>
 
@@ -8938,11 +9292,11 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
       )}
 
       {/* ── Conversion notes ── */}
-      {actualRatio > 0 && theorRatio > 0 && (
+      {ratioActual > 0 && theorRatio > 0 && (
         <Sec title={t(lang,'convEfficiency')} icon={<I.scale size={12} color="#7f92a6"/>}>
           <div style={{ display:'flex', gap:12, justifyContent:'space-between', marginBottom:8 }}>
             <div style={{ textAlign:'center', flex:1 }}>
-              <div style={{ fontSize:20, fontWeight:700, color:'#e6edf3' }}>{actualRatio.toFixed(1)}:1</div>
+              <div style={{ fontSize:20, fontWeight:700, color:'#e6edf3' }}>{ratioActual.toFixed(1)}:1</div>
               <div style={{ fontSize:13, color:'#7f92a6' }}>{t(lang,'actualRatioShort')}</div>
             </div>
             <div style={{ textAlign:'center', flex:1 }}>
@@ -8950,15 +9304,15 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
               <div style={{ fontSize:13, color:'#7f92a6' }}>{t(lang,'rule86Lbl')} ({sapBrix}°Brix)</div>
             </div>
             <div style={{ textAlign:'center', flex:1 }}>
-              <div style={{ fontSize:20, fontWeight:700, color: actualRatio <= theorRatio*1.12 ? '#3fb950' : '#e0a44a' }}>
-                {actualRatio > 0 ? ((actualRatio - theorRatio)/theorRatio*100).toFixed(0) : '—'}%
+              <div style={{ fontSize:20, fontWeight:700, color: ratioActual <= theorRatio*1.12 ? '#3fb950' : '#e0a44a' }}>
+                {ratioActual > 0 ? ((ratioActual - theorRatio)/theorRatio*100).toFixed(0) : '—'}%
               </div>
               <div style={{ fontSize:13, color:'#7f92a6' }}>{t(lang,'vsTheoretical')}</div>
             </div>
           </div>
-          {actualRatio > theorRatio * 1.15 && (
+          {ratioActual > theorRatio * 1.15 && (
             <div style={{ fontSize:13, color:'#7f92a6', lineHeight:1.5 }}>
-              Your ratio is {((actualRatio - theorRatio)/theorRatio*100).toFixed(0)}% above theoretical — check for foam loss, evaporator leaks, or thin drawoff.
+              Your ratio is {((ratioActual - theorRatio)/theorRatio*100).toFixed(0)}% above theoretical — check for foam loss, evaporator leaks, or thin drawoff.
             </div>
           )}
         </Sec>
@@ -9235,13 +9589,12 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
   const conv  = v => units === 'L' ? v * 3.78541 : v;
   const logs  = ls.get('sg_logs2', {});
   const slog  = logs[season] || {};
-  const tot   = k => (slog[k] || []).reduce((a, e) => a + (parseFloat(e.val) || 0), 0);
-  const sapT  = tot('sapCollected'), syT = tot('syrupMade');
+  const { sapT, syT } = seasonTotals(slog);
   const model = yieldModelSaved();
   const taps  = parseInt(trees) || 0;
   const goal  = taps * yieldMidOf(model);
   const pct   = goal > 0 ? Math.min(100, (syT / goal) * 100) : 0;
-  const ratio = syT > 0 ? sapT / syT : null;
+  const ratio = actualRatio(sapT, syT);
   const theor = RULE_DIVISOR / (parseFloat(sapBrix) || 2);
 
   const entries = ['sapCollected','syrupMade','sapRO','sapEvap','fuelUsed','boilHours']
@@ -9326,6 +9679,26 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
         </div>
       </div>
 
+      {/* First run: the void between the card and the CTA becomes furniture —
+          the bucket mark and the three next actions, to Tubing's standard. */}
+      {entries.length === 0 && (
+        <div style={{ textAlign:'center', padding:'26px 20px 8px' }}>
+          <div style={{ display:'flex', justifyContent:'center', marginBottom:14 }}>
+            <M.bucket size={96} color="#EB9A33" />
+          </div>
+          <div style={{ fontSize:13, color:'#7f92a6', lineHeight:1.6, marginBottom:16 }}>{t(lang,'todayEmptySub')}</div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8, justifyContent:'center' }}>
+            {[[t(lang,'chipLogFirstSap'),'log'],[t(lang,'chipSetLocation'),'weather'],[t(lang,'chipPlanSeason'),'tapping']].map(([label,dst])=>(
+              <button key={dst} onClick={()=>go(dst)}
+                style={{ minHeight:44, padding:'0 16px', borderRadius:22, border:'1.5px solid #1e2d3d',
+                  background:'#0d1521', color:'#2dd4a7', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* The landing screen remembers: the last three runs, plain rows, no card */}
       {recent.length > 0 && (
         <div style={{ margin:'4px 0 0' }}>
@@ -9354,9 +9727,12 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
 
 // ─── DIAGNOSE TAB (BETA) ──────────────────────────────────────────────────────
 function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
-  const [syrupPrice, setSyrupPrice] = React.useState(() => ls.get('sg_dx_price', 65));
-  const [woodCost,   setWoodCost]   = React.useState(() => ls.get('sg_dx_wood',  80));
-  const [laborRate,  setLaborRate]  = React.useState(() => ls.get('sg_dx_labor', 20));
+  // Canonical settings store — one syrup price / wood cost / labor rate,
+  // app-wide (legacy sg_dx_* values migrate forward automatically). The syrup
+  // price default follows the wizard's stored answer, never a contradicting $65.
+  const [syrupPrice, setSyrupPrice] = React.useState(() => getSyrupPrice());
+  const [woodCost,   setWoodCost]   = React.useState(() => getWoodCost());
+  const [laborRate,  setLaborRate]  = React.useState(() => getLaborRate());
   const [vacLevel,   setVacLevel]   = React.useState(() => ls.get('sg_dx_vac',   'gravity'));
   const [roOutBrix,  setRoOutBrix]  = React.useState(() => ls.get('sg_dx_robrix', 0));
   const [expanded,   setExpanded]   = React.useState({});
@@ -9374,14 +9750,14 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
     const pins     = ls.get('sg_lines_pins', []);
     const results  = [];
 
-    // Helper: sum an array of log entries
-    const sumLog = arr => (arr || []).reduce((s, e) => s + (parseFloat(e.val) || 0), 0);
+    // Season totals from the shared helper (one number, everywhere).
     // Stored log values are in the user's display unit; every benchmark below is gallons.
+    const T = seasonTotals(slog);
     const _gal    = v => units === 'L' ? v / 3.78541 : v;
-    const sapGal  = _gal(sumLog(slog.sapCollected));
-    const roGal   = _gal(sumLog(slog.sapRO));
-    const evapGal = _gal(sumLog(slog.sapEvap));
-    const syrupGal = _gal(sumLog(slog.syrupMade));
+    const sapGal  = _gal(T.sapT);
+    const roGal   = _gal(T.roT);
+    const evapGal = _gal(T.evapT);
+    const syrupGal = _gal(T.syT);
 
     // ── 1. Yield-per-tap ────────────────────────────────────────────────────
     const numTrees = parseInt(trees) || 0;
@@ -9607,8 +9983,9 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
     }
 
     // ── 7. YoY comparison ─────────────────────────────────────────────────
-    const prevSap   = sumLog(prevLog.sapCollected);
-    const prevSyrup = sumLog(prevLog.syrupMade);
+    // (Note: prev-season totals are not _gal-normalized — matches prior
+    // behavior exactly; flagged in PASS2-REPORT as a pre-existing issue.)
+    const { sapT: prevSap, syT: prevSyrup } = seasonTotals(prevLog);
     if (sapGal > 0 && prevSap > 0) {
       const sapChg   = ((sapGal - prevSap) / prevSap) * 100;
       const syrupChg = prevSyrup > 0 ? ((syrupGal - prevSyrup) / prevSyrup) * 100 : null;
@@ -9729,20 +10106,22 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
           style={{ width:'100%', background:'none', border:'none', cursor:'pointer', padding:'14px 16px', textAlign:'left', display:'flex', alignItems:'flex-start', gap:10 }}
         >
           <div style={{ width:10, height:10, borderRadius:'50%', background:s.dot, flexShrink:0, marginTop:4 }} />
-          <div style={{ flex:1 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
-              <div style={{ fontWeight:700, fontSize:14, color:'#e6edf3', lineHeight:1.3 }}>{f.title}</div>
-              <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-                {f.roi > 0 && (
-                  <span style={{ background:'rgba(45,212,167,0.15)', border:'1px solid rgba(45,212,167,0.3)', borderRadius:10, padding:'2px 8px', fontSize:13, fontWeight:700, color:'#2dd4a7' }}>
-                    ${f.roi >= 1000 ? (f.roi/1000).toFixed(1)+'k' : f.roi.toFixed(0)} ROI
-                  </span>
-                )}
-                <span style={{ background:'rgba(255,255,255,0.06)', borderRadius:8, padding:'2px 8px', fontSize:13, color:'#7f92a6', fontWeight:600 }}>{s.label}</span>
-                <I.chevDown size={14} color="#7f92a6" style={{ transform: open ? 'rotate(180deg)' : 'none', transition:'0.18s' }} />
-              </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            {/* Title gets the full width; chips live on their own row beneath —
+                sharing one row crushed titles to one word per line at 375px. */}
+            <div style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
+              <div style={{ flex:1, fontWeight:700, fontSize:15, color:'#e6edf3', lineHeight:1.35 }}>{f.title}</div>
+              <I.chevDown size={14} color="#7f92a6" style={{ flexShrink:0, marginTop:3, transform: open ? 'rotate(180deg)' : 'none', transition:'0.18s' }} />
             </div>
-            <div style={{ fontSize:12, color:'#7f92a6', marginTop:4, lineHeight:1.5 }}>{f.summary}</div>
+            <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:6, marginTop:6 }}>
+              {f.roi > 0 && (
+                <span style={{ background:'rgba(45,212,167,0.15)', border:'1px solid rgba(45,212,167,0.3)', borderRadius:10, padding:'2px 8px', fontSize:13, fontWeight:700, color:'#2dd4a7' }}>
+                  ${f.roi >= 1000 ? (f.roi/1000).toFixed(1)+'k' : f.roi.toFixed(0)} ROI
+                </span>
+              )}
+              <span style={{ background:'rgba(255,255,255,0.06)', borderRadius:8, padding:'2px 8px', fontSize:13, color:'#7f92a6', fontWeight:600 }}>{s.label}</span>
+            </div>
+            <div style={{ fontSize:12, color:'#7f92a6', marginTop:6, lineHeight:1.5 }}>{f.summary}</div>
           </div>
         </button>
         {open && (
@@ -9795,17 +10174,17 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
           <div>
             <div style={{ fontSize:13, color:'#7f92a6', marginBottom:4 }}>Syrup price ($/gal)</div>
-            <input aria-label="Syrup price in dollars per gallon" type="number" value={syrupPrice} onChange={e => save('sg_dx_price', setSyrupPrice)(parseFloat(e.target.value)||0)}
+            <input aria-label="Syrup price in dollars per gallon" type="number" value={syrupPrice} onChange={e => save('sg_price_syrup', setSyrupPrice)(parseFloat(e.target.value)||0)}
               style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e6edf3', fontSize:14, fontWeight:600, boxSizing:'border-box' }} />
           </div>
           <div>
             <div style={{ fontSize:13, color:'#7f92a6', marginBottom:4 }}>Wood cost ($/cord)</div>
-            <input aria-label="Wood cost in dollars per cord" type="number" value={woodCost} onChange={e => save('sg_dx_wood', setWoodCost)(parseFloat(e.target.value)||0)}
+            <input aria-label="Wood cost in dollars per cord" type="number" value={woodCost} onChange={e => save('sg_cost_wood', setWoodCost)(parseFloat(e.target.value)||0)}
               style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e6edf3', fontSize:14, fontWeight:600, boxSizing:'border-box' }} />
           </div>
           <div>
             <div style={{ fontSize:13, color:'#7f92a6', marginBottom:4 }}>Labor rate ($/hr)</div>
-            <input aria-label="Labor rate in dollars per hour" type="number" value={laborRate} onChange={e => save('sg_dx_labor', setLaborRate)(parseFloat(e.target.value)||0)}
+            <input aria-label="Labor rate in dollars per hour" type="number" value={laborRate} onChange={e => save('sg_rate_labor', setLaborRate)(parseFloat(e.target.value)||0)}
               style={{ width:'100%', background:'#0a1420', border:'1px solid #1e2d3d', borderRadius:8, padding:'7px 10px', color:'#e6edf3', fontSize:14, fontWeight:600, boxSizing:'border-box' }} />
           </div>
           <div>
@@ -10205,6 +10584,44 @@ function App() {
             </button>
           </div>
         </div>
+        {/* ── Desktop sidebar nav (≥1024px only; display:none below — mobile keeps
+            the bottom bar + horizontal sub-tab strip exactly as they were).
+            All five destinations exist in the DOM here, with the active
+            destination's sub-screens nested beneath it, and a persistent
+            Log-a-run pinned at the sidebar's foot. Stroke icons, not marks:
+            at 20px the hand-cut marks are below their 32px floor (BIBLE). */}
+        <nav className="side-nav" aria-label="Main sections">
+          {DESTS.map(d => {
+            const on = dest === d.id;
+            return (
+              <div key={d.id}>
+                <button onClick={() => goDest(d.id)}
+                  aria-label={d.label} aria-current={on ? 'page' : undefined}
+                  className={`side-dest${on ? ' active' : ''}`}>
+                  <d.Icon size={20} color={on ? '#2dd4a7' : '#7f92a6'} />
+                  <span>{d.label}</span>
+                </button>
+                {on && d.tabs.length > 1 && (
+                  <div className="side-subs" aria-label={`Screens in ${d.label}`}>
+                    {d.tabs.map(s => (
+                      <button key={s.id} aria-current={tab === s.id ? 'true' : undefined}
+                        className={`side-sub${tab === s.id ? ' active' : ''}`} onClick={() => setTab(s.id)}>
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          <button className="side-log" onClick={() => {
+            setTab('log');
+            // Let LogTab mount, then ask it to open the entry sheet.
+            setTimeout(() => window.dispatchEvent(new Event('sr-log-a-run')), 150);
+          }}>
+            <I.plus size={18} color="#07090f" /> {lang==='fr' ? 'Noter une coulée' : 'Log a run'}
+          </button>
+        </nav>
         {/* Scrollable nav (horizontal on mobile/tablet, vertical on desktop) */}
         {/* Screens inside the destination you are in. One screen, no row. */}
         {subTabs.length > 1 && (

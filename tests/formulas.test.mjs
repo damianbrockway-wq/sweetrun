@@ -29,8 +29,9 @@ const sandbox = new Function('ls', `
   ${parseMatch[0]}
   return { RULE_DIVISOR, rule86, jones87, syrupY, boilTime, finTemp, denCorr,
            brixToBe, beToBrix, altToBP, presToBP, roConc, PAN_SIZES, FUELS,
-           PLATE_CUPS, YIELD_MODELS, yieldModelFor, yieldMidOf, tapsPer, srParseNum };
-`)({ get: (_k, d) => d });   // ls stub for yieldModelSaved's neighborhood
+           PLATE_CUPS, YIELD_MODELS, yieldModelFor, yieldMidOf, tapsPer, srParseNum,
+           seasonTotals, actualRatio, seasonScore, dedupeImport };
+`)({ get: (_k, d) => d, set: () => true });   // ls stub for yieldModelSaved's neighborhood
 
 const F = sandbox;
 let pass = 0, fail = 0;
@@ -93,6 +94,47 @@ eq("srParseNum(' 3 ')", F.srParseNum(' 3 '), 3);
 eq("srParseNum('abc')", F.srParseNum('abc'), null);
 eq("srParseNum('')", F.srParseNum(''), null);
 eq("srParseNum('-')", F.srParseNum('-'), null);
+
+// ── Shared season metrics (one number, everywhere) ──
+{
+  const slog = { sapCollected: [{ val: '40' }, { val: 2.5 }, { val: 'x' }],
+                 syrupMade: [{ val: 1 }], fuelUsed: [{ val: 0.5 }], boilHours: [{ val: 4 }] };
+  const T = F.seasonTotals(slog);
+  eq('seasonTotals sapT', T.sapT, 42.5);
+  eq('seasonTotals syT', T.syT, 1);
+  eq('seasonTotals evapT (missing array)', T.evapT, 0);
+  eq('seasonTotals hoursT', T.hoursT, 4);
+  eq('actualRatio(86,2)', F.actualRatio(86, 2), 43);
+  eq('actualRatio null before syrup', F.actualRatio(86, 0), null);
+}
+
+// ── One score, both screens (Recap weighting: 30/40/20/10) ──
+{
+  const sc = F.seasonScore({ sapT: 860, syT: 20, fuelT: 1, taps: 50, brix: 2,
+    yieldModel: F.YIELD_MODELS.gravity, fuelSpu: 1000 });
+  eq('seasonScore eff (43:1 vs 43.2:1 → capped 100)', sc.effScore, 100);
+  eq('seasonScore yield capped', sc.yieldScore, 100);
+  eq('seasonScore fuel', sc.fuelScore, 86);
+  eq('seasonScore overall', sc.overall, 97);
+  eq('seasonScore grade', sc.grade, 'A');
+  const early = F.seasonScore({ sapT: 100, syT: 0, fuelT: 0, taps: 50, brix: 2,
+    yieldModel: F.YIELD_MODELS.gravity, fuelSpu: 1000 });
+  eq('seasonScore ungraded before syrup', early.grade, '—');
+}
+
+// ── Import dedupe (Debug M4: re-importing a file must not double a season) ──
+{
+  const slog = { sapCollected: [{ date: '3/15/2024', val: 100 }], syrupMade: [] };
+  const adds = { sapCollected: [{ date: '3/15/2024', val: 100 }, { date: '3/16/2024', val: 80 }],
+                 syrupMade:    [{ date: '3/15/2024', val: 100 }] };
+  const r = F.dedupeImport(slog, adds);
+  eq('dedupeImport skips exact kind+date+val', r.skippedCount, 1);
+  eq('dedupeImport keeps the rest', r.addedCount, 2);
+  eq('dedupeImport same date+val, other kind, is NOT a dup', r.added.syrupMade.length, 1);
+  eq('dedupeImport compares values numerically ("100" ≡ 100)',
+     F.dedupeImport({ sapCollected: [{ date: 'd', val: '100' }] },
+                    { sapCollected: [{ date: 'd', val: 100 }] }).skippedCount, 1);
+}
 
 // ── Trial-date edges (logic verified sound in the Sept 2026 audit — lock it) ──
 const trialSrc = src.match(/function _trialEndsAt[\s\S]*?\n\}/);
