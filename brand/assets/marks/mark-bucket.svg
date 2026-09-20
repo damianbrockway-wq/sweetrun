@@ -1,9 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-  <!-- SweetRun mark: sap bucket on spile. Trunk band left, angled spile, teal drop. -->
-  <rect fill="currentColor" x="4" y="2" width="7" height="44" rx="2.5"/>
-  <path fill="currentColor" d="M11 10.5 L21.5 14.2 Q23 14.8 22.4 16.2 L21.9 17.4 Q21.3 18.6 20 18.2 L11 15 Z"/>
-  <path fill="#2DD4A7" d="M25.5 20 C27 22.4 28 23.9 28 25.4 A2.6 2.6 0 1 1 22.9 25.4 C22.9 23.9 24 22.4 25.5 20 Z"/>
-  <path fill="currentColor" d="M15.5 29 L35.5 29 L32.8 41.6 Q32.5 43 31 43 L20 43 Q18.5 43 18.2 41.6 Z"/>
-  <rect fill="currentColor" x="14" y="27" width="23" height="3.6" rx="1.8"/>
-  <path stroke="currentColor" stroke-width="2.6" stroke-linecap="round" d="M20.6 16.6 Q18.5 21.5 17.6 26.5"/>
-</svg>
+  <!-- SweetRun outline mark v4 (bucket) — drawn, not diagrammed -->
+    <path stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" d="M9 4 C7.5 12 7.5 20 9 28 C10 36 9.6 40 8.6 44 M9.5 14 C14 14.8 17.5 15.4 19 16.4 Q20.4 17.4 19.8 19 M14.5 28.5 C20 27.6 27.5 27.6 33 28.5 M16 28.7 C16.8 34 17.6 39 18.4 41.8 Q18.8 43.3 20.2 43.3 L27.4 43.3 Q28.8 43.3 29.2 41.8 C30 39 30.8 34 31.5 28.7 M17 27.4 C17.5 22 18.4 19.7 19.5 18.9"/>
+    <path fill="#2DD4A7" d="M23.5 20.5 C24.8 22.5 25.6 23.7 25.6 24.9 A2.1 2.1 0 1 1 21.4 24.9 C21.4 23.7 22.2 22.5 23.5 20.5 Z"/>
+  </svg>

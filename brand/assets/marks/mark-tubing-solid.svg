@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+  <!-- SweetRun mark: tubing run — two trunks, sagging mainline, tank. -->
+  <rect fill="currentColor" x="5" y="5" width="6.5" height="37" rx="2.5"/>
+  <rect fill="currentColor" x="21" y="11" width="5.5" height="31" rx="2.2"/>
+  <path stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none" d="M8.2 13 C14 20.5 18 21.5 23.7 21.5 C30 21.5 31.5 24 34 28.5"/>
+  <path fill="#2DD4A7" d="M39 21.5 C40.3 23.6 41.2 24.9 41.2 26.2 A2.3 2.3 0 1 1 36.7 26.2 C36.7 24.9 37.7 23.6 39 21.5 Z"/>
+  <rect fill="currentColor" x="30" y="30" width="14" height="12" rx="2.5"/>
+</svg>

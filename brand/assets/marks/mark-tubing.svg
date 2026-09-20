@@ -1,8 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-  <!-- SweetRun mark: tubing run — two trunks, sagging mainline, tank. -->
-  <rect fill="currentColor" x="5" y="5" width="6.5" height="37" rx="2.5"/>
-  <rect fill="currentColor" x="21" y="11" width="5.5" height="31" rx="2.2"/>
-  <path stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none" d="M8.2 13 C14 20.5 18 21.5 23.7 21.5 C30 21.5 31.5 24 34 28.5"/>
-  <path fill="#2DD4A7" d="M39 21.5 C40.3 23.6 41.2 24.9 41.2 26.2 A2.3 2.3 0 1 1 36.7 26.2 C36.7 24.9 37.7 23.6 39 21.5 Z"/>
-  <rect fill="currentColor" x="30" y="30" width="14" height="12" rx="2.5"/>
-</svg>
+  <!-- SweetRun outline mark v4 (tubing) — drawn, not diagrammed -->
+    <path stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" d="M8.5 5 C7.3 14 7.3 24 8.2 33 C8.6 37 8.9 40 8.7 42 M23 11 C22 18 22 26 22.6 33 C22.9 36.5 23.1 39.5 23 42 M8.6 13.5 C15 21 19 21.5 23.5 21.5 C29.5 21.5 30.5 24 33 28.5"/>
+    <path stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" d="M32.5 31 C36 30.3 39.5 30.3 43 31 C43.5 34.5 43.5 38 43 41 C39.5 41.7 36 41.7 32.5 41 C32 38 32 34.5 32.5 31 Z"/>
+    <path fill="#2DD4A7" d="M37.5 21.5 C38.7 23.3 39.4 24.4 39.4 25.5 A1.9 1.9 0 1 1 35.6 25.5 C35.6 24.4 36.3 23.3 37.5 21.5 Z"/>
+  </svg>

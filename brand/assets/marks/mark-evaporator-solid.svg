@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+  <!-- SweetRun mark: evaporator — pan on arch firebox, stack, steam. -->
+  <path stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none" d="M13.5 15.5 Q15.5 12.5 13.5 9.5"/>
+  <path stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none" d="M21.5 15.5 Q23.5 12.5 21.5 9.5"/>
+  <path stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none" d="M29.5 15.5 Q31.5 12.5 29.5 9.5"/>
+  <rect fill="currentColor" x="5" y="19" width="33" height="7.5" rx="2"/>
+  <path fill="currentColor" fill-rule="evenodd" d="M9 26.5 L34 26.5 Q35.5 26.5 35.5 28.5 L35.5 40 Q35.5 42 33.5 42 L9.5 42 Q7.5 42 7.5 40 L7.5 28.5 Q7.5 26.5 9 26.5 Z M16 42 L16 36.5 A5.5 5.5 0 0 1 27 36.5 L27 42 Z"/>
+  <rect fill="currentColor" x="38.5" y="6.5" width="5" height="20" rx="1.8"/>
+</svg>
