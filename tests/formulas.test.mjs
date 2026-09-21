@@ -31,7 +31,9 @@ const sandbox = new Function('ls', `
            brixToBe, beToBrix, altToBP, presToBP, roConc, PAN_SIZES, FUELS,
            PLATE_CUPS, YIELD_MODELS, yieldModelFor, yieldMidOf, tapsPer, srParseNum,
            seasonTotals, actualRatio, seasonScore, dedupeImport,
-           srHaversineM, srPolyAreaM2, SR_M2_PER_ACRE, SR_M2_PER_HA };
+           srHaversineM, srPolyAreaM2, SR_M2_PER_ACRE, SR_M2_PER_HA,
+           srBoilState, srGaugeFrac, BD_BAND_F, BD_NEAR_F,
+           srReplaySteps, srReplayMoments, srReplayStepMs };
 `)({ get: (_k, d) => d, set: () => true });   // ls stub for yieldModelSaved's neighborhood
 
 const F = sandbox;
@@ -152,6 +154,51 @@ eq("srParseNum('-')", F.srParseNum('-'), null);
   eq('srPolyAreaM2 100m square ≈ 1 ha', F.srPolyAreaM2(sq), 10000, 5);
   eq('100m square in acres ≈ 2.471', F.srPolyAreaM2(sq) / F.SR_M2_PER_ACRE, 2.4711, 0.002);
   eq('srPolyAreaM2 under 3 points = 0', F.srPolyAreaM2(sq.slice(0, 2)), 0);
+}
+
+// ── Boil Day dial (pan-temp state machine + gauge geometry) ──
+eq('srBoilState at exactly draw-off', F.srBoilState(219.1, 212), 'draw');
+eq('srBoilState band floor (fin−0.3)', F.srBoilState(218.8, 212), 'draw');
+eq('srBoilState just past the band', F.srBoilState(219.5, 212), 'over');
+eq('srBoilState approaching (fin−2)', F.srBoilState(217.2, 212), 'near');
+eq('srBoilState warming', F.srBoilState(214, 212), 'warming');
+eq('srBoilState tracks altitude BP', F.srBoilState(217.3, F.altToBP(1000)), 'draw');
+eq('srGaugeFrac midpoint', F.srGaugeFrac(215, 210, 220), 0.5);
+eq('srGaugeFrac clamps high', F.srGaugeFrac(300, 210, 220), 1);
+eq('srGaugeFrac clamps low', F.srGaugeFrac(0, 210, 220), 0);
+eq('srGaugeFrac degenerate range guards', F.srGaugeFrac(5, 10, 10), 0);
+
+// ── Season replay (Pass 7: the replay's frames must be Recap's own numbers) ──
+{
+  const slog = {
+    sapCollected: [
+      { date: '3/10/2026', val: '40' }, { date: '3/12/2026', val: 240 },
+      { date: '3/12/2026', val: 60 },   { date: '3/14/2026', val: 120 },
+    ],
+    syrupMade: [{ date: '3/12/2026', val: 5 }, { date: '3/16/2026', val: 3 }],
+  };
+  const r = F.srReplaySteps(slog);
+  eq('srReplaySteps one step per logged day', r.steps.length, 4);
+  eq('srReplaySteps day bars keep entry granularity', r.steps[1].bars.length, 2);
+  eq('srReplaySteps running sap total (cumulative of the same vals)', r.steps[2].sapRun, 460);
+  eq('srReplaySteps running syrup total', r.steps[3].syRun, 8);
+  eq('srReplaySteps syrup-only day carries no bar', r.steps[3].bars.length, 0);
+  eq('srReplaySteps maxBar = SapChart max', r.maxBar, 240);
+  eq('srReplaySteps entryCount (replay gate ≥3)', r.entryCount, 6);
+  eq('srReplaySteps first boil flagged once', r.steps.filter(s => s.firstBoil).length, 1);
+  eq('srReplaySteps first boil is 3/12', r.steps.find(s => s.firstBoil).date, '3/12/2026');
+  const m = F.srReplayMoments(r.steps, [{ date: '3/12/2026', brix: '2.4' }, { date: '3/10/2026', brix: 2.1 }]);
+  eq('srReplayMoments best run val', m.find(x => x.type === 'bestRun').val, 240);
+  eq('srReplayMoments best run date', m.find(x => x.type === 'bestRun').date, '3/12/2026');
+  eq('srReplayMoments first boil present', m.some(x => x.type === 'firstBoil'), true);
+  eq('srReplayMoments peak brix (max of the same sg_brixlog vals)', m.find(x => x.type === 'peakBrix').val, 2.4);
+  eq('srReplayMoments peak brix off-day is dropped',
+     F.srReplayMoments(r.steps, [{ date: '4/01/2026', brix: 3.0 }]).some(x => x.type === 'peakBrix'), false);
+  eq('srReplaySteps empty season', F.srReplaySteps({}).steps.length, 0);
+  eq('srReplayStepMs clamps slow (3 days)', F.srReplayStepMs(3), 1600);
+  eq('srReplayStepMs mid (10 days ≈ 10s sweep)', F.srReplayStepMs(10), 1000);
+  eq('srReplayStepMs clamps fast (40 days)', F.srReplayStepMs(40), 400);
+  eq('srReplayStepMs zero guards', F.srReplayStepMs(0), 0);
 }
 
 // ── Trial-date edges (logic verified sound in the Sept 2026 audit — lock it) ──

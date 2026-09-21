@@ -406,6 +406,31 @@ const TR = {
     msDistance:'Distance', msArea:'Area', msPerimeter:'Perimeter',
     msUndo:'Undo last', msClear:'Clear', msDone:'Done', msCloseRing:'Close the loop',
     msCloseHint:'Tap the first dot (or Close the loop) to get acreage',
+    // Boil Day (Pass 6)
+    tabBoilDay:'Boil Day',
+    bdStart:'Start boil', bdEnd:'End boil', bdBoiling:'Boiling', bdElapsed:'elapsed',
+    bdPanTemp:'Pan temp', bdTargetLbl:'Draw-off target', bdWaterToday:'Water boils at',
+    bdAdjustBP:'Adjust on Boil Pt', bdEvaporator:'Evaporator',
+    bdWarming:'Coming up to temp', bdNear:'Approaching draw-off',
+    bdDraw:'DRAW OFF', bdOver:'Over target — draw now', bdToGo:'to draw-off',
+    bdSapIn:'Sap in', bdSyrupDrawn:'Syrup drawn',
+    bdRatio:'Session ratio', bdRate:'Boil rate', bdExpected:'expected',
+    bdRateSoon:'shows after 15 min',
+    bdSummaryTitle:'End of boil', bdDuration:'Duration',
+    bdLogBoil:'Log this boil', bdDiscard:'Discard', bdDiscardArm:'Tap again to discard',
+    bdLogged:'Boil logged to your season',
+    bdChipIdle:'Boiling? Open Boil Day',
+    bdIdleSub:'Check today’s boiling point, then start when the pan is rolling.',
+    // Pass 7 — season replay + share card
+    rpBtn:'Replay season', scBtn:'Share card',
+    rpTitle:'Season replay', rpClose:'Close',
+    rpPlay:'Play', rpPause:'Pause', rpRestart:'Replay',
+    rpPrev:'Back', rpNext:'Next', rpStepOf:'Day {n} of {m}',
+    rpSapRun:'Sap so far', rpSyRun:'Syrup so far',
+    rpBestRun:'best run', rpFirstBoil:'First boil', rpPeakBrix:'Peak brix',
+    rpDone:'Season complete', rpNeedData:'Replay opens once 3 dated entries are logged',
+    scDefaultName:'My sugarbush', scSeasonLine:'MAPLE SEASON',
+    scSyrup:'SYRUP', scSap:'SAP', scRatio:'RATIO', scTaps:'TAPS',
       },
   fr: {
     // Header
@@ -693,6 +718,31 @@ const TR = {
     msDistance:'Distance', msArea:'Superficie', msPerimeter:'Périmètre',
     msUndo:'Annuler le dernier', msClear:'Effacer', msDone:'Terminé', msCloseRing:'Fermer la boucle',
     msCloseHint:'Touchez le premier point (ou Fermer la boucle) pour la superficie',
+    // Bouillée (passe 6)
+    tabBoilDay:'Bouillée',
+    bdStart:'Démarrer la bouillée', bdEnd:'Terminer la bouillée', bdBoiling:'Ça bouille', bdElapsed:'écoulé',
+    bdPanTemp:'Temp. de la panne', bdTargetLbl:'Cible de soutirage', bdWaterToday:'L’eau bout à',
+    bdAdjustBP:'Ajuster au Pt Éb.', bdEvaporator:'Évaporateur',
+    bdWarming:'Monte en température', bdNear:'Approche du soutirage',
+    bdDraw:'SOUTIREZ', bdOver:'Passé la cible — soutirez', bdToGo:'avant soutirage',
+    bdSapIn:'Sève entrée', bdSyrupDrawn:'Sirop soutiré',
+    bdRatio:'Ratio de la bouillée', bdRate:'Cadence', bdExpected:'attendue',
+    bdRateSoon:'après 15 min',
+    bdSummaryTitle:'Fin de la bouillée', bdDuration:'Durée',
+    bdLogBoil:'Noter la bouillée', bdDiscard:'Jeter', bdDiscardArm:'Touchez encore pour jeter',
+    bdLogged:'Bouillée notée à votre saison',
+    bdChipIdle:'Ça bouille? Ouvrez la Bouillée',
+    bdIdleSub:'Vérifiez le point d’ébullition du jour, puis démarrez quand la panne roule.',
+    // Pass 7 — rediffusion de saison + carte de partage
+    rpBtn:'Revoir la saison', scBtn:'Carte de partage',
+    rpTitle:'Rediffusion de la saison', rpClose:'Fermer',
+    rpPlay:'Lecture', rpPause:'Pause', rpRestart:'Rejouer',
+    rpPrev:'Précédent', rpNext:'Suivant', rpStepOf:'Jour {n} de {m}',
+    rpSapRun:'Sève à date', rpSyRun:'Sirop à date',
+    rpBestRun:'meilleure coulée', rpFirstBoil:'Première bouillée', rpPeakBrix:'Brix max',
+    rpDone:'Saison terminée', rpNeedData:'La rediffusion s’ouvre après 3 entrées datées',
+    scDefaultName:'Mon érablière', scSeasonLine:'SAISON DES SUCRES',
+    scSyrup:'SIROP', scSap:'SÈVE', scRatio:'RATIO', scTaps:'ENTAILLES',
       }
 };
 const t = (lang, key) => TR[lang]?.[key] ?? TR.en[key] ?? key;
@@ -804,13 +854,18 @@ function Mark({ size = 48, color = 'currentColor', children }) {
     </svg>
   );
 }
+// The tree's geometry, hoisted so the share card can draw the SAME paths on
+// canvas via Path2D (Pass 7). M.tree below stays the source of truth — these
+// are its literal d strings, byte-identical.
+const M_TREE_CROWN_D = "M 17.8 7.1 C 18.4 7.6 18.8 8.1 19.6 8.4 C 21.5 8.9 22.6 6.8 23.2 5.4 C 23.5 4.6 23.7 3.8 23.9 3.0 C 24.3 5.0 25.9 9.7 28.8 8.1 C 29.3 7.9 29.6 7.5 30.0 7.1 C 29.7 8.3 29.3 9.5 29.0 10.7 C 28.5 12.4 27.9 14.1 28.0 15.9 C 28.0 17.0 29.3 17.0 29.9 16.4 C 30.9 15.5 31.6 14.3 32.3 13.2 C 32.7 12.6 33.1 12.0 33.6 11.3 C 33.5 13.1 33.6 15.0 36.0 14.8 C 37.4 14.7 38.7 14.1 40.0 13.5 C 38.9 14.9 38.0 16.1 37.6 17.9 C 37.3 19.8 38.4 20.4 40.0 20.7 C 40.0 20.7 40.6 20.7 40.2 20.8 C 39.6 21.0 38.9 21.3 38.3 21.5 C 37.0 22.1 33.6 23.7 33.1 25.1 C 32.9 25.4 32.9 25.8 33.1 26.1 C 33.5 27.1 34.7 27.8 35.6 28.3 C 36.0 28.5 36.3 28.6 36.6 28.8 C 37.1 29.0 36.1 28.9 36.0 28.9 C 35.8 28.9 35.1 28.9 34.8 28.9 C 33.5 29.0 32.2 29.0 31.0 29.3 C 29.2 29.8 29.3 31.1 29.7 32.6 C 28.5 31.4 27.4 30.1 26.1 29.0 C 25.5 28.4 25.1 27.9 24.2 27.6 C 24.2 31.3 24.2 35.2 24.5 39.0 L 23.3 39.0 C 23.3 38.5 23.4 38.0 23.4 37.5 L 23.6 34.0 C 23.7 31.9 23.7 29.7 23.7 27.6 C 22.7 27.9 21.6 29.1 20.8 29.8 L 18.1 32.6 C 18.2 32.1 18.3 31.7 18.3 31.2 C 18.4 30.7 18.3 30.3 17.9 29.9 C 16.9 28.8 13.4 29.0 11.9 28.9 C 11.8 28.9 11.1 28.9 11.1 28.9 L 11.1 28.9 C 11.1 28.9 11.1 28.9 11.2 28.8 C 12.3 28.3 14.3 27.3 14.8 26.0 C 14.9 25.7 14.9 25.3 14.8 25.0 C 14.1 23.7 11.0 22.2 9.7 21.6 C 8.9 21.3 8.2 21.0 7.4 20.7 C 9.6 20.4 10.8 19.8 10.1 17.4 C 9.6 15.8 8.9 14.7 7.8 13.5 C 8.8 14.0 9.7 14.4 10.9 14.7 C 13.8 15.3 14.3 14.0 14.3 11.4 C 14.8 12.0 15.2 12.7 15.7 13.4 C 16.3 14.3 17.1 15.9 18.1 16.5 C 18.4 16.7 18.8 16.9 19.2 16.8 C 19.4 16.7 19.7 16.6 19.8 16.4 C 20.4 15.3 19.0 11.1 18.6 9.9 L 17.8 7.1 Z";
+const M_TREE_GROUND_D = "M19.5 43.5 Q24 41 28.5 43.5";
 const M = {
   // OUTLINE set v4 (2026-09-20): drawn, not diagrammed — curves match the tree's organic hand.
   // Solid originals kept at brand/assets/marks/mark-*-solid.svg.
   // Sugar maple — the proven brand-leaf silhouette, outlined, rooted.
   tree: (p) => <Mark {...p}>
-    <path stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" d="M 17.8 7.1 C 18.4 7.6 18.8 8.1 19.6 8.4 C 21.5 8.9 22.6 6.8 23.2 5.4 C 23.5 4.6 23.7 3.8 23.9 3.0 C 24.3 5.0 25.9 9.7 28.8 8.1 C 29.3 7.9 29.6 7.5 30.0 7.1 C 29.7 8.3 29.3 9.5 29.0 10.7 C 28.5 12.4 27.9 14.1 28.0 15.9 C 28.0 17.0 29.3 17.0 29.9 16.4 C 30.9 15.5 31.6 14.3 32.3 13.2 C 32.7 12.6 33.1 12.0 33.6 11.3 C 33.5 13.1 33.6 15.0 36.0 14.8 C 37.4 14.7 38.7 14.1 40.0 13.5 C 38.9 14.9 38.0 16.1 37.6 17.9 C 37.3 19.8 38.4 20.4 40.0 20.7 C 40.0 20.7 40.6 20.7 40.2 20.8 C 39.6 21.0 38.9 21.3 38.3 21.5 C 37.0 22.1 33.6 23.7 33.1 25.1 C 32.9 25.4 32.9 25.8 33.1 26.1 C 33.5 27.1 34.7 27.8 35.6 28.3 C 36.0 28.5 36.3 28.6 36.6 28.8 C 37.1 29.0 36.1 28.9 36.0 28.9 C 35.8 28.9 35.1 28.9 34.8 28.9 C 33.5 29.0 32.2 29.0 31.0 29.3 C 29.2 29.8 29.3 31.1 29.7 32.6 C 28.5 31.4 27.4 30.1 26.1 29.0 C 25.5 28.4 25.1 27.9 24.2 27.6 C 24.2 31.3 24.2 35.2 24.5 39.0 L 23.3 39.0 C 23.3 38.5 23.4 38.0 23.4 37.5 L 23.6 34.0 C 23.7 31.9 23.7 29.7 23.7 27.6 C 22.7 27.9 21.6 29.1 20.8 29.8 L 18.1 32.6 C 18.2 32.1 18.3 31.7 18.3 31.2 C 18.4 30.7 18.3 30.3 17.9 29.9 C 16.9 28.8 13.4 29.0 11.9 28.9 C 11.8 28.9 11.1 28.9 11.1 28.9 L 11.1 28.9 C 11.1 28.9 11.1 28.9 11.2 28.8 C 12.3 28.3 14.3 27.3 14.8 26.0 C 14.9 25.7 14.9 25.3 14.8 25.0 C 14.1 23.7 11.0 22.2 9.7 21.6 C 8.9 21.3 8.2 21.0 7.4 20.7 C 9.6 20.4 10.8 19.8 10.1 17.4 C 9.6 15.8 8.9 14.7 7.8 13.5 C 8.8 14.0 9.7 14.4 10.9 14.7 C 13.8 15.3 14.3 14.0 14.3 11.4 C 14.8 12.0 15.2 12.7 15.7 13.4 C 16.3 14.3 17.1 15.9 18.1 16.5 C 18.4 16.7 18.8 16.9 19.2 16.8 C 19.4 16.7 19.7 16.6 19.8 16.4 C 20.4 15.3 19.0 11.1 18.6 9.9 L 17.8 7.1 Z"/>
-    <path stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" d="M19.5 43.5 Q24 41 28.5 43.5"/>
+    <path stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" d={M_TREE_CROWN_D}/>
+    <path stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" d={M_TREE_GROUND_D}/>
   </Mark>,
   // Sap bucket on spile: trunk line, spout, bail, tapered bucket, teal drop.
   bucket: (p) => <Mark {...p}>
@@ -861,6 +916,22 @@ const beToBrix = be => BE_BRIX_REF + (be - BE_AT_REF) / BE_PER_BRIX;
 const altToBP  = ft => 212 - ft * 0.0018;
 const presToBP = p => 212 + (p - 29.92) * 1.8;
 const roConc   = (sap, sb, tb) => tb > 0 && sb > 0 ? sap * (sb / tb) : 0;
+
+// Boil Day dial (Pass 6): the pan-temp state machine and the gauge geometry,
+// here so the tests lock them. Draw-off = finTemp(bp); the band is ±0.3°F
+// (the resolution of a good syrup thermometer); "approaching" begins 2°F out.
+// finTemp is rounded to 0.1 so band edges compare cleanly against pan temps
+// the producer steps in 0.1 increments (212 + 7.1 is not exact in floats).
+const BD_BAND_F = 0.3, BD_NEAR_F = 2.0;
+function srBoilState(tempF, bpF) {
+  const fin = Math.round(finTemp(bpF) * 10) / 10;
+  if (tempF > fin + BD_BAND_F) return 'over';
+  if (tempF >= fin - BD_BAND_F) return 'draw';
+  if (tempF >= fin - BD_NEAR_F) return 'near';
+  return 'warming';
+}
+// 0..1 position of a value along the dial arc, clamped to the arc.
+const srGaugeFrac = (v, lo, hi) => hi > lo ? Math.min(1, Math.max(0, (v - lo) / (hi - lo))) : 0;
 
 // Boil rates from UNH Cooperative Extension's published evaporator table.
 // The old figures ran ~0.75 gal/hr per sq ft, which is a flat-pan number applied
@@ -1077,6 +1148,61 @@ function srPolyAreaM2(pts) {
   }
   return Math.abs(sum * SR_EARTH_M * SR_EARTH_M / 2);
 }
+
+// ─── Season replay (Pass 7) ──────────────────────────────────────────────────
+// Pure data prep for Recap's replay stage. One step per logged DAY (any date
+// carrying a sap or syrup entry). The sap entries are prepared with EXACTLY
+// the map/filter/sort Recap's SapChart uses, so the replay's final frame is
+// the Recap bar chart, bar for bar, and every running total is a cumulative
+// sum of the same parseFloat(e.val) seasonTotals sums (invariant 4: same
+// numbers, not a second computation). Dates stay the stored strings (debt #6:
+// display strings, sorted with the chart's own comparator — inherited, not new).
+function srReplaySteps(slog) {
+  const s = slog || {};
+  const prep = arr => (arr || [])
+    .map(e => ({ date: e.date, val: parseFloat(e.val) || 0 }))
+    .filter(e => e.val > 0 && e.date)
+    .sort((a, b) => (a.date || '') < (b.date || '') ? -1 : 1);
+  const sap = prep(s.sapCollected), sy = prep(s.syrupMade);
+  const byDay = new Map();
+  const dayOf = d => {
+    if (!byDay.has(d)) byDay.set(d, { date: d, bars: [], sapAdd: 0, syAdd: 0 });
+    return byDay.get(d);
+  };
+  sap.forEach(e => { const st = dayOf(e.date); st.bars.push(e.val); st.sapAdd += e.val; });
+  sy.forEach(e => { dayOf(e.date).syAdd += e.val; });
+  const steps = [...byDay.values()].sort((a, b) => (a.date || '') < (b.date || '') ? -1 : 1);
+  let sapRun = 0, syRun = 0, boiled = false;
+  steps.forEach(st => {
+    sapRun += st.sapAdd; syRun += st.syAdd;
+    st.sapRun = sapRun; st.syRun = syRun;
+    st.firstBoil = !boiled && st.syAdd > 0;
+    if (st.firstBoil) boiled = true;
+  });
+  return { steps, maxBar: Math.max(...sap.map(e => e.val), 1), entryCount: sap.length + sy.length };
+}
+// Notable moments for the captions — derived from data Recap already shows:
+// best run is SapChart's highlighted max bar, first boil is the first
+// syrupMade day, peak brix is the max of the same sg_brixlog values the Brix
+// stats use (surfaced only when its date is a replay day — no invented days).
+function srReplayMoments(steps, brixArr) {
+  const m = [];
+  let best = null;
+  (steps || []).forEach(st => st.bars.forEach(v => { if (!best || v > best.val) best = { date: st.date, val: v }; }));
+  if (best) m.push({ date: best.date, type: 'bestRun', val: best.val });
+  const fb = (steps || []).find(st => st.firstBoil);
+  if (fb) m.push({ date: fb.date, type: 'firstBoil' });
+  let pk = null;
+  (brixArr || []).forEach(e => {
+    const v = parseFloat(e.brix);
+    if (!isNaN(v) && v > 0 && (!pk || v > pk.val)) pk = { date: e.date, val: v };
+  });
+  if (pk && (steps || []).some(st => st.date === pk.date)) m.push({ date: pk.date, type: 'peakBrix', val: pk.val });
+  return m;
+}
+// Step cadence: ~10s sweep, clamped 400–1600ms per day so a 3-day trial season
+// doesn't crawl and a 30-day season doesn't blur (30 × 400ms = 12s worst case).
+const srReplayStepMs = n => n > 0 ? Math.max(400, Math.min(1600, Math.round(10000 / n))) : 0;
 
 // ─── Shared settings store ───────────────────────────────────────────────────
 // One canonical key per cross-screen setting. Reads the canonical key first,
@@ -2974,6 +3100,412 @@ function BoilPtTab({ waterBP, setWaterBP, lang='en' }) {
   );
 }
 
+
+// ─── BOIL DAY (Pass 6) ────────────────────────────────────────────────────────
+// COMMITTED DIRECTION — written before the screen was built (Law 1).
+//
+//  Direction: "the instrument on the arch." One screen that lives on the
+//  sugarhouse iPad for eight hours and reads from three metres. It is Boil
+//  Pt's amber card grown into a full instrument: amber owns the draw-off
+//  target (the app's one signature colour-moment), teal stays on controls,
+//  red appears only past the band. Chrome recedes to 10–11px tracked caps in
+//  the map-HUD language; the DATA is 44–56px tabular monospace.
+//
+//  Density: sparse-and-huge. Pan temp 52px, counters 34px, every control
+//  ≥48px for a gloved thumb. One primary action per state: idle → Start
+//  boil; boiling → the temp steppers (End boil is quiet at the foot);
+//  summary sheet → Log this boil.
+//
+//  Component vocabulary: existing .card/.scrim/.sheet/.btn-primary/.eyebrow/
+//  .data-row + NumInput; new bd-* classes (dial band, needle, steppers,
+//  counter chips, HUD strip, steam wisps) defined once in app/index.html.
+//  The dial is inline SVG; the target band and needle are the only glowing
+//  things in the app outside the map, and that is deliberate.
+//
+//  Temperature unit: display follows sg_units — GAL → °F primary, L → °C
+//  primary (Québec boils in Celsius) — while everything is STORED in °F so
+//  srBoilState/finTemp never fork. Steppers move ±0.5/±0.1 in the display
+//  unit. The band is ±0.3°F ≡ ±0.17°C (thermometer resolution).
+//
+//  State machine (formula band, tested): warming → near (fin−2°F) →
+//  draw (fin±0.3°F) → over. Wisps + band pulse + needle transition are the
+//  only motion; all of it dies under prefers-reduced-motion (CSS kills the
+//  keyframes; the JS also skips rendering wisps). Vibration fires once on
+//  entering the band, if the device offers it.
+//
+//  Session: sg_boil_session { start:epoch-ms, sap, syrup, tempF } — epoch
+//  timestamp per invariant 6, values in the user's display unit per the
+//  Pass-1 litre-semantics decision, one key inside the sg_* backup sweep.
+//  "Log this boil" appends sapEvap + syrupMade + boilHours entries to
+//  sg_logs2 in exactly LogTab's entry shape through ls.set (invariant 5);
+//  totals everywhere then flow through seasonTotals (invariant 4).
+//
+// Module scope, not inside the tab — a per-render component identity would
+// remount its DOM on every clock tick (the BevInput lesson, Pass 2 H5).
+function BDCounter({ label, value, dp, u, steps, onAdd, onUndo, canUndo, undoAmt, undoLabel }) {
+  return (
+    <div className="card bd-panel" style={{ marginBottom: 10 }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+        <div style={{ minWidth: 0 }}>
+          <div className="eyebrow">{label}</div>
+          <div className="bd-count-val">{fmt(value, dp)}<span className="bd-count-u"> {u}</span></div>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:6, flexShrink:0 }}>
+          <div style={{ display:'flex', gap:8 }}>
+            {steps.map(n => (
+              <button key={n} className="bd-count-btn" onClick={() => onAdd(n)} aria-label={`+${n} ${u} ${label}`}>+{n}</button>
+            ))}
+          </div>
+          <button className="bd-undo" onClick={onUndo} disabled={!canUndo} aria-label={`${undoLabel} ${label}`}>
+            {undoLabel}{canUndo ? ` (−${undoAmt})` : ''}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+function BoilDayTab({ units, season, sapBrix, waterBP, lang='en', go }) {
+  const isC   = units === 'L';                       // Québec metric producers boil in °C
+  const u     = isC ? 'L' : 'gal';
+  const f2d   = f => isC ? (f - 32) * 5 / 9 : f;     // display unit
+  const d2f   = d => isC ? d * 9 / 5 + 32 : d;
+  const round1 = n => Math.round(n * 10) / 10;
+
+  const finT  = Math.round(finTemp(waterBP) * 10) / 10;
+  const loF   = waterBP - 2, hiF = finT + 4;         // dial range, °F
+
+  // ── The session ──
+  const [sess, setSess] = useState(() => ls.get('sg_boil_session', null));
+  const active = !!(sess && sess.start);
+  const persist = s => { setSess(s); ls.set('sg_boil_session', s); };
+  const tempF  = active ? sess.tempF : null;
+  const state  = active ? srBoilState(tempF, waterBP) : 'idle';
+
+  // Clock: one ticking second while boiling (drives elapsed + rate).
+  const [nowTs, setNowTs] = useState(Date.now());
+  useEffect(() => {
+    if (!active) return;
+    const iv = setInterval(() => setNowTs(Date.now()), 1000);
+    return () => clearInterval(iv);
+  }, [active]);
+  const elapsedMs = active ? Math.max(0, nowTs - sess.start) : 0;
+  const hrs = elapsedMs / 3600000;
+  const fmtHMS = ms => {
+    const s = Math.floor(ms / 1000);
+    return `${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  };
+
+  // Wake lock while boiling — progressive enhancement, re-acquired when the
+  // tab becomes visible again, released on end/unmount. Failure is silent:
+  // an unsupported browser just dims as it always did.
+  useEffect(() => {
+    if (!active || !('wakeLock' in navigator)) return;
+    let lock = null, gone = false;
+    const req = async () => {
+      try { if (!gone && document.visibilityState === 'visible') lock = await navigator.wakeLock.request('screen'); }
+      catch {}
+    };
+    const onVis = () => { if (document.visibilityState === 'visible') req(); };
+    req();
+    document.addEventListener('visibilitychange', onVis);
+    return () => { gone = true; document.removeEventListener('visibilitychange', onVis); try { lock && lock.release(); } catch {} };
+  }, [active]);
+
+  // One short buzz on entering the band — a physical "look up now."
+  const prevState = React.useRef(state);
+  useEffect(() => {
+    if (state === 'draw' && prevState.current !== 'draw' && navigator.vibrate) {
+      try { navigator.vibrate([180, 90, 180]); } catch {}
+    }
+    prevState.current = state;
+  }, [state]);
+
+  // ── Controls ──
+  // Temp stored at 0.01°F so °C steps (±0.18°F) don't drift; shown at 0.1.
+  const roundT = f => Math.round(f * 100) / 100;
+  const clampF = f => Math.min(hiF + 4, Math.max(loF - 2, f));
+  const bump = dDisp => persist({ ...sess, tempF: roundT(clampF(d2f(f2d(sess.tempF) + dDisp) )) });
+  const setTempDisp = d => persist({ ...sess, tempF: roundT(clampF(d2f(d))) });
+  const [lastSap, setLastSap] = useState(null);
+  const [lastSyr, setLastSyr] = useState(null);
+  const addSap = n => { setLastSap(n); persist({ ...sess, sap: round1((sess.sap || 0) + n) }); };
+  const addSyr = n => { setLastSyr(n); persist({ ...sess, syrup: round1((sess.syrup || 0) + n) }); };
+  const undoSap = () => { if (lastSap) { persist({ ...sess, sap: round1(Math.max(0, sess.sap - lastSap)) }); setLastSap(null); } };
+  const undoSyr = () => { if (lastSyr) { persist({ ...sess, syrup: round1(Math.max(0, sess.syrup - lastSyr)) }); setLastSyr(null); } };
+
+  // ── Derived instruments ──
+  const theor = RULE_DIVISOR / (parseFloat(sapBrix) || 2);
+  const ratio = active && sess.sap > 0 && sess.syrup > 0 ? sess.sap / sess.syrup : null;
+  const rate  = active && hrs >= 0.25 && sess.sap > 0 ? sess.sap / hrs : null;   // honest after 15 min
+  // Expected GPH from the producer's own pan (same keys EvapTab persists).
+  const panIdx = ls.get('sg_panIdx', 0);
+  const pan    = PAN_SIZES[panIdx] || PAN_SIZES[0];
+  const panGal = panIdx === CUSTOM_PAN_IDX
+    ? Math.round(((parseFloat(ls.get('sg_panW','')) || 0) * (parseFloat(ls.get('sg_panH','')) || 0)) * 2.5)
+    : pan.rate;
+  const expRate = panGal > 0 ? (isC ? panGal * 3.78541 : panGal) : null;   // in display units/hr
+  const panLabel = panIdx === CUSTOM_PAN_IDX
+    ? ((parseFloat(ls.get('sg_panW','')) || 0) > 0 ? `${ls.get('sg_panW','')}×${ls.get('sg_panH','')} ft` : null)
+    : pan.label.replace(/ \(.*\)/, '');
+
+  // ── End-of-boil sheet ──
+  const [showEnd, setShowEnd] = useState(false);
+  const [discardArmed, setDiscardArmed] = useState(false);
+  useEffect(() => {
+    if (!showEnd) return;
+    const h = e => { if (e.key === 'Escape') setShowEnd(false); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [showEnd]);
+  const [justLogged, setJustLogged] = useState(null);
+  useEffect(() => {
+    if (!justLogged) return;
+    const tm = setTimeout(() => setJustLogged(null), 6000);
+    return () => clearTimeout(tm);
+  }, [justLogged]);
+
+  const startBoil = () => persist({ start: Date.now(), sap: 0, syrup: 0, tempF: round1(waterBP) });
+  const clearSession = () => { setSess(null); ls.set('sg_boil_session', null); setShowEnd(false); setDiscardArmed(false); };
+  const logBoil = () => {
+    // Append through the sanctioned writer, in exactly LogTab's entry shape
+    // (locale date string matches every existing entry; the ISO migration is
+    // debt #6 and converts all entries at once — a mixed store would be worse).
+    const all  = ls.get('sg_logs2', {});
+    const slog = { ...(all[season] || {}) };
+    const date = new Date().toLocaleDateString();
+    const note = lang === 'fr' ? 'Bouillée' : 'Boil Day';
+    let id = Date.now();
+    const dur = round1(hrs);
+    if (sess.sap   > 0)  slog.sapEvap   = [...(slog.sapEvap   || []), { id: id++, date, val: sess.sap,   note }];
+    if (sess.syrup > 0)  slog.syrupMade = [...(slog.syrupMade || []), { id: id++, date, val: sess.syrup, note }];
+    if (dur >= 0.1)      slog.boilHours = [...(slog.boilHours || []), { id: id++, date, val: dur,        note }];
+    const ok = ls.set('sg_logs2', { ...all, [season]: slog });
+    if (!ok) { setShowEnd(false); return; }   // locked/quota: banner is up, session kept
+    setJustLogged({ syrup: sess.syrup, sap: sess.sap });
+    clearSession();
+  };
+
+  // ── Dial geometry (240° arc; angles in standard math degrees).
+  // Measured, not eyeballed: endpoints sit at y = CY + R·sin30° = 209, so the
+  // viewBox is 230 tall; the temp readout occupies y≈101–177 SVG units, so the
+  // pointer is a rim stub (r 82→106) that can never cross the numerals. ──
+  const CX = 150, CY = 150, R = 118;
+  const pt  = (r, a) => [CX + r * Math.cos(a * Math.PI / 180), CY - r * Math.sin(a * Math.PI / 180)];
+  const arc = (r, f0, f1) => {
+    const a0 = 210 - 240 * f0, a1 = 210 - 240 * f1;
+    const [x0, y0] = pt(r, a0), [x1, y1] = pt(r, a1);
+    return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${(a0 - a1) > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+  };
+  const fracOfF = f => srGaugeFrac(f, loF, hiF);
+  // Ticks in the DISPLAY unit: °F minor 1 / labels every 2; °C minor 0.5 / labels every 1.
+  const ticks = [];
+  {
+    const step = isC ? 0.5 : 1, lblEvery = isC ? 1 : 2;
+    const dLo = f2d(loF), dHi = f2d(hiF);
+    for (let v = Math.ceil(dLo / step) * step; v <= dHi + 1e-9; v += step) {
+      const val = Math.round(v * 2) / 2;
+      ticks.push({ f: fracOfF(d2f(val)), val, major: Math.abs(val / lblEvery - Math.round(val / lblEvery)) < 1e-9 });
+    }
+  }
+  const bandF0 = fracOfF(finT - BD_BAND_F), bandF1 = fracOfF(finT + BD_BAND_F);
+  const needleFrac = active ? fracOfF(tempF) : 0;
+  const needleDeg  = 240 * needleFrac - 120;
+  const stateColor = state === 'over' ? '#f85149' : (state === 'draw' || state === 'near') ? '#EB9A33' : '#2dd4a7';
+  const dispTemp = active ? f2d(tempF) : null;
+  const deltaDisp = active ? f2d(finT) - f2d(tempF) : null;
+  const uT = isC ? '°C' : '°F', uT2 = isC ? '°F' : '°C';
+  const altTemp = v => isC ? v * 9 / 5 + 32 : (v - 32) * 5 / 9;   // the other unit, for the small line
+  const stateLabel = state === 'draw' ? t(lang,'bdDraw') : state === 'over' ? t(lang,'bdOver')
+    : state === 'near' ? t(lang,'bdNear') : state === 'warming' ? t(lang,'bdWarming') : t(lang,'bdTargetLbl');
+  const reduced = srReducedMotion();
+
+  const stepBtn = dDisp => (
+    <button key={dDisp} className="bd-step" onClick={() => bump(dDisp)}
+      aria-label={`${dDisp > 0 ? '+' : '−'}${Math.abs(dDisp)}${uT}`}>
+      {dDisp > 0 ? '+' : '−'}{Math.abs(dDisp)}
+    </button>
+  );
+
+  return (
+    <div className="bd-screen" style={{ paddingBottom: 32 }}>
+
+      {/* ── HUD strip: the one-line state of the boil (session only —
+           idle keeps a single home for each number: the dial + card) ── */}
+      {active && (
+        <div className="bd-hud">
+          <span className="bd-dot" aria-hidden="true" />
+          <span>{t(lang,'bdBoiling')}</span>
+          <span className="sep">·</span>
+          <b>{fmtHMS(elapsedMs)}</b>
+          <span className="sep">·</span>
+          <span>{t(lang,'bdTargetLbl')}</span>
+          <b>{fmt(f2d(finT),1)}{uT}</b>
+        </div>
+      )}
+
+      {/* ── The dial ── */}
+      <div className="bd-dial-wrap">
+        {active && !reduced && state !== 'idle' && (
+          <div className="bd-steam" aria-hidden="true">
+            <span className="bd-wisp w1" /><span className="bd-wisp w2" /><span className="bd-wisp w3" />
+          </div>
+        )}
+        <svg viewBox="0 0 300 230" width="100%" role="img"
+          aria-label={active ? `${t(lang,'bdPanTemp')} ${fmt(dispTemp,1)}${uT} — ${stateLabel}` : t(lang,'bdTargetLbl')}>
+          {/* track */}
+          <path d={arc(R, 0, 1)} fill="none" stroke="#131e2c" strokeWidth="12" strokeLinecap="round" />
+          {/* temp fill */}
+          {active && needleFrac > 0.004 && (
+            <path d={arc(R, 0, needleFrac)} fill="none" stroke={stateColor} strokeWidth="12"
+              strokeLinecap="round" opacity="0.5" className="bd-fill" />
+          )}
+          {/* target band — the signature amber */}
+          <path d={arc(R, bandF0, bandF1)} fill="none" stroke="#EB9A33" strokeWidth="14" strokeLinecap="butt"
+            className={`bd-band${state === 'near' ? ' near' : ''}${state === 'draw' ? ' draw' : ''}${state === 'over' ? ' past' : ''}`} />
+          {/* ticks */}
+          {ticks.map((tk, i) => {
+            const a = 210 - 240 * tk.f;
+            const [x0, y0] = pt(104, a), [x1, y1] = pt(tk.major ? 92 : 98, a);
+            return <line key={i} x1={x0} y1={y0} x2={x1} y2={y1}
+              stroke={tk.major ? '#54677c' : '#26344a'} strokeWidth={tk.major ? 1.6 : 1} />;
+          })}
+          {/* labels OUTSIDE the bezel (r136): inside at r76 they sat 79px from
+              centre and the 52px numeral's half-width is ~95px — collision */}
+          {ticks.filter(tk => tk.major).map((tk, i) => {
+            const [x, y] = pt(136, 210 - 240 * tk.f);
+            return <text key={i} x={x} y={y + 3} textAnchor="middle" className="bd-tick-lbl">{isC ? fmt(tk.val,0) : tk.val}</text>;
+          })}
+          {/* pointer: a rim stub riding the tick zone — never crosses the readout */}
+          {active && (
+            <g className="bd-needle" style={{ transform: `rotate(${needleDeg}deg)`, transformOrigin: `${CX}px ${CY}px` }}>
+              <line x1={CX} y1={CY - 82} x2={CX} y2={CY - 106} stroke="#e6edf3" strokeWidth="4" strokeLinecap="round" />
+            </g>
+          )}
+        </svg>
+        {/* centre readout */}
+        <div className="bd-readout">
+          {active ? (
+            <>
+              <div className="eyebrow" style={{ marginBottom: 2 }}>{t(lang,'bdPanTemp')}</div>
+              <div className={`bd-temp s-${state}`}>{fmt(dispTemp,1)}<span className="bd-temp-u">{uT}</span></div>
+              <div className={`bd-state s-${state}`} aria-live="polite">{stateLabel}</div>
+              <div className="bd-alt">
+                {state === 'warming' || state === 'near'
+                  ? `${fmt(Math.abs(deltaDisp),1)}° ${t(lang,'bdToGo')} · ${fmt(altTemp(dispTemp),1)}${uT2}`
+                  : `= ${fmt(altTemp(dispTemp),1)}${uT2}`}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="eyebrow" style={{ marginBottom: 2 }}>{t(lang,'bdTargetLbl')}</div>
+              <div className="bd-temp s-idle">{fmt(f2d(finT),1)}<span className="bd-temp-u">{uT}</span></div>
+              <div className="bd-alt">= {fmt(altTemp(f2d(finT)),1)}{uT2}</div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {active ? (
+        <>
+          {/* ── Temp steppers: the working control ── */}
+          <div className="bd-steps" role="group" aria-label={t(lang,'bdPanTemp')}>
+            {stepBtn(-0.5)}{stepBtn(-0.1)}
+            <div className="bd-temp-field">
+              <NumInput label={t(lang,'bdPanTemp')} value={round1(dispTemp)} onChange={setTempDisp}
+                min={round1(f2d(loF - 2))} max={round1(f2d(hiF + 4))} step={0.1} />
+            </div>
+            {stepBtn(0.1)}{stepBtn(0.5)}
+          </div>
+
+          {/* ── Counters ── */}
+          <BDCounter label={t(lang,'bdSapIn')} value={sess.sap || 0} dp={0} u={u} steps={[1,5,10]}
+            onAdd={addSap} onUndo={undoSap} canUndo={!!lastSap} undoAmt={lastSap} undoLabel={t(lang,'msUndo')} />
+          <BDCounter label={t(lang,'bdSyrupDrawn')} value={sess.syrup || 0} dp={1} u={u} steps={[0.5,1,5]}
+            onAdd={addSyr} onUndo={undoSyr} canUndo={!!lastSyr} undoAmt={lastSyr} undoLabel={t(lang,'msUndo')} />
+
+          {/* ── Session ratio + boil rate vs their own rig ── */}
+          <div className="card bd-panel">
+            <div className="two-col">
+              <div>
+                <div className="eyebrow">{t(lang,'bdRatio')}</div>
+                <div className="bd-inst-val">{ratio ? `${fmt(ratio,0)}:1` : '—'}</div>
+                <div className="bd-inst-sub">{t(lang,'theoryPrefix')} {fmt(theor,0)}:1 · {fmt(parseFloat(sapBrix)||2,1)}°Bx</div>
+              </div>
+              <div>
+                <div className="eyebrow">{t(lang,'bdRate')}</div>
+                <div className="bd-inst-val">{rate ? `${fmt(rate,0)}` : '—'}<span className="bd-count-u"> {u}/h</span></div>
+                <div className="bd-inst-sub">
+                  {rate == null ? t(lang,'bdRateSoon')
+                    : expRate ? `${fmt(expRate,0)} ${u}/h ${t(lang,'bdExpected')}${panLabel ? ` · ${panLabel}` : ''}` : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button className="btn-secondary" style={{ marginTop: 14 }} onClick={() => { setDiscardArmed(false); setShowEnd(true); }}>
+            {t(lang,'bdEnd')}
+          </button>
+        </>
+      ) : (
+        <>
+          {/* ── Pre-flight: idle is a designed state, not a void ── */}
+          {justLogged && (
+            <div className="bd-logged" role="status">
+              <I.check size={16} color="#3fb950" /> {t(lang,'bdLogged')} — {fmt(justLogged.syrup,1)} {u}
+            </div>
+          )}
+          <div className="card bd-panel" style={{ marginTop: 4 }}>
+            <div className="data-row">
+              <span className="data-label">{t(lang,'bdWaterToday')}</span>
+              <span className="data-value bd-mono">{fmt(f2d(waterBP),1)}{uT}</span>
+            </div>
+            <div className="data-row" style={{ marginBottom: 2 }}>
+              <span className="data-label">{t(lang,'bdEvaporator')}</span>
+              <span className="data-value bd-mono">{expRate ? `${panLabel} · ${fmt(expRate,0)} ${u}/h` : '—'}</span>
+            </div>
+            <div style={{ fontSize:13, color:'#7f92a6', lineHeight:1.5, margin:'10px 2px 2px' }}>
+              {t(lang,'bdIdleSub')}{' '}
+              <button className="bd-link" onClick={() => go && go('boilpt')}>{t(lang,'bdAdjustBP')}</button>
+            </div>
+          </div>
+          <div className="primary-bar">
+            <button className="btn-primary" onClick={startBoil}>
+              <I.flame size={18} color="#07090f" /> {t(lang,'bdStart')}
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* ── End-of-boil sheet ── */}
+      {showEnd && active && (
+        <div className="scrim" onClick={e => { if (e.target === e.currentTarget) setShowEnd(false); }}>
+          <div className="sheet" role="dialog" aria-modal="true" aria-label={t(lang,'bdSummaryTitle')}>
+            <div className="sheet-handle" />
+            <div style={{ fontWeight:800, fontSize:18, marginBottom:14 }}>{t(lang,'bdSummaryTitle')}</div>
+            <div className="data-row"><span className="data-label">{t(lang,'bdDuration')}</span>
+              <span className="data-value bd-mono">{fmtHMS(elapsedMs)}</span></div>
+            <div className="data-row"><span className="data-label">{t(lang,'bdSapIn')}</span>
+              <span className="data-value bd-mono">{fmt(sess.sap||0,0)} {u}</span></div>
+            <div className="data-row"><span className="data-label">{t(lang,'bdSyrupDrawn')}</span>
+              <span className="data-value bd-mono">{fmt(sess.syrup||0,1)} {u}</span></div>
+            <div className="data-row"><span className="data-label">{t(lang,'bdRatio')}</span>
+              <span className="data-value bd-mono">{ratio ? `${fmt(ratio,0)}:1` : '—'}</span></div>
+            <div className="sheet-foot">
+              <button className="btn-primary" onClick={logBoil}>
+                <I.clipboard size={17} color="#07090f" /> {t(lang,'bdLogBoil')}
+              </button>
+              <button className={`sheet-delete${discardArmed ? ' armed' : ''}`}
+                onClick={() => discardArmed ? clearSession() : setDiscardArmed(true)}>
+                {discardArmed ? t(lang,'bdDiscardArm') : t(lang,'bdDiscard')}
+              </button>
+              <button className="sheet-cancel" onClick={() => setShowEnd(false)}>{lang==='fr' ? 'Annuler' : 'Cancel'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── SAP MONITOR IMPORT ───────────────────────────────────────────────────────
 function SapImportModal({ season, onClose, onImport, lang='en' }) {
@@ -9633,6 +10165,198 @@ function CauseCard({ cause, sevColor }) {
   );
 }
 
+// ─── Share card (Pass 7) ─────────────────────────────────────────────────────
+// A 1200×630 season card drawn ENTIRELY programmatically: brand green
+// gradient ground, the outline tree mark (M.tree's own d strings via Path2D —
+// one geometry, two renderers), operation name, season line, four tabular
+// stats, muted-amber wordmark, subtle vignette. NO location, NO map imagery
+// (privacy). Pure given a 2D context, so /tmp/sr-check can execute it
+// headlessly against a recording stub.
+const SR_CARD_W = 1200, SR_CARD_H = 630;
+function srDrawShareCard(ctx, o) {
+  const W = SR_CARD_W, H = SR_CARD_H;
+  // Ground: deep green brand gradient.
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, '#0B1F14'); g.addColorStop(1, '#1E4A34');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // The tree, right of the text column. 48-grid × 8.4 ≈ 400px tall — large-art
+  // territory, but the OUTLINE grammar (Amber Glass stays reserved for
+  // rendered material art per BIBLE; this is a mark, drawn in its own strokes).
+  ctx.save();
+  ctx.translate(776, 56); ctx.scale(8.4, 8.4);
+  ctx.strokeStyle = '#EB9A33'; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.globalAlpha = 0.92;
+  ctx.lineWidth = 2.2; ctx.stroke(new Path2D(M_TREE_CROWN_D));
+  ctx.lineWidth = 3.4; ctx.stroke(new Path2D(M_TREE_GROUND_D));
+  ctx.restore();
+  // Vignette: darkened corners, centre untouched.
+  const v = ctx.createRadialGradient(W / 2, H / 2, 260, W / 2, H / 2, 780);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.34)');
+  ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  // Operation name + season line.
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = '#FDF8F0';
+  ctx.font = '700 58px system-ui, -apple-system, "Segoe UI", sans-serif';
+  ctx.fillText(o.name, 84, 158, 640);
+  ctx.letterSpacing = '6px';
+  ctx.fillStyle = '#EB9A33';
+  ctx.font = '600 26px system-ui, -apple-system, "Segoe UI", sans-serif';
+  ctx.fillText(o.seasonLine, 84, 212, 640);
+  ctx.letterSpacing = '0px';
+  ctx.fillStyle = 'rgba(235,154,51,0.3)';
+  ctx.fillRect(84, 244, 560, 2);
+  // Four big stats, tabular monospace (the app's instrument voice).
+  (o.stats || []).slice(0, 4).forEach((st, i) => {
+    const x = 84 + i * 262;
+    ctx.fillStyle = '#FDF8F0';
+    ctx.font = "700 62px ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
+    ctx.fillText(st.val, x, 520, 226);
+    if (st.unit) {
+      const w = Math.min(ctx.measureText(st.val).width, 226);
+      ctx.fillStyle = 'rgba(253,248,240,0.6)';
+      ctx.font = '600 26px system-ui, -apple-system, sans-serif';
+      ctx.fillText(st.unit, x + w + 10, 520);
+    }
+    ctx.letterSpacing = '3px';
+    ctx.fillStyle = 'rgba(253,248,240,0.55)';
+    ctx.font = '600 20px system-ui, -apple-system, sans-serif';
+    ctx.fillText(st.lbl, x, 558);
+    ctx.letterSpacing = '0px';
+  });
+  // Wordmark, muted amber, bottom-right.
+  ctx.textAlign = 'right';
+  ctx.fillStyle = 'rgba(235,154,51,0.55)';
+  ctx.font = '600 24px system-ui, -apple-system, sans-serif';
+  ctx.fillText('sweetrun.app', W - 84, H - 40);
+  ctx.textAlign = 'left';
+}
+
+// A running total that eases from its previous value to the new one (~300ms
+// rAF tween, tabular-nums). Reduced motion / first paint: value renders as-is.
+function RpNum({ value, dp = 0 }) {
+  const target = parseFloat(value) || 0;
+  const prevRef = React.useRef(target);
+  const [disp, setDisp] = React.useState(target);
+  React.useEffect(() => {
+    const from = prevRef.current; prevRef.current = target;
+    if (srReducedMotion() || from === target) { setDisp(target); return; }
+    let raf; const t0 = performance.now(), DUR = 300;
+    const step = now => {
+      const p = Math.min(1, (now - t0) / DUR);
+      setDisp(from + (target - from) * (1 - (1 - p) * (1 - p)));
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [target]);
+  return <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmt(disp, dp)}</span>;
+}
+
+// ─── Season replay stage (Pass 7) ────────────────────────────────────────────
+// Full-card glass overlay on Recap. The autoplay sweep is a rAF loop that
+// advances ONE STEP PER LOGGED DAY on the srReplayStepMs cadence — bars,
+// progress and captions between steps are CSS transitions (transform/opacity
+// only). Reduced motion: no autoplay; Prev/Next step buttons, same content,
+// transitions killed in CSS. Reads only the data RecapTab already computed —
+// no storage, no network.
+function ReplayStage({ replay, moments, season, uLbl, lang, onClose, onShare }) {
+  const rm = srReducedMotion();
+  const steps = replay.steps;
+  const stepMs = srReplayStepMs(steps.length);
+  const [idx, setIdx] = React.useState(rm ? 0 : -1);
+  const [playing, setPlaying] = React.useState(!rm);
+  const idxRef = React.useRef(idx); idxRef.current = idx;
+  const done = idx >= steps.length - 1;
+
+  React.useEffect(() => {
+    if (rm || !playing) return;
+    let raf, last = performance.now();
+    const tick = now => {
+      if (now - last >= stepMs) {
+        last = now;
+        if (idxRef.current >= steps.length - 1) { setPlaying(false); return; }
+        setIdx(i => Math.min(i + 1, steps.length - 1));
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [playing, rm, stepMs, steps.length]);
+
+  React.useEffect(() => {
+    const h = e => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+
+  const cur = idx >= 0 ? steps[idx] : null;
+  const fmtDay = d => {
+    const p = new Date(d);   // debt-#6 caveat: stored display strings, same parse Recap's seasonDays uses
+    return isNaN(p) ? d : p.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-US', { month: 'short', day: 'numeric' });
+  };
+  const capParts = cur ? moments.filter(m => m.date === cur.date).map(m =>
+    m.type === 'bestRun' ? `${t(lang,'rpBestRun')}: ${fmt(m.val,0)} ${uLbl}` :
+    m.type === 'firstBoil' ? t(lang,'rpFirstBoil') :
+    `${t(lang,'rpPeakBrix')} ${(parseFloat(m.val)||0).toFixed(1)}°`) : [];
+  const caption = cur ? (capParts.length ? `${fmtDay(cur.date)} — ${capParts.join(' · ')}` : fmtDay(cur.date)) : ' ';
+  const bars = [];
+  steps.forEach((st, si) => st.bars.forEach(v => bars.push({ v, si, best: v === replay.maxBar })));
+  const prog = idx < 0 ? 0 : (steps.length > 1 ? idx / (steps.length - 1) : 1);
+  const ended = done && !playing && idx >= 0;
+
+  return (
+    <div className="scrim rp-center" onClick={onClose} role="dialog" aria-modal="true" aria-label={t(lang,'rpTitle')}>
+      <div className="rp-stage" onClick={e => e.stopPropagation()}>
+        <div className="rp-head">
+          <div className="rp-title">{season} · {t(lang,'rpTitle')}</div>
+          <button className="rp-x" aria-label={t(lang,'rpClose')} onClick={onClose}><I.x size={16} /></button>
+        </div>
+        <div className="rp-bars" aria-hidden="true">
+          {bars.map((b, i) => (
+            <div key={i} className="rp-barcol">
+              {b.best && <div className={'rp-bestlbl' + (idx >= b.si ? ' on' : '')}>{fmt(b.v, 0)}</div>}
+              <div className={'rp-bar' + (idx >= b.si ? ' on' : '') + (b.best ? ' best' : '')}
+                style={{ height: `${Math.max(3, Math.round(b.v / replay.maxBar * 100))}%` }} />
+            </div>
+          ))}
+        </div>
+        <div className="rp-track"><div className="rp-fill" style={{ transform: `scaleX(${prog})` }} /></div>
+        <div className="rp-dates"><span>{fmtDay(steps[0].date)}</span><span>{fmtDay(steps[steps.length - 1].date)}</span></div>
+        <div className={'rp-cap' + (cur ? ' on' : '') + (capParts.length ? ' hot' : '')} aria-live="polite">{caption}</div>
+        <div className="rp-nums">
+          <div className="rp-numcell">
+            <div className="rp-num"><RpNum value={cur ? cur.sapRun : 0} dp={0} /></div>
+            <div className="rp-numlbl">{t(lang,'rpSapRun')} ({uLbl})</div>
+          </div>
+          <div className="rp-numcell">
+            <div className="rp-num"><RpNum value={cur ? cur.syRun : 0} dp={1} /></div>
+            <div className="rp-numlbl">{t(lang,'rpSyRun')} ({uLbl})</div>
+          </div>
+          <div className="rp-numcell">
+            <div className="rp-num" style={{ fontSize: 15 }}>{t(lang,'rpStepOf').replace('{n}', String(Math.max(idx + 1, 0))).replace('{m}', String(steps.length))}</div>
+            <div className="rp-numlbl">{ended ? t(lang,'rpDone') : ' '}</div>
+          </div>
+        </div>
+        <div className="rp-ctrls">
+          {rm ? (
+            <React.Fragment>
+              <button className="rp-btn" disabled={idx <= 0} onClick={() => setIdx(i => Math.max(0, i - 1))}>{t(lang,'rpPrev')}</button>
+              <button className="rp-btn" disabled={done} onClick={() => setIdx(i => Math.min(steps.length - 1, i + 1))}>{t(lang,'rpNext')}</button>
+            </React.Fragment>
+          ) : ended ? (
+            <button className="rp-btn" onClick={() => { setIdx(-1); setPlaying(true); }}><I.play size={13} /> {t(lang,'rpRestart')}</button>
+          ) : (
+            <button className="rp-btn" onClick={() => setPlaying(p => !p)}>{playing ? t(lang,'rpPause') : t(lang,'rpPlay')}</button>
+          )}
+          {(ended || rm) && (
+            <button className="rp-btn primary" onClick={onShare}><I.upload size={13} /> {t(lang,'scBtn')}</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
   const [operatorName, setOperatorName] = React.useState(() => ls.get('sg_operator', ''));
   const saveOp = v => { setOperatorName(v); ls.set('sg_operator', v); };
@@ -9681,6 +10405,54 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
   const syrupChg = prevSyrup > 0 ? ((syrupGal - prevSyrup) / prevSyrup * 100) : null;
 
   const hasData = sapGal > 0 || syrupGal > 0;
+
+  // ── Season replay + share card (Pass 7) ──────────────────────────────────
+  // Same store slice, same parseFloat sums, same sort as SapChart below —
+  // srReplaySteps is the tested band helper; nothing here recomputes.
+  const [showReplay, setShowReplay] = React.useState(false);
+  const replayData    = srReplaySteps(slog);
+  const replayMoments = srReplayMoments(replayData.steps, brixArr);
+  const canReplay     = replayData.entryCount >= 3;
+
+  const shareCard = () => {
+    const cv = document.createElement('canvas');
+    cv.width = SR_CARD_W; cv.height = SR_CARD_H;
+    const ctx = cv.getContext && cv.getContext('2d');
+    if (!ctx) return;
+    srDrawShareCard(ctx, {
+      name: (operatorName || '').trim() || t(lang,'scDefaultName'),
+      seasonLine: `${t(lang,'scSeasonLine')} ${season}`,
+      stats: [   // the SAME totals rendered in the Big-4 cards below
+        { val: syrupGal > 0 ? fmt(syrupGal, 1) : '—', unit: uLbl, lbl: t(lang,'scSyrup') },
+        { val: sapGal   > 0 ? fmt(sapGal, 0)   : '—', unit: uLbl, lbl: t(lang,'scSap') },
+        { val: ratioActual > 0 ? ratioActual.toFixed(1) + ':1' : '—', unit: '', lbl: t(lang,'scRatio') },
+        { val: (parseInt(trees) || 0) > 0 ? fmt(parseInt(trees), 0) : '—', unit: '', lbl: t(lang,'scTaps') },
+      ],
+    });
+    // Local PNG only: OS share sheet with the file when available, else a
+    // download. Nothing is uploaded anywhere (invariant 2).
+    cv.toBlob(blob => {
+      if (!blob) return;
+      const fname = `sweetrun-season-${season}.png`;
+      const tryShare = async () => {
+        if (navigator.share && navigator.canShare) {
+          try {
+            const file = new File([blob], fname, { type: 'image/png' });
+            if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return true; }
+          } catch (e) { if (e && e.name === 'AbortError') return true; }
+        }
+        return false;
+      };
+      tryShare().then(shared => {
+        if (shared) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = fname;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+      });
+    }, 'image/png');
+  };
 
   // ── SVG Sap Collection Bar Chart ─────────────────────────────────────────
   const SapChart = () => {
@@ -9800,6 +10572,23 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
           <I.download size={15} color="#7f92a6" /> {t(lang,'exportPDF')}
         </button>
       </div>
+
+      {/* ── Replay + share card (Pass 7) ── */}
+      <div className="recap-no-print rp-row">
+        <button className="rp-open" disabled={!canReplay} onClick={() => setShowReplay(true)}>
+          <I.play size={14} color="currentColor" /> {t(lang,'rpBtn')}
+        </button>
+        <button className="rp-open" onClick={shareCard}>
+          <I.upload size={14} color="currentColor" /> {t(lang,'scBtn')}
+        </button>
+      </div>
+      {!canReplay && (
+        <div className="recap-no-print rp-hint">{t(lang,'rpNeedData')}</div>
+      )}
+      {showReplay && canReplay && (
+        <ReplayStage replay={replayData} moments={replayMoments} season={season} uLbl={uLbl}
+          lang={lang} onClose={() => setShowReplay(false)} onShare={shareCard} />
+      )}
 
       {!hasData && (
         <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.25)', borderRadius:12, padding:'14px 16px', fontSize:13, color:'#e0a44a', lineHeight:1.5, marginBottom:16 }}>
@@ -10249,6 +11038,19 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
   const unitOf = k => k === 'fuelUsed' ? (FUELS.find(f=>f.label===ls.get('sg_fuel','Firewood (cord)'))||FUELS[0]).unit : k === 'boilHours' ? 'hr' : u;
   const dpOf   = k => k === 'syrupMade' || k === 'fuelUsed' || k === 'boilHours' ? 1 : 0;
 
+  // Boil Day shortcut (Pass 6): quiet row when idle; live amber instrument
+  // chip while a session runs. Elapsed refreshes on the half-minute — the
+  // chip shows h:mm, so a 1s tick would be theater.
+  const bdSess = ls.get('sg_boil_session', null);
+  const bdActive = !!(bdSess && bdSess.start);
+  const [bdNow, setBdNow] = useState(Date.now());
+  useEffect(() => {
+    if (!bdActive) return;
+    const iv = setInterval(() => setBdNow(Date.now()), 30000);
+    return () => clearInterval(iv);
+  }, [bdActive]);
+  const bdHM = ms => { const m = Math.max(0, Math.floor(ms / 60000)); return `${Math.floor(m/60)}:${String(m%60).padStart(2,'0')}`; };
+
   return (
     <div style={{ paddingBottom:48 }}>
       {/* One line: the day and the season. The producer knows what day it is. */}
@@ -10296,6 +11098,18 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
           {last ? '' : ' · nothing logged this season yet'}
         </div>
       </div>
+
+      {/* Boil Day shortcut — one tap from the front door to the instrument */}
+      <button className={`bd-chip${bdActive ? ' on' : ''}`} onClick={() => go('boilday')}>
+        {bdActive ? (
+          <><span className="bd-dot" aria-hidden="true" />
+            <span className="bd-chip-txt">{t(lang,'bdBoiling')} — <b>{bdHM(bdNow - bdSess.start)}</b> {t(lang,'bdElapsed')}</span></>
+        ) : (
+          <><I.flame size={16} color="#7f92a6" />
+            <span className="bd-chip-txt">{t(lang,'bdChipIdle')}</span></>
+        )}
+        <span className="bd-chip-arrow" aria-hidden="true">›</span>
+      </button>
 
       {/* First run: the void between the card and the CTA becomes furniture —
           the bucket mark and the three next actions, to Tubing's standard. */}
@@ -11151,6 +11965,7 @@ function App() {
     { id:'boil', Icon:I.calculator,  label:'Numbers',
       tabs:[ { id:'sap',    Icon:I.droplet,     label:t(lang,'tabSap')    },
              { id:'evap',   Icon:I.flame,       label:t(lang,'tabEvap')   },
+             { id:'boilday',Icon:I.flame,       label:t(lang,'tabBoilDay') },
              { id:'ro',     Icon:I.filter,      label:t(lang,'tabRO')     },
              { id:'finish', Icon:I.thermometer, label:t(lang,'tabFinish') },
              { id:'boilpt', Icon:I.mountain,    label:t(lang,'tabBoilPt') } ] },
@@ -11348,6 +12163,7 @@ function App() {
           {tab==='finish'  && <FinishTab  waterBP={waterBP} setWaterBP={setWaterBP} lang={lang} />}
           {tab==='tapping' && <TappingTab sapBrix={sapBrix} trees={trees} setTrees={setTrees} units={units} lang={lang} />}
           {tab==='boilpt'  && <BoilPtTab  waterBP={waterBP} setWaterBP={setWaterBP} lang={lang} />}
+          {tab==='boilday' && <BoilDayTab units={units} season={season} sapBrix={sapBrix} waterBP={waterBP} lang={lang} go={setTab} />}
           {tab==='season'  && <SeasonTab  season={season} lang={lang} />}
           {tab==='recap'   && <RecapTab   season={season} units={units} sapBrix={sapBrix} trees={trees} lang={lang} />}
           {tab==='tubing'    && <TubingTab trees={trees} />}
