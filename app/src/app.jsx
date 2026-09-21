@@ -379,6 +379,9 @@ const TR = {
     // Score before there is a season to judge
     tooEarlyGrade:'Too early to grade',
     tooEarlyGradeSub:'The score gets its letter once syrup is logged.',
+    ratioCheck:'These numbers need a second look',
+    ratioCheckSub:'Your season reads {actual}:1, but even the sweetest sap cannot make syrup below about {floor}:1 — there is only so much sugar in it. Usually one entry went in under the wrong heading, or a tank reading gained a digit. Scoring waits until it is sorted.',
+    ratioCheckCta:'Review entries',
     // Import dedupe
     importDupNote:'{n} new · {m} duplicates will be skipped',
     importAllDup:'Already imported — 0 new entries',
@@ -691,6 +694,9 @@ const TR = {
     // Note avant qu’il y ait une saison à évaluer
     tooEarlyGrade:'Trop tôt pour évaluer',
     tooEarlyGradeSub:'La note arrive dès que du sirop est enregistré.',
+    ratioCheck:'Ces chiffres méritent un second regard',
+    ratioCheckSub:'Votre saison affiche {actual}:1, mais même la sève la plus sucrée ne peut pas donner du sirop sous environ {floor}:1 — le sucre disponible est limité. Le plus souvent, une entrée a été notée sous la mauvaise rubrique, ou une lecture de réservoir a gagné un chiffre. L’évaluation attend la correction.',
+    ratioCheckCta:'Revoir les entrées',
     // Doublons à l’importation
     importDupNote:'{n} nouvelles · {m} doublons seront ignorés',
     importAllDup:'Déjà importé — 0 nouvelle entrée',
@@ -1067,6 +1073,26 @@ function seasonTotals(slog) {
 // The season's actual sap:syrup ratio; null until syrup has been made.
 function actualRatio(sapT, syT) { return syT > 0 ? sapT / syT : null; }
 
+// ─── Ratio sanity ────────────────────────────────────────────────────────────
+// Sap:syrup has a floor set by the sugar in the sap — no evaporator makes a
+// gallon of syrup from less sap than the sugar allows. A season under that floor
+// is a data error (sap logged as syrup, a tank reading that gained a digit), not
+// a miracle, and the app used to answer that case with 100/100 and an A.
+//
+// The floor is absolute, not a fraction of the sugarmaker's recorded brix. Brix
+// is the field most likely to be left at its default, so a relative floor would
+// flag honest seasons for the crime of running sweeter sap than they told the
+// app — exactly the wrong error to make. Cornell and UVM put typical sweetness
+// at 1.5–3%, with exceptional trees reaching 4–5%; nobody averages a season
+// above 5. So 86.4/5 ≈ 17.3:1 is a line no real season crosses, whatever brix
+// says, and anything under it has earned a question.
+const SR_MAX_PLAUSIBLE_BRIX = 5;
+const SR_RATIO_FLOOR = RULE_DIVISOR / SR_MAX_PLAUSIBLE_BRIX;
+function ratioSuspect(sapT, syT) {
+  if (!(sapT > 0 && syT > 0)) return false;
+  return (sapT / syT) < SR_RATIO_FLOOR;
+}
+
 // ─── Season score — one model for the whole app ──────────────────────────────
 // Recap's SweetRun Score and SugarSage's Season Intelligence each computed a
 // score; the same season graded 46 on one screen and 37 on the other. Both now
@@ -1076,15 +1102,22 @@ function seasonScore({ sapT, syT, fuelT, taps, brix, yieldModel, fuelSpu }) {
   const b = parseFloat(brix) || 2.0;
   let yieldScore = null, effScore = null, fuelScore = null;
   const parts = [];
-  if (taps > 0 && syT > 0 && yieldModel) {
+  // Impossible data is not a good season. When the ratio is under the physical
+  // floor, the efficiency and yield numbers it feeds are both untrustworthy, so
+  // neither is scored and no letter is issued until the entries are fixed.
+  const suspect = ratioSuspect(sapT, syT);
+  if (taps > 0 && syT > 0 && yieldModel && !suspect) {
     yieldScore = Math.min(100, Math.round(((syT / taps) / yieldMidOf(yieldModel)) * 100));
     parts.push({ score: yieldScore, weight: 30 });
   }
-  if (sapT > 0 && syT > 0 && b > 0) {
+  if (sapT > 0 && syT > 0 && b > 0 && !suspect) {
     effScore = Math.min(100, Math.round(((RULE_DIVISOR / b) / (sapT / syT)) * 100));
     parts.push({ score: effScore, weight: 40 });
   }
-  if (fuelT > 0 && syT > 0 && fuelSpu > 0) {
+  // Fuel-per-gallon divides by the same syrup total, so it inherits the doubt.
+  // Everything the contradiction touches is withheld; only the count of what has
+  // been logged survives, because logging is never what went wrong.
+  if (fuelT > 0 && syT > 0 && fuelSpu > 0 && !suspect) {
     const bench = (RULE_DIVISOR / b) / fuelSpu;
     fuelScore = Math.min(100, Math.round((bench / (fuelT / syT)) * 100));
     parts.push({ score: fuelScore, weight: 20 });
@@ -1095,10 +1128,11 @@ function seasonScore({ sapT, syT, fuelT, taps, brix, yieldModel, fuelSpu }) {
   const totalWeight = parts.reduce((s, x) => s + x.weight, 0);
   const overall = totalWeight > 0
     ? Math.round(parts.reduce((s, x) => s + x.score * x.weight, 0) / totalWeight) : 0;
-  // No letter until there is enough season to judge — same rule on both screens.
-  const graded = parts.length >= 3 && syT > 0;
+  // No letter until there is enough season to judge — same rule on both screens —
+  // and none at all while the ratio says the entries contradict themselves.
+  const graded = parts.length >= 3 && syT > 0 && !suspect;
   const grade = !graded ? '—' : overall >= 90 ? 'A' : overall >= 80 ? 'B' : overall >= 70 ? 'C' : overall >= 60 ? 'D' : 'F';
-  return { yieldScore, effScore, fuelScore, dataScore, dataPts, overall, graded, grade };
+  return { yieldScore, effScore, fuelScore, dataScore, dataPts, overall, graded, grade, suspect };
 }
 
 // ─── Import dedupe ───────────────────────────────────────────────────────────
@@ -4457,7 +4491,13 @@ function LogEntrySheet({ kinds, kind, setKind, lang, units, activePoint, grades,
   const [dateISO, setDateISO] = useState(editing ? toISO(editing.date) : '');
   const [armed, setArmed] = useState(false);
   React.useEffect(() => { if (!armed) return; const t = setTimeout(() => setArmed(false), 3000); return () => clearTimeout(t); }, [armed]);
-  const title = editing ? (lang==='fr' ? 'Modifier l’entrée' : 'Change this entry') : (lang==='fr' ? 'Noter une coulée' : 'Log a run');
+  // The sheet opens on the kind used last, which saves a tap for anyone logging
+  // sap five times a day — but a generic "Log a run" headline let that memory
+  // turn into a silent mis-entry at the end of a long boil. The title now names
+  // the kind, so the largest words in the sheet say what is about to be written.
+  const title = editing
+    ? (lang==='fr' ? 'Modifier l’entrée' : 'Change this entry')
+    : (lang==='fr' ? `Noter : ${K.l.toLowerCase()}` : `Log ${K.l.toLowerCase()}`);
   const save = () => {
     if (!val) { const el = document.getElementById('log-amount'); if (el) el.focus(); return; }
     if (editing) {
@@ -8806,13 +8846,19 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
           <div style={{fontSize:12,color:'#7f92a6',fontWeight:700,letterSpacing:'0.1em',marginTop:4,textTransform:'uppercase'}}>Season Score</div>
           {graded
             ? <div style={{fontSize:13,color:gradeColor,fontWeight:700,marginTop:2}}>{overall}%</div>
-            : <div style={{fontSize:11,color:'#7f92a6',fontWeight:600,marginTop:2,textAlign:'center',lineHeight:1.35}}>{t(ls.get('sg_lang','en'),'tooEarlyGrade')}</div>}
+            : <div style={{fontSize:11,color: sc.suspect ? '#e0a44a' : '#7f92a6',fontWeight:600,marginTop:2,textAlign:'center',lineHeight:1.35}}>
+                {t(ls.get('sg_lang','en'), sc.suspect ? 'ratioCheck' : 'tooEarlyGrade')}
+              </div>}
         </div>
         <div style={{flex:1,display:'flex',flexDirection:'column',gap:9,justifyContent:'center'}}>
           {yieldScore!==null && <SubScoreBar label="Yield / Tap" score={yieldScore} color="#3fb950"/>}
           {effScore!==null   && <SubScoreBar label="Efficiency"  score={effScore}   color="#58a6ff"/>}
           {fuelScore!==null  && <SubScoreBar label="Fuel Use"    score={fuelScore}   color="#e0a44a"/>}
-          {activeSc.length===0 && <div style={{fontSize:12,color:'#7f92a6'}}>Log syrup & sap to generate scores</div>}
+          {activeSc.length===0 && <div style={{fontSize:12,color: sc.suspect ? '#9fb0c0' : '#7f92a6',lineHeight:1.5}}>
+            {sc.suspect
+              ? `Your sap and syrup totals read ${(sapGal/syrupGal).toFixed(1)}:1, which is below what any sap can make. Check the Recap for what to look at.`
+              : 'Log syrup & sap to generate scores'}
+          </div>}
         </div>
       </div>
 
@@ -9901,7 +9947,9 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season, lang
     });
   };
 
-  if (scores.length <= 1) return null;
+  // A withheld score leaves only the Data row — but disappearing silently is the
+  // one thing worse than a wrong number, so the card stays to explain itself.
+  if (scores.length <= 1 && !sc.suspect) return null;
 
   return (
     <div className="card">
@@ -9921,6 +9969,26 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season, lang
           <span style={{fontSize:13,color:'#7f92a6',fontWeight:500}}>out of 100</span>
           <span style={{fontSize:13,fontWeight:800,color:gradeColor,background:`${gradeColor}1f`,
             borderRadius:999,padding:'3px 12px',lineHeight:1.4,alignSelf:'center'}} aria-label={`Grade ${grade}`}>{grade}</span>
+        </div>
+      ) : sc.suspect ? (
+        /* The ratio is under the physical floor. Amber, not red: this is almost
+           always a typo, and the sugarmaker has done nothing wrong. Name the
+           number, name the floor, point at the likely cause, offer the fix. */
+        <div style={{paddingBottom:14,marginBottom:14,borderBottom:'1px solid #131e2c'}}>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <span style={{width:8,height:8,borderRadius:999,background:'#e0a44a',flex:'0 0 auto'}} aria-hidden="true" />
+            <div style={{fontSize:16,fontWeight:700,color:'#e6edf3'}}>{t(lang,'ratioCheck')}</div>
+          </div>
+          <div style={{fontSize:12,color:'#9fb0c0',marginTop:5,lineHeight:1.55}}>
+            {t(lang,'ratioCheckSub')
+              .replace('{actual}', (sapGal / syrupGal).toFixed(1))
+              .replace('{floor}',  SR_RATIO_FLOOR.toFixed(0))}
+          </div>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('sr-goto-entries'))}
+            style={{marginTop:10,background:'none',border:'1px solid #2a3a4d',borderRadius:8,
+              padding:'9px 14px',minHeight:44,fontSize:13,fontWeight:700,color:'#e0a44a',cursor:'pointer'}}>
+            {t(lang,'ratioCheckCta')}
+          </button>
         </div>
       ) : (
         <div style={{paddingBottom:14,marginBottom:14,borderBottom:'1px solid #131e2c'}}>
@@ -11985,6 +12053,14 @@ function App() {
     setTab(lastInDest.current[d] || grp.tabs[0].id);
   };
   React.useEffect(() => { lastInDest.current[dest] = tab; }, [tab, dest]);
+
+  // Recap's ratio-check card sends the sugarmaker straight to the entry list,
+  // which is the only place the offending row can actually be fixed.
+  React.useEffect(() => {
+    const h = () => setTab('log');
+    window.addEventListener('sr-goto-entries', h);
+    return () => window.removeEventListener('sr-goto-entries', h);
+  }, []);
 
   return (
     <div className="app-wrap" style={{ maxWidth:540, margin:'0 auto' }}>

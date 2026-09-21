@@ -31,6 +31,7 @@ const sandbox = new Function('ls', `
            brixToBe, beToBrix, altToBP, presToBP, roConc, PAN_SIZES, FUELS,
            PLATE_CUPS, YIELD_MODELS, yieldModelFor, yieldMidOf, tapsPer, srParseNum,
            seasonTotals, actualRatio, seasonScore, dedupeImport,
+           ratioSuspect, SR_RATIO_FLOOR, SR_MAX_PLAUSIBLE_BRIX,
            srHaversineM, srPolyAreaM2, SR_M2_PER_ACRE, SR_M2_PER_HA,
            srBoilState, srGaugeFrac, BD_BAND_F, BD_NEAR_F,
            srReplaySteps, srReplayMoments, srReplayStepMs };
@@ -123,6 +124,38 @@ eq("srParseNum('-')", F.srParseNum('-'), null);
   const early = F.seasonScore({ sapT: 100, syT: 0, fuelT: 0, taps: 50, brix: 2,
     yieldModel: F.YIELD_MODELS.gravity, fuelSpu: 1000 });
   eq('seasonScore ungraded before syrup', early.grade, '—');
+  eq('seasonScore clean season not suspect', sc.suspect, false);
+}
+
+// ── Ratio sanity: physics is the floor ──
+// A ratio under what the sweetest plausible sap could yield means the entries are
+// wrong, not that the season was miraculous. The live 2026 season logged 120 gal
+// sap / 97.5 gal syrup (1.2:1) after a sap entry went in under Syrup, and the app
+// answered 97/100 and an A. The floor is absolute so that a sugarmaker running
+// sweet sap on a default brix setting is never accused of bad data.
+{
+  eq('ratio floor is 86.4/5', F.SR_RATIO_FLOOR, 17.28, 1e-9);
+  eq('ratioSuspect: honest 43:1 season',  F.ratioSuspect(860, 20), false);
+  eq('ratioSuspect: thin 60:1 season',    F.ratioSuspect(1200, 20), false);
+  eq('ratioSuspect: rich 3% sap, 28:1',   F.ratioSuspect(576, 20), false);
+  eq('ratioSuspect: 4% sap at 21.6:1',    F.ratioSuspect(432, 20), false);
+  eq('ratioSuspect: at the floor',        F.ratioSuspect(17.28, 1), false);
+  eq('ratioSuspect: just under floor',    F.ratioSuspect(17.0, 1), true);
+  eq('ratioSuspect: the 1.2:1 mis-entry', F.ratioSuspect(120, 97.5), true);
+  eq('ratioSuspect: syrup > sap',         F.ratioSuspect(20, 40), true);
+  eq('ratioSuspect: no syrup yet',        F.ratioSuspect(120, 0), false);
+  eq('ratioSuspect: no sap yet',          F.ratioSuspect(0, 5), false);
+
+  // The score withholds everything the bad ratio touches, and the letter with it.
+  const bad = F.seasonScore({ sapT: 120, syT: 97.5, fuelT: 0, taps: 50, brix: 2,
+    yieldModel: F.YIELD_MODELS.gravity, fuelSpu: 1000 });
+  eq('suspect season flagged',        bad.suspect, true);
+  eq('suspect season withholds eff',  bad.effScore, null);
+  eq('suspect season withholds yield', bad.yieldScore, null);
+  eq('suspect season ungraded',       bad.graded, false);
+  eq('suspect season has no letter',  bad.grade, '—');
+  // Data completeness still counts — logging is never punished.
+  eq('suspect season still counts data', bad.dataScore, 75);
 }
 
 // ── Import dedupe (Debug M4: re-importing a file must not double a season) ──

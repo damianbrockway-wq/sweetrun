@@ -97,6 +97,25 @@ One single-file React 18 app, compiled by Babel (JSX transform only — no bundl
 
 ## 5. Decision log
 
+**2026-09-21 — Ratio sanity floor is absolute, not relative to recorded brix.**
+Live verification found a season of 120 gal sap / 97.5 gal syrup (1.2:1, created
+by a sap entry landing under Syrup) scoring 97/100 and an A. `seasonScore`
+divided theoretical ratio by actual and capped at 100, so *more impossible* data
+scored *better*. Fixed by withholding every score that divides by the syrup total
+(yield, efficiency, fuel) plus the letter grade when the ratio falls below a
+floor; data-completeness still counts, because logging is never the error.
+
+The first cut set the floor at 80% of `86.4/brix`. Rejected during test-writing:
+brix is the field most likely left at its default 2.0, so a relative floor
+accuses a sugarmaker with genuinely sweet 3% sap (28.8:1) of bad data — a false
+positive on a *correct* season, the worst error this feature can make. The
+shipped floor is absolute: `RULE_DIVISOR / SR_MAX_PLAUSIBLE_BRIX` = 86.4/5 =
+17.28:1, under which no season lands at any sweetness Cornell or UVM records. It
+catches the 1.2:1 case with a factor of 14 to spare and cannot fire on a real
+season. New invariant: **a score is withheld, never estimated, when its inputs
+contradict each other** — and the card that would have shown it stays on screen
+to explain itself rather than silently disappearing.
+
 - **2026-09-19 — Hand-patch compiled app.js in sandbox.** Accepted as exception (Babel unrunnable in sandbox; identical string edits to source + compiled; local rebuild reconciles). Rejected: pushing source-only and trusting CF build, because repo app.js would drift from source. Follow-up owed: make sandbox builds possible or eliminate the compiled file from the repo.
 - **2026-09-19 — Calculator pages duplicate formulas rather than share a module.** Chosen for zero-build static pages shipped same-day before competitor launch. Debt #4 opened deliberately. Revisit when touching formulas next.
 - **2026-09-19 (Plumb, first full read) — Characterization tests before any restructuring.** The formula layer is pure and one file; tests cost half a day and are the precondition for fixing debts #2–#8 safely. Rejected: starting with the file split, because moving untested math is how the divisor drift happened in the first place.
