@@ -65,11 +65,29 @@ async function verifyLicense(token) {
     if (!p || !sig) return null;
     const payload = JSON.parse(new TextDecoder().decode(b64uDec(p)));
     if (!payload.e || !payload.x) return null;
+
+    // Decode the signature BEFORE the verify try-block. The old code decoded it
+    // as an argument inside the try, so a malformed signature threw during decode
+    // and landed in the "unsupported browser" catch — which accepts the license.
+    // That turned any bad signature into a valid pass on a modern browser. A
+    // signature that won't decode, or isn't 64 bytes, is simply invalid, full stop.
+    let sigBytes;
+    try { sigBytes = b64uDec(sig); } catch { return null; }
+    if (sigBytes.length !== 64) return null;
+
+    let verified = false, unsupported = false;
     try {
       const key = await crypto.subtle.importKey('raw', b64uDec(LICENSE_PUBKEY), { name: 'Ed25519' }, false, ['verify']);
-      const ok = await crypto.subtle.verify('Ed25519', key, b64uDec(sig), new TextEncoder().encode(p));
-      if (!ok) return null;
-    } catch (_) { /* Ed25519 unsupported on old Safari — accept structure + expiry */ }
+      verified = await crypto.subtle.verify('Ed25519', key, sigBytes, new TextEncoder().encode(p));
+    } catch (e) {
+      // The ONLY reason to fall through unverified is a browser that genuinely
+      // can't do Ed25519 (Safari < 17). Any other error is a real failure and
+      // must reject — we do not accept on structure alone for a routine error.
+      unsupported = !!(e && (e.name === 'NotSupportedError' || e.name === 'OperationError'));
+      if (!unsupported) return null;
+    }
+    if (!verified && !unsupported) return null;
+
     if (new Date(payload.x + 'T23:59:59') < new Date()) return { ...payload, expired: true };
     return payload;
   } catch { return null; }
@@ -362,7 +380,7 @@ const TR = {
     roBrixInput:'RO output (°Brix)', preheaterLbl:'Preheater',
     boilTimeLbl:'BOIL TIME', woodUsedLbl:'WOOD USED',
     straightBoilLbl:'Straight-boil', withROLbl:'With RO', withROPreLbl:'With RO + preheater',
-    roConcentratedNote:'{ro} gal through RO → {conc} gal concentrated',
+    roConcentratedNote:'{ro} {u} through RO → {conc} {u} concentrated',
     noRODataNote:'No RO data in log',
     savedBoilingLbl:'saved boiling', woodSavedLbl:'wood saved', cordsSavedLbl:'cords saved',
     logRONote:'Log your R\/O sap entries to see actual savings vs. straight-boil.',
@@ -382,6 +400,7 @@ const TR = {
     ratioCheck:'These numbers need a second look',
     ratioCheckSub:'Your season reads {actual}:1, but even the sweetest sap cannot make syrup below about {floor}:1 — there is only so much sugar in it. Usually one entry went in under the wrong heading, or a tank reading gained a digit. Scoring waits until it is sorted.',
     ratioCheckCta:'Review entries',
+    pdfOffline:'The PDF exporter needs a connection the first time. Reconnect and try again — your CSV export works offline.',
     // Import dedupe
     importDupNote:'{n} new · {m} duplicates will be skipped',
     importAllDup:'Already imported — 0 new entries',
@@ -677,7 +696,7 @@ const TR = {
     roBrixInput:'Sortie O/I (°Brix)', preheaterLbl:'Préchauffeur',
     boilTimeLbl:'TEMPS D\'ÉBULLITION', woodUsedLbl:'BOIS UTILISÉ',
     straightBoilLbl:'Bouillée directe', withROLbl:'Avec O/I', withROPreLbl:'Avec O/I + préchauffeur',
-    roConcentratedNote:'{ro} gal par O/I → {conc} gal concentré',
+    roConcentratedNote:'{ro} {u} par O/I → {conc} {u} concentré',
     noRODataNote:'Aucune donnée O/I dans le journal',
     savedBoilingLbl:'économisé à l\'ébullition', woodSavedLbl:'bois économisé', cordsSavedLbl:'cordes économisées',
     logRONote:'Enregistrez vos entrées O/I pour voir les économies réelles vs. bouillée directe.',
@@ -697,6 +716,7 @@ const TR = {
     ratioCheck:'Ces chiffres méritent un second regard',
     ratioCheckSub:'Votre saison affiche {actual}:1, mais même la sève la plus sucrée ne peut pas donner du sirop sous environ {floor}:1 — le sucre disponible est limité. Le plus souvent, une entrée a été notée sous la mauvaise rubrique, ou une lecture de réservoir a gagné un chiffre. L’évaluation attend la correction.',
     ratioCheckCta:'Revoir les entrées',
+    pdfOffline:'L’export PDF nécessite une connexion la première fois. Reconnectez-vous et réessayez — l’export CSV fonctionne hors ligne.',
     // Doublons à l’importation
     importDupNote:'{n} nouvelles · {m} doublons seront ignorés',
     importAllDup:'Déjà importé — 0 nouvelle entrée',
@@ -1070,6 +1090,74 @@ function seasonTotals(slog) {
     hoursT: sum(s.boilHours),
   };
 }
+// Log values are stored in whatever unit the sugarmaker works in, but every
+// benchmark in this app — gal/tap yield models, gal-per-cord fuel rates, break-even
+// prices — is in gallons. Screens that forgot to convert compared litres against
+// gallon benchmarks: the same 500-tap season graded D in gallons and A in litres,
+// because 50 gal of syrup read as 189 "gallons" per the same 500 taps. Diagnose
+// had a local `_gal` and got it right; Recap, Today, Log and Equip did not.
+//
+// This is the one converter. The name carries the unit so that destructuring it
+// into a variable called `sapGal` is true instead of merely hopeful — the naming
+// is how the original fault hid in plain sight for so long.
+const SR_L_PER_GAL = 3.78541;
+const toGal   = (v, units) => units === 'L' ? v / SR_L_PER_GAL : v;   // display unit → canonical
+const fromGal = (v, units) => units === 'L' ? v * SR_L_PER_GAL : v;   // canonical → display unit
+function seasonTotalsGal(slog, units) {
+  const T = seasonTotals(slog);
+  return {
+    sapGal:   toGal(T.sapT,   units),
+    syrupGal: toGal(T.syT,    units),
+    roGal:    toGal(T.roT,    units),
+    evapGal:  toGal(T.evapT,  units),
+    fuelT:    T.fuelT,   // fuel is cords/gal-of-oil/etc — its own unit, never litres
+    hoursT:   T.hoursT,  // hours are hours
+  };
+}
+// ─── Dates: one canonical format, tolerant reads ─────────────────────────────
+// Entries used to be stamped with `new Date().toLocaleDateString()` and read back
+// with `new Date(str)`. That only round-trips in en-US. An en-CA or fr-CA browser
+// stores ISO ("2026-03-15"), which `new Date()` reads as UTC midnight and renders
+// a day early everywhere; fr-FR/en-GB/de-DE store "15/03/2026", which `new Date()`
+// calls Invalid — so sorts (NaN-NaN = NaN, falsy) silently collapse to id order
+// and "most recent" reduces keep whichever row happened to be first.
+//
+// Fix: write ISO going forward (srToday), and parse tolerantly on read so the
+// locale strings already sitting in thousands of existing seasons still work.
+// srDateMs turns any stored value into a sortable number; srDateShort formats for
+// display at local noon so the calendar day can never slip across a timezone.
+function srToday() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function srDateParts(str) {
+  if (str == null) return null;
+  const s = String(str).trim();
+  let m;
+  if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)))      return { y:+m[1], mo:+m[2], d:+m[3] }; // ISO (all new writes)
+  // Legacy slash dates are the one genuinely ambiguous case: "05/03" could be
+  // en-US May 3 or fr-FR 3 May, and nothing stored says which. The one reliable
+  // signal is that a value >12 can only be the day, so A/B with A>12 is D/M/Y;
+  // otherwise assume M/D/Y (the format the large majority of existing seasons
+  // hold). New writes are ISO, so this only has to carry old data forward.
+  if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/))) {
+    const a=+m[1], b=+m[2];
+    return a>12 && b<=12 ? { y:+m[3], mo:b, d:a } : { y:+m[3], mo:a, d:b };
+  }
+  if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/)))    return { y:2000+ +m[3], mo:+m[1], d:+m[2] };
+  if ((m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/)))    return { y:+m[3], mo:+m[2], d:+m[1] }; // de D.M.Y
+  const dd = new Date(s);                                   // last resort (Date.parse)
+  return isNaN(dd) ? null : { y:dd.getFullYear(), mo:dd.getMonth()+1, d:dd.getDate() };
+}
+function srDateMs(str) {
+  const p = srDateParts(str);
+  return p ? new Date(p.y, p.mo-1, p.d, 12).getTime() : NaN;  // local noon: no TZ day-slip
+}
+function srDateShort(str, lang) {
+  const p = srDateParts(str);
+  if (!p) return String(str ?? '');
+  return new Date(p.y, p.mo-1, p.d, 12).toLocaleDateString(lang==='fr' ? 'fr-CA' : 'en-US', { month:'short', day:'numeric' });
+}
 // The season's actual sap:syrup ratio; null until syrup has been made.
 function actualRatio(sapT, syT) { return syT > 0 ? sapT / syT : null; }
 
@@ -1196,7 +1284,7 @@ function srReplaySteps(slog) {
   const prep = arr => (arr || [])
     .map(e => ({ date: e.date, val: parseFloat(e.val) || 0 }))
     .filter(e => e.val > 0 && e.date)
-    .sort((a, b) => (a.date || '') < (b.date || '') ? -1 : 1);
+    .sort((a, b) => srDateMs(a.date) - srDateMs(b.date));
   const sap = prep(s.sapCollected), sy = prep(s.syrupMade);
   const byDay = new Map();
   const dayOf = d => {
@@ -1205,7 +1293,7 @@ function srReplaySteps(slog) {
   };
   sap.forEach(e => { const st = dayOf(e.date); st.bars.push(e.val); st.sapAdd += e.val; });
   sy.forEach(e => { dayOf(e.date).syAdd += e.val; });
-  const steps = [...byDay.values()].sort((a, b) => (a.date || '') < (b.date || '') ? -1 : 1);
+  const steps = [...byDay.values()].sort((a, b) => srDateMs(a.date) - srDateMs(b.date));
   let sapRun = 0, syRun = 0, boiled = false;
   steps.forEach(st => {
     sapRun += st.sapAdd; syRun += st.syAdd;
@@ -1311,7 +1399,12 @@ function NumInput({ value, onChange, min, max, step = 0.1, placeholder, label, i
       onFocus={e => { if (srParseNum(e.target.value) === 0) setDisplay(''); }}
       onBlur={e => {
         const n = srParseNum(e.target.value);
-        if (n === null) { onChange(0); setDisplay(''); }
+        // Typing was clamped; clearing the box was not, so an emptied field wrote
+        // a raw 0 straight past its own min. On "Water boils at" (min 200) that
+        // put 0.0°F on four screens and a 7.1°F draw-off target; on Brix it made
+        // the season's opportunity figure read "$Infinity". An emptied field now
+        // falls back to its minimum, which is the lowest value it ever meant.
+        if (n === null) { const z = clamp(min != null ? min : 0); onChange(z); setDisplay(min != null ? String(z) : ''); }
         else { const c = clamp(n); onChange(c); setDisplay(String(c)); }
       }}
     />
@@ -1927,7 +2020,7 @@ async function _downloadBatchLabel(b, batchNum, season, trees, units) {
   // Details
   let dy = 202;
   const details = [
-    b.date ? new Date(b.date+'T12:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) : null,
+    b.date ? (p=>p?new Date(p.y,p.mo-1,p.d,12).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):null)(srDateParts(b.date)) : null,
     b.loc  ? b.loc : null,
     b.notes ? b.notes : null,
   ].filter(Boolean);
@@ -2297,7 +2390,7 @@ function EvapTab({ sapBrix, setSapBrix, units, setEvapRate, fuelType, setFuelTyp
             <div key={b.id} className="log-entry" style={{ gap:8 }}>
               <div style={{ width:10, height:10, borderRadius:'50%', background:bg.color, flexShrink:0, marginTop:3 }} />
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontWeight:600, fontSize:14 }}>{b.date}{b.loc ? <span style={{ fontWeight:400, color:'#7f92a6', fontSize:12 }}> · {b.loc}</span> : ''}</div>
+                <div style={{ fontWeight:600, fontSize:14 }}>{srDateShort(b.date, lang)}{b.loc ? <span style={{ fontWeight:400, color:'#7f92a6', fontSize:12 }}> · {b.loc}</span> : ''}</div>
                 <div style={{ color:'#7f92a6', fontSize:12 }}>{bg.name} · Sap: {b.sapIn} {u} → Syrup: {b.syrupOut} {u}{b.notes?` • ${b.notes}`:''}</div>
               </div>
               <button
@@ -2321,10 +2414,15 @@ function ROTab({ sapBrix, setSapBrix, evapRate, fuelType, fuelCost, units, lang=
   const [tgtBrix, setTgtBrix] = useState(8);
   const u    = units === 'L' ? 'L' : 'gal';
   const conv = v => units === 'L' ? (v*3.78541).toFixed(1) : v.toFixed(1);
-  const conc    = roConc(inSap, sapBrix, tgtBrix);
-  const perm    = inSap - conc;
-  const factor  = tgtBrix / sapBrix;
-  const pctRem  = (perm / inSap) * 100;
+  // RO concentrates, so the target must be higher than the sap it starts from.
+  // With target < sap, roConc returns more concentrate than input, permeate goes
+  // negative ("−1500 gal water removed"), and boil time saved goes negative — all
+  // rendered as confident results. Guard it, and tell the user what to change.
+  const roValid = tgtBrix > sapBrix;
+  const conc    = roValid ? roConc(inSap, sapBrix, tgtBrix) : 0;
+  const perm    = roValid ? inSap - conc : 0;
+  const factor  = roValid ? tgtBrix / sapBrix : 0;
+  const pctRem  = roValid && inSap > 0 ? (perm / inSap) * 100 : 0;
   const fuel    = FUELS.find(f=>f.label===fuelType)||FUELS[0];
   const boilNoRO  = boilTime(inSap, sapBrix, evapRate);
   const boilWithRO= boilTime(conc,  tgtBrix, evapRate);
@@ -2345,13 +2443,20 @@ function ROTab({ sapBrix, setSapBrix, evapRate, fuelType, fuelCost, units, lang=
         </div>
         <div className="field-label">{t(lang,'targetBrix')}</div>
         <NumInput label={t(lang,'targetBrix')} value={tgtBrix} onChange={setTgtBrix} min={1} max={20} step={0.5} />
-        <div className="result-box blue" style={{ marginTop:12 }}>
+        {!roValid && (
+          <div style={{ marginTop:12, padding:'12px 14px', borderRadius:8, background:'rgba(224,164,74,0.1)', border:'1px solid rgba(224,164,74,0.3)', color:'#e0a44a', fontSize:13, fontWeight:600, lineHeight:1.5 }}>
+            {lang==='fr'
+              ? `Le °Brix cible (${fmt(tgtBrix,1)}) doit dépasser le °Brix de la sève (${fmt(sapBrix,1)}) — l'O/I concentre, il ne dilue pas.`
+              : `Target °Brix (${fmt(tgtBrix,1)}) must be higher than sap °Brix (${fmt(sapBrix,1)}) — R/O concentrates, it doesn't dilute.`}
+          </div>
+        )}
+        <div className="result-box blue" style={{ marginTop:12, opacity: roValid ? 1 : 0.4 }}>
           <div className="two-col" style={{ marginBottom:8 }}>
-            <div><div className="result-label" style={{ color:'#58a6ff' }}>{t(lang,'concentrate')}</div><div className="result-value" style={{ color:'#58a6ff' }}>{conv(conc)} {u}</div><div className="result-sub">{fmt(tgtBrix,1)}° Brix</div></div>
-            <div><div className="result-label" style={{ color:'#58a6ff' }}>{t(lang,'permeate')}</div><div className="result-value" style={{ color:'#58a6ff' }}>{conv(perm)} {u}</div><div className="result-sub">{t(lang,'waterRemoved')}</div></div>
+            <div><div className="result-label" style={{ color:'#58a6ff' }}>{t(lang,'concentrate')}</div><div className="result-value" style={{ color:'#58a6ff' }}>{roValid ? conv(conc) : '—'} {roValid ? u : ''}</div><div className="result-sub">{fmt(tgtBrix,1)}° Brix</div></div>
+            <div><div className="result-label" style={{ color:'#58a6ff' }}>{t(lang,'permeate')}</div><div className="result-value" style={{ color:'#58a6ff' }}>{roValid ? conv(perm) : '—'} {roValid ? u : ''}</div><div className="result-sub">{t(lang,'waterRemoved')}</div></div>
           </div>
           <div style={{ borderTop:'1px solid #30363d', paddingTop:8, fontSize:14 }}>
-            <strong>{fmt(factor,1)}x</strong> {lang==='fr'?'concentration':'concentration'} • <strong>{fmt(pctRem,1)}%</strong> {t(lang,'waterRemoved').toLowerCase()}
+            <strong>{roValid ? fmt(factor,1) : '—'}x</strong> {lang==='fr'?'concentration':'concentration'} • <strong>{roValid ? fmt(pctRem,1) : '—'}%</strong> {t(lang,'waterRemoved').toLowerCase()}
           </div>
         </div>
       </div>
@@ -2362,8 +2467,8 @@ function ROTab({ sapBrix, setSapBrix, evapRate, fuelType, fuelCost, units, lang=
           {t(lang,'roSavings')}
         </div>
         <div className="two-col">
-          <div className="result-box green"><div className="result-label" style={{ color:'#3fb950' }}>{t(lang,'boilTimeSaved')}</div><div className="result-value" style={{ color:'#3fb950' }}>{fmt(saved,1)} hrs</div><div className="result-sub">@ {evapRate} gal/hr {lang==='fr'?"taux d'évap.":'evap rate'}</div></div>
-          <div className="result-box green"><div className="result-label" style={{ color:'#3fb950' }}>{t(lang,'fuelSaved')}</div><div className="result-value" style={{ color:'#3fb950' }}>${fmt(mSaved,0)}</div><div className="result-sub">@ ${fuelCost}/{fuel.unit}</div></div>
+          <div className="result-box green"><div className="result-label" style={{ color:'#3fb950' }}>{t(lang,'boilTimeSaved')}</div><div className="result-value" style={{ color:'#3fb950' }}>{roValid ? fmt(saved,1) : '—'} hrs</div><div className="result-sub">@ {evapRate} gal/hr {lang==='fr'?"taux d'évap.":'evap rate'}</div></div>
+          <div className="result-box green"><div className="result-label" style={{ color:'#3fb950' }}>{t(lang,'fuelSaved')}</div><div className="result-value" style={{ color:'#3fb950' }}>${roValid ? fmt(mSaved,0) : '—'}</div><div className="result-sub">@ ${fuelCost}/{fuel.unit}</div></div>
         </div>
       </div>
 
@@ -2801,7 +2906,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
   const [vacuum,   setVacuum]   = useState(() => ls.get('sg_vacuum', 'Gravity / Buckets'));
   const [spoutIdx, setSpoutIdx] = useState(() => ls.get('sg_spoutidx', 0));
   const [treeNotes, setTreeNotes] = useState(() => ls.get('sg_treenotes', []));
-  const [tnForm, setTnForm] = useState({ tree:'', obs:'', date: new Date().toLocaleDateString() });
+  const [tnForm, setTnForm] = useState({ tree:'', obs:'', date: srToday() });
   const [showTN, setShowTN] = useState(false);
   const [rotEntries, setRotEntries] = useState(() => ls.get('sg_rotation', []));
   const [rotForm, setRotForm] = useState({ tree:'', side:'N', year:new Date().getFullYear() });
@@ -2819,7 +2924,7 @@ function TappingTab({ sapBrix, trees, setTrees, units, lang='en' }) {
   const addNote = () => {
     if (!tnForm.tree && !tnForm.obs) return;
     setTreeNotes(p => [...p, { ...tnForm, id: Date.now() }]);
-    setTnForm({ tree:'', obs:'', date: new Date().toLocaleDateString() });
+    setTnForm({ tree:'', obs:'', date: srToday() });
     setShowTN(false);
   };
   const HEALTH_TAGS = (l) => [t(l,'goodProd'),t(l,'lowOutput'),t(l,'sapWatery'),t(l,'woundScar'),t(l,'skipYear'),t(l,'topProd')];
@@ -3306,7 +3411,7 @@ function BoilDayTab({ units, season, sapBrix, waterBP, lang='en', go }) {
     // debt #6 and converts all entries at once — a mixed store would be worse).
     const all  = ls.get('sg_logs2', {});
     const slog = { ...(all[season] || {}) };
-    const date = new Date().toLocaleDateString();
+    const date = srToday();
     const note = lang === 'fr' ? 'Bouillée' : 'Boil Day';
     let id = Date.now();
     const dur = round1(hrs);
@@ -3942,12 +4047,23 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
   const empty = { sapCollected:[], syrupMade:[], sapRO:[], sapEvap:[] };
   const slog  = logs[season] || empty;
 
+  // Write first, then reflect it. Updating React state before checking ls.set
+  // meant a trial-expired user saw their entries land in the list, dismissed the
+  // lock banner as noise, closed the app, and lost all of it — the app had shown
+  // them a save that never happened. BoilDay already gated on this; now so does
+  // the main log. Returns false so callers can tell the save didn't take.
   const updLog = (k, entries) => {
     const up = { ...logs, [season]:{ ...slog, [k]:entries } };
-    setLogs(up); ls.set('sg_logs2', up);
+    if (!ls.set('sg_logs2', up)) return false;   // locked or quota: banner explains
+    setLogs(up);
+    return true;
   };
+  // sapT/syT/roT/evT stay in the display unit for the figures; the goal is in
+  // gallons, so the progress bar compares the gallon total or it reads 100% on a
+  // season barely a third done.
   const { sapT, syT, roT, evapT: evT } = seasonTotals(slog);
-  const goal = trees * yieldMidOf(yieldModelSaved()), pct = goal>0 ? Math.min(100,(syT/goal)*100) : 0;
+  const syrupGal = toGal(syT, units);
+  const goal = trees * yieldMidOf(yieldModelSaved()), pct = goal>0 ? Math.min(100,(syrupGal/goal)*100) : 0;
   const seasons = Object.keys(logs).map(Number).sort((a,b)=>b-a);
 
   const exportCSV = () => {
@@ -3975,7 +4091,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
     // Filter displayed entries by active collection point (null = show all)
     const displayEntries = (activePoint
       ? entries.filter(e => e.point === activePoint)
-      : entries).slice().sort((a, b) => (new Date(b.date) - new Date(a.date)) || ((b.id||0) - (a.id||0)));
+      : entries).slice().sort((a, b) => (srDateMs(b.date) - srDateMs(a.date)) || ((b.id||0) - (a.id||0)));
     const tot2    = displayEntries.reduce((s,e)=>s+(parseFloat(e.val)||0),0);
     const [val,   setVal]   = useState('');
     const [note,  setNote]  = useState('');
@@ -3993,7 +4109,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
       if (!val) return;
       const entry = {
         id:    Date.now(),
-        date:  new Date().toLocaleDateString(),
+        date:  srToday(),
         val:   parseFloat(val),
         note,
         grade: showGrade ? grade : undefined,
@@ -4008,7 +4124,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
     const updateDate = (id, isoVal) => {
       if (!isoVal) return;
       const [y,m,d] = isoVal.split('-').map(Number);
-      const newDate = new Date(y, m-1, d).toLocaleDateString();
+      const newDate = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       updLog(logKey, entries.map(x => x.id===id ? {...x, date:newDate} : x));
       setEditDateId(null);
     };
@@ -4107,8 +4223,8 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
   const sentence = str => str.charAt(0) + str.slice(1).replace(/ ([A-Z])(?=[a-z])/g, m => m.toLowerCase());
   const allEntries = KINDS.flatMap(K => (slog[K.k] || []).map(e => ({ ...e, kind:K.k })))
     .filter(e => !activePoint || e.point === activePoint)
-    .sort((a, b) => (new Date(b.date) - new Date(a.date)) || ((b.id||0) - (a.id||0)));
-  const shortDate = ds => { const d = new Date(ds); return isNaN(d) ? ds : d.toLocaleDateString(lang==='fr' ? 'fr-CA' : 'en-US', { month:'short', day:'numeric' }); };
+    .sort((a, b) => (srDateMs(b.date) - srDateMs(a.date)) || ((b.id||0) - (a.id||0)));
+  const shortDate = ds => srDateShort(ds, lang);
 
   // The sheet
   const [showSheet, setShowSheet] = useState(false);
@@ -4130,7 +4246,10 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
     return () => clearTimeout(tm);
   }, [moment]);
   const saveEntry = (kind, entry) => {
-    updLog(kind, [...(slog[kind] || []), entry]);
+    // If the write didn't take, stop here: no celebration for a save that didn't
+    // happen, and no auto-copy rows that would be just as unsaved. The lock or
+    // quota banner is already explaining why.
+    if (!updLog(kind, [...(slog[kind] || []), entry])) return;
     ls.set('sg_log_last_kind', kind);
     // Micro-delight — fire-and-forget; nothing below reads it, nothing above waits on it.
     try { setMoment({ id: entry.id, kind }); } catch {}
@@ -4144,7 +4263,7 @@ function LogTab({ season, setSeason, trees, setTrees, units, sapBrix, lang='en' 
         if (autoCopy.ro)   updates.sapRO   = [...(prevSlog.sapRO  ||[]), { id:Date.now(),   date, val:amount, note:'← auto from sap collected' }];
         if (autoCopy.evap) updates.sapEvap = [...(prevSlog.sapEvap||[]), { id:Date.now()+1, date, val:amount, note:'← auto from sap collected' }];
         const up = { ...prevLogs, [season]: updates };
-        ls.set('sg_logs2', up);
+        if (!ls.set('sg_logs2', up)) return prevLogs;   // reject the copy too
         return up;
       });
     }
@@ -4502,13 +4621,13 @@ function LogEntrySheet({ kinds, kind, setKind, lang, units, activePoint, grades,
     if (!val) { const el = document.getElementById('log-amount'); if (el) el.focus(); return; }
     if (editing) {
       const changes = { val: parseFloat(val), note, grade: K.grade ? grade : undefined, brix: K.brix && brix ? parseFloat(brix) : undefined };
-      if (dateISO) { const [y,m,d] = dateISO.split('-').map(Number); changes.date = new Date(y, m-1, d).toLocaleDateString(); }
+      if (dateISO) { changes.date = dateISO; }  // already ISO from the date input
       onUpdate(editing.kind, editing.id, changes);
       onClose(); return;
     }
     const entry = {
       id:    Date.now(),
-      date:  new Date().toLocaleDateString(),
+      date:  srToday(),
       val:   parseFloat(val),
       note,
       grade: K.grade ? grade : undefined,
@@ -4624,7 +4743,11 @@ function EquipTab({ lang='en' }) {
   const curSeason = ls.get('sg_season', new Date().getFullYear());
   const sapT      = ((ls.get('sg_logs2',{})[curSeason]||{}).sapCollected||[])
                       .reduce((s,e)=>s+(parseFloat(e.val)||0),0);
-  const numHauls  = sapT > 0 ? Math.ceil(sapT / (tankGal * 0.90)) : null; // haul at 90% full
+  // sapT is in the sugarmaker's display unit; the tank size is entered in gallons
+  // (its own label says so). Dividing litres by a gallon tank overstated hauls by
+  // 3.79x — 3000 L read as 12 hauls when it is really 3. Convert to gallons first.
+  const sapGalHaul = toGal(sapT, ls.get('sg_units','GAL') === 'L' ? 'L' : 'GAL');
+  const numHauls  = sapGalHaul > 0 ? Math.ceil(sapGalHaul / (tankGal * 0.90)) : null; // haul at 90% full
   const totalHaulHrs = numHauls ? (numHauls * realisticTotal / 60) : null;
 
   return (
@@ -4929,7 +5052,7 @@ function SeasonTab({ season, lang='en' }) {
   // Brix sparkline
   const addBrix = () => {
     if (!brixIn) return;
-    setBrixLog(p => [...p, { id:Date.now(), date:new Date().toLocaleDateString(), brix:parseFloat(brixIn), note:noteIn }]);
+    setBrixLog(p => [...p, { id:Date.now(), date:srToday(), brix:parseFloat(brixIn), note:noteIn }]);
     setBrixIn(''); setNoteIn('');
   };
   const bVals = brixLog.map(e => e.brix);
@@ -5142,7 +5265,25 @@ function SeasonTab({ season, lang='en' }) {
 }
 
 // ─── PDF SEASON REPORT ─────────────────────────────────────────────────────────
-function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix }) {
+// jsPDF is 356 KB and only a fraction of users ever export. Instead of blocking
+// every cold start on it, load it once on the first export and cache the promise.
+let _jspdfPromise = null;
+function srLoadJsPDF() {
+  if (window.jspdf) return Promise.resolve();
+  if (!_jspdfPromise) {
+    _jspdfPromise = new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload = res;
+      s.onerror = () => { _jspdfPromise = null; rej(new Error('pdf-lib-failed')); };
+      document.head.appendChild(s);
+    });
+  }
+  return _jspdfPromise;
+}
+async function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix }) {
+  try { await srLoadJsPDF(); }
+  catch { alert(t(ls.get('sg_lang','en'),'pdfOffline')); return; }
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit:'mm', format:'a4' });
   const u = units === 'L' ? 'L' : 'gal';
@@ -5151,7 +5292,9 @@ function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix }) {
   const tot  = k => ((slog[k]||[]).reduce((s,e)=>s+(parseFloat(e.val)||0),0));
   const sapT = tot('sapCollected'), syT = tot('syrupMade');
   const ratio = syT > 0 ? (sapT/syT).toFixed(1) : '—';
-  const goal  = trees * yieldMidOf(yieldModelSaved());
+  const goal  = trees * yieldMidOf(yieldModelSaved());     // gallons
+  const syGal = toGal(syT, units);                          // syT is display units; goal is gallons
+  const pctGoal = goal > 0 ? Math.round((syGal/goal)*100) : 0;
 
   // Grade breakdown from syrup entries
   const gradeTotals = {};
@@ -5187,7 +5330,7 @@ function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix }) {
     ['Sap Collected',   `${(+sapT).toFixed(0)} ${u}`],
     ['Syrup Produced',  `${(+syT).toFixed(1)} ${u}`],
     ['Sap:Syrup Ratio', `${ratio}:1`],
-    ['Season Target',   `${conv(goal)} ${u}  (${syT>0?Math.round((syT/goal)*100):'0'}% of goal)`],
+    ['Season Target',   `${conv(goal)} ${u}  (${syT>0?pctGoal:'0'}% of goal)`],
     ['Sap °Brix',       `${sapBrix}° avg`],
   ];
 
@@ -8709,7 +8852,7 @@ function BrixSparkline({ data }) {
   );
 }
 
-function SeasonIntelligence({ season, sapBrix, trees }) {
+function SeasonIntelligence({ season, sapBrix, trees, units }) {
   const [analyzing, setAnalyzing] = React.useState(true);
   const [condHigh,  setCondHigh]  = React.useState('');
   const [condLow,   setCondLow]   = React.useState('');
@@ -8720,7 +8863,9 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
   },[season]);
 
   const slog     = ls.get('sg_logs2',{})[season]||{};
-  const { sapT: sapGal, syT: syrupGal, roT: roGal, fuelT: fuelGal } = seasonTotals(slog);
+  // Scored against gal/tap and gal-per-cord benchmarks, so the totals must be
+  // gallons; this screen never received `units` and so never converted them.
+  const { sapGal, syrupGal, roGal, fuelT: fuelGal } = seasonTotalsGal(slog, units);
   const taps  = parseInt(trees)||0;
   const brix  = parseFloat(sapBrix)||2.0;
   const runLogs  = slog.sapCollected||[];
@@ -8766,9 +8911,9 @@ function SeasonIntelligence({ season, sapBrix, trees }) {
 
   if (taps>0&&syrupGal>0) {
     const ypp=syrupGal/taps;
-    if (ypp>=0.3)       insights.push({type:'success',title:'Strong yield per tap',       body:`${ypp.toFixed(2)} gal/tap — above the 0.25–0.3 industry benchmark. Excellent season.`,action:'Document your tap placement and vacuum settings — replicate this exact setup next year.'});
-    else if (ypp>=0.2)  insights.push({type:'neutral',title:'Average yield per tap',       body:`${ypp.toFixed(2)} gal/tap — near industry average. Room to grow.`,                    action:'Upgrade to check-valve spouts and audit vacuum leaks at each lateral connection.'});
-    else                insights.push({type:'warn',   title:'Below-average yield per tap', body:`${ypp.toFixed(2)} gal/tap is below the 0.25 benchmark.`,                              action:'Inspect spout health, verify tap placement in fresh white wood, and test vacuum at the tree.'});
+    if (ypp>=0.3)       insights.push({type:'success',title:'Strong yield per tap',       body:`${ypp.toFixed(2)} gal syrup/tap — above the 0.25–0.3 industry benchmark. Excellent season.`,action:'Document your tap placement and vacuum settings — replicate this exact setup next year.'});
+    else if (ypp>=0.2)  insights.push({type:'neutral',title:'Average yield per tap',       body:`${ypp.toFixed(2)} gal syrup/tap — near industry average. Room to grow.`,                    action:'Upgrade to check-valve spouts and audit vacuum leaks at each lateral connection.'});
+    else                insights.push({type:'warn',   title:'Below-average yield per tap', body:`${ypp.toFixed(2)} gal syrup/tap is below the 0.25 benchmark.`,                              action:'Inspect spout health, verify tap placement in fresh white wood, and test vacuum at the tree.'});
   }
   if (sapGal>0&&syrupGal>0) {
     const ratio=sapGal/syrupGal;
@@ -9590,7 +9735,7 @@ function SugarSageTab({ season, sapBrix, trees, units }) {
       </button>
       {showSeason && (
         <div style={{border:'1px solid #1e2d3d',borderTop:'none',borderRadius:'0 0 10px 10px',marginBottom:16,overflow:'hidden'}}>
-          <SeasonIntelligence season={season} sapBrix={sapBrix} trees={trees}/>
+          <SeasonIntelligence season={season} sapBrix={sapBrix} trees={trees} units={units}/>
         </div>
       )}
 
@@ -9718,7 +9863,12 @@ function TubingTab({ trees }) {
     const vacLoss  = ((ml/1000)*(diamFactor[ms]||1.0)*2).toFixed(1);
     const elevDrop = (ml*(g/100)).toFixed(0);
     const vacGain  = ((ml*g/100)/10*0.4).toFixed(1);
-    const vacPump  = (tv + parseFloat(vacLoss) - parseFloat(vacGain)).toFixed(1);
+    // Vacuum at the far tap can never exceed pump vacuum, so the pump must be
+    // sized at least to the target; grade assist reduces the burden but can't
+    // push the required pump below the target. Without the floor, the app told a
+    // producer at 8% grade to buy a 21" pump for a 25" system — an under-buy of
+    // half — and rendered it green. Floor at the target.
+    const vacPump  = Math.max(tv, tv + parseFloat(vacLoss) - parseFloat(vacGain)).toFixed(1);
     const numLat   = Math.ceil(t/lt);
     const latFtTot = (numLat*lt*8).toFixed(0);
     const cfm      = Math.ceil(t*0.05);
@@ -9902,8 +10052,8 @@ function SweetRunScore({ sapGal, syrupGal, sapBrix, trees, fuelGal, season, lang
   if (sc.yieldScore !== null) {
     const ypp = syrupGal / taps;
     let yieldLabel;
-    if (ypp >= yM.high) yieldLabel = `${ypp.toFixed(2)} gal/tap — top of the range for ${yM.label}`;
-    else if (ypp >= yM.low) yieldLabel = `${ypp.toFixed(2)} gal/tap — inside the ${yM.low}–${yM.high} range for ${yM.label}`;
+    if (ypp >= yM.high) yieldLabel = `${ypp.toFixed(2)} gal syrup/tap — top of the range for ${yM.label}`;
+    else if (ypp >= yM.low) yieldLabel = `${ypp.toFixed(2)} gal syrup/tap — inside the ${yM.low}–${yM.high} range for ${yM.label}`;
     else yieldLabel = `${ypp.toFixed(2)} gal/tap — below ${yM.low} for ${yM.label}`;
     scores.push({ label:'Yield / Tap', score: sc.yieldScore, weight:30, color: barColor(sc.yieldScore), detail: yieldLabel });
   }
@@ -10027,6 +10177,11 @@ function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
   const brix = parseFloat(sapBrix) || 2.0;
 
   if (!taps || !syrupGal) return null;
+  // Every figure below — the gap, the dollars, the root causes — is derived from
+  // the same syrup total the ratio says is wrong. Withhold the whole card rather
+  // than argue with the ratio-check card directly above it, which has already
+  // told the sugarmaker what to look at.
+  if (ratioSuspect(sapGal, syrupGal)) return null;
 
   const theoretical      = RULE_DIVISOR / brix;                         // theoretical sap:syrup ratio
   const gModel           = yieldModelSaved();                   // benchmark follows the tap system
@@ -10038,7 +10193,12 @@ function YieldGapAnalyzer({ sapGal, syrupGal, sapBrix, trees, season }) {
   const dollarGap = gapMid * pricePerGal;
 
   const actualRatio = sapGal > 0 && syrupGal > 0 ? sapGal / syrupGal : null;
-  const effPct = actualRatio ? Math.min(100, Math.round((theoretical / actualRatio) * 100)) : null;
+  // Same clamp that let SweetRunScore award an A to an impossible season. This
+  // copy sits directly below that card, so leaving it meant Recap showed "these
+  // numbers need a second look" and "your operation is performing well" in the
+  // same scroll. Withheld on the same terms, from the same helper.
+  const suspect = ratioSuspect(sapGal, syrupGal);
+  const effPct = (actualRatio && !suspect) ? Math.min(100, Math.round((theoretical / actualRatio) * 100)) : null;
   const ypp    = syrupGal / taps;
 
   // ── Diagnose root causes ──────────────────────────────────────────────
@@ -10359,8 +10519,7 @@ function ReplayStage({ replay, moments, season, uLbl, lang, onClose, onShare }) 
 
   const cur = idx >= 0 ? steps[idx] : null;
   const fmtDay = d => {
-    const p = new Date(d);   // debt-#6 caveat: stored display strings, same parse Recap's seasonDays uses
-    return isNaN(p) ? d : p.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-US', { month: 'short', day: 'numeric' });
+    return srDateShort(d, lang);
   };
   const capParts = cur ? moments.filter(m => m.date === cur.date).map(m =>
     m.type === 'bestRun' ? `${t(lang,'rpBestRun')}: ${fmt(m.val,0)} ${uLbl}` :
@@ -10444,8 +10603,12 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
   const brixArr    = ls.get('sg_brixlog', []);
   const uLbl       = units === 'GAL' ? 'gal' : 'L';
 
-  const { sapT: sapGal, syT: syrupGal, roT: roGal, evapT: evapGal, fuelT: fuelGal } = seasonTotals(slog);
-  const { sapT: prevSap, syT: prevSyrup } = seasonTotals(prevLog);
+  // These were destructured out of seasonTotals under gallon names while holding
+  // display-unit values — which is how a 500-tap season that graded D in gallons
+  // graded A in litres, and how every dollar figure on this screen ran 3.8x high.
+  // seasonTotalsGal does the conversion, and its names are now true.
+  const { sapGal, syrupGal, roGal, evapGal, fuelT: fuelGal } = seasonTotalsGal(slog, units);
+  const { sapGal: prevSap, syrupGal: prevSyrup } = seasonTotalsGal(prevLog, units);
 
   const theorRatio  = sapBrix > 0 ? (RULE_DIVISOR / sapBrix) : 0;
   const ratioActual = actualRatio(sapGal, syrupGal) || 0;
@@ -10455,10 +10618,10 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
   const bestDay    = sapEntries[0];
 
   // Season span from log entry dates
-  const allDates = [...(slog.sapCollected||[]), ...(slog.syrupMade||[])].map(e=>e.date).filter(Boolean).sort();
+  const allDates = [...(slog.sapCollected||[]), ...(slog.syrupMade||[])].map(e=>e.date).filter(Boolean).sort((a,b)=>srDateMs(a)-srDateMs(b));
   const firstDate = allDates[0] || null;
   const lastDate  = allDates[allDates.length-1] || null;
-  const parseDate = s => { try { return new Date(s); } catch { return null; } };
+  const parseDate = s => srDateMs(s);
   const seasonDays = (firstDate && lastDate)
     ? Math.round((parseDate(lastDate) - parseDate(firstDate)) / 86400000) + 1 : null;
 
@@ -10491,8 +10654,8 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
       name: (operatorName || '').trim() || t(lang,'scDefaultName'),
       seasonLine: `${t(lang,'scSeasonLine')} ${season}`,
       stats: [   // the SAME totals rendered in the Big-4 cards below
-        { val: syrupGal > 0 ? fmt(syrupGal, 1) : '—', unit: uLbl, lbl: t(lang,'scSyrup') },
-        { val: sapGal   > 0 ? fmt(sapGal, 0)   : '—', unit: uLbl, lbl: t(lang,'scSap') },
+        { val: syrupGal > 0 ? fmt(fromGal(syrupGal, units), 1) : '—', unit: uLbl, lbl: t(lang,'scSyrup') },
+        { val: sapGal   > 0 ? fmt(fromGal(sapGal, units), 0)   : '—', unit: uLbl, lbl: t(lang,'scSap') },
         { val: ratioActual > 0 ? ratioActual.toFixed(1) + ':1' : '—', unit: '', lbl: t(lang,'scRatio') },
         { val: (parseInt(trees) || 0) > 0 ? fmt(parseInt(trees), 0) : '—', unit: '', lbl: t(lang,'scTaps') },
       ],
@@ -10553,9 +10716,9 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
           );
         })}
         {/* Axis label */}
-        <text x={PAD} y={H+14} fontSize="12" fill="#7f92a6">{firstDate}</text>
+        <text x={PAD} y={H+14} fontSize="12" fill="#7f92a6">{srDateShort(firstDate, lang)}</text>
         {lastDate !== firstDate && (
-          <text x={W-PAD} y={H+14} fontSize="12" fill="#7f92a6" textAnchor="end">{lastDate}</text>
+          <text x={W-PAD} y={H+14} fontSize="12" fill="#7f92a6" textAnchor="end">{srDateShort(lastDate, lang)}</text>
         )}
       </svg>
     );
@@ -10683,16 +10846,16 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
 
       {/* ── Big 4 stats ── */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:12 }}>
-        <Stat val={sapGal > 0 ? fmt(sapGal,0) : '—'} lbl={`${t(lang,'totalSapLbl')} (${uLbl})`} sub={`${(slog.sapCollected||[]).length} ${(slog.sapCollected||[]).length!==1?t(lang,'collectionPlur'):t(lang,'collectionSing')}`} />
-        <Stat val={syrupGal > 0 ? fmt(syrupGal,1) : '—'} lbl={`${t(lang,'syrupMadeLbl')} (${uLbl})`} sub={`${(slog.syrupMade||[]).length} ${(slog.syrupMade||[]).length!==1?t(lang,'batchPlur'):t(lang,'batchSing')}`} accent="#a78bfa" />
+        <Stat val={sapGal > 0 ? fmt(fromGal(sapGal, units),0) : '—'} lbl={`${t(lang,'totalSapLbl')} (${uLbl})`} sub={`${(slog.sapCollected||[]).length} ${(slog.sapCollected||[]).length!==1?t(lang,'collectionPlur'):t(lang,'collectionSing')}`} />
+        <Stat val={syrupGal > 0 ? fmt(fromGal(syrupGal, units),1) : '—'} lbl={`${t(lang,'syrupMadeLbl')} (${uLbl})`} sub={`${(slog.syrupMade||[]).length} ${(slog.syrupMade||[]).length!==1?t(lang,'batchPlur'):t(lang,'batchSing')}`} accent="#a78bfa" />
         <Stat val={ratioActual > 0 ? ratioActual.toFixed(1)+':1' : '—'} lbl={t(lang,'actualRatioLbl')} sub={theorRatio > 0 ? `${t(lang,'theoryPrefix')} ${theorRatio.toFixed(1)}:1` : null} accent={ratioActual > 0 && theorRatio > 0 && ratioActual <= theorRatio * 1.15 ? '#2dd4a7' : '#e0a44a'} />
-        <Stat val={seasonDays != null ? `${seasonDays}d` : '—'} lbl={t(lang,'seasonLengthLbl')} sub={firstDate && lastDate ? `${firstDate} – ${lastDate}` : null} accent="#58a6ff" />
+        <Stat val={seasonDays != null ? `${seasonDays}d` : '—'} lbl={t(lang,'seasonLengthLbl')} sub={firstDate && lastDate ? `${srDateShort(firstDate, lang)} – ${srDateShort(lastDate, lang)}` : null} accent="#58a6ff" />
       </div>
 
       {/* ── Secondary stats ── */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:12 }}>
         <Stat val={bestDay ? fmt(bestDay.val,0) : '—'} lbl={`${t(lang,'bestRunLbl')} (${uLbl})`} sub={bestDay?.date || null} accent="#e0a44a" />
-        <Stat val={roGal > 0 ? fmt(roGal,0) : '—'} lbl={`${t(lang,'rodLbl')} (${uLbl})`} sub={roGal > 0 && evapGal > 0 ? `${(roGal/evapGal*100).toFixed(0)}% util` : null} accent="#2dd4a7" />
+        <Stat val={roGal > 0 ? fmt(fromGal(roGal, units),0) : '—'} lbl={`${t(lang,'rodLbl')} (${uLbl})`} sub={roGal > 0 && evapGal > 0 ? `${(roGal/evapGal*100).toFixed(0)}% util` : null} accent="#2dd4a7" />
         <Stat val={avgBrix != null ? avgBrix.toFixed(2)+'°' : sapBrix+'°'} lbl={t(lang,'avgBrixLbl')} sub={maxBrix != null ? `${minBrix?.toFixed(2)}–${maxBrix?.toFixed(2)}°` : t(lang,'estimatedLbl')} accent="#a78bfa" />
       </div>
 
@@ -10757,7 +10920,11 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
       )}
 
       {/* ── RO Savings Chart ── */}
-      {sapGal > 0 && recapEvapRate > 0 && (() => {
+      {/* roGal > sapGal is impossible — you cannot push more sap through the RO
+          than you collected — and it made (sapGal - roGal) negative, which showed
+          "30 hrs saved" on a 20-hour boil and a bar with negative width. It means
+          a double-entry or a units slip, so the section withholds instead. */}
+      {sapGal > 0 && recapEvapRate > 0 && roGal <= sapGal && (() => {
         // Straight-boil: boil all the sap at evap rate
         const straightHrs  = sapGal / recapEvapRate;
         const straightWood = straightHrs * burnLbsHr;
@@ -10838,7 +11005,7 @@ function RecapTab({ season, units, sapBrix, trees=0, lang='en' }) {
             <div style={{ fontSize:13, fontWeight:700, color:'#7f92a6', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:6 }}>{t(lang,'boilTimeLbl')}</div>
             <Bar label={t(lang,'straightBoilLbl')} value={straightHrs} max={maxHrs} color="#7f92a6" unit="hrs" />
             <Bar label={hasPreheater?t(lang,'withROPreLbl'):t(lang,'withROLbl')} value={roHrs} max={maxHrs} color="#2dd4a7" unit="hrs"
-              secondary={roGal > 0 ? t(lang,'roConcentratedNote').replace('{ro}',roGal.toFixed(0)).replace('{conc}',roConc.toFixed(0)) : t(lang,'noRODataNote')} />
+              secondary={roGal > 0 ? t(lang,'roConcentratedNote').replace(/\{ro\}/g,fmt(fromGal(roGal,units),0)).replace(/\{conc\}/g,fmt(fromGal(roConc,units),0)).replace(/\{u\}/g,uLbl) : t(lang,'noRODataNote')} />
 
             {/* Wood bars */}
             <div style={{ fontSize:13, fontWeight:700, color:'#7f92a6', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:6, marginTop:14 }}>{t(lang,'woodUsedLbl')}</div>
@@ -11059,20 +11226,25 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
   const conv  = v => units === 'L' ? v * 3.78541 : v;
   const logs  = ls.get('sg_logs2', {});
   const slog  = logs[season] || {};
+  // sapT/syT are in the sugarmaker's display unit — right for the figures below.
+  // goal and the yield model are in gallons, so every COMPARISON uses the gallon
+  // pair. Mixing the two read 50 L of syrup as 50 gal against a gallon goal and
+  // showed a full jar at "100%" on a season that was a third of the way there.
   const { sapT, syT } = seasonTotals(slog);
+  const { sapGal, syrupGal } = seasonTotalsGal(slog, units);
   const model = yieldModelSaved();
   const taps  = parseInt(trees) || 0;
   const goal  = taps * yieldMidOf(model);
-  const pct   = goal > 0 ? Math.min(100, (syT / goal) * 100) : 0;
-  const ratio = actualRatio(sapT, syT);
+  const pct   = goal > 0 ? Math.min(100, (syrupGal / goal) * 100) : 0;
+  const ratio = actualRatio(sapGal, syrupGal);
   const theor = RULE_DIVISOR / (parseFloat(sapBrix) || 2);
 
   const entries = ['sapCollected','syrupMade','sapRO','sapEvap','fuelUsed','boilHours']
     .flatMap(k => (slog[k] || []).map(e => ({ ...e, kind:k })));
   const last = entries.length
-    ? entries.reduce((a, b) => (new Date(b.date) > new Date(a.date) ? b : a))
+    ? entries.reduce((a, b) => (srDateMs(b.date) > srDateMs(a.date) ? b : a))
     : null;
-  const recent = [...entries].sort((a, b) => new Date(b.date) - new Date(a.date) || (b.id||0) - (a.id||0)).slice(0, 3);
+  const recent = [...entries].sort((a, b) => srDateMs(b.date) - srDateMs(a.date) || (b.id||0) - (a.id||0)).slice(0, 3);
   const KIND = { sapCollected:'sap collected', syrupMade:'syrup made', sapRO:'sap through R/O',
                  sapEvap:'sap in the evaporator', fuelUsed:'fuel burned', boilHours:'hours boiling' };
 
@@ -11206,9 +11378,12 @@ function TodayTab({ lang, units, season, trees, sapBrix, go }) {
           <div style={{ marginTop:6 }}>
             {recent.map(e => (
               <div key={e.id} style={{ display:'grid', gridTemplateColumns:'var(--w-date) 1fr auto', columnGap:10, alignItems:'baseline', minHeight:44, padding:'10px 0', borderBottom:'1px solid #131e2c', fontSize:14 }}>
-                <span style={{ color:'#7f92a6', whiteSpace:'nowrap' }}>{(d => isNaN(d) ? e.date : d.toLocaleDateString(lang==='fr' ? 'fr-CA' : 'en-US', { month:'short', day:'numeric' }))(new Date(e.date))}</span>
+                <span style={{ color:'#7f92a6', whiteSpace:'nowrap' }}>{srDateShort(e.date, lang)}</span>
                 <span style={{ color:'#e6edf3', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{SHORT[e.kind] || e.kind}</span>
-                <span style={{ fontWeight:700, textAlign:'right', whiteSpace:'nowrap' }}>{fmt(e.kind==='syrupMade'||e.kind==='sapCollected'||e.kind==='sapRO'||e.kind==='sapEvap' ? conv(parseFloat(e.val)||0) : parseFloat(e.val)||0, dpOf(e.kind))} <span style={{ fontWeight:500, color:'#7f92a6' }}>{unitOf(e.kind)}</span></span>
+                {/* e.val was written in the display unit — converting it again
+                    showed a logged 40 L run as 151.4 L, beside a season total of
+                    40 L on the same card. */}
+                <span style={{ fontWeight:700, textAlign:'right', whiteSpace:'nowrap' }}>{fmt(parseFloat(e.val)||0, dpOf(e.kind))} <span style={{ fontWeight:500, color:'#7f92a6' }}>{unitOf(e.kind)}</span></span>
               </div>
             ))}
           </div>
@@ -11253,7 +11428,15 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
     // Season totals from the shared helper (one number, everywhere).
     // Stored log values are in the user's display unit; every benchmark below is gallons.
     const T = seasonTotals(slog);
-    const _gal    = v => units === 'L' ? v / 3.78541 : v;
+    const _gal    = v => toGal(v, units);          // shared converter, one definition
+    const _disp   = v => fromGal(v, units);        // back to the sugarmaker's unit for display
+    const _u      = units === 'L' ? 'L' : 'gal';
+    // sapBrix reaches here from storage and can be 0 (an emptied field, now
+    // fixed at the input, but older devices still hold the zero). Dividing by
+    // rule86(0) printed "could add $Infinity/season" and an "Infinityk ROI"
+    // chip in the opportunity banner. Fall back to the 2.0 default the rest
+    // of the app assumes when brix is unset.
+    const _ratio  = rule86(sapBrix) > 0 ? rule86(sapBrix) : rule86(2.0);
     const sapGal  = _gal(T.sapT);
     const roGal   = _gal(T.roT);
     const evapGal = _gal(T.evapT);
@@ -11276,7 +11459,7 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
           id: 'yield',
           severity: yieldPerTap < benchLow * 0.6 ? 'high' : 'medium',
           title: 'Low sap yield per tap',
-          summary: `${yieldPerTap.toFixed(1)} gal/tap vs. ${benchLow}–${benchHigh} benchmark for your vacuum level.`,
+          summary: `${yieldPerTap.toFixed(1)} gal sap/tap vs. ${benchLow}–${benchHigh} benchmark for your vacuum level.`,
           action: vacLevel === 'gravity'
             ? 'Consider upgrading to 15" vacuum tubing (3/16" laterals) — natural siphon can add 5–10 gal/tap with no electricity.'
             : 'Check for air leaks in lines, verify pump is pulling target inches, inspect check valves, and confirm taps are sealed.',
@@ -11284,9 +11467,9 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
           payback: roiVal > 0 ? `~$${roiVal.toFixed(0)} potential revenue this season` : null,
           roi: roiVal,
           details: [
-            `Your operation: ${yieldPerTap.toFixed(1)} gal/tap`,
-            `Benchmark for ${vacLevel === 'gravity' ? 'gravity' : vacLevel === 'vac15' ? '15" vacuum' : 'high vacuum'}: ${benchLow}–${benchHigh} gal/tap`,
-            `Gap: ${gap.toFixed(1)} gal/tap × ${tapCount} taps = ${(gap * tapCount).toFixed(0)} gal sap lost`,
+            `Your operation: ${yieldPerTap.toFixed(1)} gal sap/tap`,
+            `Benchmark for ${vacLevel === 'gravity' ? 'gravity' : vacLevel === 'vac15' ? '15" vacuum' : 'high vacuum'}: ${benchLow}–${benchHigh} gal sap/tap`,
+            `Gap: ${gap.toFixed(1)} gal sap/tap × ${tapCount} taps = ${(gap * tapCount).toFixed(0)} gal sap lost`,
             `At ${rule86(sapBrix).toFixed(1)}:1 ratio = ${potentialSyrup.toFixed(1)} gal syrup × $${syrupPrice} = $${roiVal.toFixed(0)}`,
             'Source: UVM Proctor Maple Research Center, 2023 Vermont Maple Industry Stats',
           ],
@@ -11296,7 +11479,7 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
           id: 'yield',
           severity: 'good',
           title: 'Yield per tap looks solid',
-          summary: `${yieldPerTap.toFixed(1)} gal/tap is within or above the ${benchLow}–${benchHigh} benchmark.`,
+          summary: `${yieldPerTap.toFixed(1)} gal sap/tap is within or above the ${benchLow}–${benchHigh} benchmark.`,
           roi: 0,
         });
       }
@@ -11324,6 +11507,25 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
             `Excess sap used: ${((actualRatio - theorRatio) * syrupGal).toFixed(0)} gal`,
             `Equivalent lost syrup: ~${lostSyrup.toFixed(1)} gal × $${syrupPrice} = $${roiVal.toFixed(0)}`,
             'Source: Cornell Maple Program, Sugar Maple Research & Extension',
+          ],
+        });
+      } else if (ratioSuspect(sapGal, syrupGal)) {
+        // `pctOff > 15` is one-sided, so a ratio far BELOW theoretical fell into
+        // the "good" branch and was announced as on target — 1.2:1 against a
+        // 43.2:1 theory was reported green, with "97% variance" printed in the
+        // same sentence as the word "target".
+        results.push({
+          id: 'conversion',
+          severity: 'high',
+          title: 'Sap and syrup totals contradict each other',
+          summary: `${actualRatio.toFixed(1)}:1 is below the ~${SR_RATIO_FLOOR.toFixed(0)}:1 floor that the sugar in sap allows — this is a data-entry problem, not a conversion problem.`,
+          action: 'Check the Entries list for a sap amount filed under Syrup, or a tank reading that gained a digit. Nothing is scored until these agree.',
+          effort: 'Low',
+          roi: 0,
+          details: [
+            `Your ratio: ${actualRatio.toFixed(1)}:1  |  Physical floor: ~${SR_RATIO_FLOOR.toFixed(1)}:1 (sap at ${SR_MAX_PLAUSIBLE_BRIX}°Brix)`,
+            `Rule of 86 at ${sapBrix}°Brix would be ${theorRatio.toFixed(1)}:1`,
+            'Yield, efficiency and fuel scores are withheld while this stands.',
           ],
         });
       } else {
@@ -11423,7 +11625,7 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
     // ── 5. Vacuum level check ──────────────────────────────────────────────
     if (vacLevel === 'gravity' && tapCount >= 100) {
       const addlSap = tapCount * 8; // ~8 extra gal/tap with 15" vac
-      const addlSyrup = addlSap / rule86(sapBrix);
+      const addlSyrup = addlSap / _ratio;
       const roiVal = addlSyrup * syrupPrice;
       results.push({
         id: 'vacuum',
@@ -11483,9 +11685,11 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
     }
 
     // ── 7. YoY comparison ─────────────────────────────────────────────────
-    // (Note: prev-season totals are not _gal-normalized — matches prior
-    // behavior exactly; flagged in PASS2-REPORT as a pre-existing issue.)
-    const { sapT: prevSap, syT: prevSyrup } = seasonTotals(prevLog);
+    // This season was normalized to gallons and last season was not, so in litre
+    // mode two IDENTICAL seasons reported "sap volume down 74%" — and pushed a
+    // fabricated recovery ROI into the opportunity banner on the strength of it.
+    // Carried since PASS2 as known; both sides now come from the same converter.
+    const { sapGal: prevSap, syrupGal: prevSyrup } = seasonTotalsGal(prevLog, units);
     if (sapGal > 0 && prevSap > 0) {
       const sapChg   = ((sapGal - prevSap) / prevSap) * 100;
       const syrupChg = prevSyrup > 0 ? ((syrupGal - prevSyrup) / prevSyrup) * 100 : null;
@@ -11494,13 +11698,13 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
         id: 'yoy',
         severity: isDown ? 'medium' : 'good',
         title: isDown ? `Sap volume down ${Math.abs(sapChg).toFixed(0)}% vs. last year` : `Sap volume up ${sapChg.toFixed(0)}% vs. last year`,
-        summary: `${season}: ${sapGal.toFixed(1)} gal  vs.  ${season-1}: ${prevSap.toFixed(1)} gal (${sapChg > 0 ? '+' : ''}${sapChg.toFixed(0)}%)`,
+        summary: `${season}: ${_disp(sapGal).toFixed(1)} ${_u}  vs.  ${season-1}: ${_disp(prevSap).toFixed(1)} ${_u} (${sapChg > 0 ? '+' : ''}${sapChg.toFixed(0)}%)`,
         action: isDown ? 'Review tap timing, sap collection frequency, equipment downtime, and weather patterns. Bacterial growth from late tapping can reduce yield.' : null,
         effort: isDown ? 'Low investigation' : null,
-        roi: isDown ? Math.abs(sapChg / 100 * sapGal / rule86(sapBrix) * syrupPrice) : 0,
+        roi: isDown ? Math.abs(sapChg / 100 * sapGal / _ratio * syrupPrice) : 0,
         details: [
-          `${season-1} sap: ${prevSap.toFixed(1)} gal  →  ${season} sap: ${sapGal.toFixed(1)} gal (${sapChg > 0 ? '+' : ''}${sapChg.toFixed(0)}%)`,
-          syrupChg != null ? `Syrup: ${prevSyrup.toFixed(1)} → ${syrupGal.toFixed(1)} gal (${syrupChg > 0 ? '+' : ''}${syrupChg.toFixed(0)}%)` : 'No prior syrup data',
+          `${season-1} sap: ${_disp(prevSap).toFixed(1)} ${_u}  →  ${season} sap: ${_disp(sapGal).toFixed(1)} ${_u} (${sapChg > 0 ? '+' : ''}${sapChg.toFixed(0)}%)`,
+          syrupChg != null ? `Syrup: ${_disp(prevSyrup).toFixed(1)} → ${_disp(syrupGal).toFixed(1)} ${_u} (${syrupChg > 0 ? '+' : ''}${syrupChg.toFixed(0)}%)` : 'No prior syrup data',
           'Year-over-year swings >20% may indicate tap timing, weather, or equipment issues',
           'Note: natural yield variation of ±15% is normal between seasons',
         ],
@@ -11616,7 +11820,7 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
             <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:6, marginTop:6 }}>
               {f.roi > 0 && (
                 <span style={{ background:'rgba(45,212,167,0.15)', border:'1px solid rgba(45,212,167,0.3)', borderRadius:10, padding:'2px 8px', fontSize:13, fontWeight:700, color:'#2dd4a7' }}>
-                  ${f.roi >= 1000 ? (f.roi/1000).toFixed(1)+'k' : f.roi.toFixed(0)} ROI
+                  ${!Number.isFinite(f.roi) ? '—' : f.roi >= 1000 ? (f.roi/1000).toFixed(1)+'k' : f.roi.toFixed(0)} ROI
                 </span>
               )}
               <span style={{ background:'rgba(255,255,255,0.06)', borderRadius:8, padding:'2px 8px', fontSize:13, color:'#7f92a6', fontWeight:600 }}>{s.label}</span>
@@ -11752,7 +11956,9 @@ function DiagnoseTab({ season, trees, units, sapBrix, lang='en' }) {
             <div style={{ background:'rgba(45,212,167,0.1)', border:'1px solid rgba(45,212,167,0.3)', borderRadius:14, padding:'14px 16px', marginTop:8, textAlign:'center' }}>
               <div style={{ fontSize:12, color:'#7f92a6', marginBottom:4 }}>Total identified opportunity</div>
               <div style={{ fontSize:26, fontWeight:800, color:'#2dd4a7' }}>
-                ${findings.reduce((s, f) => s + (f.roi || 0), 0).toLocaleString('en-US', { maximumFractionDigits:0 })}
+                {/* Finite-guarded: one bad roi used to render the whole banner as "$∞". */}
+                ${(() => { const tot = findings.reduce((s, f) => s + (Number.isFinite(f.roi) ? f.roi : 0), 0);
+                  return Number.isFinite(tot) ? tot.toLocaleString('en-US', { maximumFractionDigits:0 }) : '—'; })()}
               </div>
               <div style={{ fontSize:13, color:'#7f92a6', marginTop:4 }}>estimated annual improvement potential</div>
             </div>

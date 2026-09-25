@@ -196,8 +196,16 @@
 const LICENSE_API = ''; // e.g. 'https://sweetrun-license.<subdomain>.workers.dev'
 (async () => {
   const sid = new URLSearchParams(location.search).get('session_id');
-  if (!sid || !LICENSE_API) return;
   const waitEl = document.getElementById('pass-key-wait');
+  // Anyone who reached this page after paying is told what happens next, even if
+  // the key can't be fetched. Returning silently left a paying customer on a page
+  // that never mentioned a key at all — the difference between a patient email
+  // and a chargeback.
+  if (!sid || !LICENSE_API) {
+    waitEl.textContent = "Your Season Pass key is on its way by email. If it hasn't arrived within a few minutes, email hello@sweetrun.app and we'll send it straight over.";
+    waitEl.style.display = 'block';
+    return;
+  }
   waitEl.style.display = 'block';
   for (let attempt = 0; attempt < 6; attempt++) {
     try {

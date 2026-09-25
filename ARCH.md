@@ -97,6 +97,72 @@ One single-file React 18 app, compiled by Babel (JSX transform only — no bundl
 
 ## 5. Decision log
 
+**2026-09-21 — License verify: decode before the try, narrow the fallback.**
+`verifyLicense` decoded the signature *inside* the try that wrapped Ed25519
+verification, so a malformed signature threw during decode and landed in the
+"old Safari, accept on structure" catch — turning any un-decodable signature into
+a valid pass on a fully modern browser. Fixed: decode the signature first and
+reject if it fails or isn't 64 bytes; run verification; and fall through
+unverified ONLY for a genuine `NotSupportedError`/`OperationError` (real
+Ed25519-unsupported browsers), rejecting every other error including an undefined
+`crypto.subtle` (insecure context). Proven in Node against the real function: the
+malformed-sig forgery, a single-char sig, a wrong 64-byte sig, a wrong-length
+sig, and a valid signature from the wrong key all reject; a correctly signed
+license still verifies (active and expired-flag paths both intact). New
+invariant: **the signature is validated before anything structural is trusted,
+and structure-only acceptance is reachable only by a truly unsupported browser.**
+
+**2026-09-21 — Dates are stored in ISO; reads tolerate every legacy format.** See
+srToday/srDateParts/srDateMs/srDateshort. Entries were `toLocaleDateString` on
+write and `new Date()` on read, which only round-trips en-US; en-CA/fr-CA stored
+ISO (rendered a day early), fr-FR/en-GB/de-DE stored DD/MM (Invalid Date → sorts
+collapsed, season length went negative). New writes are ISO; reads parse any
+legacy locale string, disambiguating slash dates by the ">12 must be the day"
+rule (new writes are unambiguous so this only carries old data forward).
+
+**2026-09-21 — Gallons are canonical; the display unit lives only at the edges.**
+Log values are stored in the sugarmaker's display unit, but every benchmark in the
+app (gal/tap yield models, gal-per-cord fuel rates, break-even prices) is gallons.
+Five screens destructured `seasonTotals()` into variables named `sapGal`/`syrupGal`
+and compared them straight against those benchmarks. In litre mode the same
+500-tap season scored 67/D in gallons and 100/A in litres, and Diagnose reported
+"sap volume down 74%" between two *identical* seasons because this year was
+normalized and last year wasn't. The naming is what hid it: destructuring `sapT`
+into `sapGal` made the mistake invisible at every call site.
+
+Fixed with `seasonTotalsGal(slog, units)` — the name carries the unit, so the
+variable it lands in is true — plus `toGal`/`fromGal` as the single converter pair.
+`SeasonIntelligence` never received `units` at all and now does. Display sites call
+`fromGal` explicitly. New invariant: **totals are gallons the moment they leave
+`seasonTotalsGal`; the display unit is applied only at render, never in a
+comparison.** Locked by tests that log one season in both units and assert an
+identical grade, and a smoke that round-trips the display value.
+
+**2026-09-21 — Withholding is a pattern, not a patch (the clamp had three copies).**
+Yesterday's `ratioSuspect` guard fixed `seasonScore` only. The identical
+`Math.min(100, theoretical/actual)` clamp lived in `YieldGapAnalyzer` — rendering
+*directly below* the new warning, so Recap showed "these numbers need a second
+look" and "your operation is performing well" in one scroll — and in Diagnose,
+whose `pctOff > 15` test was one-sided and so filed a 97%-off ratio under
+severity `good`, titled "on target". All three now consult the same helper.
+Lesson recorded: when a guard is added, grep the codebase for the *pattern* it
+guards against before calling it done.
+
+**2026-09-21 — Withheld-but-explained, never silently gone.** Three related fixes
+share one rule. The `SweetRunScore` card stays mounted when scoring is withheld so
+it can say why. `YieldGapAnalyzer` returns null instead — but only because the card
+above it already explains, which is the sole condition under which disappearing is
+acceptable. The Recap R/O section withholds when `roGal > sapGal` (impossible:
+you cannot run more sap through the RO than you collected) rather than render
+"30 hrs saved" on a 20-hour boil.
+
+**2026-09-21 — Write, then reflect (`updLog`).** `updLog` called `setLogs` before
+`ls.set` and ignored its return, so a trial-expired user watched entries appear in
+the list, dismissed the lock banner, closed the app, and lost them — the UI
+confirmed a save that never happened. It now writes first, returns the result, and
+`saveEntry` suppresses both the celebration animation and the auto-copy rows when
+the write is refused. BoilDay had this right already and was the model.
+
 **2026-09-21 — Ratio sanity floor is absolute, not relative to recorded brix.**
 Live verification found a season of 120 gal sap / 97.5 gal syrup (1.2:1, created
 by a sap entry landing under Syrup) scoring 97/100 and an A. `seasonScore`

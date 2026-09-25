@@ -56,6 +56,28 @@ async function verifyStripeSig(payload, sigHeader, secret) {
   return diff === 0;
 }
 
+// ── IP rate limiter (fixed window, KV-backed) ────────────────────────────────
+// /event is public and unauthenticated. Without a cap, anyone with the Worker URL
+// can loop it to run up KV writes and — because a lead used to email the owner on
+// every request — flood the inbox and exhaust the Web3Forms quota that purchase
+// notifications share. This bounds each caller to `limit` requests per `windowSec`.
+// It fails OPEN: if KV is unavailable we allow the request rather than break the
+// app for real users — abuse prevention must not become its own outage.
+async function rateLimited(env, ip, bucket, limit, windowSec) {
+  if (!ip) return false;
+  const window = Math.floor(Date.now() / 1000 / windowSec);
+  const key = `rl:${bucket}:${ip}:${window}`;
+  try {
+    const n = Number(await env.DATA.get(key)) || 0;
+    if (n >= limit) return true;
+    // TTL a little past the window so the counter can't outlive its usefulness.
+    await env.DATA.put(key, String(n + 1), { expirationTtl: windowSec + 60 });
+    return false;
+  } catch (_) {
+    return false; // fail open
+  }
+}
+
 async function notifyOwner(env, subject, body) {
   if (!env.WEB3FORMS_KEY) return;
   try {
@@ -79,8 +101,20 @@ export default {
       const ok = await verifyStripeSig(raw, req.headers.get('Stripe-Signature'), env.STRIPE_WEBHOOK_SECRET);
       if (!ok) return json({ error: 'bad signature' }, 400);
       const event = JSON.parse(raw);
+      // Idempotency: Stripe retries a webhook until it gets a 2xx, and re-sends on
+      // its own schedule. Without this, each retry re-mints and re-emails. Record
+      // the event id the first time and no-op every repeat.
+      if (event.id) {
+        const seen = await env.DATA.get(`evt:seen:${event.id}`);
+        if (seen) return json({ received: true, deduped: true });
+        await env.DATA.put(`evt:seen:${event.id}`, '1', { expirationTtl: 60 * 60 * 24 });
+      }
       if (event.type === 'checkout.session.completed') {
         const s = event.data.object;
+        // checkout.session.completed also fires for delayed/async payment methods
+        // BEFORE the money settles. Only mint once the payment is actually paid;
+        // async methods settle later via checkout.session.async_payment_succeeded.
+        if (s.payment_status && s.payment_status !== 'paid') return json({ received: true, pending: true });
         const email = s.customer_details?.email || s.customer_email;
         if (email) {
           const plan = s.metadata?.plan || 'season';
@@ -105,15 +139,30 @@ export default {
 
     // ── Anonymous event ping / email capture ──
     if (url.pathname === '/event' && req.method === 'POST') {
+      // Cap each IP well above what a real client sends (one trial ping, maybe a
+      // couple more) but far below flood range. Shared NAT (a sugarhouse's wifi)
+      // stays comfortably under 30/hour.
+      const ip = req.headers.get('CF-Connecting-IP') || '';
+      if (await rateLimited(env, ip, 'event', 30, 3600)) {
+        return json({ error: 'rate limited' }, 429, { ...c, 'Retry-After': '3600' });
+      }
       let body;
       try { body = await req.json(); } catch { return json({ error: 'bad json' }, 400, c); }
+      // req.json() accepts bare `null`/`123`/`"str"` as valid JSON; guard so the
+      // property reads below can't throw an unhandled 500.
+      if (!body || typeof body !== 'object' || Array.isArray(body)) return json({ error: 'bad json' }, 400, c);
       const t = String(body.t || '').slice(0, 32).replace(/[^a-z_]/g, '');
       if (!t) return json({ error: 'missing type' }, 400, c);
       await env.DATA.put(`evt:${t}:${Date.now()}:${crypto.randomUUID().slice(0, 8)}`, JSON.stringify({ ua: req.headers.get('User-Agent')?.slice(0, 80) }), { expirationTtl: 60 * 60 * 24 * 400 });
       const email = String(body.email || '').trim().toLowerCase();
       if (email && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) && email.length < 120) {
+        // Only email the owner the FIRST time an address is seen. A repeated
+        // address (a retry, or someone replaying the request) updates the lead
+        // record silently instead of firing another notification — this is the
+        // second half of neutralizing the inbox-flood vector, alongside the IP cap.
+        const known = await env.DATA.get(`lead:${email}`);
         await env.DATA.put(`lead:${email}`, JSON.stringify({ src: t, at: new Date().toISOString() }));
-        await notifyOwner(env, 'SweetRun — Trial signup lead', `${email} started a trial (source: ${t}).`);
+        if (!known) await notifyOwner(env, 'SweetRun — Trial signup lead', `${email} started a trial (source: ${t}).`);
       }
       return json({ ok: true }, 200, c);
     }

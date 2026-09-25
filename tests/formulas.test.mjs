@@ -32,6 +32,8 @@ const sandbox = new Function('ls', `
            PLATE_CUPS, YIELD_MODELS, yieldModelFor, yieldMidOf, tapsPer, srParseNum,
            seasonTotals, actualRatio, seasonScore, dedupeImport,
            ratioSuspect, SR_RATIO_FLOOR, SR_MAX_PLAUSIBLE_BRIX,
+           toGal, fromGal, seasonTotalsGal, SR_L_PER_GAL,
+           srToday, srDateParts, srDateMs, srDateShort,
            srHaversineM, srPolyAreaM2, SR_M2_PER_ACRE, SR_M2_PER_HA,
            srBoilState, srGaugeFrac, BD_BAND_F, BD_NEAR_F,
            srReplaySteps, srReplayMoments, srReplayStepMs };
@@ -156,6 +158,67 @@ eq("srParseNum('-')", F.srParseNum('-'), null);
   eq('suspect season has no letter',  bad.grade, '—');
   // Data completeness still counts — logging is never punished.
   eq('suspect season still counts data', bad.dataScore, 75);
+}
+
+// ── Units: one season, one grade, whichever unit it is logged in ──
+// Totals are stored in the sugarmaker's display unit; every benchmark is gallons.
+// Screens that compared the two directly graded a 500-tap D season as an A in
+// litre mode, and ran every dollar figure 3.79x high.
+{
+  eq('toGal passes gallons through', F.toGal(100, 'GAL'), 100);
+  eq('toGal converts litres',        F.toGal(378.541, 'L'), 100, 1e-9);
+  eq('fromGal is the inverse',       F.fromGal(F.toGal(250, 'L'), 'L'), 250, 1e-9);
+
+  // The same real season, logged both ways.
+  const galLog = { sapCollected:[{val:2160}], syrupMade:[{val:50}], fuelUsed:[{val:5}] };
+  const L = v => v * 3.78541;
+  const litreLog = { sapCollected:[{val:L(2160)}], syrupMade:[{val:L(50)}], fuelUsed:[{val:5}] };
+
+  const g = F.seasonTotalsGal(galLog,   'GAL');
+  const l = F.seasonTotalsGal(litreLog, 'L');
+  eq('sap normalizes identically',   l.sapGal,   g.sapGal,   1e-6);
+  eq('syrup normalizes identically', l.syrupGal, g.syrupGal, 1e-6);
+  eq('fuel is never litre-converted', l.fuelT,   5);
+
+  const opts = { taps:500, brix:2, yieldModel:F.YIELD_MODELS.gravity, fuelSpu:1000 };
+  const sg = F.seasonScore({ sapT:g.sapGal, syT:g.syrupGal, fuelT:g.fuelT, ...opts });
+  const sl = F.seasonScore({ sapT:l.sapGal, syT:l.syrupGal, fuelT:l.fuelT, ...opts });
+  eq('same season scores the same',  sl.overall, sg.overall);
+  eq('same season grades the same',  sl.grade,   sg.grade);
+  eq('and it is the honest grade',   sg.grade,   'D');   // 0.10 gal/tap really is poor
+}
+
+// ── Dates: tolerant reads across locales (the /debug date bug) ──
+// Entries were stored with new Date().toLocaleDateString() and read with
+// new Date(str); that only round-trips en-US. en-CA/fr-CA store ISO (day-early
+// under new Date), fr-FR/en-GB/de-DE store DD/MM (Invalid Date -> sort collapse).
+{
+  eq('srToday is ISO', /^\d{4}-\d{2}-\d{2}$/.test(F.srToday()), true);
+  // Every locale format parses to the SAME calendar day.
+  const iso   = F.srDateParts('2026-03-15');
+  const enUS  = F.srDateParts('3/15/2026');
+  const frFR  = F.srDateParts('15/03/2026');
+  const deDE  = F.srDateParts('15.3.2026');
+  for (const [n,p2] of [['iso',iso],['en-US',enUS],['fr-FR',frFR],['de-DE',deDE]]) {
+    eq(`srDateParts ${n} year`,  p2.y,  2026);
+    eq(`srDateParts ${n} month`, p2.mo, 3);
+    eq(`srDateParts ${n} day`,   p2.d,  15);
+  }
+  // srDateMs orders a real season correctly regardless of stored format.
+  const season = ['3/2/2026','3/15/2026','3/9/2026','3/21/2026'];
+  const sorted = [...season].sort((a,b)=>F.srDateMs(a)-F.srDateMs(b));
+  eq('srDateMs sorts en-US season', sorted.join(','), '3/2/2026,3/9/2026,3/15/2026,3/21/2026');
+  // The two failing cases from the scan:
+  eq('span not negative (was -5d)',
+     Math.round((F.srDateMs('3/21/2026') - F.srDateMs('3/2/2026'))/86400000)+1, 20);
+  const frSeason = ['28/02/2026','13/03/2026','19/03/2026']; // all first>12: unambiguously D/M
+  const latest = frSeason.reduce((a,b)=> F.srDateMs(b) > F.srDateMs(a) ? b : a);
+  eq('fr-FR "most recent" no longer collapses', latest, '19/03/2026');
+  // Honest limitation: an ambiguous slash date (both parts <=12) reads as M/D.
+  eq('ambiguous 05/03 falls back to M/D', F.srDateParts('05/03/2026').mo, 5);
+  // Garbage in -> string back, never a crash.
+  eq('srDateShort passes junk through', F.srDateShort('not a date','en'), 'not a date');
+  eq('srDateMs of junk is NaN', Number.isNaN(F.srDateMs('xyz')), true);
 }
 
 // ── Import dedupe (Debug M4: re-importing a file must not double a season) ──
