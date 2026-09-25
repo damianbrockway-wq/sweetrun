@@ -62,6 +62,7 @@
   --rs-t-power: #4F4740;
   --rs-t-bad: #C83A31;
   --rs-t-ice: #3F6FE0;
+  --rs-on-tile: #FFFFFF;                  /* glyph on a stage tile */
   /* Vacuum ramp, 16 to 26 inHg */
   --rs-vac-0: #2D5E6E; --rs-vac-1: #357E93; --rs-vac-2: #3F9FB8; --rs-vac-3: #58BDD6; --rs-vac-4: #8ADBEE;
   /* Drawn map ground */

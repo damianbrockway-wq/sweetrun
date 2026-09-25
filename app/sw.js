@@ -2,7 +2,7 @@
 // Cache name: bump this string on every deploy to force all clients to update cleanly.
 // localStorage data is NEVER touched by this file — it is purely cache management.
 
-const CACHE      = 'sweetrun-v29';
+const CACHE      = 'sweetrun-v30';
 const TILE_CACHE = 'sweetrun-tiles-v1';   // kept separately — never auto-purged on app update
 
 // Core app shell — everything SweetRun needs to run fully offline
@@ -15,6 +15,11 @@ const ASSETS = [
   // Fonts must be precached: without them the new look falls back to system type offline.
   '/app/look.js',
   '/app/tokens.css',
+  '/app/runsheet.css',
+  '/app/manifest.webmanifest',
+  '/app/icons/icon-d-192.png',
+  '/app/icons/apple-touch-icon-d-180.png',
+  '/app/icons/favicon-d.svg',
   '/app/fonts/barlow-latin-500-normal.woff2',
   '/app/fonts/barlow-latin-600-normal.woff2',
   '/app/fonts/barlow-latin-700-normal.woff2',

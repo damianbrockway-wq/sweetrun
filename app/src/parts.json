@@ -7,6 +7,7 @@
   "20-formulas.jsx",
   "30-ui-kit.jsx",
   "31-rs-tokens.jsx",
+  "32-rs-kit.jsx",
   "40-01-wizard.jsx",
   "40-02-freeze-widget.jsx",
   "40-03-calc-sap.jsx",
@@ -38,6 +39,8 @@
   "40-29-diagnose.jsx",
   "40-30-license-modal.jsx",
   "40-31-backup-modal.jsx",
+  "80-rs-core.jsx",
+  "81-rs-routes.jsx",
   "90-shell-classic.jsx",
   "91-shell-runsheet.jsx",
   "99-mount.jsx"

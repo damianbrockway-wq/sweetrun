@@ -15,7 +15,7 @@ const SR_PREF_KEYS = [
   'sg_spoutidx','sg_spoutcost','sg_bottlecost','sg_filtercost','sg_othercost','sg_retailmargin',
   'sg_mainsize','sg_matprices','sg_wx_name','sg_wx_lat','sg_wx_lon','sg_ddstart','sg_ddlat','sg_ddlon','sg_ddloc',
   // Run Sheet (redesign): which shell to show on this device (see app/look.js)
-  'sg_look',
+  'sg_look','sg_first_name',
 ];
 const SR_PREF_PREFIXES = ['sg_last_screen','sg_pan','sg_dx_','sg_bev_','sg_recap_'];
 const _srIsPref = k => SR_PREF_KEYS.includes(k) || SR_PREF_PREFIXES.some(p => k.startsWith(p));

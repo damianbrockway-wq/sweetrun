@@ -1319,7 +1319,8 @@ function LinesTab({ lang='en' }) {
     const fit = () => {
       if (!stageRef.current) return;
       const top = stageRef.current.getBoundingClientRect().top + window.scrollY;
-      const nav = document.querySelector('.bottom-nav');
+      // Run Sheet shell: its bottom tab bar is .rs-tabs (hidden at >=1100px, where the side nav takes over).
+      const nav = document.querySelector('.bottom-nav') || document.querySelector('.rs-tabs');
       const navH = nav && getComputedStyle(nav).display !== 'none' ? nav.getBoundingClientRect().height : 0;
       setStageH(Math.max(420, Math.round(window.innerHeight - top - navH)));
     };

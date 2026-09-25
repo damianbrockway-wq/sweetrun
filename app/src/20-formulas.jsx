@@ -425,3 +425,38 @@ const getSyrupPrice = () => getSetting('sg_price_syrup', ['sg_syrup_price', 'sg_
 const getWoodCost   = () => getSetting('sg_cost_wood', ['sg_dx_wood'], 80);
 const getLaborRate  = () => getSetting('sg_rate_labor', ['sg_dx_labor', 'sg_laborrate', 'sg_bev_lrate'], 15);
 
+// ─── Run Sheet: greeting and routes (pure; tests/runsheet.test.mjs) ─────────
+// Time-of-day greeting on the Season screen. Rule (DESIGN.md round 5):
+// 5:00-11:59 morning, 12:00-16:59 afternoon, 17:00-4:59 evening. Takes minutes
+// since local midnight so callers pass the device clock and tests pass numbers.
+function srDayPart(minutes) {
+  const m = ((Math.floor(Number(minutes)) % 1440) + 1440) % 1440;
+  if (!isFinite(m)) return 'evening';
+  return m >= 300 && m < 720 ? 'morning' : m >= 720 && m < 1020 ? 'afternoon' : 'evening';
+}
+const srMinutesOf = d => d.getHours() * 60 + d.getMinutes();
+// The first name from sg_first_name, tidied: trimmed, inner runs of spaces
+// collapsed, capped at 24 characters. Blank gives a greeting with no name.
+function srGreetName(raw) {
+  return String(raw == null ? '' : raw).replace(/\s+/g, ' ').trim().slice(0, 24).trim();
+}
+const SR_GREET = {
+  en: { morning:'Good morning', afternoon:'Good afternoon', evening:'Good evening' },
+  fr: { morning:'Bonjour', afternoon:'Bon après-midi', evening:'Bonsoir' },
+};
+function srGreeting(part, name, lang) {
+  const g = (SR_GREET[lang] || SR_GREET.en)[part] || SR_GREET.en.evening;
+  const n = srGreetName(name);
+  return n ? `${g}, ${n}` : g;
+}
+// Header photo that follows the time of day (file stem in app/photos/).
+const SR_GREET_PHOTO = { morning:'frost-morning', afternoon:'sugarhouse-dawn', evening:'hillside-panorama' };
+
+// Hash routes: '#/stage/boil/day' -> ['stage','boil','day']. Empty, '#', '#/'
+// and anything not starting with '#/' give [] (the Season home).
+function srParseHash(hash) {
+  const h = String(hash || '');
+  if (!h.startsWith('#/')) return [];
+  return h.slice(2).split('?')[0].split('/').filter(Boolean).map(s => { try { return decodeURIComponent(s); } catch { return s; } });
+}
+
