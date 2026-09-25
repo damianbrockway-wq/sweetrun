@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node scripts/build.mjs --concat-only && SWEETRUN_SRC=app/src/.bundle.jsx node tests/formulas.test.mjs"
+    "test": "node scripts/build.mjs --concat-only && SWEETRUN_SRC=app/src/.bundle.jsx node tests/formulas.test.mjs && SWEETRUN_SRC=app/src/.bundle.jsx node tests/runsheet.test.mjs"
   },
   "devDependencies": {
     "@babel/cli": "^7.23.0",

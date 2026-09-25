@@ -2,7 +2,7 @@
 // Cache name: bump this string on every deploy to force all clients to update cleanly.
 // localStorage data is NEVER touched by this file — it is purely cache management.
 
-const CACHE      = 'sweetrun-v28';
+const CACHE      = 'sweetrun-v29';
 const TILE_CACHE = 'sweetrun-tiles-v1';   // kept separately — never auto-purged on app update
 
 // Core app shell — everything SweetRun needs to run fully offline
@@ -11,6 +11,15 @@ const ASSETS = [
   '/app/index.html',
   '/app/app.js',
   '/app/icon-512.png',
+  // Run Sheet (redesign): look flag, tokens and the self-hosted Barlow faces.
+  // Fonts must be precached: without them the new look falls back to system type offline.
+  '/app/look.js',
+  '/app/tokens.css',
+  '/app/fonts/barlow-latin-500-normal.woff2',
+  '/app/fonts/barlow-latin-600-normal.woff2',
+  '/app/fonts/barlow-latin-700-normal.woff2',
+  '/app/fonts/barlow-latin-800-normal.woff2',
+  '/app/fonts/barlow-semi-condensed-latin-700-normal.woff2',
   'https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
@@ -111,6 +120,29 @@ self.addEventListener('fetch', event => {
         if (cached) return cached;
         return fetch(event.request).then(response => {
           if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE).then(cache => cache.put(event.request, clone));
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // Run Sheet static assets (fonts, header photos, home screen icons): cache-first.
+  // Photos are NOT precached (about 840 KB that classic users would download for
+  // nothing); each one is cached the first time a screen shows it, then works offline.
+  // Replacing a photo means a new file name or a CACHE bump.
+  const isStatic = url.origin === self.location.origin
+                && /^\/app\/(fonts|photos|icons)\//.test(url.pathname);
+
+  if (isStatic) {
+    event.respondWith(
+      caches.match(event.request).then(cached => {
+        if (cached) return cached;
+        return fetch(event.request).then(response => {
+          if (response && response.status === 200 && response.type === 'basic') {
             const clone = response.clone();
             caches.open(CACHE).then(cache => cache.put(event.request, clone));
           }
