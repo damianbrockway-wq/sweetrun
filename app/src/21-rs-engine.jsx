@@ -278,6 +278,13 @@ function srJobs(f) {
     add({ id:'map', p:20, icon:'map', family:'lines', title:'jMapT', why:'jMapW', btn:'jMapB', act:{ go:'bush' }, alert:'jMapT', sub:'jMapS' });
   if (f.stage === 'recap')
     add({ id:'recap', p:15, icon:'chart', family:'recap', title:'jRecapT', why:'jRecapW', btn:'jRecapB', act:{ go:'stage/recap' } });
+  // Phases 7-8: pumps, freeze prep, fuel and leaks (srPumpJobs in 23-rs-engine3).
+  // Once freeze prep exists for his pumps it replaces the plain freeze job.
+  if (f.ops) {
+    const pj = srPumpJobs(f);
+    if (pj.some(j => j.id === 'freeze-prep')) { const i = J.findIndex(j => j.id === 'freeze'); if (i >= 0) J.splice(i, 1); }
+    pj.forEach(add);
+  }
   const lt = f.loggedToday || {};
   add({ id:'log', p:10, icon:'drop', family:'collect',
     title: inSeason && !lt.any ? 'jLogT' : 'jLogT2', why: inSeason && !lt.any ? 'jLogW' : 'jLogW2',

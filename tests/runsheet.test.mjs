@@ -354,9 +354,132 @@ eq('plain ranges', E2.srPlain('10–15 gal, 20–24°F nights, $35–$70/gal'), 
 eq('plain pauses', E2.srPlain('Stop the boil — do not stir'), 'Stop the boil, do not stir');
 eq('plain no dash left', /[–—]/.test(E2.srPlain('a — b – c 1–2')), false);
 
+// ── Phases 7-8: leak rule, runtime, fuel, readings, freeze/thaw, lines, pump jobs ──
+const E3 = new Function('ls', src.slice(a, b) +
+  '\nreturn { srLeakCheck, srRunHours, srHms, srTimeToEmpty, srFuelLeft, srAgeTier, srVacStep, srFreezeThaw, srSapRunning, srLinePath,' +
+  ' srNearestOnPath, srPathFt, srSensorId, srTileXY, srTileUrls, srManualSource, srSimSource, srPickSource, srFreezeItems, srPumpJobs, srOpsPrefs, srMedian, srJobs, SR_OPS_DEFAULTS };')
+  ({ get: (_k, d) => d, set: () => true });
+const HR = 3600000, DAY = 24 * HR, t0 = Date.UTC(2027, 2, 16, 20, 0);
+// Leak rule: latest >= 2.0 in under the median of the 7 days before it
+const rd = (h, v) => ({ ms: t0 + h * HR, v });
+eq('leak none', E3.srLeakCheck([], 2, 7).status, 'none');
+eq('leak single', E3.srLeakCheck([rd(0, 17)], 2, 7).status, 'single');
+const lk = E3.srLeakCheck([rd(-48, 24.1), rd(-24, 24.3), rd(-12, 23.9), rd(0, 21.9)], 2, 7);
+eq('leak suspect at 2.2 drop', [lk.status, lk.baseline, lk.drop, lk.n], ['suspect', 24.1, 2.2, 3]);
+eq('leak exactly at limit is suspect', E3.srLeakCheck([rd(-5, 24), rd(0, 22)], 2, 7).status, 'suspect');
+eq('leak 1.9 below is ok', E3.srLeakCheck([rd(-5, 24), rd(0, 22.1)], 2, 7).status, 'ok');
+eq('leak ignores readings older than the window', E3.srLeakCheck([rd(-24 * 8, 26), rd(0, 23.5)], 2, 7).status, 'single');
+eq('leak median resists one bad reading', E3.srLeakCheck([rd(-30, 24), rd(-20, 24.2), rd(-10, 15), rd(0, 23.8)], 2, 7).status, 'ok');
+eq('leak order-free', E3.srLeakCheck([rd(0, 20), rd(-3, 24)], 2, 7).status, 'suspect');
+eq('leak limit is his', E3.srLeakCheck([rd(-3, 24), rd(0, 22.6)], 1.0, 7).status, 'suspect');
+eq('leak junk skipped', E3.srLeakCheck([{ ms: NaN, v: 3 }, rd(-1, 24), { ms: t0, v: 'x' }], 2, 7).status, 'single');
+// Runtime
+eq('runtime open run', E3.srRunHours([], t0 - 2 * HR, -Infinity, t0), 2);
+eq('runtime closed runs', E3.srRunHours([{ start: t0 - 5 * HR, end: t0 - 4 * HR }, { start: t0 - 3 * HR, end: t0 - 2.5 * HR }], null, -Infinity, t0), 1.5);
+eq('runtime clipped to window', E3.srRunHours([{ start: t0 - 5 * HR, end: t0 - 1 * HR }], null, t0 - 2 * HR, t0), 1);
+eq('runtime overlaps count once', E3.srRunHours([{ start: t0 - 4 * HR, end: t0 - 2 * HR }, { start: t0 - 3 * HR, end: t0 - 1 * HR }], null, -Infinity, t0), 3);
+eq('runtime backwards run ignored', E3.srRunHours([{ start: t0, end: t0 - HR }], null, -Infinity, t0), 0);
+eq('runtime clock text', E3.srHms(14 + 2 / 60 + 12 / 3600), '14:02:12');
+// Fuel and time to empty
+eq('tte', E3.srTimeToEmpty(3.1, 0.34).toFixed(3), (3.1 / 0.34).toFixed(3));
+eq('tte unknown burn', E3.srTimeToEmpty(3, 0), null);
+const fl = E3.srFuelLeft({ fills: [{ ms: t0 - 10 * HR, level: 6.6 }], burnGalH: 0.34, capGal: 6.6, runs: [{ start: t0 - 10 * HR, end: t0 - 6 * HR }], runStart: t0 - 2 * HR, now: t0 });
+eq('fuel left burns only while running', [+fl.levelGal.toFixed(2), +fl.hoursLeft.toFixed(2), fl.emptyAtMs != null], [+(6.6 - 0.34 * 6).toFixed(2), +((6.6 - 0.34 * 6) / 0.34).toFixed(2), true]);
+eq('fuel stopped has no empty time', E3.srFuelLeft({ fills: [{ ms: t0 - HR, level: 5 }], burnGalH: 0.5, runs: [], runStart: null, now: t0 }).emptyAtMs, null);
+eq('fuel never below zero', E3.srFuelLeft({ fills: [{ ms: t0 - 20 * HR, level: 2 }], burnGalH: 1, runs: [], runStart: t0 - 20 * HR, now: t0 }).levelGal, 0);
+eq('fuel latest fill wins', E3.srFuelLeft({ fills: [{ ms: t0 - 5 * HR, level: 1 }, { ms: t0 - HR, level: 6 }], burnGalH: 1, runs: [], runStart: null, now: t0 }).levelGal, 6);
+eq('fuel none logged', E3.srFuelLeft({ fills: [], burnGalH: 1, now: t0 }), null);
+// Age tiers and vacuum ramp
+eq('age tiers', [E3.srAgeTier(t0 - HR, t0, 12), E3.srAgeTier(t0 - 5 * HR, t0, 12), E3.srAgeTier(t0 - 13 * HR, t0, 12), E3.srAgeTier(null, t0, 12)], ['fresh', 'aging', 'old', 'none']);
+eq('vac ramp', [15, 16, 19.9, 24.1, 27, NaN].map(E3.srVacStep), [0, 0, 1, 4, 4, null]);
+// Freeze/thaw from hourly
+const hourly = Array.from({ length: 48 }, (_, i) => ({ ms: t0 - 24 * HR + i * HR, f: 36 - 8 * Math.cos((i - 12) / 24 * 2 * Math.PI) }));
+const ft = E3.srFreezeThaw(hourly, t0, 39.4);
+eq('freeze thaw now', ft.nowF, 39.4);
+eq('freeze thaw froze last 24', ft.frozeLast24, true);
+eq('freeze thaw next is a freeze', ft.cross && ft.cross.kind, 'freeze');
+eq('freeze thaw none', E3.srFreezeThaw([], t0, null), null);
+eq('freeze thaw rising', E3.srFreezeThaw([{ ms: t0 - 3 * HR, f: 30 }, { ms: t0, f: 34 }], t0).trend, 'rising');
+// Sap running (honest rule)
+eq('sap running', E3.srSapRunning({ tempF: 39, frozeLast24: true, tanks: [{ fillGalH: 38, readMs: t0 - HR }], now: t0 }), 'running');
+eq('sap weather only', E3.srSapRunning({ tempF: 39, frozeLast24: true, tanks: [{ fillGalH: 38, readMs: t0 - 5 * HR }], now: t0 }), 'weather');
+eq('sap not at 32', E3.srSapRunning({ tempF: 32, frozeLast24: true, tanks: [], now: t0 }), null);
+eq('sap warm no freeze', E3.srSapRunning({ tempF: 50, frozeLast24: false, tanks: [], now: t0 }), null);
+// Mainline geometry
+const tk = [{ id: 9, lat: 44.54, lon: -69.62 }];
+const tr3 = [{ id: 1, lat: 44.541, lon: -69.62 }, { id: 2, lat: 44.543, lon: -69.62 }, { id: 3, lat: 44.542, lon: -69.62 }];
+const lp = E3.srLinePath({}, tr3, tk);
+eq('line through trees, far first, into the tank', [lp.source, lp.pts.map(p => +p[0].toFixed(6)), lp.tankId], ['trees', [44.543, 44.542, 44.541, 44.54], 9]);
+// zigzag trees either side of a line: the drawn mainline runs down the middle
+const zz = [0, 1, 2, 3, 4, 5].map(i => ({ id: i, lat: 44.541 + i * 0.0005, lon: -69.62 + (i % 2 ? 0.0002 : -0.0002) }));
+const zp = E3.srLinePath({}, zz, tk);
+eq('line down the middle of zigzag trees', Math.max(...zp.pts.slice(1, -2).map(p => Math.abs(p[1] + 69.62))) < 0.00012, true);
+eq('line keeps its top at the top tree', +zp.pts[0][0].toFixed(4), 44.5435);
+const lpe = E3.srLinePath({}, tr3.map((t, i) => ({ ...t, elev: [300, 100, 200][i] })), tk);
+eq('line by elevation when all known', lpe.pts.map(p => +p[0].toFixed(6)), [44.541, 44.542, 44.543, 44.54]);
+eq('drawn path wins', E3.srLinePath({ path: [[1, 2], [3, 4]] }, tr3, tk).source, 'drawn');
+eq('line with no trees', E3.srLinePath({}, [], tk).source, 'none');
+eq('line one tree no tank', E3.srLinePath({}, [tr3[0]], []).pts, []);
+const np = E3.srNearestOnPath([44.542, -69.619], [[44.54, -69.62], [44.544, -69.62]]);
+eq('nearest on path', [+np[0].toFixed(4), +np[1].toFixed(4)], [44.542, -69.62]);
+eq('path feet', Math.round(E3.srPathFt([[44.54, -69.62], [44.541, -69.62]])), 365);
+// Reading providers: one interface, manual now, simulator for demos
+const man = E3.srManualSource([{ s: 'line:A:end', t: new Date(t0 - HR).toISOString(), v: 24.1 }, { s: 'line:A:end', t: new Date(t0 - 3 * HR).toISOString(), v: 24.4 },
+  { s: 'tank:1:level', t: new Date(t0).toISOString(), v: '780' }, { s: 'x', t: 'bad', v: 1 }], 12);
+eq('manual latest', [man.id, man.latest('line:A:end').v, man.latest('line:A:end').src], ['manual', 24.1, 'manual']);
+eq('manual history sorted', man.history('line:A:end').map(x => x.v), [24.4, 24.1]);
+eq('manual unknown sensor', man.latest('line:Z:end'), null);
+eq('manual status', [man.status(t0), E3.srManualSource([], 12).status(t0), man.status(t0 + 20 * HR)], ['manual', 'off', 'stale']);
+eq('manual has the full interface', ['latest', 'history', 'subscribe', 'status'].every(k => typeof man[k] === 'function'), true);
+let clk = t0;
+const sim = E3.srSimSource({ lines: [{ id: 'A', base: 24 }], tanks: [{ id: '1', capGal: 1000, level: 500, rate: 36 }], tempF: 39 }, () => clk, t0);
+eq('sim is labelled sim', [sim.id, sim.latest('line:A:end').src, sim.status()], ['sim', 'sim', 'live']);
+eq('sim jitter within 0.1', Math.abs(sim.latest('line:A:end').v - 24) <= 0.1 + 1e-9, true);
+clk = t0 + HR;
+eq('sim tank rises at its rate', sim.latest('tank:1:level').v, 536);
+clk = t0 + 100 * HR;
+eq('sim tank stops at capacity', sim.latest('tank:1:level').v, 1000);
+eq('sim deterministic', E3.srSimSource({ lines: [{ id: 'A', base: 24 }] }, () => t0 + 9000, t0).latest('line:A:end').v,
+  E3.srSimSource({ lines: [{ id: 'A', base: 24 }] }, () => t0 + 9000, t0).latest('line:A:end').v);
+eq('sim unknown sensor', sim.latest('line:Q:end'), null);
+eq('pick source: manual unless demo', [E3.srPickSource({ readings: [] }).id, E3.srPickSource({ demo: true, model: {}, clock: () => t0 }).id], ['manual', 'sim']);
+eq('sensor ids', [E3.srSensorId('line', 'C'), E3.srSensorId('pump', 'p1'), E3.srSensorId('tank', 't1')], ['line:C:end', 'pump:p1:vac', 'tank:t1:level']);
+// Prefs: defaults, his values, junk ignored
+eq('prefs default', E3.srOpsPrefs(null), E3.SR_OPS_DEFAULTS);
+eq('prefs his leak limit', E3.srOpsPrefs({ leakLimitIn: '1.5', freezeF: 'x' }).leakLimitIn, 1.5);
+eq('prefs junk falls back', E3.srOpsPrefs({ freezeF: 'x', staleH: -3 }).freezeF, 28);
+// Freeze prep items follow the pumps he has
+eq('freeze items', E3.srFreezeItems([{ id: 't', kind: 'transfer' }, { id: 'v', kind: 'vacuum' }, { id: 'g', kind: 'generator' }], true).map(i => i.key),
+  ['fzDrainTransfer', 'fzTrap', 'fzGen', 'fzLowDrains']);
+eq('freeze items none', E3.srFreezeItems([], false), []);
+// Pump jobs into "Do this next"
+const ops = { prefs: E3.SR_OPS_DEFAULTS, pumps: [], leaks: [], freeze: null };
+const pj = o => E3.srJobs({ ...base, ops: { ...ops, ...o } }).map(j => [j.id, j.p]);
+eq('pump fault 95', pj({ pumps: [{ id: 't', name: 'Transfer pump', status: 'fault', note: 'Lost prime' }] }), [['fault-t', 95], ['log', 10]]);
+eq('leak suspect 70', pj({ leaks: [{ id: 'C', name: 'Mainline C', latest: 17.2, baseline: 24.1, drop: 6.9 }] }), [['leak-C', 70], ['log', 10]]);
+eq('fuel under 4 h is 75', pj({ pumps: [{ id: 'g', name: 'Generator', status: 'running', fuel: { hoursLeft: 3, levelGal: 1 } }] }), [['fuel-g', 75], ['log', 10]]);
+eq('fuel 9 h by day is 35', pj({ pumps: [{ id: 'g', name: 'Generator', status: 'running', fuel: { hoursLeft: 9, levelGal: 3 } }] }), [['fuel-g', 35], ['log', 10]]);
+eq('fuel 9 h at night runs dry overnight', E3.srJobs({ ...base, minutes: 20 * 60, ops: { ...ops, pumps: [{ id: 'g', name: 'Generator', status: 'running', fuel: { hoursLeft: 9, levelGal: 3 } }] } })[0].title, 'jFuelNT');
+eq('fuel stopped pump no job', pj({ pumps: [{ id: 'g', name: 'Generator', status: 'stopped', fuel: { hoursLeft: 1, levelGal: 0.3 } }] }), [['log', 10]]);
+eq('freeze prep replaces the plain freeze job', E3.srJobs({ ...base, wx: wxF, ops: { ...ops, freeze: { lo: 19, done: 1, total: 4 } } }).map(j => [j.id, j.p]), [['freeze-prep', 55], ['log', 10]]);
+eq('freeze prep at night 90', E3.srJobs({ ...base, wx: wxF, minutes: 20 * 60, ops: { ...ops, freeze: { lo: 19, done: 0, total: 4 } } })[0].p, 90);
+eq('freeze prep done: plain freeze job stays', E3.srJobs({ ...base, wx: wxF, ops: { ...ops, freeze: { lo: 19, done: 4, total: 4 } } }).map(j => j.id), ['freeze', 'log']);
+eq('ranking fault > freeze > fuel > leak', E3.srJobs({ ...base, minutes: 20 * 60, ops: { ...ops, freeze: { lo: 19, done: 0, total: 2 },
+  leaks: [{ id: 'C', name: 'C', latest: 17, baseline: 24, drop: 7 }],
+  pumps: [{ id: 't', name: 'T', status: 'fault' }, { id: 'g', name: 'G', status: 'running', fuel: { hoursLeft: 2, levelGal: 0.7 } }] } }).map(j => j.id),
+  ['fault-t', 'freeze-prep', 'fuel-g', 'leak-C', 'log']);
+eq('no ops, no change', ids({}), ['log']);
+// Offline tiles: classic's math
+eq('tile xy', E3.srTileXY(44.5412, -69.6203, 16), { x: 20094, y: 23692 });
+const tb2 = { north: 44.5425, south: 44.5400, west: -69.6230, east: -69.6180 };
+const tu = E3.srTileUrls(tb2, 17, 'sat');
+eq('tile urls sat pairs imagery and labels', [tu.urls.length === tu.tiles * 2, tu.urls[0].includes('World_Imagery/MapServer/tile/16/'), tu.tooMany], [true, true, false]);
+eq('tile urls topo only to z16', E3.srTileUrls(tb2, 17, 'topo').urls.every(u => /tile\/1[0-6]\//.test(u)), true);
+eq('tile urls cap', E3.srTileUrls({ north: 45, south: 44, west: -70, east: -69 }, 17, 'sat').tooMany, true);
+
 // ── Token law: no hex colour literals in Run Sheet code (tokens.css is the only home) ──
 const { readdirSync } = await import('node:fs');
-const rsFiles = readdirSync(join(ROOT, 'app', 'src')).filter(f => /^(3[1-9]|6\d|8\d|9[1-8])-.*\.jsx$/.test(f) && f !== '90-shell-classic.jsx');
+const rsFiles = readdirSync(join(ROOT, 'app', 'src')).filter(f => /^(3[1-9]|5\d|6\d|8\d|9[1-8])-.*\.jsx$/.test(f) && f !== '90-shell-classic.jsx');
 for (const f of [...rsFiles.map(f => join('app', 'src', f)), join('app', 'runsheet.css')]) {
   const code = readFileSync(join(ROOT, f), 'utf8').split('\n').filter(l => !/^\s*(\/\/|\/\*|\*)/.test(l)).join('\n');
   const hits = code.match(/#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b/g) || [];
