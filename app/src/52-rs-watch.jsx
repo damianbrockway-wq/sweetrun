@@ -261,7 +261,7 @@ function RsWatchPanel({ c, model, l, demo, onClose }) {
       <div className={`rs-wbig tn${lk.status === 'suspect' ? ' bad' : ''}${l.tier === 'old' ? ' old' : ''}`}>{l.latest ? fmt(l.latest.v, 1) : '·'}<small> in</small></div>
       <div className="rs-wsub">{l.latest ? (demo ? rt(L, 'wDemoTag') : rt(L, 'readAgo', { a: srAgo(l.latest.ms, model.now, L), t: srClock(l.latest.ms, L) })) : rt(L, 'noReadingYet')}</div>
       <p className={`rs-wverdict ${lk.status === 'suspect' ? 'bad' : lk.status === 'ok' ? 'ok' : ''}`}>{srLeakVerdict(L, lk, model.prefs)[1]}</p>
-      <RsLeakChain c={c} l={l} now={model.now} P={model.prefs} demo={demo} />
+      <RsLeakChain c={c} l={l} now={model.now} P={model.prefs} demo={demo} big />
       {hist.length >= 2 && <div className="rs-wcard" style={{ marginTop: 12 }}><div className="rs-wk2">{rt(L, demo ? 'wLast24' : 'wRecent')}</div>
         <RsTimeChart series={[{ id: l.id, pts: hist, dash: '', leak: lk.status === 'suspect' }]} from={hist[0].ms} to={model.now} yMin={14} yMax={28} yTicks={[14, 18, 22, 26]} h={170} lang={L} label={rt(L, 'vacTrendAria', { n: l.label, k: hist.length })} /></div>}
       <dl className="rs-wkv tn">

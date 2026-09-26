@@ -1075,7 +1075,7 @@ html[data-look="new"] .rs-opslist .rs-st { font-size: 14px; }
 /* The body had a height but no row template, so its one implicit row grew to
    the rail's content and pushed the map (legend, sugarhouse) past the fold. */
 html[data-look="new"] .rs-wbody { grid-template-rows: minmax(0, 1fr); }
-html[data-look="new"] .rs-wrail { min-height: 0; gap: 10px; }
+html[data-look="new"] .rs-wrail { min-height: 0; gap: 9px; }
 html[data-look="new"] .rs-wrail .rs-wcard { padding: 14px 16px; }
 html[data-look="new"] .rs-wrun { padding: 12px 16px; }
 html[data-look="new"] .rs-wrun b { font-size: 34px; }
@@ -1164,3 +1164,13 @@ html[data-look="new"] .rs-wlhint { color: var(--rs-dim); border-left: 1.5px soli
 html[data-look="new"] .rs-watch.demo .rs-wmapc { outline: 0; }
 html[data-look="new"] .rs-watch.demo .rs-wmapc::after { content: ''; position: absolute; inset: 0; z-index: 750; border: 3px dashed var(--rs-acc); border-radius: 20px; pointer-events: none; }
 html[data-look="new"] .rs-wdemotag { position: absolute; z-index: 760; right: 12px; top: 12px; background: var(--rs-acc); color: var(--rs-acc-ink); font: 800 15px var(--rs-f); letter-spacing: .02em; padding: 6px 14px; border-radius: 999px; pointer-events: none; white-space: nowrap; }
+/* Watch type floor (readable across a sugarhouse): every text run 16px or
+   more, except uppercase letter-spaced eyebrow labels at 14px. Measured in the
+   verify rig (fonts.py). */
+html[data-look="new"] .rs-watch :is(.rs-srcpill, button.rs-srcpill, .rs-wwake, .rs-wlegend, .rs-wlegend span, .rs-wlhint, .rs-wsensor p, .rs-wpumps .rs-st, .rs-wpump .rs-st, .rs-wsrc) { font-size: 16px; }
+html[data-look="new"] .rs-watch .rs-mlbl { font-size: 16px; }
+html[data-look="new"] .rs-watch .rs-mlbl.side { top: -11px; }
+html[data-look="new"] .rs-watch .rs-plate.big small { font-size: 16px; }
+html[data-look="new"] .rs-watch .rs-soon { font-size: 14px; }
+html[data-look="new"] .rs-chain.big .rs-chw, html[data-look="new"] .rs-chain.big .rs-cha { font-size: 16px; }
+html[data-look="new"] .rs-watch .rs-wgiant small, html[data-look="new"] .rs-watch .rs-chg b small { font-size: 18px; }
