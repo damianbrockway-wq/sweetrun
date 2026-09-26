@@ -372,7 +372,7 @@ a.rs-num:active { background: var(--rs-s2); }
 html.rs-sheet-open, html.rs-sheet-open body { overflow: hidden; }
 .rs-toast { position: fixed; left: 50%; bottom: calc(var(--rs-nav) + var(--rs-bot) + 14px); transform: translate(-50%, 20px); opacity: 0;
   background: var(--rs-tx); color: var(--rs-bg); font: 700 16px var(--rs-f); padding: 14px 18px; border-radius: 14px; z-index: 1100; transition: all .22s;
-  display: flex; gap: 10px; align-items: center; max-width: calc(100% - 32px); pointer-events: none; }
+  display: flex; gap: 10px; align-items: center; width: max-content; max-width: calc(100% - 32px); pointer-events: none; }   /* width: left 50% alone shrinks it to half the screen */
 .rs-toast.show { opacity: 1; transform: translate(-50%, 0); }
 .rs-errline { color: var(--rs-bad); font-size: 15px; margin: 10px 0 0; }
 .rs-okline { color: var(--rs-ok); font-size: 15px; margin: 12px 0 0; }

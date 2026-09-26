@@ -26,7 +26,7 @@
 
 **Shell and offline.** `app/index.html` carries static head tags: theme `#0C0B0A`, `app/manifest.webmanifest`, icons option E (`app/icons/*-e-*`, rendered by `scripts/render-icon-e.py`; alternates B and D in `brand/icon-options/`). SW `sweetrun-v36` precaches app, CSS, manifest, fonts, icons, the 9 header photos and the pinned CDN libraries; activate deletes every other cache except `sweetrun-tiles-v1`.
 
-**Sizes (2026-09-26).** `app.js` 702,527 bytes (208,829 gzipped); with `index.html`, `tokens.css` and `runsheet.css` the shell is 232,196 bytes gzipped, against 307,227 for the original main build (752,777-byte `app.js` plus a 181,258-byte `index.html` holding the classic CSS and a data-URI manifest).
+**Sizes (2026-09-26).** `app.js` 702,762 bytes (208,956 gzipped); with `index.html`, `tokens.css` and `runsheet.css` the shell is 232,362 bytes gzipped, against 307,227 for the original main build (752,777-byte `app.js` plus a 181,258-byte `index.html` holding the classic CSS and a data-URI manifest).
 
 **Tests.** `npm test`: 134 formula assertions and 398 Run Sheet assertions (532), including cutover guards (head tags, manifest icons and their pixel sizes, precache list, no classic shell in the bundle), the yield verdict, boil readings, and no string key defined twice.
 

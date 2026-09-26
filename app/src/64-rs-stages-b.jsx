@@ -12,7 +12,7 @@ function RsEntryRows({ c, entries }) {
   const L = c.lang, kinds = srKinds(L, c.units);
   return <div className="rs-list">{entries.map(e => { const k = kinds.find(x => x.k === e.kind);
     return <RsRow key={e.kind + e.id} icon={k.icon} family={e.kind === 'syrupMade' || e.kind === 'sapEvap' || e.kind === 'boilHours' ? 'boil' : e.kind === 'fuelUsed' ? 'power' : 'collect'}
-      title={`${fmt(e.val, k.dp)} ${k.unit} · ${k.l.toLowerCase()}`} sub={[e.grade && e.grade !== '—' ? srGradeLabel(e.grade, L) : null, e.brix != null ? `${fmt(e.brix, 1)} Brix` : null, e.note || null].filter(Boolean).join(' · ') || rt(L,'today')}
+      title={`${fmt(e.val, k.dp)} ${k.unit} · ${srKindWord(k)}`} sub={[e.grade && e.grade !== '—' ? srGradeLabel(e.grade, L) : null, e.brix != null ? `${fmt(e.brix, 1)} Brix` : null, e.note || null].filter(Boolean).join(' · ') || rt(L,'today')}
       href={rsHref('shack/log')} />; })}</div>;
 }
 
@@ -386,7 +386,7 @@ function RsBoilLive({ c, sess, now, est, rate, state, stateWord, finT, onRead, o
           <span className="rs-nv tn">{fmt(srTempD(tNow, c.units), 1)}<small>{uT}</small></span>
           <RsSt kind={state === 'draw' ? 'ok' : state === 'over' ? 'fault' : 'idle'}>{stateWord}</RsSt></div>
         <div className="rs-blstat"><span className="rs-nl">{rt(L,'lastBrix')}</span>
-          <span className="rs-nv tn">{S.lastBrix != null ? fmt(S.lastBrix, 1) : rt(L,'dashNone')}<small>{rt(L,'brixU')}</small></span>
+          <span className="rs-nv tn">{S.lastBrix != null ? <>{fmt(S.lastBrix, 1)}<small>{rt(L,'brixU')}</small></> : rt(L,'dashNone')}</span>
           <span className="rs-bls tn">{S.lastBrix != null ? rt(L,'blReadAt', { t: srClock(S.lastBrixAt, L) }) : rt(L,'noBrixYet')}</span></div>
         <div className="rs-blstat"><span className="rs-nl">{rt(L,'syrupDrawn')}</span>
           <span className="rs-nv tn">{fmt(sess.syrup || 0, 1)}<small>{u}</small></span>
@@ -432,25 +432,28 @@ function RsBoilChart({ pts, from, to, refV, refL, band, bandL, dp = 1, unit, lan
   const ticks = []; for (let t = Math.ceil(lo / step) * step; t <= hi; t += step) ticks.push(t);
   const pl = 40, pr = 12, pt = 24, pb = 26, iw = Math.max(40, W - pl - pr), ih = h - pt - pb;   // pt: headroom for the end label
   const span = Math.max(60000, to - from);
-  const X = ms => pl + (ms - from) / span * iw, Y = v => pt + (1 - (v - lo) / (hi - lo)) * ih;
+  const X = ms => pl + 10 + (ms - from) / span * (iw - 10), Y = v => pt + (1 - (v - lo) / (hi - lo)) * ih;   // dots clear the axis numbers
   const P = pts.map(p => [X(p.ms), Y(p.v)]);
   const d = 'M' + P.map(p => p.map(q => q.toFixed(1)).join(' ')).join(' L');
   const e = P[P.length - 1], last = pts[pts.length - 1];
   // End label above the newest dot, or below it when above would sit on the
-  // draw-off line (a label's box is about 14 px over its baseline and 4 under).
+  // draw-off line (a label's box is about 14 px over its baseline and 4 under);
+  // left of the dot, or right of it while the dot is still near the start.
   const ry = refV != null ? Y(refV) : null, clear = y => ry == null || ry < y - 16 || ry > y + 6;
   const ly = clear(e[1] - 12) ? e[1] - 12 : e[1] + 24;
+  const early = e[0] < pl + iw * .4;                       // end label goes right of the dot
+  const refX = early ? W - pr - 6 : pl + 6, refA = early ? 'end' : 'start';   // reference label on the other side
   return (
     <div ref={ref} className="rs-chartwrap rs-blc">
       <svg className="rs-chart" width={W} height={h} viewBox={`0 0 ${W} ${h}`} role="img" aria-label={label}>
         {ticks.map(t => <g key={t}><line x1={pl} x2={W - pr} y1={Y(t)} y2={Y(t)} className="rs-grid" /><text x={pl - 6} y={Y(t) + 5} textAnchor="end" className="rs-ct">{t}</text></g>)}
         {band && <g><rect x={pl} width={iw} y={Y(band[1])} height={Math.max(2, Y(band[0]) - Y(band[1]))} className="rs-blband" />
-          <text x={pl + 6} y={Y(band[1]) - 6} className="rs-ct strong">{bandL}</text></g>}
+          <text x={refX} y={Y(band[1]) - 6} textAnchor={refA} className="rs-ct strong">{bandL}</text></g>}
         {refV != null && <g><line x1={pl} x2={W - pr} y1={Y(refV)} y2={Y(refV)} className="rs-refl" />
-          <text x={pl + 6} y={Y(refV) - 6} className="rs-ct strong">{refL}</text></g>}
+          <text x={refX} y={Y(refV) - 6} textAnchor={refA} className="rs-ct strong">{refL}</text></g>}
         {P.length > 1 && <path d={d} fill="none" className="rs-blline" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />}
         {P.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r={i === P.length - 1 ? 6 : 4} className={`rs-bldot${i === P.length - 1 ? ' last' : ''}`} />)}
-        <text x={e[0] - 16} y={ly} textAnchor="end" className="rs-ct strong">{fmt(last.v, dp)}{unit}</text>
+        <text x={early ? e[0] + 14 : e[0] - 16} y={ly} textAnchor={early ? 'start' : 'end'} className="rs-ct strong">{fmt(last.v, dp)}{unit}</text>
         <text x={pl} y={h - 5} className="rs-ct">{srClock(from, lang)}</text>
         <text x={W - pr} y={h - 5} textAnchor="end" className="rs-ct">{rt(lang,'nowW')}</text>
       </svg>

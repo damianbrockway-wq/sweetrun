@@ -42,7 +42,7 @@ const out = babel.transformSync(source, {
   configFile: join(ROOT, 'babel.config.json'),
   babelrc: false,
   // Cutover (2026-09-26): whitespace and comments stripped, names kept (crash
-  // stacks stay readable). 835 KB -> 702 KB raw, 246 KB -> 209 KB gzipped.
+  // stacks stay readable). 835 KB -> 703 KB raw, 246 KB -> 209 KB gzipped.
   minified: true,
   comments: false,
 });

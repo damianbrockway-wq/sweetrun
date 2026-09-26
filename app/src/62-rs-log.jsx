@@ -6,6 +6,8 @@
 // the sugarmaker is working in, as every entry always has been.
 
 // The six kinds, same order, units and decimals as LogTab's KINDS.
+// A kind's name inside a sentence: lower case, except acronyms ("RO" stays "RO").
+const srKindWord = K => /^[A-Z]{2,}$/.test(K.l) ? K.l : K.l.toLowerCase();
 function srKinds(lang, units) {
   const u = srU(units);
   const fuelU = (FUELS.find(f => f.label === ls.get('sg_fuel', 'Firewood (cord)')) || FUELS[0]).unit;
@@ -67,7 +69,7 @@ function RsLogSheet({ c, kind: kind0, editing, onClose }) {
       if (up2) ls.set('sg_logs2', up2);
     }
     srDataChanged();
-    srToast(rt(L,'savedEntry', { v: fmt(n, K.dp), u: K.unit, k: K.l.toLowerCase() }));
+    srToast(rt(L,'savedEntry', { v: fmt(n, K.dp), u: K.unit, k: srKindWord(K) }));
     onClose();
   };
   const del = () => {
@@ -78,7 +80,7 @@ function RsLogSheet({ c, kind: kind0, editing, onClose }) {
     if (!writeLogs(up)) return;
     srDataChanged(); srToast(rt(L,'entryDeleted')); onClose();
   };
-  const title = editing ? rt(L,'changeEntry') : rt(L,'logKind', { k: K.l.toLowerCase() });
+  const title = editing ? rt(L,'changeEntry') : rt(L,'logKind', { k: srKindWord(K) });
   return (
     <RsSheet title={title} onClose={onClose} id="rs-log-sheet">
       {!editing && <>
@@ -122,7 +124,7 @@ function RsLogSheet({ c, kind: kind0, editing, onClose }) {
         {fail !== 'quota' && <button type="button" className="rs-bbtn" onClick={() => { onClose(); c.setShowLicense(true); }}>{rt(L,'bEnterKey')}</button>}
       </div>}
         <RsBtn onClick={save} id="rs-log-save">{editing ? rt(L,'saveChange')
-          : parseFloat(val) ? rt(L,'saveAmt', { v: fmt(parseFloat(val), K.dp), u: K.unit, k: K.l.toLowerCase() }) : rt(L,'saveKind', { k: K.l.toLowerCase() })}</RsBtn>
+          : parseFloat(val) ? rt(L,'saveAmt', { v: fmt(parseFloat(val), K.dp), u: K.unit, k: srKindWord(K) }) : rt(L,'saveKind', { k: srKindWord(K) })}</RsBtn>
       </div>
       {editing && <div style={{ marginTop:10 }}><RsBtn kind="bad" onClick={del} id="rs-log-del">{rt(L, armed ? 'tapAgainDelete' : 'deleteEntry')}</RsBtn></div>}
     </RsSheet>
