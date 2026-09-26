@@ -9,7 +9,7 @@
 //                    | { id, pumpId, kind:'status', t, status, note }
 //                    | { id, pumpId, kind:'fuel', t, level, added }      (gallons)
 //                    | { id, pumpId, kind:'service', t, what, parts, hoursAt }]
-//   sg_line_meta    { [mainlineId]: { taps, path:[[lat,lon]], tankId, checkedAt, note } }
+//   sg_line_meta    { [mainlineId]: { taps, path:[[lat,lon]], pathFrom (index of the sg_property_geo feature it came from, or null), tankId, checkedAt, note } }
 //                   (sg_mainlines keeps exactly {id,label,color}: mainlinesSaved() drops
 //                   anything else, so per-line data lives here, keyed by the same id)
 //   sg_tanks        [{ id, name, role, capGal, pinId }]                (PORT-PLAN 3.5)
@@ -93,18 +93,25 @@ function srOpsModel(d, now) {
     const trees = d.pins.filter(p => p.type === 'tree' && String(p.mainline) === m.id);
     const sid = srSensorId('line', m.id);
     const hist = src.history(sid);
-    const leak = srLeakCheck(hist, P.leakLimitIn, P.baselineDays);
+    // The releaser this line is read against: the vacuum pumps that serve it, or
+    // the only vacuum pump when there is just one and the line has none set.
+    const vacPumps = pumps.filter(p => p.kind === 'vacuum');
+    const serving = vacPumps.filter(p => srArr(p.lineIds).map(String).includes(m.id));
+    const relPumps = serving.length ? serving : vacPumps.length === 1 ? vacPumps : [];
+    const relHist = [].concat(...relPumps.map(p => src.history(srSensorId('pump', p.id))));
+    const leak = srLeakFind(hist, relHist, P.leakLimitIn, P.baselineDays, P.pairH);
     const geo = srLinePath(meta, trees, tankPins);
     const treeTaps = trees.reduce((s, p) => s + (parseInt(p.taps) || 0), 0);
     const checked = Math.max(Date.parse(meta.checkedAt) || -Infinity, leak.latest ? leak.latest.ms : -Infinity);
-    const pumpsOn = pumps.filter(p => p.kind === 'vacuum' && srArr(p.lineIds).map(String).includes(m.id));
-    return { ...m, idx: i, dash: SR_LINE_DASH[i % SR_LINE_DASH.length], meta, trees, sid, hist, leak,
+    const pumpsOn = relPumps;   // flow dots and "Vacuum from": the releaser this line is read against
+    return { ...m, idx: i, relPumps, relHist, dash: SR_LINE_DASH[i % SR_LINE_DASH.length], meta, trees, sid, hist, leak,
       latest: leak.latest, taps: isFinite(parseInt(meta.taps)) ? parseInt(meta.taps) : treeTaps, treeTaps, tapsSet: isFinite(parseInt(meta.taps)),
       geo, lengthFt: geo.pts.length >= 2 ? srPathFt(geo.pts) : null, checkedMs: isFinite(checked) ? checked : null,
       pumps: pumpsOn, flowing: pumpsOn.some(p => p.status === 'running'), tier: srAgeTier(leak.latest ? leak.latest.ms : null, now, P.staleH) };
   });
   const leaks = lines.filter(l => l.leak.status === 'suspect')
-    .map(l => ({ id: l.id, name: l.label, latest: l.leak.latest.v, baseline: l.leak.baseline, drop: l.leak.drop }));
+    .map(l => ({ id: l.id, name: l.label, latest: l.leak.latest.v, baseline: l.leak.baseline, drop: l.leak.drop,
+      method: l.leak.method, releaser: l.leak.releaser ? l.leak.releaser.v : null }));
   return { ...d, src, pumps, lines, leaks, now, dayStart };
 }
 

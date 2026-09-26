@@ -1070,3 +1070,97 @@ html[data-look="new"] .rs-opslist .rs-st { font-size: 14px; }
   html[data-look="new"] .rs-recapgrid .rc-charts .rs-stack { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   html[data-look="new"] .rs-recapgrid .rc-charts .rs-stack > * + * { margin-top: 0; }
 }
+
+/* ── Phase 7-8 audit (loop 2): Watch fits the iPad, the gauge chain, imports ── */
+/* The body had a height but no row template, so its one implicit row grew to
+   the rail's content and pushed the map (legend, sugarhouse) past the fold. */
+html[data-look="new"] .rs-wbody { grid-template-rows: minmax(0, 1fr); }
+html[data-look="new"] .rs-wrail { min-height: 0; gap: 10px; }
+html[data-look="new"] .rs-wrail .rs-wcard { padding: 14px 16px; }
+html[data-look="new"] .rs-wrun { padding: 12px 16px; }
+html[data-look="new"] .rs-wrun b { font-size: 34px; }
+html[data-look="new"] .rs-walert { min-height: 58px; padding: 8px 0; }
+html[data-look="new"] .rs-walerts .rs-walert:nth-child(2) { border-top: 0 !important; }
+html[data-look="new"] .rs-wpumps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
+html[data-look="new"] .rs-wpumps .rs-wpump { min-height: 64px; padding: 8px 0; }
+html[data-look="new"] .rs-wpumps .rs-wpump:nth-child(2) { border-top: 0; }
+html[data-look="new"] .rs-wpumps .rs-wpump:first-child { border-top: 0; }
+html[data-look="new"] .rs-wpumps .rs-wpump b { font-size: 18px; line-height: 1.15; }
+html[data-look="new"] .rs-wpumps .rs-wpump .rs-st { font-size: 15px; }
+html[data-look="new"] .rs-wcalm .rs-wsub { font-size: 17px; }
+html[data-look="new"] .rs-wrate { color: var(--rs-ok); font-weight: 700; }
+html[data-look="new"] .rs-wtemp { font-size: 52px; }
+@media (max-width: 559px) { html[data-look="new"] .rs-wpumps { grid-template-columns: minmax(0, 1fr); } html[data-look="new"] .rs-wpumps .rs-wpump:nth-child(2) { border-top: 1px solid var(--rs-line); } }
+/* Watch one line: only the watched line keeps a plate */
+html[data-look="new"] .rs-wonemap .rs-plate.dim { display: none; }
+@media (min-width: 1100px) {
+  html[data-look="new"] .rs-wone { grid-template-rows: minmax(0, 1fr); height: calc(100vh - 74px); height: calc(100dvh - 74px); }
+  html[data-look="new"] .rs-wonec { display: flex; flex-direction: column; min-height: 0; }
+  html[data-look="new"] .rs-wonec .rs-wonemap { flex: 1; min-height: 240px; height: auto; }
+  html[data-look="new"] .rs-wonel { overflow-y: auto; }
+}
+/* Header: demo pill turns demo off; wake switch */
+html[data-look="new"] button.rs-srcpill { font: 700 15px var(--rs-f); background: none; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; }
+html[data-look="new"] .rs-srcpill.demo { background: color-mix(in srgb, var(--rs-acc) 16%, transparent); }
+html[data-look="new"] .rs-pillx { display: inline-flex; align-items: center; gap: 4px; color: var(--rs-acc); border-left: 1.5px solid var(--rs-line2); padding-left: 10px; }
+html[data-look="new"] button.rs-wwake { background: none; border: 1.5px solid var(--rs-line2); border-radius: 999px; padding: 0 12px; min-height: 44px; cursor: pointer; color: var(--rs-dim); }
+html[data-look="new"] button.rs-wwake.on { color: var(--rs-tx); border-color: var(--rs-ok); }
+html[data-look="new"] .rs-watch.demo .rs-wmapc { outline: 3px dashed var(--rs-acc); outline-offset: -3px; }
+/* No readings yet, sensors coming */
+html[data-look="new"] .rs-wnoread .rs-wlh { margin-bottom: 8px; }
+html[data-look="new"] .rs-wnoread .rs-chips { margin-top: 8px; }
+html[data-look="new"] .rs-wsensor { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rs-line); }
+html[data-look="new"] .rs-wsensor p { margin: 6px 0 0; color: var(--rs-dim); font-size: 15px; line-height: 1.4; }
+html[data-look="new"] .rs-soon { display: inline-block; font: 800 13px var(--rs-f); letter-spacing: .08em; text-transform: uppercase; color: var(--rs-ice); border: 1.5px solid var(--rs-ice); border-radius: 999px; padding: 4px 10px; }
+/* The gauge chain: pump -> drop -> line end */
+html[data-look="new"] .rs-chain { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; margin: 12px 0; padding: 12px; border-radius: 14px; background: var(--rs-s2); }
+html[data-look="new"] .rs-chain.bad { box-shadow: inset 0 0 0 1.5px var(--rs-bad); }
+html[data-look="new"] .rs-chg { display: flex; flex-direction: column; min-width: 0; }
+html[data-look="new"] .rs-chg:last-of-type { text-align: right; }
+html[data-look="new"] .rs-chk { font: 700 12px var(--rs-f); letter-spacing: .08em; text-transform: uppercase; color: var(--rs-dim); }
+html[data-look="new"] .rs-chg b { font: 800 26px/1.1 var(--rs-f); } html[data-look="new"] .rs-chg b small { font: 600 14px var(--rs-f); color: var(--rs-dim); }
+html[data-look="new"] .rs-chg b.bad { color: var(--rs-bad); }
+html[data-look="new"] .rs-chw { color: var(--rs-mute); font-size: 13px; }
+html[data-look="new"] .rs-cha { display: flex; flex-direction: column; align-items: center; gap: 3px; font: 700 13px var(--rs-f); color: var(--rs-dim); }
+html[data-look="new"] .rs-cha i { display: block; width: 64px; height: 2px; background: var(--rs-line2); position: relative; }
+html[data-look="new"] .rs-cha i::after { content: ''; position: absolute; right: -1px; top: -4px; border: 5px solid transparent; border-left: 7px solid var(--rs-line2); border-right: 0; }
+html[data-look="new"] .rs-chain.bad .rs-cha span:first-child { color: var(--rs-bad); }
+html[data-look="new"] .rs-chlog { grid-column: 1 / -1; width: 100%; min-height: 48px; display: inline-flex; gap: 8px; justify-content: center; align-items: center; }
+html[data-look="new"] .rs-chain.big .rs-chg b { font-size: 36px; } html[data-look="new"] .rs-chain.big .rs-chk { font-size: 14px; } html[data-look="new"] .rs-chain.big .rs-chw { font-size: 15px; } html[data-look="new"] .rs-chain.big .rs-cha { font-size: 16px; }
+/* Imported lines */
+html[data-look="new"] .rs-implrow { gap: 12px; }
+html[data-look="new"] .rs-sel { width: auto; max-width: 52%; min-height: 48px; }
+/* Watch on a phone: one compact header row of status, then the map */
+@media (max-width: 759px) {
+  html[data-look="new"] .rs-wh { flex-wrap: wrap; padding-bottom: 10px; }
+  html[data-look="new"] .rs-whb { font-size: 20px; }
+  html[data-look="new"] .rs-whr { gap: 8px 10px; width: 100%; }
+  html[data-look="new"] .rs-wclock { font-size: 18px; margin-left: auto; }
+  html[data-look="new"] .rs-wexit { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 8px); right: 14px; }
+  html[data-look="new"] .rs-wh { position: relative; }
+  html[data-look="new"] .rs-wfresh { font-size: 15px; }
+  html[data-look="new"] .rs-wlegend { flex-wrap: wrap; right: 12px; }
+}
+html[data-look="new"] .rs-wpumps .rs-wpump > span { min-width: 0; }
+html[data-look="new"] .rs-wpumps .rs-st { white-space: normal; line-height: 1.25; }
+html[data-look="new"] .rs-wtank { gap: 10px; }
+html[data-look="new"] .rs-wtank .rs-wnum { font-size: 36px; white-space: nowrap; }
+html[data-look="new"] .rs-wlhint { color: var(--rs-dim); border-left: 1.5px solid var(--rs-line2); padding-left: 10px; margin-left: 4px !important; }
+@media (max-width: 759px) { html[data-look="new"] .rs-wlhint { display: none; } }
+@media (max-width: 759px) {
+  html[data-look="new"] .rs-wclock { display: none; }
+  html[data-look="new"] button.rs-wwake { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 8px); right: 104px; width: 48px; min-height: 48px; padding: 0; justify-content: center; }
+  html[data-look="new"] button.rs-wwake .rs-wwl { display: none; }
+  html[data-look="new"] .rs-wexit { min-width: 80px; }
+}
+/* Wide Watch is exactly one screen: header, then the body takes what is left
+   (the header can wrap, e.g. with the demo pill, without pushing the map off). */
+@media (min-width: 1100px) {
+  html[data-look="new"] .rs-watch { height: 100vh; height: 100dvh; min-height: 0; }
+  html[data-look="new"] .rs-wbody, html[data-look="new"] .rs-wone { height: auto; flex: 1; min-height: 0; }
+  html[data-look="new"] .rs-watch.stale .rs-wbody { height: auto; }
+}
+/* Demo is loud on the map itself, above the tiles */
+html[data-look="new"] .rs-watch.demo .rs-wmapc { outline: 0; }
+html[data-look="new"] .rs-watch.demo .rs-wmapc::after { content: ''; position: absolute; inset: 0; z-index: 750; border: 3px dashed var(--rs-acc); border-radius: 20px; pointer-events: none; }
+html[data-look="new"] .rs-wdemotag { position: absolute; z-index: 760; right: 12px; top: 12px; background: var(--rs-acc); color: var(--rs-acc-ink); font: 800 15px var(--rs-f); letter-spacing: .02em; padding: 6px 14px; border-radius: 999px; pointer-events: none; white-space: nowrap; }

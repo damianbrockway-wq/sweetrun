@@ -111,8 +111,10 @@ function srDrawBush(L, map, G, model, ly, o) {
   // Property line
   if (ly.property && model.property && !watch) {
     const feats = model.property.type === 'FeatureCollection' ? (model.property.features || []) : [model.property];
-    feats.forEach(f => {
-      const g = f && f.geometry; if (!g) return;
+    // A file line he made into a mainline path is drawn as that mainline, not twice.
+    const used = new Set(model.lines.map(l => l.meta && l.meta.pathFrom != null ? l.meta.pathFrom : null).filter(x => x != null));
+    feats.forEach((f, i) => {
+      const g = f && f.geometry; if (!g || used.has(i)) return;
       const cs = g.type === 'Polygon' ? g.coordinates[0] : g.type === 'LineString' ? g.coordinates : null;
       if (!cs || cs.length < 2) return;
       const ll = cs.map(c => [c[1], c[0]]);
@@ -173,6 +175,7 @@ function srDrawBush(L, map, G, model, ly, o) {
       .on('click', () => opt.onTree && opt.onTree(t.id)).addTo(G.trees);
   });
   // Tanks, pumps, sugarhouse, other pins
+  const tankPts = [], pumpMks = [];
   model.pins.forEach(p => {
     if (!srFin(p.lat) || !srFin(p.lon) || p.type === 'tree') return;
     const isSel = sel.type === 'pin' && sel.id === p.id;
@@ -201,7 +204,26 @@ function srDrawBush(L, map, G, model, ly, o) {
     const mk = L.marker([p.lat, p.lon], { icon: L.divIcon({ className: 'rs-divicon rs-center', html, iconSize: null, iconAnchor: anchor }), keyboard: false, bubblingMouseEvents: false, zIndexOffset: 600 });
     mk.on('click', () => opt.onPin && opt.onPin(p.id));
     mk.addTo(G.marks);
+    if (p.type === 'tank') tankPts.push([p.lat, p.lon]); else if (p.type === 'pump') pumpMks.push(mk);
   });
+  // A pump is usually a few metres from its tank; at bush zoom the two tiles
+  // would sit on top of each other. Slide the pump beside the tank on screen
+  // (its real spot is unchanged) and redo it after every zoom.
+  const tankHalf = watch ? 30 : 20;
+  const nudge = () => {
+    pumpMks.forEach(mk => {
+      const el = mk.getElement && mk.getElement(); if (!el) return;
+      const pp = map.latLngToContainerPoint(mk.getLatLng());
+      let dx = 0;
+      tankPts.forEach(t => { const tp = map.latLngToContainerPoint(t); if (Math.abs(tp.y - pp.y) < 44 && Math.abs(tp.x - pp.x) < tankHalf + 20) dx = Math.max(dx, tp.x + tankHalf + 22 - pp.x); });
+      el.style.marginLeft = dx ? Math.round(dx) + 'px' : '';
+    });
+  };
+  if (map._rsNudge) map.off('zoomend moveend', map._rsNudge);
+  map._rsNudge = nudge; map.on('zoomend moveend', nudge);
+  // The first draw can run before the view exists (the fit comes right after it), so run once more on the next frame.
+  try { nudge(); } catch {}
+  requestAnimationFrame(() => { try { nudge(); } catch {} });
   // Draw-mode path in progress
   if (opt.draft && opt.draft.length) {
     if (opt.draft.length >= 2) L.polyline(opt.draft, { className: 'rs-draft', weight: 4, dashArray: '6 8', interactive: false }).addTo(G.marks);
@@ -370,7 +392,7 @@ function RsBush({ c, sub }) {
   };
   const finishDraw = () => {
     if (!mode || mode.pts.length < 2) { setMode(null); return; }
-    if (!srSaveLineMeta(mode.id, { path: mode.pts.map(p => [+p[0].toFixed(7), +p[1].toFixed(7)]) })) {
+    if (!srSaveLineMeta(mode.id, { path: mode.pts.map(p => [+p[0].toFixed(7), +p[1].toFixed(7)]), pathFrom: null })) {
       setMsg({ bad: true, t: rt(L_, 'bNotSavedT') + ' ' + rt(L_, SR_WRITE_FAIL === 'quota' ? 'bQuotaP' : 'bLockedP') }); return;
     }
     const id = mode.id; setMode(null); setSel({ type: 'line', id }); srToast(rt(L_, 'lineDrawn'));
@@ -505,6 +527,37 @@ function RsVacValue({ l, L }) {
   const leak = l.leak.status === 'suspect';
   return <span className={`rs-rv tn${leak ? ' bad' : ''}${l.tier === 'old' ? ' old' : ''}`}>{fmt(l.latest.v, 1)}<small> in</small></span>;
 }
+// One verdict sentence for a srLeakFind result, the same on every screen.
+// Returns [tone, text]: tone is 'bad' | 'ok' | 'idle'.
+function srLeakVerdict(L, lk, P) {
+  const h = fmt((P && P.pairH) || SR_OPS_DEFAULTS.pairH, 0);
+  const d = fmt(Math.max(0, lk.drop || 0), 1);
+  if (lk.method === 'releaser' && lk.releaser) return [lk.status === 'suspect' ? 'bad' : 'ok', rt(L, lk.status === 'suspect' ? 'leakVerdictR' : 'holdingVerdictR', { d, r: fmt(lk.releaser.v, 1) })];
+  if (lk.status === 'suspect') return ['bad', rt(L, 'leakVerdict', { d, b: fmt(lk.baseline, 1), h })];
+  if (lk.status === 'ok') return ['ok', rt(L, 'holdingVerdict', { d, b: fmt(lk.baseline, 1), h })];
+  if (lk.status === 'single') return ['idle', rt(L, 'oneReadingVerdict', { h })];
+  return ['idle', rt(L, 'noReadingVerdict')];
+}
+// The gauge chain: the pump (releaser) reading, the drop, the line-end reading.
+// The leak rule made visible. big = Watch sizes.
+function RsLeakChain({ c, l, now, P, demo, big, onLogPump }) {
+  const L = c.lang, lk = l.leak;
+  if (!lk || lk.status === 'none') return null;
+  const rel = lk.releaser, end = lk.latest, bad = lk.status === 'suspect';
+  const when = ms => demo ? rt(L, 'wDemoTag') : srAgo(ms, now, L);
+  return (
+    <div className={`rs-chain${big ? ' big' : ''}${bad ? ' bad' : ''}`} role="group"
+      aria-label={rel ? rt(L, 'chainAria', { r: fmt(rel.v, 1), e: fmt(end.v, 1), d: fmt(lk.drop, 1), l: fmt(P.leakLimitIn, 1) }) : rt(L, 'chainNoPump', { h: fmt(P.pairH, 0) })}>
+      <div className="rs-chg"><span className="rs-chk">{rt(L, 'chainPump')}</span>
+        {rel ? <><b className="tn">{fmt(rel.v, 1)}<small> in</small></b><span className="rs-chw">{when(rel.ms)}</span></>
+          : <><b className="rs-mute">·</b><span className="rs-chw">{rt(L, 'chainNoPump', { h: fmt(P.pairH, 0) })}</span></>}</div>
+      <div className="rs-cha" aria-hidden="true"><span className="tn">{rel ? rt(L, 'chainDrop', { d: fmt(lk.drop, 1) }) : ''}</span><i /><span>{rt(L, 'chainLimit', { l: fmt(P.leakLimitIn, 1) })}</span></div>
+      <div className="rs-chg"><span className="rs-chk">{rt(L, 'chainEnd')}</span>
+        <b className={`tn${bad ? ' bad' : ''}`}>{fmt(end.v, 1)}<small> in</small></b><span className="rs-chw">{when(end.ms)}</span></div>
+      {!rel && onLogPump && <button type="button" className="rs-btn2 rs-chlog" onClick={onLogPump}><RsIcon name="gauge" size={18} />{rt(L, 'chainLogPump')}</button>}
+    </div>
+  );
+}
 
 // ── Detail: a tree ───────────────────────────────────────────────────────────
 function RsTreeDetail({ c, model, tree, onClose }) {
@@ -576,13 +629,12 @@ function RsLineDetail({ c, model, line, onClose, onDraw, watch }) {
   useEffect(() => setName(line.label), [line.id, line.label]);
   const lk = line.leak, P = model.prefs;
   const hist = line.hist.slice(-12);
-  const verdict = lk.status === 'suspect' ? ['bad', rt(L, 'leakVerdict', { d: fmt(lk.drop, 1), b: fmt(lk.baseline, 1) })]
-    : lk.status === 'ok' ? ['ok', rt(L, 'holdingVerdict', { d: fmt(Math.max(0, lk.drop), 1), b: fmt(lk.baseline, 1) })]
-    : lk.status === 'single' ? ['idle', rt(L, 'oneReadingVerdict')] : ['idle', rt(L, 'noReadingVerdict')];
+  const verdict = srLeakVerdict(L, lk, P);
+  const relPump = (line.relPumps || [])[0] || null;
   const mark = () => { if (!srSaveLineMeta(line.id, { checkedAt: new Date().toISOString() })) { setFail(SR_WRITE_FAIL || 'locked'); return; } srToast(rt(L, 'checkedSaved', { n: line.label })); };
   const rename = () => { const n = name.trim(); if (!n || n === line.label) return; if (!srRenameMainline(line.id, n)) setFail(SR_WRITE_FAIL || 'locked'); };
   const setTaps = v => { const n = parseInt(v); if (!srSaveLineMeta(line.id, { taps: isFinite(n) && n >= 0 ? n : null })) setFail(SR_WRITE_FAIL || 'locked'); };
-  const pumps = line.pumps.map(p => p.name).join(', ');
+  const pumps = (line.relPumps || line.pumps).map(p => p.name).join(', ');
   return (
     <div className="rs-detail">
       <div className="rs-linehead">
@@ -591,17 +643,18 @@ function RsLineDetail({ c, model, line, onClose, onDraw, watch }) {
           <div className="rs-meta tn">{line.latest ? rt(L, 'readAgo', { a: srAgo(line.latest.ms, model.now, L), t: srClock(line.latest.ms, L) }) : rt(L, 'noReadingYet')}</div></div>
       </div>
       <p className={`rs-verdict ${verdict[0]}`}>{verdict[1]}</p>
+      <RsLeakChain c={c} l={line} now={model.now} P={P} onLogPump={relPump ? () => setReading('pump') : null} />
       {hist.length >= 2 && <RsTimeChart series={[{ id: line.id, pts: hist, dash: line.dash, leak: lk.status === 'suspect' }]} from={hist[0].ms - SR_H_MS} to={model.now}
         yMin={14} yMax={28} yTicks={[16, 20, 24, 28]} h={140} lang={L} label={rt(L, 'vacTrendAria', { n: line.label, k: hist.length })} />}
       <RsKv rows={[
         [rt(L, 'treesWord'), String(line.trees.length)],
         [rt(L, 'tapsWordC'), line.tapsSet ? rt(L, 'tapsSetV', { n: fmt(line.taps, 0) }) : fmt(line.taps, 0)],
         line.lengthFt ? [rt(L, 'lengthW'), `${fmt(line.lengthFt, 0)} ft`] : null,
-        [rt(L, 'drawnW'), rt(L, line.geo.source === 'drawn' ? 'drawnByYou' : line.geo.source === 'trees' ? (line.geo.byElev ? 'drawnTreesElev' : 'drawnTrees') : 'notDrawn', { n: line.trees.length })],
+        [rt(L, 'drawnW'), rt(L, line.geo.source === 'drawn' ? (line.meta && line.meta.pathFrom != null ? 'drawnImported' : 'drawnByYou') : line.geo.source === 'trees' ? (line.geo.byElev ? 'drawnTreesElev' : 'drawnTrees') : 'notDrawn', { n: line.trees.length })],
         [rt(L, 'lastChecked'), line.checkedMs ? `${srDayLabel(srIsoOf(new Date(line.checkedMs)), L)}, ${srClock(line.checkedMs, L)}` : rt(L, 'neverW')],
         pumps ? [rt(L, 'servedBy'), pumps] : null,
       ]} />
-      <p className="rs-note">{rt(L, 'leakRuleNote', { l: fmt(P.leakLimitIn, 1), d: fmt(P.baselineDays, 0) })}</p>
+      <p className="rs-note">{rt(L, 'leakRuleNote', { l: fmt(P.leakLimitIn, 1), d: fmt(P.baselineDays, 0), h: fmt(P.pairH, 0) })}</p>
       {fail && <p className="rs-errline" role="alert">{rt(L, 'bNotSavedT')} {rt(L, fail === 'quota' ? 'bQuotaP' : 'bLockedP')}</p>}
       <div style={{ marginTop: 14 }}><RsBtn icon="gauge" onClick={() => setReading(true)} id="rs-line-read">{rt(L, 'logVacuum')}</RsBtn></div>
       <div className="rs-btnrow">
@@ -617,7 +670,9 @@ function RsLineDetail({ c, model, line, onClose, onDraw, watch }) {
         <p className="rs-note">{rt(L, 'tapsOnLineNote', { n: line.treeTaps })}</p>
         {onDraw && <div style={{ marginTop: 12 }}><RsBtn kind="secondary" icon="pen" onClick={onDraw}>{rt(L, line.geo.source === 'drawn' ? 'redrawLine' : 'drawThisLine')}</RsBtn></div>}
       </RsDisclose>}
-      {reading && <RsReadingSheet c={c} title={rt(L, 'vacAtEnd', { n: line.label })} unit="in" dp={1} steps={[-1, -0.1, 0.1, 1]} min={0} max={30}
+      {reading === 'pump' && relPump && <RsReadingSheet c={c} title={rt(L, 'releaserOf', { n: relPump.name })} unit="in" dp={1} steps={[-1, -0.1, 0.1, 1]} min={0} max={30}
+        base={relPump.vac ? relPump.vac.v : 25} sensor={{ id: srSensorId('pump', relPump.id), quantity: 'vacuum', target: { type: 'pump', id: relPump.id }, unit: 'inHg' }} onClose={() => setReading(false)} />}
+      {reading === true && <RsReadingSheet c={c} title={rt(L, 'vacAtEnd', { n: line.label })} unit="in" dp={1} steps={[-1, -0.1, 0.1, 1]} min={0} max={30}
         base={line.latest ? line.latest.v : 24} sensor={{ id: line.sid, quantity: 'vacuum', target: { type: 'line', id: line.id }, unit: 'inHg' }}
         onSaved={() => { srSaveLineMeta(line.id, { checkedAt: new Date().toISOString() }); }} onClose={() => setReading(false)} />}
     </div>
@@ -747,6 +802,9 @@ function RsMapTools({ c, model, mapRef, base, onClose, onDraw }) {
       if (!['kml', 'gpx', 'geojson', 'json'].includes(ext) || !gj) { setImp({ bad: true, t: rt(L, 'impBad') }); return; }
       if (!n) { setImp({ bad: true, t: rt(L, 'impNone') }); return; }
       if (!ls.set('sg_property_geo', gj)) { setImp({ bad: true, t: rt(L, 'bNotSavedT') + ' ' + rt(L, SR_WRITE_FAIL === 'quota' ? 'bQuotaP' : 'bLockedP') }); return; }
+      // Feature indexes belong to the old file: keep the paths, forget where they came from.
+      const lm = srObj(ls.get('sg_line_meta', {}));
+      if (Object.values(lm).some(m => m && m.pathFrom != null)) ls.set('sg_line_meta', Object.fromEntries(Object.entries(lm).map(([k, m]) => [k, { ...srObj(m), pathFrom: null }])));
       srDataChanged(); setImp({ t: rt(L, n === 1 ? 'impOk1' : 'impOk', { n }) });
       try { const map = mapRef.current, b = srBushBounds({ pins: [], lines: [], property: gj }); if (map && b.length >= 2) map.fitBounds(window.L.latLngBounds(b), { padding: [40, 40] }); } catch {}
     };
@@ -770,6 +828,26 @@ function RsMapTools({ c, model, mapRef, base, onClose, onDraw }) {
       : { bad: true, t: rt(L, 'tilesSome', { s: fmt(saved, 0), n: fmt(count, 0) }) } });
   };
   const clearProp = () => { if (!armed) { setArmed(true); return; } if (!ls.set('sg_property_geo', null)) { setImp({ bad: true, t: rt(L, 'bNotSavedT') }); return; } srDataChanged(); setArmed(false); setImp({ t: rt(L, 'boundaryCleared') }); };
+  // Traced lines in the imported file, offered as mainline paths.
+  const feats = model.property ? (model.property.type === 'FeatureCollection' ? (model.property.features || []) : [model.property]) : [];
+  const fileLines = React.useMemo(() => srImportedLines(feats, model.lines), [model.property, model.lines.length]);
+  const [pick, setPick] = useState(null);   // { [featureIndex]: lineId | '' }
+  useEffect(() => {
+    const cur = {};
+    fileLines.forEach(x => { const on = model.lines.find(l => l.meta && l.meta.pathFrom === x.i); cur[x.i] = on ? on.id : (x.suggest || ''); });
+    setPick(cur);
+  }, [fileLines]);
+  const [pathMsg, setPathMsg] = useState(null);
+  const usePaths = () => {
+    const chosen = fileLines.filter(x => pick && pick[x.i]);
+    if (!chosen.length) { setPathMsg({ bad: true, t: rt(L, 'impPickOne') }); return; }
+    const all = srObj(ls.get('sg_line_meta', {}));
+    const next = { ...all };
+    // A line that used to come from the file but is now unassigned keeps its path; only chosen ones change.
+    chosen.forEach(x => { next[pick[x.i]] = { ...srObj(all[pick[x.i]]), path: x.pts.map(p => [+p[0].toFixed(7), +p[1].toFixed(7)]), pathFrom: x.i }; });
+    if (!srOpsSet('sg_line_meta', next)) { setPathMsg({ bad: true, t: rt(L, 'bNotSavedT') + ' ' + rt(L, SR_WRITE_FAIL === 'quota' ? 'bQuotaP' : 'bLockedP') }); return; }
+    setPathMsg({ t: rt(L, 'impSaved', { n: chosen.length }) });
+  };
   const addLine = () => { const id = srAddMainline(); if (!id) { setImp({ bad: true, t: rt(L, 'bNotSavedT') + ' ' + rt(L, SR_WRITE_FAIL === 'quota' ? 'bQuotaP' : 'bLockedP') }); return; } onDraw(id); };
   return (
     <RsSheet title={rt(L, 'mapTools')} onClose={onClose} id="rs-tools">
@@ -786,12 +864,30 @@ function RsMapTools({ c, model, mapRef, base, onClose, onDraw }) {
         <input type="file" accept=".kml,.gpx,.geojson,.json" onChange={e => { onFile(e.target.files[0]); e.target.value = ''; }} />
       </label>
       {imp && <p className={imp.bad ? 'rs-errline' : 'rs-okline'} role="status">{imp.t}</p>}
+      {fileLines.length > 0 && pick && <div className="rs-implines" id="rs-implines">
+        <h3 className="rs-subsec">{rt(L, 'impLinesT')}</h3>
+        <p className="rs-meta">{rt(L, 'impLinesP')}</p>
+        <div className="rs-list">{fileLines.map((x, k) => {
+          const nm = x.name || rt(L, 'impUnnamed', { i: k + 1 });
+          return (
+            <div key={x.i} className="rs-row rs-implrow">
+              <span className="rs-rt"><b>{nm}</b><span className="tn">{fmt(x.ft, 0)} ft</span></span>
+              <select className="rs-field rs-sel" aria-label={rt(L, 'impLineAria', { n: nm })} value={pick[x.i] || ''}
+                onChange={e => { const v = e.target.value; setPathMsg(null); setPick(p => { const n = { ...p }; Object.keys(n).forEach(k2 => { if (v && n[k2] === v) n[k2] = ''; }); n[x.i] = v; return n; }); }}>
+                <option value="">{rt(L, 'impNotUsed')}</option>
+                {model.lines.map(l => <option key={l.id} value={l.id}>{rt(L, 'impUseAs')} {l.label}</option>)}
+              </select>
+            </div>);
+        })}</div>
+        <div style={{ marginTop: 12 }}><RsBtn icon="check" onClick={usePaths} id="rs-imp-use">{rt(L, 'impSave')}</RsBtn></div>
+        {pathMsg && <p className={pathMsg.bad ? 'rs-errline' : 'rs-okline'} role="status">{pathMsg.t}</p>}
+      </div>}
       {model.property && <div style={{ marginTop: 10 }}><RsBtn kind="bad" onClick={clearProp}>{rt(L, armed ? 'tapAgainClear' : 'clearBoundary')}</RsBtn></div>}
       <h3 className="rs-sec">{rt(L, 'offlineTiles')}</h3>
       <p className="rs-meta">{rt(L, 'offlineP')}</p>
       {busy ? <div className="rs-progress" role="progressbar" aria-valuenow={save.pct} aria-valuemin="0" aria-valuemax="100"><i style={{ width: save.pct + '%' }} />
         <span className="tn">{rt(L, 'tilesSaving', { d: save.done, t: save.total })}</span></div>
-        : <div style={{ marginTop: 10 }}><RsBtn icon="download" onClick={saveTiles} id="rs-save-tiles">{rt(L, 'saveArea')}</RsBtn></div>}
+        : <div style={{ marginTop: 10 }}><RsBtn kind={fileLines.length ? 'secondary' : undefined} icon="download" onClick={saveTiles} id="rs-save-tiles">{rt(L, 'saveArea')}</RsBtn></div>}
       {save && save.result && <p className={save.result.bad ? 'rs-errline' : 'rs-okline'} role="status">{save.result.t}</p>}
     </RsSheet>
   );

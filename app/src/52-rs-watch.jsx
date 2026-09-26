@@ -16,7 +16,8 @@ let srPrevRoute = null;   // set by the shell; Exit goes back there
 function useRsWakeLock(on) {
   const [st, setSt] = useState(() => ('wakeLock' in navigator ? 'pending' : 'none'));
   useEffect(() => {
-    if (!on || !('wakeLock' in navigator)) return;
+    if (!('wakeLock' in navigator)) return;
+    if (!on) { setSt('pending'); return; }
     let lock = null, gone = false;
     const req = async () => {
       try {
@@ -49,7 +50,8 @@ function srWatchView(model, hourly, demo, t0) {
   const lines = model.lines.map(l => {
     const r = src.latest(l.sid);
     const hist = demo ? src.history(l.sid) : l.hist;
-    const leak = demo ? srLeakCheck(hist, P.leakLimitIn, P.baselineDays) : l.leak;
+    const rel = demo ? [].concat(...l.relPumps.map(p => src.history(srSensorId('pump', p.id)))) : l.relHist;
+    const leak = demo ? srLeakFind(hist, rel, P.leakLimitIn, P.baselineDays, P.pairH) : l.leak;
     return { ...l, latest: r, hist, leak, tier: demo ? 'fresh' : srAgeTier(r ? r.ms : null, now, P.staleH) };
   });
   const tanks = model.tanks.map(t => {
@@ -78,7 +80,12 @@ function RsWatch({ c, sub }) {
   const t0 = React.useMemo(() => Date.now(), []);
   const demo = model.demo;
   const V = React.useMemo(() => srWatchView(model, hourly, demo, t0), [model, hourly.data, demo]);
-  const wake = useRsWakeLock(true);
+  // Keep the screen awake: offered as a switch, on by default in Watch, remembered per device.
+  const [wantWake, setWantWake] = useState(() => { const p = srObj(ls.get('sg_watch_prefs', {})); return p.wake !== false; });
+  const wake = useRsWakeLock(wantWake);
+  const toggleWake = () => { const n = !wantWake; setWantWake(n); ls.set('sg_watch_prefs', { ...srObj(ls.get('sg_watch_prefs', {})), wake: n }); };
+  const setDemo = on => { ls.set('sg_demo_readings', !!on); srDataChanged(); };
+  const [readLine, setReadLine] = useState(null);
   const s = sub || [];
   const one = s[0] === 'line' && s[1] ? s[1] : null;
   const oneLine = one ? V.lines.find(l => l.id === one) : null;
@@ -103,10 +110,15 @@ function RsWatch({ c, sub }) {
       <header className="rs-wh">
         <div className="rs-whb"><RsBrandMark size={34} /><b>SweetRun</b><span className="rs-wtitle">{rt(L, 'wTitle')}</span></div>
         <div className="rs-whr">
-          <span className={`rs-srcpill${demo ? ' demo' : ''}`}>{demo ? rt(L, 'wDemoPill') : rt(L, 'wManualPill')}</span>
-          <span className={`rs-wfresh ${freshTier}`}>{fresh}</span>
+          {demo ? <button type="button" className="rs-srcpill demo" onClick={() => setDemo(false)} id="rs-demo-off" aria-label={rt(L, 'wDemoPill') + '. ' + rt(L, 'wDemoOff')}>
+              {rt(L, 'wDemoPill')}<span className="rs-pillx"><RsIcon name="x" size={16} />{rt(L, 'wDemoOff')}</span></button>
+            : <span className="rs-srcpill">{rt(L, 'wManualPill')}</span>}
+          {!demo && <span className={`rs-wfresh ${freshTier}`}>{fresh}</span>}
           <span className="rs-wclock tn">{srClock(model.now, L)}</span>
-          <span className={`rs-wwake ${wake}`} title={rt(L, 'wake_' + wake)}><RsIcon name={wake === 'on' ? 'sun' : 'info'} size={18} />{rt(L, 'wake_' + wake)}</span>
+          {wake === 'none' ? <span className="rs-wwake none"><RsIcon name="info" size={18} />{rt(L, 'wake_none')}</span>
+            : (() => { const wl = wantWake && wake === 'on' ? rt(L, 'wake_on') : wantWake && wake === 'off' ? rt(L, 'wake_off') : rt(L, 'wakeKeep');
+              return <button type="button" className={`rs-wwake ${wake}`} aria-pressed={wantWake && wake === 'on'} onClick={toggleWake} id="rs-wake" aria-label={wl} title={wl}>
+                <RsIcon name={wake === "on" ? "sun" : "clock"} size={18} /><span className="rs-wwl">{wl}</span></button>; })()}
           <button type="button" className="rs-btn2 rs-wexit" onClick={exit}>{one ? rt(L, 'wAllLines') : rt(L, 'wExit')}</button>
         </div>
         <h1 className="rs-vh">{oneLine ? rt(L, 'wOneH', { n: oneLine.label }) : rt(L, 'wTitleH')}</h1>
@@ -117,19 +129,24 @@ function RsWatch({ c, sub }) {
           <div className="rs-mk"><RsIcon name="watch" size={48} /></div>
           <b>{rt(L, 'wEmptyT')}</b><p>{rt(L, 'wEmptyP')}</p>
           <div className="rs-btnrow"><RsBtn kind="secondary" icon="map" href={rsHref('bush')}>{rt(L, 'openBush')}</RsBtn><RsBtn kind="secondary" icon="pump" href={rsHref('pumps')}>{rt(L, 'pumpCenter')}</RsBtn></div>
-          <p className="rs-note">{rt(L, 'wEmptyDemo')}</p>
+          <div className="rs-wsensor"><span className="rs-soon">{rt(L, 'wSensors')}</span><p>{rt(L, 'wSensorsP')}</p></div>
         </div></div>
       ) : oneLine ? <RsWatchOne c={c} model={model} V={V} l={oneLine} demo={demo} />
       : (
         <div className="rs-wbody">
           <section className="rs-wmapc" aria-label={rt(L, 'wMapAria')}>
             <RsWatchMap c={c} model={model} V={V} onLine={id => setPanel(id)} />
-            <div className="rs-wlegend" aria-hidden="true"><span>{rt(L, 'lyVacuum')}</span>{[0, 1, 2, 3, 4].map(i => <i key={i} className={'v' + i} />)}<span className="tn">16 → 26 in</span><i className="leak" /><span>{rt(L, 'leakSuspectW')}</span></div>
-            {!panel && <div className="rs-wmaphint">{rt(L, 'wTapLine')}</div>}
+            {demo && <div className="rs-wdemotag" aria-hidden="true">{rt(L, 'wDemoPill')}</div>}
+            <div className="rs-wlegend" role="note" aria-label={rt(L, 'wLegendAria')}><span>{rt(L, 'lyVacuum')}</span>{[0, 1, 2, 3, 4].map(i => <i key={i} className={'v' + i} />)}<span className="tn">16 → 26 in</span><i className="leak" /><span>{rt(L, 'leakSuspectW')}</span>{!panel && <span className="rs-wlhint">{rt(L, 'wTapLine')}</span>}</div>
           </section>
           <aside className="rs-wrail">
             {panelLine ? <RsWatchPanel c={c} model={model} l={panelLine} demo={demo} onClose={() => setPanel(null)} /> : <>
-              <RsSapBanner c={c} V={V} demo={demo} />
+              {!demo && !V.newest ? <RsWatchNoReadings c={c} model={model} onRead={setReadLine} onDemo={() => setDemo(true)} /> : <RsSapBanner c={c} V={V} demo={demo} />}
+              {alerts.length > 0 && <div className="rs-wcard rs-walerts">
+                <div className="rs-wk2">{rt(L, 'wAlerts')}</div>
+                {alerts.map(a => <button key={a.k} type="button" className={`rs-walert ${a.tone}`} onClick={() => a.line ? setPanel(a.line) : rsGo(a.go)}>
+                  <RsTile icon={a.icon} family={a.fam} size={40} /><span><b>{a.t}</b><span>{a.s}</span></span></button>)}
+              </div>}
               <div className="rs-wgrid">
                 <div className="rs-wcard">
                   <div className="rs-wk2">{rt(L, 'wOutside')}</div>
@@ -145,20 +162,36 @@ function RsWatch({ c, sub }) {
               {V.tanks.length > 1 && <div className="rs-wgrid">{V.tanks.slice(1, 3).map(t => <RsWatchTank key={t.id} c={c} t={t} now={model.now} demo={demo} />)}</div>}
               <div className="rs-wcard">
                 <div className="rs-wk2">{rt(L, 'tabPumps')}</div>
-                {V.pumps.length ? V.pumps.map(p => <a key={p.id} className="rs-wpump" href={rsHref('pumps/' + p.id)}><RsPumpTile p={p} size={48} />
-                  <span><b>{p.name}</b><RsPumpStatus p={p} L={L} now={model.now} /></span></a>)
+                {V.pumps.length ? <div className="rs-wpumps">{V.pumps.map(p => <a key={p.id} className="rs-wpump" href={rsHref('pumps/' + p.id)}><RsPumpTile p={p} size={44} />
+                  <span><b>{p.name}</b><RsPumpStatus p={p} L={L} now={model.now} /></span></a>)}</div>
                   : <div className="rs-wsub">{rt(L, 'wNoPumps')}</div>}
               </div>
-              <div className="rs-wcard">
-                <div className="rs-wk2">{rt(L, 'wAlerts')}</div>
-                {alerts.length ? alerts.map(a => <button key={a.k} type="button" className={`rs-walert ${a.tone}`} onClick={() => a.line ? setPanel(a.line) : rsGo(a.go)}>
-                  <RsTile icon={a.icon} family={a.fam} size={44} /><span><b>{a.t}</b><span>{a.s}</span></span></button>)
-                  : <div className="rs-wsub">{demo ? rt(L, 'wNoAlertsDemo') : rt(L, 'wNoAlerts')}</div>}
-              </div>
+              {!alerts.length && <div className="rs-wcard rs-wcalm"><div className="rs-wk2">{rt(L, 'wAlerts')}</div><div className="rs-wsub">{demo ? rt(L, 'wNoAlertsDemo') : rt(L, 'wNoAlerts')}</div></div>}
             </>}
           </aside>
         </div>
       )}
+      {readLine && (() => { const l = model.lines.find(x => x.id === readLine); return l ? <RsReadingSheet c={c} title={rt(L, 'vacAtEnd', { n: l.label })} unit="in" dp={1} steps={[-1, -0.1, 0.1, 1]} min={0} max={30}
+        base={24} sensor={{ id: l.sid, quantity: 'vacuum', target: { type: 'line', id: l.id }, unit: 'inHg' }}
+        onSaved={() => srSaveLineMeta(l.id, { checkedAt: new Date().toISOString() })} onClose={() => setReadLine(null)} /> : null; })()}
+    </div>
+  );
+}
+// Lines and pumps exist, but nothing has been read yet. Say how to read them,
+// that sensors are coming, and offer the demo (labelled, never saved).
+function RsWatchNoReadings({ c, model, onRead, onDemo }) {
+  const L = c.lang;
+  return (
+    <div className="rs-wcard rs-wnoread" id="rs-wnoread">
+      <div className="rs-wlh"><RsTile icon="gauge" family="lines" size={48} /><b className="rs-wk">{rt(L, 'wNoReadT')}</b></div>
+      <p className="rs-wsub">{rt(L, 'wNoReadP')}</p>
+      {model.lines.length > 0 && <>
+        <div className="rs-wk2" style={{ marginTop: 14 }}>{rt(L, 'wNoReadB')}</div>
+        <div className="rs-chips wrapchips" role="group" aria-label={rt(L, 'wNoReadB')}>
+          {model.lines.map(l => <button key={l.id} type="button" className="rs-chip" onClick={() => onRead(l.id)}>{l.label}</button>)}
+        </div></>}
+      <div className="rs-wsensor"><span className="rs-soon">{rt(L, 'wSensors')}</span><p>{rt(L, 'wSensorsP')}</p></div>
+      <div style={{ marginTop: 12 }}><RsBtn kind="secondary" icon="watch" onClick={onDemo} id="rs-demo-on">{rt(L, 'wDemoOn')}</RsBtn></div>
     </div>
   );
 }
@@ -178,10 +211,11 @@ function RsWatchTank({ c, t, now, demo }) {
   const pct = t.levelGal != null && t.capGal > 0 ? Math.round(t.levelGal / t.capGal * 100) : null;
   return (
     <a className={`rs-wcard rs-wtank${t.tier === 'old' ? ' old' : ''}`} href={rsHref('pumps/tank/' + t.id)}>
-      <RsTankViz level={t.levelGal} cap={t.capGal} w={74} h={118} empty={t.levelGal == null} />
+      <RsTankViz level={t.levelGal} cap={t.capGal} w={58} h={104} empty={t.levelGal == null} />
       <div><div className="rs-wk2">{t.name}</div>
         <div className="rs-wnum tn">{t.levelGal != null ? srVol(t.levelGal, c.units) : '·'}<small> {u}</small></div>
-        <div className="rs-wsub tn">{pct != null ? `${pct}%` : rt(L, 'noLevelYet')}{t.fillGalH > 0 ? ` · +${srVol(t.fillGalH, c.units)}/h` : ''}</div>
+        <div className="rs-wsub tn">{pct != null ? rt(L, 'wTankFull2', { p: pct }) : rt(L, 'noLevelYet')}</div>
+        {t.fillGalH > 0 && <div className="rs-wsub tn rs-wrate">{rt(L, 'wTankRate', { v: srVol(t.fillGalH, c.units), u })}</div>}
         <div className="rs-wsrc">{demo ? rt(L, 'wDemoTag') : t.readMs ? rt(L, 'readAgoShort', { a: srAgo(t.readMs, now, L) }) : ''}</div></div>
     </a>
   );
@@ -208,7 +242,7 @@ function RsWatchMap({ c, model, V, onLine, one }) {
     if (!fitted.current) {
       fitted.current = true;
       const pts = one ? ((V.lines.find(l => l.id === one) || {}).geo || { pts: [] }).pts : srBushBounds({ ...dm, property: null });
-      if (pts.length >= 2) map.fitBounds(LL.latLngBounds(pts), { padding: [70, 70], maxZoom: 18 });
+      if (pts.length >= 2) map.fitBounds(LL.latLngBounds(pts), { paddingTopLeft: [70, 96], paddingBottomRight: [70, one ? 60 : 120], maxZoom: 18 });
       else if (pts.length === 1) map.setView(pts[0], 17); else map.setView([45.5, -72.0], 14);
     }
   }, [lf, sig, one, L]);
@@ -226,8 +260,8 @@ function RsWatchPanel({ c, model, l, demo, onClose }) {
       </div>
       <div className={`rs-wbig tn${lk.status === 'suspect' ? ' bad' : ''}${l.tier === 'old' ? ' old' : ''}`}>{l.latest ? fmt(l.latest.v, 1) : '·'}<small> in</small></div>
       <div className="rs-wsub">{l.latest ? (demo ? rt(L, 'wDemoTag') : rt(L, 'readAgo', { a: srAgo(l.latest.ms, model.now, L), t: srClock(l.latest.ms, L) })) : rt(L, 'noReadingYet')}</div>
-      <p className={`rs-wverdict ${lk.status === 'suspect' ? 'bad' : lk.status === 'ok' ? 'ok' : ''}`}>{lk.status === 'suspect' ? rt(L, 'leakVerdict', { d: fmt(lk.drop, 1), b: fmt(lk.baseline, 1) })
-        : lk.status === 'ok' ? rt(L, 'holdingVerdict', { d: fmt(Math.max(0, lk.drop), 1), b: fmt(lk.baseline, 1) }) : lk.status === 'single' ? rt(L, 'oneReadingVerdict') : rt(L, 'noReadingVerdict')}</p>
+      <p className={`rs-wverdict ${lk.status === 'suspect' ? 'bad' : lk.status === 'ok' ? 'ok' : ''}`}>{srLeakVerdict(L, lk, model.prefs)[1]}</p>
+      <RsLeakChain c={c} l={l} now={model.now} P={model.prefs} demo={demo} />
       {hist.length >= 2 && <div className="rs-wcard" style={{ marginTop: 12 }}><div className="rs-wk2">{rt(L, demo ? 'wLast24' : 'wRecent')}</div>
         <RsTimeChart series={[{ id: l.id, pts: hist, dash: '', leak: lk.status === 'suspect' }]} from={hist[0].ms} to={model.now} yMin={14} yMax={28} yTicks={[14, 18, 22, 26]} h={170} lang={L} label={rt(L, 'vacTrendAria', { n: l.label, k: hist.length })} /></div>}
       <dl className="rs-wkv tn">
@@ -252,12 +286,11 @@ function RsWatchOne({ c, model, V, l, demo }) {
           <div className="rs-wsub tn">{rt(L, 'treesTaps', { t: l.trees.length, n: l.taps })}{l.lengthFt ? ` · ${fmt(l.lengthFt, 0)} ft` : ''}</div></div></div>
         <div className={`rs-wgiant tn${lk.status === 'suspect' ? ' bad' : ''}${l.tier === 'old' ? ' old' : ''}`}>{l.latest ? fmt(l.latest.v, 1) : '·'}<small>in</small></div>
         <div className="rs-wsub">{l.latest ? (demo ? rt(L, 'wDemoTag') : rt(L, 'readAgo', { a: srAgo(l.latest.ms, model.now, L), t: srClock(l.latest.ms, L) })) : rt(L, 'noReadingYet')}</div>
-        <p className={`rs-wverdict big ${lk.status === 'suspect' ? 'bad' : lk.status === 'ok' ? 'ok' : ''}`}>{lk.status === 'suspect' ? rt(L, 'leakVerdict', { d: fmt(lk.drop, 1), b: fmt(lk.baseline, 1) })
-          : lk.status === 'ok' ? rt(L, 'holdingVerdict', { d: fmt(Math.max(0, lk.drop), 1), b: fmt(lk.baseline, 1) }) : lk.status === 'single' ? rt(L, 'oneReadingVerdict') : rt(L, 'noReadingVerdict')}</p>
+        <p className={`rs-wverdict big ${lk.status === 'suspect' ? 'bad' : lk.status === 'ok' ? 'ok' : ''}`}>{srLeakVerdict(L, lk, model.prefs)[1]}</p>
+        <RsLeakChain c={c} l={l} now={model.now} P={model.prefs} demo={demo} big />
         <dl className="rs-wkv big tn">
-          <dt>{rt(L, 'baselineW')}</dt><dd>{lk.baseline != null ? `${fmt(lk.baseline, 1)} in` : '·'}</dd>
           <dt>{rt(L, 'lastChecked')}</dt><dd>{l.checkedMs ? srAgo(l.checkedMs, model.now, L) : rt(L, 'neverW')}</dd>
-          <dt>{rt(L, 'servedBy')}</dt><dd>{l.pumps.length ? l.pumps.map(p => p.name).join(', ') : rt(L, 'noneW')}</dd>
+          <dt>{rt(L, 'servedBy')}</dt><dd>{(l.relPumps || l.pumps).length ? (l.relPumps || l.pumps).map(p => p.name).join(', ') : rt(L, 'noneW')}</dd>
         </dl>
         {!demo && <RsBtn kind="secondary" icon="gauge" onClick={() => setReading(true)}>{rt(L, 'logVacuum')}</RsBtn>}
       </section>

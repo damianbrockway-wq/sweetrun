@@ -356,13 +356,44 @@ eq('plain no dash left', /[–—]/.test(E2.srPlain('a — b – c 1–2')), fal
 
 // ── Phases 7-8: leak rule, runtime, fuel, readings, freeze/thaw, lines, pump jobs ──
 const E3 = new Function('ls', src.slice(a, b) +
-  '\nreturn { srLeakCheck, srRunHours, srHms, srTimeToEmpty, srFuelLeft, srAgeTier, srVacStep, srFreezeThaw, srSapRunning, srLinePath,' +
+  '\nreturn { srLeakCheck, srLeakFind, srImportedLines, srRunHours, srHms, srTimeToEmpty, srFuelLeft, srAgeTier, srVacStep, srFreezeThaw, srSapRunning, srLinePath,' +
   ' srNearestOnPath, srPathFt, srSensorId, srTileXY, srTileUrls, srManualSource, srSimSource, srPickSource, srFreezeItems, srPumpJobs, srOpsPrefs, srMedian, srJobs, SR_OPS_DEFAULTS };')
   ({ get: (_k, d) => d, set: () => true });
 const HR = 3600000, DAY = 24 * HR, t0 = Date.UTC(2027, 2, 16, 20, 0);
 // Leak rule: latest >= 2.0 in under the median of the 7 days before it
 const rd = (h, v) => ({ ms: t0 + h * HR, v });
 eq('leak none', E3.srLeakCheck([], 2, 7).status, 'none');
+// Leak finder: far end against the pump (releaser), paired within pairH hours
+const LF = (end, rel, lim = 2, pairH = 3) => E3.srLeakFind(end, rel, lim, 7, pairH);
+eq('finder none', LF([], [rd(0, 25)]).status, 'none');
+eq('finder none has no method', LF([], []).method, null);
+eq('finder releaser suspect', (({ status, method, drop }) => ({ status, method, drop }))(LF([rd(0, 17.2)], [rd(-0.5, 24.5)])), { status:'suspect', method:'releaser', drop:7.3 });
+eq('finder releaser holding', (({ status, drop }) => ({ status, drop }))(LF([rd(0, 23.0)], [rd(0, 24.5)])), { status:'ok', drop:1.5 });
+eq('finder exactly at the limit is suspect', LF([rd(0, 22.5)], [rd(0, 24.5)]).status, 'suspect');
+eq('finder pairs the nearest pump reading', LF([rd(0, 22)], [rd(-2.5, 26), rd(-0.2, 23.5), rd(2, 27)]).releaser.v, 23.5);
+eq('finder pump reading after the end reading counts', LF([rd(0, 20)], [rd(1, 24)]).status, 'suspect');
+eq('finder pump outside the window falls back to baseline', (({ method, status }) => ({ method, status }))(LF([rd(-24, 24), rd(0, 21.5)], [rd(-5, 25)])), { method:'baseline', status:'suspect' });
+eq('finder single end, no pump: needs a pump reading', (({ method, status }) => ({ method, status }))(LF([rd(0, 21)], [])), { method:null, status:'single' });
+eq('finder single end with a pump works', LF([rd(0, 21)], [rd(0, 24)]).status, 'suspect');
+eq('finder uses the latest end reading', LF([rd(-1, 12), rd(0, 24)], [rd(0, 24.4)]).status, 'ok');
+eq('finder limit is his', LF([rd(0, 21.5)], [rd(0, 24.5)], 3.5).status, 'ok');
+eq('finder pairH is his', LF([rd(0, 17)], [rd(-5, 24.5)], 2, 6).method, 'releaser');
+eq('finder junk pump readings skipped', LF([rd(0, 17)], [{ ms:t0, v:null }, { ms:NaN, v:25 }]).method, null);
+eq('finder keeps the baseline for display', LF([rd(-24, 24), rd(0, 17)], [rd(0, 25)]).baseline, 24);
+eq('prefs pairH default 3', E3.srOpsPrefs({}).pairH, 3);
+// Imported KML/GPX lines offered as mainline paths
+const MLS = [{ id:'A', label:'Mainline A' }, { id:'B', label:'Sugar Hill run' }, { id:'C', label:'Mainline C' }];
+const ls2 = (name, n = 2) => ({ type:'Feature', properties:{ name }, geometry:{ type:'LineString', coordinates:Array.from({ length:n }, (_, i) => [-69.6 + i * 0.001, 44.5]) } });
+const IL = E3.srImportedLines([ls2('Mainline A'), ls2('sugar hill run'), ls2('line c'), ls2('Road'), { type:'Feature', properties:{}, geometry:{ type:'Polygon', coordinates:[[[0,0],[1,0],[1,1],[0,0]]] } }, ls2('Mainline D')], MLS);
+eq('imported: only LineStrings', IL.length, 5);
+eq('imported: suggestions by label and letter', IL.map(x => x.suggest), ['A', 'B', 'C', null, null]);
+eq('imported: points flipped to lat,lon', IL[0].pts[0], [44.5, -69.6]);
+eq('imported: length in feet (0.001 deg lon at 44.5N = 79.4 m)', IL[0].ft, 260);
+eq('imported: keeps file index', IL.map(x => x.i), [0, 1, 2, 3, 5]);
+eq('imported: one suggestion per mainline', E3.srImportedLines([ls2('A'), ls2('Mainline A')], MLS).map(x => x.suggest), ['A', null]);
+eq('imported: letter forms', ['A', 'ML-A', 'main a', 'A line', 'Mainline_A', 'AA'].map(n => E3.srImportedLines([ls2(n)], MLS)[0].suggest), ['A', 'A', 'A', 'A', 'A', null]);
+eq('imported: one point is not a line', E3.srImportedLines([ls2('A', 1)], MLS).length, 0);
+eq('imported: nothing', E3.srImportedLines(null, MLS), []);
 eq('leak single', E3.srLeakCheck([rd(0, 17)], 2, 7).status, 'single');
 const lk = E3.srLeakCheck([rd(-48, 24.1), rd(-24, 24.3), rd(-12, 23.9), rd(0, 21.9)], 2, 7);
 eq('leak suspect at 2.2 drop', [lk.status, lk.baseline, lk.drop, lk.n], ['suspect', 24.1, 2.2, 3]);
@@ -457,6 +488,9 @@ const ops = { prefs: E3.SR_OPS_DEFAULTS, pumps: [], leaks: [], freeze: null };
 const pj = o => E3.srJobs({ ...base, ops: { ...ops, ...o } }).map(j => [j.id, j.p]);
 eq('pump fault 95', pj({ pumps: [{ id: 't', name: 'Transfer pump', status: 'fault', note: 'Lost prime' }] }), [['fault-t', 95], ['log', 10]]);
 eq('leak suspect 70', pj({ leaks: [{ id: 'C', name: 'Mainline C', latest: 17.2, baseline: 24.1, drop: 6.9 }] }), [['leak-C', 70], ['log', 10]]);
+const lj = m => E3.srJobs({ ...base, ops: { ...ops, leaks: [{ id: 'C', name: 'Mainline C', latest: 17.2, baseline: 24.1, releaser: 24.5, drop: 7.3, method: m }] } }).find(j => j.id === 'leak-C');
+eq('leak job names the pump when paired', [lj('releaser').why, lj('releaser').vars.rel], ['jLeakWR', 24.5]);
+eq('leak job falls back to baseline text', lj('baseline').why, 'jLeakW');
 eq('fuel under 4 h is 75', pj({ pumps: [{ id: 'g', name: 'Generator', status: 'running', fuel: { hoursLeft: 3, levelGal: 1 } }] }), [['fuel-g', 75], ['log', 10]]);
 eq('fuel 9 h by day is 35', pj({ pumps: [{ id: 'g', name: 'Generator', status: 'running', fuel: { hoursLeft: 9, levelGal: 3 } }] }), [['fuel-g', 35], ['log', 10]]);
 eq('fuel 9 h at night runs dry overnight', E3.srJobs({ ...base, minutes: 20 * 60, ops: { ...ops, pumps: [{ id: 'g', name: 'Generator', status: 'running', fuel: { hoursLeft: 9, levelGal: 3 } }] } })[0].title, 'jFuelNT');

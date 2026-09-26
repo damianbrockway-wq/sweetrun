@@ -92,7 +92,7 @@ function RsPumpCenter({ c, addPin, addTankPin }) {
           value={t.levelGal != null ? srVol(t.levelGal, c.units) : '·'} unit={t.levelGal != null ? u : ''} />))}
       {prep.items.length > 0 && (
         <RsReadoutRow href={rsHref('pumps/freeze')} lead={<RsTile icon="snow" family="ice" />} title={rt(L, 'freezePrep')}
-          status={<RsSt kind={prep.freezing ? (prep.nDone < prep.items.length ? 'ice' : 'ok') : 'idle'}>{prep.lo == null ? rt(L, 'noForecastShort') : prep.freezing ? rt(L, 'lowTonightV', { v: prep.lo }) : rt(L, 'noFreezeV', { v: prep.lo })}</RsSt>}
+          status={<RsSt kind={prep.freezing ? (prep.nDone < prep.items.length ? 'ice' : 'ok') : 'idle'}>{prep.lo == null ? rt(L, 'noForecastShort') : prep.freezing ? rt(L, 'lowTonightV', { v: prep.lo }) : rt(L, 'freezeAbove', { v: prep.lo, f: model.prefs.freezeF })}</RsSt>}
           value={prep.freezing ? prep.nDone : ''} unit={prep.freezing ? rt(L, 'ofN', { n: prep.items.length }) : ''} />)}
     </div>
   );
@@ -135,7 +135,7 @@ function RsPumpCenter({ c, addPin, addTankPin }) {
             <h2 className="rs-sec">{rt(L, 'byJob')}</h2>
             <div className="rs-list">
               <RsRow icon="gauge" family="lines" title={rt(L, 'vacAndLeaks')} sub={model.leaks.length ? rt(L, 'leaksOnV', { n: model.leaks.map(x => x.name).join(', ') }) : rt(L, 'allHoldingOrNone')} href={rsHref('pumps/vacuum')} />
-              <RsRow icon="snow" family="ice" title={rt(L, 'freezePrep')} sub={prep.items.length ? rt(L, 'freezeRowS', { d: prep.nDone, t: prep.items.length }) : rt(L, 'freezeRowNone')} href={rsHref('pumps/freeze')} />
+              <RsRow icon="snow" family="ice" title={rt(L, 'freezePrep')} sub={!prep.items.length ? rt(L, 'freezeRowNone') : prep.freezing ? rt(L, 'freezeRowS', { d: prep.nDone, t: prep.items.length }) : prep.lo != null ? rt(L, 'freezeAbove', { v: prep.lo, f: model.prefs.freezeF }) : rt(L, 'freezeRowS', { d: prep.nDone, t: prep.items.length })} href={rsHref('pumps/freeze')} />
               <RsRow icon="calc" family="collect" title={rt(L, 'transferTime')} sub={rt(L, 'transferTimeS')} href={rsHref('shack/equipment')} />
             </div>
             <div className="rs-btnrow" style={{ marginTop: 14 }}>
@@ -559,7 +559,7 @@ function RsVacuumScreen({ c }) {
                 <RsLinePlate l={l} />
                 <span className="rs-rt"><b>{l.label}</b><span className={`tn${l.leak.status === 'suspect' ? ' rs-badtx' : ''}`}>{
                   l.leak.status === 'suspect' ? rt(L, 'leakSuspectD', { d: fmt(l.leak.drop, 1) })
-                  : l.leak.status === 'ok' ? rt(L, 'vsBaseline', { b: fmt(l.leak.baseline, 1) })
+                  : l.leak.status === 'ok' ? (l.leak.method === 'releaser' ? rt(L, 'vsPump', { r: fmt(l.leak.releaser.v, 1) }) : rt(L, 'vsBaseline', { b: fmt(l.leak.baseline, 1) }))
                   : l.leak.status === 'single' ? rt(L, 'oneReading') : rt(L, 'noReadingYet')}</span></span>
                 <RsVacValue l={l} L={L} />
               </button>))}</div>

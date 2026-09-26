@@ -8,7 +8,7 @@
 //
 // Defaults below are decisions, not facts (DESIGN.md D5). Each one is shown
 // on screen as "a default you can change" and lives in sg_watch_prefs.
-const SR_OPS_DEFAULTS = { leakLimitIn: 2.0, baselineDays: 7, freezeF: 28, fuelLowH: 4, staleH: 12 };
+const SR_OPS_DEFAULTS = { leakLimitIn: 2.0, baselineDays: 7, pairH: 3, freezeF: 28, fuelLowH: 4, staleH: 12 };
 const SR_H_MS = 3600000;
 // isFinite(null) is true (null coerces to 0); every optional number here goes through this.
 const srFin = x => typeof x === 'number' && isFinite(x);
@@ -49,6 +49,28 @@ function srLeakCheck(readings, limit, days) {
   const baseline = srMedian(prior.map(x => x.v));
   const drop = Math.round((baseline - latest.v) * 100) / 100;
   return { status: drop >= lim - 1e-9 ? 'suspect' : 'ok', latest, baseline, drop, n: prior.length };
+}
+// The leak finder (DESIGN.md: "a line is leaking when its far end reads more
+// than the limit below the releaser"). A line-end reading is paired with the
+// releaser/pump reading nearest to it in time, within `pairH` hours (manual
+// gauges are read on a walk, not at the same second). With a pair the drop is
+// releaser minus end: method 'releaser'. With no pump reading close enough it
+// falls back to the line's own recent baseline (srLeakCheck): method 'baseline'.
+//   end, rel: [{ ms, v }] inHg · limit inHg · days · pairH hours
+// Returns { status: 'none'|'single'|'ok'|'suspect', method: 'releaser'|'baseline'|null,
+//           latest, releaser, baseline, drop, n }.
+function srLeakFind(end, rel, limit, days, pairH) {
+  const lim = srFin(limit) ? limit : SR_OPS_DEFAULTS.leakLimitIn;
+  const win = (srFin(pairH) ? pairH : SR_OPS_DEFAULTS.pairH) * SR_H_MS;
+  const base = srLeakCheck(end, lim, days);
+  if (base.status === 'none') return { ...base, method: null, releaser: null };
+  const L = base.latest;
+  const r = (rel || []).filter(x => x && srFin(x.ms) && srFin(x.v) && Math.abs(x.ms - L.ms) <= win)
+    .sort((a, b) => Math.abs(a.ms - L.ms) - Math.abs(b.ms - L.ms) || b.ms - a.ms)[0] || null;
+  if (!r) return { ...base, method: base.status === 'single' ? null : 'baseline', releaser: null };
+  const drop = Math.round((r.v - L.v) * 100) / 100;
+  return { status: drop >= lim - 1e-9 ? 'suspect' : 'ok', method: 'releaser', latest: L, releaser: r,
+    baseline: base.baseline, drop, n: base.n };
 }
 
 // ── Runtime ──────────────────────────────────────────────────────────────────
@@ -322,8 +344,9 @@ function srPumpJobs(f) {
     else if (h <= 12) J.push({ id: 'fuel-' + p.id, p: 35, icon: 'fuel', family: 'power', title: 'jFuelT', why: 'jFuelW',
       vars: { name: p.name, h, lvl: p.fuel.levelGal, emptyAtMs: f.now + h * SR_H_MS, nowMs: f.now }, btn: 'jFuelB', act: { go: 'pumps/' + p.id }, alert: 'jFuelT', sub: 'jFuelS' });
   });
-  (o.leaks || []).forEach(l => J.push({ id: 'leak-' + l.id, p: 70, tone: 'bad', icon: 'alert', family: 'bad', title: 'jLeakT', why: 'jLeakW',
-    vars: { name: l.name, v: l.latest, base: l.baseline, drop: l.drop, lim: P.leakLimitIn }, btn: 'jLeakB', act: { go: 'bush/line/' + l.id },
+  (o.leaks || []).forEach(l => J.push({ id: 'leak-' + l.id, p: 70, tone: 'bad', icon: 'alert', family: 'bad', title: 'jLeakT',
+    why: l.method === 'releaser' ? 'jLeakWR' : 'jLeakW',
+    vars: { name: l.name, v: l.latest, base: l.baseline, rel: l.releaser, drop: l.drop, lim: P.leakLimitIn }, btn: 'jLeakB', act: { go: 'bush/line/' + l.id },
     alert: 'jLeakT', sub: 'jLeakS' }));
   return J;
 }
@@ -361,4 +384,38 @@ function srTileUrls(b, zoom, mode) {
     }
   }
   return { urls, tiles, tooMany: urls.length > 600 };
+}
+
+// ── Imported lines (KML/GPX LineStrings) as mainline paths ───────────────────
+// Classic's import stores a GeoJSON FeatureCollection in sg_property_geo and
+// draws every feature as the property line. A LineString is often a mainline
+// traced in Google Earth or on a GPS walk, so the Bush offers each one as a
+// mainline path (written to sg_line_meta[id].path; sg_mainlines never changes).
+// Suggestion by name: the line's own label ("Mainline A", case-insensitive),
+// or "A", "Line A", "Main A", "ML A", "Mainline-A", "A line".
+//   features: GeoJSON features · mainlines: [{ id, label }]
+// Returns [{ i, name, pts: [[lat, lon]], ft, suggest: lineId|null }] for each
+// LineString with at least two points, in file order.
+function srImportedLines(features, mainlines) {
+  const ml = mainlines || [];
+  const norm = s => String(s || '').trim().toLowerCase().replace(/[\s_\-.]+/g, ' ');
+  const byName = n => {
+    const k = norm(n); if (!k) return null;
+    const lab = ml.find(m => norm(m.label) === k); if (lab) return lab.id;
+    const m = k.match(/^(?:(?:mainline|main line|main|line|ml)\s*)?([a-z])(?:\s*(?:line|mainline))?$/);
+    if (!m) return null;
+    const hit = ml.find(x => String(x.id).toLowerCase() === m[1]);
+    return hit ? hit.id : null;
+  };
+  const out = []; const taken = new Set();
+  (features || []).forEach((f, i) => {
+    const g = f && f.geometry;
+    if (!g || g.type !== 'LineString' || !Array.isArray(g.coordinates)) return;
+    const pts = g.coordinates.filter(c => Array.isArray(c) && srFin(+c[0]) && srFin(+c[1])).map(c => [+c[1], +c[0]]);
+    if (pts.length < 2) return;
+    const name = (f.properties && f.properties.name) || '';
+    let s = byName(name); if (s && taken.has(s)) s = null; if (s) taken.add(s);
+    out.push({ i, name, pts, ft: Math.round(srPathFt(pts)), suggest: s });
+  });
+  return out;
 }
