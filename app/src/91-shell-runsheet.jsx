@@ -241,28 +241,22 @@ function RunSheetApp() {
       <RsNav side active={active} lang={c.lang} onLog={onLog} />
       <main className="rs-main" key={path}>
         {(c.onboard || c.showWizard) && (
-          <div className="rs-classic">
-            <FirstSeasonWizard
-              onClose={()=>{ ls.set('sg_onboarded', true); c.setOnboard(false); c.setShowWizard(false); }}
-              onComplete={data=>{
-                if(data.trees > 0) { c.setTrees(data.trees); ls.set('sg_trees', data.trees); }
-                if(data.fuelType) { c.setFuelType(data.fuelType); ls.set('sg_fuel', data.fuelType); }
-                c.setOnboard(false); c.setShowWizard(false);
-              }}
-            />
-          </div>
+          <RsWizard c={c}
+            onClose={()=>{ ls.set('sg_onboarded', true); c.setOnboard(false); c.setShowWizard(false); }}
+            onComplete={data=>{
+              if(data.trees > 0) { c.setTrees(data.trees); ls.set('sg_trees', data.trees); }
+              if(data.fuelType) { c.setFuelType(data.fuelType); ls.set('sg_fuel', data.fuelType); }
+              c.setOnboard(false); c.setShowWizard(false); srToast(rt(c.lang,'wzSaved'));
+            }}
+          />
         )}
         {view}
       </main>
       <RsNav active={active} lang={c.lang} onLog={onLog} />
-      {c.showSettings && <SettingsSheet units={c.units} setUnits={c.setUnits} lang={c.lang} setLang={c.setLang}
-        season={c.season} setSeason={c.setSeason} onWizard={()=>c.setShowWizard(true)}
-        onBackup={()=>c.setShowBackup(true)} onClose={()=>c.setShowSettings(false)} />}
-      {c.showBackup && <BackupModal onClose={()=>c.setShowBackup(false)} />}
+      {(c.showBackup || c.showSettings) && <RsBackupSheet c={c} onClose={()=>{ c.setShowBackup(false); c.setShowSettings(false); }} />}
       {logSheet && <RsLogSheet key={logSheet.n} c={c} kind={logSheet.kind} onClose={() => setLogSheet(null)} />}
       <RsToast />
-      {c.showLicense && <LicenseModal lic={c.lic} onClose={()=>c.setShowLicense(false)}
-        onLicenseSaved={p=>c.setLic({ status:'licensed', until:p.x })} />}
+      {c.showLicense && <RsPassSheet c={c} onClose={()=>c.setShowLicense(false)} />}
     </div>
   );
 }

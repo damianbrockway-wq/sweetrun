@@ -543,13 +543,13 @@ function RsDrawOff({ c }) {
 
 // ── DE calculator (FinishTab's DE math via srDeCups) ─────────────────────────
 function RsDE({ c }) {
-  const L = c.lang;
-  const [gal, setGal] = useState(10);
+  const L = c.lang, u = srU(c.units);
+  const [gal, setGal] = useState(() => c.units === 'L' ? 38 : 10);
   const [mode, setMode] = useState('straight');
   const [szn, setSzn] = useState('early');
   const [plates, setPlates] = useState(9);
   const [ps, setPs] = useState('7" plates');
-  const r = srDeCups(parseFloat(gal) || 0, mode, szn, parseFloat(plates) || 0, ps);
+  const r = srDeCups(toGal(parseFloat(gal) || 0, c.units), mode, szn, parseFloat(plates) || 0, ps);   // DE rates are per US gallon
   const steps = mode === 'straight' ? ['deS1','deS2','deS3','deS4','deS5','deS6'] : ['deP1','deP2','deP3','deP4','deP5','deP6'];
   return (
     <div className="rs-inner">
@@ -560,10 +560,10 @@ function RsDE({ c }) {
         <div>
           <div className="rs-card">
             <label className="rs-fl" htmlFor="rs-de-g">{rt(L,'deGal')}</label>
-            <RsStepper id="rs-de-g" value={gal} onChange={setGal} steps={[-5, -1, 1, 5]} dp={0} unit="gal" label={rt(L,'deGal')} min={0} max={1000} />
+            <RsStepper id="rs-de-g" value={gal} onChange={setGal} steps={[-5, -1, 1, 5]} dp={0} unit={u} label={rt(L,'deGal')} min={0} max={4000} />
             <label className="rs-fl">{rt(L,'deMethod')}</label>
             <RsSeg label={rt(L,'deMethod')} value={mode} onChange={setMode} options={[['straight', rt(L,'deStraight')], ['precoat', rt(L,'dePrecoat')]]} />
-            <p className="rs-meta" style={{ marginTop:8 }}>{rt(L, r.recMode === 'precoat' ? 'deRecPre' : 'deRecStraight')}</p>
+            <p className="rs-meta" style={{ marginTop:8 }}>{rt(L, r.recMode === 'precoat' ? 'deRecPre' : 'deRecStraight', { v: srVol(25, c.units), u })}</p>
             <label className="rs-fl">{rt(L,'deColor')}</label>
             <RsSeg label={rt(L,'deColor')} value={szn} onChange={setSzn} options={[['early', rt(L,'deEarly')], ['late', rt(L,'deLate')]]} />
             {mode === 'precoat' && <>
@@ -582,8 +582,11 @@ function RsDE({ c }) {
             {szn === 'late' && <p className="rs-note">{rt(L,'deLateNote')}</p>}
           </div>
           <h2 className="rs-sec">{rt(L,'deHow')}</h2>
+          {mode === 'straight' && <div className="rs-card rs-tip" style={{ marginTop:0, marginBottom:12 }}><b>{rt(L,'deHeadsT')}</b><p>{rt(L,'deHeadsP')}</p></div>}
           <ol className="rs-steps">{steps.map((k, i) => <li key={k}><b>{rt(L, k, { cups: fmt(r.cups, 1), plates: plates })}</b></li>)}</ol>
           <p className="rs-note">{rt(L,'dePsi')}</p>
+          <h2 className="rs-sec">{rt(L,'deTroubleT')}</h2>
+          <div className="rs-stack">{[1,2,3,4].map(i => <RsDisclose key={i} title={rt(L, 'deT' + i + 'T')}><p className="rs-body">{rt(L, 'deT' + i + 'P')}</p></RsDisclose>)}</div>
         </div>
       </div>
     </div>

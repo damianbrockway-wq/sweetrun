@@ -255,7 +255,7 @@ function RsLogHistory({ c, openLog }) {
         </div>
       </div>
       {edit && <RsLogSheet c={c} editing={edit} onClose={() => setEdit(null)} />}
-      {showImport && <div className="rs-classic"><SapImportModal season={c.season} lang={L} onClose={() => setShowImport(false)} onImport={() => srDataChanged()} /></div>}
+      {showImport && <RsImportSheet c={c} onClose={() => setShowImport(false)} />}
     </div>
   );
 }

@@ -94,12 +94,16 @@ function RsRecapStage({ c }) {
                 <RsBarChart v={sapDays} hi={sapDays.length - 1} unitFmt={x => fmt(x, 0)} label={rt(L,'sapDayAria', { n: nDays })}
                   xLabels={[[0, srDayLabel(first, L)], [sapDays.length - 1, srDayLabel(srIsoAdd(first, sapDays.length - 1), L)]]} />
               </RsStat>}
-              {perTap.length > 1 && <RsStat title={rt(L,'perTapTitle')} value={fmt(perTap[perTap.length - 1], 3)} unit={rt(L,'galTap')}
-                delta={<span>{rt(L,'usAvg', { v: fmt(NASS_US_AVG, 2) })}</span>} note={rt(L,'nassNote')}>
-                <RsLineChart yMax={Math.max(0.4, Math.ceil(perTap[perTap.length - 1] * 10) / 10)} yTicks={[0, 0.2, Math.max(0.4, Math.ceil(perTap[perTap.length - 1] * 10) / 10)]}
-                  refLine={{ v: NASS_US_AVG, l: rt(L,'usWord') }} series={[{ v: perTap, c:T.tx, area:true, end: fmt(perTap[perTap.length - 1], 2) }]}
-                  xLabels={[[0, rt(L,'dayN', { n:1 })], [perTap.length - 1, rt(L,'dayN', { n: perTap.length })]]} label={rt(L,'perTapAria')} />
-              </RsStat>}
+              {perTap.length > 1 && (() => {
+                // Per tap in the display unit; the NASS benchmark (gal a tap) converted with it.
+                const pt = perTap.map(v => fromGal(v, c.units)), last = pt[pt.length - 1], nass = fromGal(NASS_US_AVG, c.units);
+                const step = c.units === 'L' ? 0.5 : 0.1, top = Math.ceil(Math.max(fromGal(0.4, c.units), last) / step - 1e-9) * step;
+                const tk = +(top / 2).toFixed(2), topR = +top.toFixed(2);
+                return <RsStat title={rt(L,'perTapTitle')} value={fmt(last, 3)} unit={rt(L,'uPerTap', { u })}
+                  delta={<span>{rt(L,'usAvg', { v: fmt(nass, 2) })}</span>} note={rt(L,'nassNote')}>
+                  <RsLineChart yMax={topR} yTicks={[0, tk, topR]} refLine={{ v: nass, l: rt(L,'usWord') }} series={[{ v: pt, c:T.tx, area:true, end: fmt(last, 2) }]}
+                    xLabels={[[0, rt(L,'dayN', { n:1 })], [pt.length - 1, rt(L,'dayN', { n: pt.length })]]} label={rt(L,'perTapAria')} />
+                </RsStat>; })()}
               {bl.length >= 2 && <RsStat title={rt(L,'sugarInSap')} value={fmt(parseFloat(bl[bl.length - 1].brix), 1)} unit={rt(L,'pctLast')}
                 delta={<span>{rt(L,'fromFirst', { v: fmt(parseFloat(bl[0].brix), 1) })}</span>} note={rt(L,'brixDrift')}>
                 <RsLineChart yMax={Math.ceil(Math.max(...bl.map(e => parseFloat(e.brix))) + 0.5)} yTicks={[0, Math.ceil(Math.max(...bl.map(e => parseFloat(e.brix))) + 0.5)]}

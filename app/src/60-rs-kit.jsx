@@ -71,11 +71,11 @@ function useRsWidth(fallback = 320) {
 }
 
 // ── Buttons ──────────────────────────────────────────────────────────────────
-function RsBtn({ children, onClick, href, icon, kind = 'primary', disabled, id, label, big }) {
+function RsBtn({ children, onClick, href, icon, kind = 'primary', disabled, id, label, big, ext }) {
   const cls = `${kind === 'primary' ? 'rs-btn' : 'rs-btn2'}${kind === 'bad' ? ' bad' : ''}${big ? ' big' : ''}`;
   const inner = <>{icon && <RsIcon name={icon} size={22} sw={kind === 'primary' ? 2.6 : 2.2} />}{children}</>;
   return href
-    ? <a className={cls} href={href} id={id} aria-label={label}>{inner}</a>
+    ? <a className={cls} href={href} id={id} aria-label={label} {...(ext ? { target:'_blank', rel:'noopener' } : {})}>{inner}</a>
     : <button type="button" className={cls} onClick={onClick} disabled={disabled} id={id} aria-label={label}>{inner}</button>;
 }
 
@@ -156,7 +156,7 @@ function RsChips({ options, value, onChange, label }) {
 // ── Stepper: 72px number whose box is measured from the rendered text ────────
 // (DESIGN.md lesson 3: ch units misjudge proportional digits both ways.)
 let _srCv = null;
-function RsStepper({ id, value, onChange, steps, dp = 0, unit, label, min = 0, max = 1e7, big = true, base }) {
+function RsStepper({ id, value, onChange, steps, dp = 0, unit, label, min = 0, max = 1e7, big = true, base, pre, ph }) {
   const inRef = React.useRef(null);
   const [draft, setDraft] = useState(null);           // text while typing
   const shown = draft != null ? draft : (value === '' || value == null ? '' : String(+(+value).toFixed(dp)));
@@ -167,7 +167,7 @@ function RsStepper({ id, value, onChange, steps, dp = 0, unit, label, min = 0, m
       const cs = getComputedStyle(el);
       _srCv.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
       const ls_ = parseFloat(cs.letterSpacing) || 0;
-      const txt = shown || '0';
+      const txt = shown || ph || '0';
       const w = _srCv.measureText(txt).width + ls_ * txt.length;
       el.style.width = Math.max(64, Math.ceil(w + parseFloat(cs.fontSize) * 0.2 + 8)) + 'px';
     } catch {}
@@ -177,7 +177,8 @@ function RsStepper({ id, value, onChange, steps, dp = 0, unit, label, min = 0, m
   return (
     <div className="rs-stepper">
       <label className={`rs-stepv${big ? '' : ' sm'}`} htmlFor={id}>
-        <input ref={inRef} id={id} className="tn" type="text" inputMode="decimal" autoComplete="off" aria-label={label}
+        {pre && <small className="pre">{pre}</small>}
+        <input ref={inRef} id={id} className="tn" type="text" inputMode="decimal" autoComplete="off" aria-label={label} placeholder={ph}
           value={shown}
           onChange={e => { const raw = e.target.value; if (!/^[\d.,\s]*$/.test(raw)) return; setDraft(raw); const n = srParseNum(raw); onChange(n == null ? '' : clamp(n)); }}
           onFocus={e => { try { e.target.select(); } catch {} }}
@@ -305,7 +306,13 @@ function RsLineChart({ series, yMax, yTicks, xLabels, refLine, h = 150, label })
     <div ref={ref} className="rs-chartwrap">
       <svg className="rs-chart" width={W} height={h} viewBox={`0 0 ${W} ${h}`} role="img" aria-label={label}>
         {yTicks.map(t => <g key={t}><line x1={pl} x2={W - pr} y1={Y(t)} y2={Y(t)} className="rs-grid" /><text x={pl - 6} y={Y(t) + 4} textAnchor="end" className="rs-ct">{t}</text></g>)}
-        {refLine && <g><line x1={pl} x2={W - pr} y1={Y(refLine.v)} y2={Y(refLine.v)} className="rs-refl" /><text x={W - pr + 4} y={Y(refLine.v) + 4} className="rs-ct">{refLine.l}</text></g>}
+        {refLine && (() => {
+          // Keep the reference label clear of the series end labels (both sit in the right margin).
+          const ry = Y(refLine.v), ends = series.filter(s => s.end && s.v.length).map(s => Y(s.v[s.v.length - 1]));
+          const hit = ends.find(e => Math.abs(e - ry) < 14);
+          const ly = hit == null ? ry + 4 : (ry >= hit ? hit + 18 : hit - 12);
+          return <g><line x1={pl} x2={W - pr} y1={ry} y2={ry} className="rs-refl" /><text x={W - pr + 4} y={ly} className="rs-ct">{refLine.l}</text></g>;
+        })()}
         {series.map((s, k) => {
           const pts = s.v.map((v, i) => v == null ? null : [X(i), Y(v)]).filter(Boolean);
           if (!pts.length) return null;

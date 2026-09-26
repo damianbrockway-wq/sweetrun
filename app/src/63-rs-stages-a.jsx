@@ -100,13 +100,13 @@ function RsWeatherStage({ c }) {
 }
 // Place search: Open-Meteo geocoding and GPS with Nominatim, writing the same
 // sg_wx_name/lat/lon keys the classic Weather tab writes, in the same format.
-function RsPlaceSearch({ c, onDone, onCancel }) {
+function RsPlaceSearch({ c, onDone, onCancel, onPick, title, lede }) {
   const L = c.lang;
   const [q, setQ] = useState('');
   const [res, setRes] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
-  const pick = (la, lo, name) => { ls.set('sg_wx_lat', la); ls.set('sg_wx_lon', lo); ls.set('sg_wx_name', name); srDataChanged(); onDone && onDone(); };
+  const pick = (la, lo, name) => { if (onPick) onPick(la, lo, name); else { ls.set('sg_wx_lat', la); ls.set('sg_wx_lon', lo); ls.set('sg_wx_name', name); } srDataChanged(); onDone && onDone(); };
   const search = async () => {
     if (!q.trim()) return;
     setBusy(true); setErr(''); setRes(null);
@@ -135,8 +135,8 @@ function RsPlaceSearch({ c, onDone, onCancel }) {
   };
   return (
     <div className="rs-card">
-      <b className="rs-cardt">{rt(L,'setPlaceT')}</b>
-      <p className="rs-meta" style={{ margin:'4px 0 12px' }}>{rt(L,'setPlaceP')}</p>
+      <b className="rs-cardt">{title || rt(L,'setPlaceT')}</b>
+      <p className="rs-meta" style={{ margin:'4px 0 12px' }}>{lede || rt(L,'setPlaceP')}</p>
       <div className="rs-inline">
         <input className="rs-field" type="search" aria-label={rt(L,'placeSearch')} placeholder={rt(L,'placePh')} value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && search()} />
         <RsBtn kind="secondary" onClick={search} disabled={busy}>{rt(L,'find')}</RsBtn>
@@ -146,10 +146,10 @@ function RsPlaceSearch({ c, onDone, onCancel }) {
           return <RsRow key={i} title={r.name} sub={[r.admin1, r.country].filter(Boolean).join(', ')} onClick={() => pick(r.latitude, r.longitude, name)} />; })}
       </div>}
       {err && <p className="rs-errline" role="alert">{err}</p>}
-      <div className="rs-btnrow">
+      {onCancel ? <div className="rs-btnrow">
         <RsBtn kind="secondary" icon="gps" onClick={gps} disabled={busy}>{rt(L,'useGps')}</RsBtn>
-        {onCancel ? <RsBtn kind="secondary" onClick={onCancel}>{rt(L,'cancel')}</RsBtn> : <span />}
-      </div>
+        <RsBtn kind="secondary" onClick={onCancel}>{rt(L,'cancel')}</RsBtn>
+      </div> : <div style={{ marginTop:12 }}><RsBtn kind="secondary" icon="gps" onClick={gps} disabled={busy}>{rt(L,'useGps')}</RsBtn></div>}
     </div>
   );
 }

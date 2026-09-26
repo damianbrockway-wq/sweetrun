@@ -1,9 +1,9 @@
 // ─── Sugar Shack (Phase 6): calculators, records, data, pass, settings ──────
-// Rebuilt here: Sap to syrup, Checklists, Equipment + transfer time, Backup
-// and restore, and Settings (first name, units, language, season, boil screen
-// style). Still classic and reachable from here: Evaporator & boil time,
-// Finishing guide, Tubing, Sugaring guide + break-even, Diagnose, the Recap
-// detail, the Season Pass key sheet and the first-season wizard.
+// Every row opens a Run Sheet screen or sheet. Built here: Sap to syrup,
+// Checklists, Equipment + transfer time, Backup and restore, and Settings
+// (first name, units, language, season, boil screen style). Import KML/GPX and
+// offline tiles open the Bush map, which is still the classic LinesTab until
+// Phase 7 rebuilds it.
 
 function RsShack({ c }) {
   const L = c.lang;
@@ -12,6 +12,7 @@ function RsShack({ c }) {
     : s === 'trial' ? rt(L,'pass_trial', { n:c.lic.daysLeft }) : rt(L,'pass_checking');
   const [nameDraft, setNameDraft] = useState(c.firstName || '');
   const [backup, setBackup] = useState(false);
+  const [imp, setImp] = useState(false);
   const [bg, setBg] = useState(() => ls.get('sg_boil_bg', 'photo') === 'steam' ? 'steam' : 'photo');
   const setBoilBg = v => { setBg(v); ls.set('sg_boil_bg', v); };
   const toClassic = () => { try { localStorage.setItem('sg_look', JSON.stringify('classic')); } catch {} location.href = '/app/?look=classic'; };
@@ -30,7 +31,7 @@ function RsShack({ c }) {
           <div className="rs-list">
             {R('shack/sap', 'calc', 'collect')}{R('stage/collect/ro', 'ro', 'collect')}{R('stage/boil/draw-off', 'therm', 'boil')}
             {R('stage/boil/de', 'filter', 'boil')}{R('stage/boil/evaporator', 'flame', 'boil')}{R('stage/boil/finishing', 'book', 'boil')}
-            {R('stage/lines/tubing', 'calc', 'lines')}
+            {R('stage/lines/tubing', 'calc', 'lines')}{R('shack/breakeven', 'calc', 'power')}
           </div>
           <h2 className="rs-sec">{rt(L,'secGuide')}</h2>
           <div className="rs-list">{R('shack/guide', 'book', 'recap')}{R('stage/recap/diagnose', 'info', 'recap')}</div>
@@ -41,7 +42,7 @@ function RsShack({ c }) {
           <h2 className="rs-sec">{rt(L,'secData')}</h2>
           <div className="rs-list">
             <RsRow icon="data" title={rt(L,'set_backup')} sub={rt(L,'set_backup_s')} onClick={() => setBackup(true)} />
-            <RsRow icon="up" title={rt(L,'set_import')} sub={rt(L,'set_import_s')} href={rsHref('shack/log')} />
+            <RsRow icon="up" title={rt(L,'set_import')} sub={rt(L,'set_import_s2')} onClick={() => setImp(true)} />
             <RsRow icon="map" family="lines" title={rt(L,'importKml')} sub={rt(L,'importKmlS2')} href={rsHref('bush')} />
             <RsRow icon="layers" family="lines" title={rt(L,'offlineTiles')} sub={rt(L,'offlineTilesS')} href={rsHref('bush')} />
           </div>
@@ -78,6 +79,7 @@ function RsShack({ c }) {
         </div>
       </div>
       {backup && <RsBackupSheet c={c} onClose={() => setBackup(false)} />}
+      {imp && <RsImportSheet c={c} onClose={() => setImp(false)} />}
     </div>
   );
 }

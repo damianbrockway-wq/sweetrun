@@ -25,8 +25,10 @@ function useRsSeasonModel(c) {
   const series = React.useMemo(() => srSeasonSeries(d.slog, todayIso, wx.data), [d, todayIso, wx.data]);
   const today = selToday(d.slog);
   // First run: nothing logged in any season, no pins, and the season setup never finished
-  // (sg_trees defaults to 50, so it can't be the test).
-  const firstRun = !d.anyEntries && !ls.get('sg_wizard_done', false) && d.pins.length === 0;
+  // (sg_trees defaults to 50, so it can't be the test). The setup's finish step writes
+  // sg_wizard_data with a tree count; nothing writes sg_wizard_done any more (it is
+  // only read for older backups), so both count as "set up".
+  const firstRun = !d.anyEntries && !ls.get('sg_wizard_done', false) && !((d.wizard || {}).trees > 0) && d.pins.length === 0;
   const jobs = srJobs({
     now: now.getTime(), minutes, todayIso, stage, firstRun,
     wizardDone: d.wizardDone, hasPins: d.pins.length > 0, hasLocation: !!d.loc,

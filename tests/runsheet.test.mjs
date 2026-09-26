@@ -263,6 +263,97 @@ const fh2 = E.srFreshHeat(Array.from({ length: 30 }, (_, i) => hr(i, 70)), H0, H
 eq('fresh warn/crit eta', [fh2.currentHU, (fh2.warnEta - H0) / 3600000, (fh2.critEta - H0) / 3600000], [162, 6, 6]);
 eq('fresh boil now', fh2.level, 'now');
 
+// ── Phase 6: classic calculators lifted verbatim (22-rs-engine2.jsx) ──
+const E2 = new Function('ls', src.slice(a, b) +
+  '\nreturn { srBreakeven, srTubing, srTapEstimate, srEvapRate, srEvapCosts, srRoSavings, srYieldGap, srDiagnose, srParseSapCsv,' +
+  ' srParseSugarCalcText, srImportAdditions, srMergeImport, srWizardPlan, srWizardData, srPlain, srDegreeDays, srBrixTrend, srHandFlow,' +
+  ' srRecapFacts, srByPoint, srInsights, srScoreRows, seasonScore, YIELD_MODELS, FUELS, boilTime, syrupY, tapsPer, yieldMidOf, PAN_SIZES, CUSTOM_PAN_IDX };')
+  ({ get: (_k, d) => d, set: () => true });
+const r2 = (x, d = 2) => +(+x).toFixed(d);
+// break-even: the classic screenshot case (640 taps, $2,400 fuel, $45/gal, hobby)
+const bev = E2.srBreakeven({ taps:640, fuelCost:2400, price:45, supplies:0, hobby:true, laborHrs:10, laborRate:20 });
+eq('bev per tap and total', [r2(bev.bevPerTap), r2(bev.bevGal, 1)], [0.08, 53.3]);
+eq('bev scenarios profit', bev.scenarios.map(s => Math.round(s.profit)), [1632, 3936, 6240]);
+eq('bev labor counts when paid', E2.srBreakeven({ taps:100, fuelCost:100, price:50, hobby:false, laborHrs:10, laborRate:20 }).totalCost, 300);
+eq('bev too high flag', E2.srBreakeven({ taps:10, fuelCost:1000, price:40, hobby:true }).tooHigh, true);
+// tubing: 500 taps, 2,000 ft, 8% grade, 25 inHg, 12 per lateral
+const tb = E2.srTubing(500, 2000, 8, 25, 12);
+eq('tubing size', [tb.ms, tb.mm], ['1¼"', 32]);
+eq('tubing vacuum', [tb.vacLoss, tb.vacGain, tb.vacPump, tb.elevDrop], [2.6, 6.4, 25, 160]);
+eq('tubing laterals', [tb.numLat, tb.latFtTot, tb.latFt, tb.mainFt, tb.dropFt, tb.cfm, tb.pump], [42, 4032, 4436, 2200, 2000, 25, 'p40']);
+eq('tubing flat long line needs more pump', E2.srTubing(50, 3000, 0, 25, 12).vacPump, 35.8);
+eq('tubing waits for inputs', E2.srTubing(0, 2000, 8, 25, 12), null);
+// tapping estimate, gravity model
+const te = E2.srTapEstimate(100, 14, 2, E2.YIELD_MODELS.gravity);
+eq('tap estimate', [te.tpt, te.tot, te.sapGal, r2(te.syrupGal, 1)], [1, 100, 1620, 37.5]);
+// evaporator rate and costs
+eq('evap rate pan', E2.srEvapRate(2, '', '', '').rate, 35);
+eq('evap rate custom pan', E2.srEvapRate(E2.CUSTOM_PAN_IDX, 2, 6, '').rate, 30);
+eq('evap rate override', E2.srEvapRate(2, '', '', 50).rate, 50);
+const ec = E2.srEvapCosts({ fuelType:'Firewood (cord)', sapGal:1000, brix:2, rate:35, fuelCost:250, laborHrs:10, laborRate:15, supplies:[50, 0, '', 0], margin:40 });
+eq('evap costs', [r2(ec.uNeeded, 3), ec.cost, ec.laborTotal, ec.suppliesTotal, ec.totalCost], [r2(1000 / E2.FUELS[0].spu, 3), 250 * 1000 / E2.FUELS[0].spu, 150, 50, 200 + 250 * 1000 / E2.FUELS[0].spu]);
+eq('evap boil time is boilTime()', ec.boilH, E2.boilTime(1000, 2, 35));
+eq('evap retail 1 gal at 40%', r2(ec.bottles[4].retail), r2(ec.cpg / 0.6));
+eq('evap cpg override', E2.srEvapCosts({ sapGal:1000, brix:2, rate:35, cpgOverride:20, margin:50 }).bottles[4].retail, 40);
+// RO savings
+const rs = E2.srRoSavings(1000, 600, 50, 23, false, 8, 2);
+eq('ro savings', [rs.straightHrs, rs.straightWood, rs.roConc, rs.roHrs, r2(rs.roWood), r2(rs.savedHrs), r2(rs.savedWood)], [20, 460, 150, 11, 253, 9, 207]);
+eq('ro savings preheater', r2(E2.srRoSavings(1000, 600, 50, 23, true, 8, 2).roHrs, 3), 9.35);
+eq('ro savings withheld when ro > sap', E2.srRoSavings(100, 200, 50, 23, false, 8, 2), null);
+// yield gap
+const yg = E2.srYieldGap(1000, 20, 100, 2, E2.YIELD_MODELS.gravity, 40);
+eq('gap numbers', [yg.hi, yg.lo, yg.gapHigh, yg.gapLow, yg.gapMid, yg.dollarGap, yg.effPct], [45, 30, 25, 10, 17.5, 700, 86]);
+eq('gap causes', yg.causes.map(c => c.id), ['lowYield', 'evapMinor', 'considerRo']);
+eq('gap good', E2.srYieldGap(900, 40, 100, 2, E2.YIELD_MODELS.gravity, 40).causes.map(c => c.id), ['good']);
+eq('gap withheld on suspect ratio', E2.srYieldGap(100, 20, 100, 2, E2.YIELD_MODELS.gravity, 40), null);
+// diagnose
+const dg = E2.srDiagnose({ slog:{ sapCollected:[{ val:1000 }], syrupMade:[{ val:20 }], sapEvap:[{ val:600 }] }, prevSlog:{}, brixLog:[], pins:[],
+  trees:100, units:'GAL', sapBrix:2, syrupPrice:40, woodCost:250, laborRate:0, vacLevel:'gravity', roOutBrix:0 });
+eq('diagnose order', dg.map(f => f.id), ['roNone', 'vacuum', 'conv', 'yieldOk']);
+eq('diagnose roi', dg.map(f => Math.round(f.roi)), [Math.round(600 * .65 / E2.FUELS[0].spu * 250), 741, 126, 0]);
+const dgL = E2.srDiagnose({ slog:{ sapCollected:[{ val:3785.41 }], syrupMade:[{ val:75.7 }] }, prevSlog:{ sapCollected:[{ val:3785.41 }] }, brixLog:[3, 3, 3, 1, 1, 1].map(x => ({ brix:x })),
+  pins:[], trees:0, units:'L', sapBrix:2, syrupPrice:40, woodCost:250, laborRate:0, vacLevel:'high', roOutBrix:5 });
+eq('diagnose litres: identical seasons are flat', r2(dgL.find(f => f.id === 'yoyUp').v.chg, 6), 0);
+eq('diagnose brix falling, ro brix low', ['brixDown', 'roBrixLow'].every(id => dgL.some(f => f.id === id)), true);
+// import
+const csv = E2.srParseSapCsv('date,sap_gal,syrup_gal\n3/1/2027,100,0\n3/2/2027,50,2.5\n');
+eq('csv rows and totals', [csv.rows.length, csv.totalSap, csv.totalSyrup], [2, 150, 2.5]);
+eq('csv errors', [E2.srParseSapCsv('a').error, E2.srParseSapCsv('x,y\n1,2').error, E2.srParseSapCsv('date,sap\n1,0').error], ['impNeedRows', 'impNoCols', 'impNoRows']);
+const pdf = E2.srParseSugarCalcText('Report 3/1/2026 Sap Collected 120 3/2/2026 Syrup Made 2.5 3/3/2026 Sap Thru R/O 80', 2027);
+eq('pdf text rows', [pdf.rows.length, pdf.totalSap, pdf.totalSyrup, pdf.totalRO, pdf.detectedYear], [3, 120, 2.5, 80, 2026]);
+const add = E2.srImportAdditions(csv, 'generic');
+eq('import additions', [add.sapCollected.length, add.syrupMade[0].note], [2, 'Imported (generic)']);
+const merged = E2.srMergeImport({ 2026:{ sapCollected:[{ val:1 }] }, 2027:{ sapCollected:[{ val:9 }], fuelUsed:[{ val:1 }] } }, 2027, add);
+eq('import merge keeps other kinds and seasons', [merged[2026].sapCollected.length, merged[2027].sapCollected.length, merged[2027].fuelUsed.length], [1, 3, 1]);
+// wizard plan and the sg_wizard_data shape
+const wz = { treeCount:'150', trunkSize:'large', systemType:'gravity', collectionType:'mainline', hasEvap:true, panSize:'2x4', fuelType:'Firewood (cord)', fuelCost:'', syrupPrice:'' };
+const wp = E2.srWizardPlan(wz);
+eq('wizard plan', [wp.recTaps, wp.syrupLow, wp.syrupMid, wp.syrupHigh, wp.sapMid, wp.sessions, wp.firewood, wp.price], [300, 90, 112.5, 135, 4838, 76, 3.8, 40]);
+eq('wizard data shape', Object.keys(E2.srWizardData(wz)), ['trees','tapsPerTree','recTaps','systemType','collectionType','hasEvap','panSize','fuelType','fuelCost','syrupPrice']);
+eq('wizard data fuel default', E2.srWizardData(wz).fuelCost, 300);
+// degree days, Brix trend, hand check
+const dd = E2.srDegreeDays({ time:['2027-03-01','2027-03-02'], temperature_2m_max:[50, 30], temperature_2m_min:[40, 20] });
+eq('degree days', [dd.days.map(d => d.dd), dd.cumDD, dd.stage], [[5, 0], 5, 'open']);
+eq('degree day stage peak', E2.srDegreeDays({ time:['a'], temperature_2m_max:[400], temperature_2m_min:[0] }).stage, 'peak');
+eq('brix buddy warning', E2.srBrixTrend([{ brix:2.4 }, { brix:2.1 }, { brix:1.5 }]).buddy, true);
+eq('brix no warning under 3', E2.srBrixTrend([{ brix:2.4 }, { brix:1 }]).buddy, false);
+eq('hand flow', [E2.srHandFlow(45, 25).id, E2.srHandFlow(52, 30).id, E2.srHandFlow(33, 34).id, E2.srHandFlow(60, 45).id, E2.srHandFlow('', 3)], ['excellent', 'good', 'marginal', 'poor', null]);
+// recap facts in litre mode match gallon mode
+const slogG = { sapCollected:[{ val:500, date:'2027-03-01' }, { val:700, date:'2027-03-05' }], syrupMade:[{ val:25, date:'2027-03-06' }] };
+const slogL = { sapCollected:[{ val:500 * 3.78541, date:'2027-03-01' }, { val:700 * 3.78541, date:'2027-03-05' }], syrupMade:[{ val:25 * 3.78541, date:'2027-03-06' }] };
+const fG = E2.srRecapFacts(slogG, null, [], 'GAL'), fL = E2.srRecapFacts(slogL, null, [], 'L');
+eq('recap facts gal', [fG.sapGal, fG.syrupGal, fG.days, fG.ratio, fG.best.val], [1200, 25, 6, 48, 700]);
+eq('recap facts litres = gallons', [r2(fL.sapGal, 6), r2(fL.syrupGal, 6), fL.days, r2(fL.ratio, 6)], [1200, 25, 6, 48]);
+eq('by point', E2.srByPoint({ sapCollected:[{ val:5, point:'a' }, { val:3 }], syrupMade:[] }, [{ id:'a', name:'A' }]).rows[0].sap, 5);
+eq('by point hidden when untagged', E2.srByPoint({ sapCollected:[{ val:5 }] }, [{ id:'a' }]), null);
+const sc0 = E2.seasonScore({ sapT:1200, syT:25, fuelT:1.2, taps:100, brix:2, yieldModel:E2.YIELD_MODELS.gravity, fuelSpu:E2.FUELS[0].spu });
+eq('score rows ids', E2.srScoreRows(sc0, { syrupGal:25, sapGal:1200, fuelT:1.2, taps:100, brix:2, model:E2.YIELD_MODELS.gravity, fuelDef:E2.FUELS[0] }).map(r => r.id), ['yield', 'eff', 'fuel', 'data']);
+eq('insights', E2.srInsights(1200, 25, 600, 0.5, 100, 2, 90, E2.FUELS[0]).map(i => i.id), ['yieldAvg', 'effGood', 'fuelGood', 'roHelps']);
+// copy cleanup
+eq('plain ranges', E2.srPlain('10–15 gal, 20–24°F nights, $35–$70/gal'), '10 to 15 gal, 20 to 24°F nights, $35 to $70/gal');
+eq('plain pauses', E2.srPlain('Stop the boil — do not stir'), 'Stop the boil, do not stir');
+eq('plain no dash left', /[–—]/.test(E2.srPlain('a — b – c 1–2')), false);
+
 // ── Token law: no hex colour literals in Run Sheet code (tokens.css is the only home) ──
 const { readdirSync } = await import('node:fs');
 const rsFiles = readdirSync(join(ROOT, 'app', 'src')).filter(f => /^(3[1-9]|6\d|8\d|9[1-8])-.*\.jsx$/.test(f) && f !== '90-shell-classic.jsx');
