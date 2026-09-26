@@ -220,7 +220,10 @@ function RsSheet({ title, onClose, children, id }) {
       try { prev && prev.focus && prev.focus({ preventScroll:true }); } catch {}
     };
   }, []);
-  return (
+  // Portalled to <body>: a sheet opened from inside a fixed full-screen view (the
+  // Bush map, Phase 7) would otherwise be trapped in that view's stacking context
+  // under the tab bar. The stacking rule in FOUNDATION-NOTES still holds.
+  const tree = (
     <div className="rs-scrim" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
       <section className="rs-sheet" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} ref={ref} id={id}>
         <div className="rs-grab" aria-hidden="true" />
@@ -231,6 +234,7 @@ function RsSheet({ title, onClose, children, id }) {
       </section>
     </div>
   );
+  return typeof ReactDOM !== 'undefined' && ReactDOM.createPortal ? ReactDOM.createPortal(tree, document.body) : tree;
 }
 
 // Toast: one line at the foot of the screen after a save.

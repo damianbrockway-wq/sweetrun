@@ -100,68 +100,7 @@ function RsClassicScreen({ c, path, go }) {
   );
 }
 
-// ── Bush (the map) ────────────────────────────────────────────────────────────
-function RsBush({ c }) {
-  return (
-    <div className="rs-inner">
-      <header className="rs-phead"><h1 className="sm">{rt(c.lang,'bushTitle')}</h1></header>
-      <RsBanners c={c} />
-      <div className="rs-classic">{BETA_FEATURES ? <LinesTab lang={c.lang} /> : null}</div>
-    </div>
-  );
-}
-
-// ── Pumps: designed empty state until Phase 8 (never sample data) ─────────────
-function RsPumps({ c }) {
-  const L = c.lang;
-  return (
-    <>
-      <RsHero photo="pumphouse" />
-      <div className="rs-inner">
-        <header className="rs-phead">
-          <h1>{rt(L,'pumpsTitle')}</h1>
-          <p className="rs-lede">{rt(L,'pumpsLede')}</p>
-        </header>
-        <RsBanners c={c} />
-        <div className="rs-empty">
-          <div className="rs-mk"><M.tubing size={48} /></div>
-          <b>{rt(L,'pumpsEmptyT')}</b>
-          <p>{rt(L,'pumpsEmptyP')}</p>
-        </div>
-        <h2 className="rs-sec">{rt(L,'tabPumps')}</h2>
-        <div className="rs-list">
-          <RsRow icon="pump" family="collect" title={rt(L,'openEquip')} sub={rt(L,'openEquipSub')} href={rsHref('shack/equipment')} />
-          <RsRow icon="watch" family="lines" title={rt(L,'watchTitle')} sub={rt(L,'watchLede')} href={rsHref('watch')} />
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ── Watch mode: empty state until Phase 8 ─────────────────────────────────────
-function RsWatch({ c }) {
-  const L = c.lang;
-  return (
-    <>
-      <RsHero photo="hillside-panorama" />
-      <div className="rs-inner">
-        <header className="rs-phead">
-          <h1>{rt(L,'watchTitle')}</h1>
-          <p className="rs-lede">{rt(L,'watchLede')}</p>
-        </header>
-        <RsBanners c={c} />
-        <div className="rs-empty">
-          <div className="rs-mk"><M.tree size={48} /></div>
-          <b>{rt(L,'watchEmptyT')}</b>
-          <p>{rt(L,'watchEmptyP')}</p>
-        </div>
-        <div className="rs-list" style={{ marginTop:12 }}>
-          <RsRow icon="map" family="lines" title={rt(L,'openBush')} href={rsHref('bush')} />
-        </div>
-      </div>
-    </>
-  );
-}
+// Bush, Pumps and Watch are built in 50-rs-bush.jsx, 51-rs-pumps.jsx and 52-rs-watch.jsx (Phases 7-8).
 
 function RsNotFound({ c, to }) {
   useEffect(() => { rsGo(to || 'season'); }, []);
@@ -220,6 +159,9 @@ function RunSheetApp() {
     return () => window.removeEventListener('sr-goto-entries', h);
   }, []);
   useEffect(() => { try { window.scrollTo(0, 0); } catch {} }, [path]);
+  // Watch mode's Exit goes back to the screen it was opened from.
+  const lastPath = React.useRef(path);
+  useEffect(() => { if (lastPath.current !== path) { srPrevRoute = lastPath.current; lastPath.current = path; } }, [path]);
 
   let view;
   const SV = top === 'stage' && seg.length === 2 ? RS_STAGE_VIEW[seg[1]] : null;
@@ -229,15 +171,16 @@ function RunSheetApp() {
   else if (sc && sc.view) view = sc.view(c, go, openLog);
   else if (sc) view = <RsClassicScreen c={c} path={path} go={go} />;
   else if (path === 'stage/boil/day') view = <RsNotFound c={c} to="stage/boil" />;
-  else if (path === 'bush') view = <RsBush c={c} />;
-  else if (path === 'pumps') view = <RsPumps c={c} />;
-  else if (path === 'watch') view = <RsWatch c={c} />;
+  else if (top === 'bush') view = <RsBush c={c} sub={seg.slice(1)} />;
+  else if (top === 'pumps') view = <RsPumps c={c} sub={seg.slice(1)} openLog={openLog} />;
+  else if (top === 'watch') view = <RsWatch c={c} sub={seg.slice(1)} />;
   else if (path === 'shack') view = <RsShack c={c} />;
   else view = <RsNotFound c={c} />;
 
-  const hasHero = !seg.length || top === 'season' || !!SV || path === 'pumps' || path === 'watch';
+  const hasHero = !seg.length || top === 'season' || !!SV || path === 'pumps' || (top === 'pumps' && seg[1] === 'tank');
+  const cls = `rs-app${hasHero ? ' rs-hashero' : ''}${path === 'stage/boil' ? ' rs-boilroute' : ''}${top === 'bush' ? ' rs-bushroute' : ''}${top === 'watch' ? ' rs-watchroute' : ''}`;
   return (
-    <div className={`rs-app${hasHero ? ' rs-hashero' : ''}${path === 'stage/boil' ? ' rs-boilroute' : ''}`} data-route={path || 'season'}>
+    <div className={cls} data-route={path || 'season'}>
       <RsNav side active={active} lang={c.lang} onLog={onLog} />
       <main className="rs-main" key={path}>
         {(c.onboard || c.showWizard) && (

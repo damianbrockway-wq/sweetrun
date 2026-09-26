@@ -67,6 +67,9 @@
   --rs-vac-0: #2D5E6E; --rs-vac-1: #357E93; --rs-vac-2: #3F9FB8; --rs-vac-3: #58BDD6; --rs-vac-4: #8ADBEE;
   /* Drawn map ground */
   --rs-map-g: #12110E; --rs-map-c: #211E19; --rs-map-t: #A99F8F;
+  /* Bush map on real imagery (Phases 7-8): tree dots, the GPS dot, and the tone that sits imagery in the dark UI */
+  --rs-map-tree: #D7EBDD; --rs-map-treeline: #0E1A14; --rs-gps: #4C9BFF; --rs-leak-ink: #1A0605;
+  --rs-map-tone: brightness(.58) saturate(.62) contrast(1.08);
 
 
   /* ── Phase 5-6: drawings (evaporator, tanks, charts), grades, sheets ── */

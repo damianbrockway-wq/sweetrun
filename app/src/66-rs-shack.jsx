@@ -43,8 +43,8 @@ function RsShack({ c }) {
           <div className="rs-list">
             <RsRow icon="data" title={rt(L,'set_backup')} sub={rt(L,'set_backup_s')} onClick={() => setBackup(true)} />
             <RsRow icon="up" title={rt(L,'set_import')} sub={rt(L,'set_import_s2')} onClick={() => setImp(true)} />
-            <RsRow icon="map" family="lines" title={rt(L,'importKml')} sub={rt(L,'importKmlS2')} href={rsHref('bush')} />
-            <RsRow icon="layers" family="lines" title={rt(L,'offlineTiles')} sub={rt(L,'offlineTilesS')} href={rsHref('bush')} />
+            <RsRow icon="map" family="lines" title={rt(L,'importKml')} sub={rt(L,'importKmlS2')} href={rsHref('bush/tools')} />
+            <RsRow icon="layers" family="lines" title={rt(L,'offlineTiles')} sub={rt(L,'offlineTilesS')} href={rsHref('bush/tools')} />
           </div>
           <h2 className="rs-sec">{rt(L,'secPass')}</h2>
           <div className="rs-list">
@@ -72,6 +72,7 @@ function RsShack({ c }) {
             <label className="rs-fl">{rt(L,'boilScreen')}</label>
             <RsSeg label={rt(L,'boilScreen')} value={bg} onChange={setBoilBg} options={[['photo', rt(L,'photoSteam')], ['steam', rt(L,'justSteam')]]} />
           </div>
+          <RsOpsSettings c={c} />
           <div className="rs-list" style={{ marginTop:12 }}>
             <RsRow icon="tree" family="tap" title={rt(L,'set_wizard')} sub={rt(L,'set_wizard_s')} onClick={() => c.setShowWizard(true)} />
             <RsRow icon="back" title={rt(L,'set_look')} sub={rt(L,'set_look_s')} onClick={toClassic} />
@@ -324,4 +325,35 @@ function RsBackupSheet({ c, onClose }) {
       {msg && <p className={msg.ok ? 'rs-okline' : 'rs-errline'} role="status">{msg.text}</p>}
     </RsSheet>
   );
+}
+
+// Pumps and alerts: the defaults behind the leak rule, freeze prep, fuel and
+// stale readings (sg_watch_prefs), and the Demo readings switch for Watch mode.
+// All preference keys: they still save during an expired trial.
+function RsOpsSettings({ c }) {
+  const L = c.lang;
+  const v = useSrDataVersion();
+  const P = React.useMemo(() => srOpsPrefs(ls.get('sg_watch_prefs', {})), [v]);
+  const demo = React.useMemo(() => !!ls.get('sg_demo_readings', false), [v]);
+  const put = patch => { ls.set('sg_watch_prefs', { ...srObj(ls.get('sg_watch_prefs', {})), ...patch }); srDataChanged(); };
+  const setDemo = on => { ls.set('sg_demo_readings', !!on); srDataChanged(); srToast(rt(L, on ? 'demoOnToast' : 'demoOffToast')); };
+  return <>
+    <h2 className="rs-sec">{rt(L,'secOps')}</h2>
+    <div className="rs-card rs-settings" id="rs-ops-settings">
+      <label className="rs-fl" htmlFor="rs-leak-lim">{rt(L,'setLeak')}</label>
+      <RsStepper id="rs-leak-lim" value={String(P.leakLimitIn)} onChange={x => put({ leakLimitIn: x === '' ? null : x })} steps={[-0.5, -0.1, 0.1, 0.5]} dp={1} unit="in" label={rt(L,'setLeak')} min={0.5} max={10} big={false} />
+      <div className="rs-note">{rt(L,'setLeakN', { d: fmt(SR_OPS_DEFAULTS.leakLimitIn, 1) })}</div>
+      <label className="rs-fl" htmlFor="rs-freeze-f">{rt(L,'setFreeze')}</label>
+      <RsStepper id="rs-freeze-f" value={String(P.freezeF)} onChange={x => put({ freezeF: x === '' ? null : x })} steps={[-2, -1, 1, 2]} dp={0} unit="°F" label={rt(L,'setFreeze')} min={0} max={40} big={false} />
+      <div className="rs-note">{rt(L,'setFreezeN', { d: SR_OPS_DEFAULTS.freezeF })}</div>
+      <label className="rs-fl" htmlFor="rs-fuel-h">{rt(L,'setFuel')}</label>
+      <RsStepper id="rs-fuel-h" value={String(P.fuelLowH)} onChange={x => put({ fuelLowH: x === '' ? null : x })} steps={[-1, 1]} dp={0} unit="h" label={rt(L,'setFuel')} min={1} max={24} big={false} />
+      <label className="rs-fl" htmlFor="rs-stale-h">{rt(L,'setStale')}</label>
+      <RsStepper id="rs-stale-h" value={String(P.staleH)} onChange={x => put({ staleH: x === '' ? null : x })} steps={[-2, 2]} dp={0} unit="h" label={rt(L,'setStale')} min={1} max={72} big={false} />
+      <div className="rs-note">{rt(L,'setDefaultsN')}</div>
+    </div>
+    <div className="rs-list" style={{ marginTop:12 }}>
+      <RsSwitch on={demo} onChange={setDemo} title={rt(L,'demoTitle')} sub={rt(L, demo ? 'demoOnS' : 'demoOffS')} />
+    </div>
+  </>;
 }

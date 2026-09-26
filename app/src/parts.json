@@ -44,6 +44,9 @@
   "40-29-diagnose.jsx",
   "40-30-license-modal.jsx",
   "40-31-backup-modal.jsx",
+  "50-rs-bush.jsx",
+  "51-rs-pumps.jsx",
+  "52-rs-watch.jsx",
   "60-rs-kit.jsx",
   "61-rs-season.jsx",
   "62-rs-log.jsx",
@@ -61,6 +64,7 @@
   "81-rs-routes.jsx",
   "82-rs-strings.jsx",
   "83-rs-strings2.jsx",
+  "84-rs-strings3.jsx",
   "90-shell-classic.jsx",
   "91-shell-runsheet.jsx",
   "99-mount.jsx"

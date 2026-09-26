@@ -29,13 +29,17 @@ function useRsSeasonModel(c) {
   // sg_wizard_data with a tree count; nothing writes sg_wizard_done any more (it is
   // only read for older backups), so both count as "set up".
   const firstRun = !d.anyEntries && !ls.get('sg_wizard_done', false) && !((d.wizard || {}).trees > 0) && d.pins.length === 0;
+  // Phases 7-8: pumps, freeze prep, fuel and leak suspects join the engine; the
+  // RO pump's rate (sg_pumps) feeds the RO call. Demo readings never reach here.
+  const ops = useSrOps(c, false, now.getTime());
+  const roPump = ops.pumps.find(p => p.kind === 'ro' && p.gph > 0);
   const jobs = srJobs({
     now: now.getTime(), minutes, todayIso, stage, firstRun,
     wizardDone: d.wizardDone, hasPins: d.pins.length > 0, hasLocation: !!d.loc,
     wx: wx.data, boil: d.boil && d.boil.start ? { startMs: d.boil.start } : null,
     fresh: d.freshStart ? { startMs: d.freshStart } : null,
-    tanks: d.tanks, roGph: null, sapBrix: c.sapBrix, waterBP: c.waterBP,
-    loggedToday: today, checks: d.checks,
+    tanks: d.tanks, roGph: roPump ? roPump.gph : null, sapBrix: c.sapBrix, waterBP: c.waterBP,
+    loggedToday: today, checks: d.checks, ops: srOpsForJobs(ops, wx.data),
   });
   const totals = seasonTotals(d.slog);
   const totalsGal = seasonTotalsGal(d.slog, c.units);
@@ -43,7 +47,7 @@ function useRsSeasonModel(c) {
   const model = yieldModelSaved();
   const goalGal = taps * yieldMidOf(model);
   const brix = selSapBrix(d.brixlog, c.sapBrix);
-  return { d, now, todayIso, minutes, stage, stageIdx: SR_STAGE_IDS.indexOf(stage), wx, series, today, firstRun, jobs,
+  return { d, ops, now, todayIso, minutes, stage, stageIdx: SR_STAGE_IDS.indexOf(stage), wx, series, today, firstRun, jobs,
     totals, totalsGal, taps, model, goalGal, brix };
 }
 
@@ -68,6 +72,11 @@ function rsJobVars(j, c) {
     lvl: v.lvl != null ? srVol(v.lvl, c.units) : '', cap: v.cap != null ? srVol(v.cap, c.units) : '',
     full: v.fullH != null ? srDur(v.fullH, L) : '', run: v.runH != null ? srDur(v.runH, L) : '',
     at: v.startAtMs ? srClock(v.startAtMs, L) : '',
+    // Phases 7-8 (pump jobs): inches of vacuum, fuel, clock times
+    v: v.v != null ? fmt(v.v, 1) : '', base: v.base != null ? fmt(v.base, 1) : '', drop: v.drop != null ? fmt(v.drop, 1) : '',
+    lim: v.lim != null ? fmt(v.lim, 1) : '', left: v.left, note: v.note || '',
+    empty: v.emptyAtMs ? srWhenAhead(v.emptyAtMs, v.nowMs || Date.now(), L) : '', since: v.startMs ? srClock(v.startMs, L) : '',
+    fuel: v.lvl != null ? srVol(v.lvl, c.units, 1) : '',
   };
 }
 
@@ -149,8 +158,12 @@ function rsContextLine(m, c) {
   if (m.firstRun) return rt(L,'ctxFirst');
   const b = m.d.boil;
   if (b && b.start) return rt(L,'ctxBoil', { t: srClock(b.start, L) });
-  const fz = m.jobs.find(j => j.id === 'freeze');
+  const fault = m.jobs.find(j => j.id.startsWith('fault-'));
+  if (fault) return rt(L,'ctxFault', { n: fault.vars.name });
+  const fz = m.jobs.find(j => j.id === 'freeze' || j.id === 'freeze-prep');
   if (fz && m.minutes >= 17 * 60) return rt(L,'ctxFreeze', { lo: fz.vars.lo });
+  const leak = m.jobs.find(j => j.id.startsWith('leak-'));
+  if (leak && m.minutes < 12 * 60) return rt(L,'ctxLeak', { n: leak.vars.name });
   if (m.today.sapVal > 0) return rt(L,'ctxSapToday', { v: fmt(m.today.sapVal, 0), u });
   if (m.series.dayOfRun) return rt(L,'ctxDay', { n: m.series.dayOfRun, v: fmt(m.totals.syT, 1), u });
   if (m.wx.data) {
@@ -274,3 +287,4 @@ function RsSyrupVsLast({ c, slog, prev, dayOfRun, big }) {
     </RsStat>
   );
 }
+

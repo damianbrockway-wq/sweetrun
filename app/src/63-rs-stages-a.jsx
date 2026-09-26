@@ -254,7 +254,7 @@ function RsTapStage({ c }) {
           tree.yearAdded ? [rt(L,'added'), String(tree.yearAdded)] : null,
         ]} />
         {tree.notes && <p style={{ marginTop:12 }}>{tree.notes}</p>}
-        <div style={{ marginTop:16 }}><RsBtn icon="map" onClick={() => { setTree(null); rsGo('bush'); }}>{rt(L,'showOnBush')}</RsBtn></div>
+        <div style={{ marginTop:16 }}><RsBtn icon="map" onClick={() => { const id = tree.id; setTree(null); rsGo('bush/tree/' + id); }}>{rt(L,'showOnBush')}</RsBtn></div>
       </RsSheet>}
     </>
   );
@@ -287,7 +287,7 @@ function RsLinesStage({ c }) {
                 {ml.map(x => { const tr = per(x.id); return (
                   <RsRow key={x.id} icon={null} title={x.label || rt(L,'mainlineN', { id:x.id })}
                     sub={tr.length ? rt(L,'treesTaps', { t: tr.length, n: tr.reduce((s, p) => s + tapsOf(p), 0) }) : rt(L,'noTreesOnLine')}
-                    value={<span className="rs-mlsw" style={{ background: x.color || T.mute }} aria-hidden="true" />} href={rsHref('bush')} />); })}
+                    value={<svg className="rs-mldash" width="36" height="6" viewBox="0 0 36 6" aria-hidden="true"><line x1="2" y1="3" x2="34" y2="3" strokeDasharray={SR_LINE_DASH[ml.indexOf(x) % SR_LINE_DASH.length] || undefined} /></svg>} href={rsHref('bush/line/' + x.id)} />); })}
               </div>}
             <p className="rs-note">{rt(L,'linesNote')}</p>
           </div>
@@ -303,9 +303,9 @@ function RsLinesStage({ c }) {
             <h2 className="rs-sec">{rt(L,'tubingWord')}</h2>
             <div className="rs-list">
               <RsRow icon="calc" family="lines" title={rt(L,'sc_tubing')} sub={rt(L,'sc_tubing_s')} href={rsHref('stage/lines/tubing')} />
-              <RsRow icon="up" family="lines" title={rt(L,'importKml')} sub={rt(L,'importKmlS')} href={rsHref('bush')} />
+              <RsRow icon="up" family="lines" title={rt(L,'importKml')} sub={rt(L,'importKmlS')} href={rsHref('bush/tools')} />
             </div>
-            <div style={{ marginTop:16 }}><RsBtn icon="plus" onClick={() => rsGo('bush')}>{rt(L,'drawLine')}</RsBtn></div>
+            <div style={{ marginTop:16 }}><RsBtn icon="plus" onClick={() => rsGo('bush/tools')}>{rt(L,'drawLine')}</RsBtn></div>
           </div>
         </div>
       </div>
