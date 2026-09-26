@@ -1022,3 +1022,51 @@ html[data-look="new"] .rs-watch .rs-chart .rs-ct { font-size: 14px; }
   html[data-look="new"] .rs-spin, html[data-look="new"] .rs-hum, html[data-look="new"] .rs-ml-flow, html[data-look="new"] .rs-leakring, html[data-look="new"] .rs-mapskel { animation: none !important; }
 }
 
+/* ── Wide layouts (Phases 7-8): designed for iPad landscape and desktop ──── */
+html[data-look="new"] .rs-wideonly { display: none; }
+html[data-look="new"] .rs-opslist .rs-row { min-height: 60px; }
+html[data-look="new"] .rs-opslist .rs-st { font-size: 14px; }
+@media (min-width: 1100px) {
+  html[data-look="new"] .rs-wideonly { display: block; }
+  /* Season: chart beside the Next card, a strip of right-now numbers, then how it's going beside operations */
+  html[data-look="new"] .rs-home { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    grid-template-areas: "top top" "ban ban" "season next" "now now" "going ops" "log ops" ". ops"; }
+  html[data-look="new"] .rs-home .hb-next { margin-top: 0; }
+  html[data-look="new"] .rs-home .hb-ops { grid-area: ops; }
+  html[data-look="new"] .rs-boilgrid .bg-press > .rs-sec:first-child { margin-top: 8px; }
+  html[data-look="new"] .rs-home .hb-now { display: grid; grid-template-columns: minmax(0, 1.7fr) repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
+  html[data-look="new"] .rs-home .hb-now > .rs-sec { grid-column: 1 / -1; margin: 22px 0 -2px; }
+  html[data-look="new"] .rs-home .hb-now > .rs-grid2 { grid-column: 2 / -1; margin-top: 0 !important; }
+  html[data-look="new"] .rs-home .hb-now > :is(.rs-tankcard, .rs-tankempty) { height: 100%; }
+  html[data-look="new"] .rs-home .hb-season .rs-season { height: 100%; }
+  /* Boil: the evaporator beside a tall draw-off panel, today's numbers under it, batches across */
+  html[data-look="new"] .rs-boilgrid { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    grid-template-areas: "evap draw" "evap today" "evap press" "batch batch"; grid-template-rows: auto auto 1fr auto; gap: 12px 24px; }
+  html[data-look="new"] .rs-boilgrid .bg-col { display: contents; }
+  html[data-look="new"] .rs-boilgrid .bg-evap { grid-area: evap; } html[data-look="new"] .rs-boilgrid .bg-draw { grid-area: draw; margin-top: 0 !important; }
+  html[data-look="new"] .rs-boilgrid .bg-today { grid-area: today; } html[data-look="new"] .rs-boilgrid .bg-press { grid-area: press; }
+  html[data-look="new"] .rs-boilgrid .bg-batch { grid-area: batch; }
+  html[data-look="new"] .rs-boilgrid .bg-evap .rs-boilcard { height: 100%; }
+  html[data-look="new"] .rs-boilgrid .bg-draw .rs-huge { font-size: 96px; margin: 8px 0 4px; }
+  html[data-look="new"] .rs-boilgrid .bg-today > .rs-sec:first-child { margin-top: 8px; }
+  /* Recap: a strip of the season's numbers, charts in the wide column, grade and actions beside them */
+  html[data-look="new"] .rs-recapgrid { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    grid-template-areas: "kpi kpi" "charts grade" "charts mix" "charts more"; gap: 0 24px; }
+  html[data-look="new"] .rs-recapgrid .rc-col { display: contents; }
+  html[data-look="new"] .rs-recapgrid .rc-kpi { grid-area: kpi; } html[data-look="new"] .rs-recapgrid .rc-grade { grid-area: grade; }
+  html[data-look="new"] .rs-recapgrid .rc-mix { grid-area: mix; } html[data-look="new"] .rs-recapgrid .rc-charts { grid-area: charts; }
+  html[data-look="new"] .rs-recapgrid .rc-more { grid-area: more; }
+  html[data-look="new"] .rs-recapgrid .rc-kpi > .rs-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); grid-template-areas: "a c" "b c"; gap: 6px 32px; align-items: center; }
+  html[data-look="new"] .rs-recapgrid .rc-kpi > .rs-card > .rs-split { grid-area: a; }
+  html[data-look="new"] .rs-recapgrid .rc-kpi > .rs-card > .rs-meta { grid-area: b; align-self: start; }
+  html[data-look="new"] .rs-recapgrid .rc-kpi > .rs-card > .rs-grid2 { grid-area: c; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 0; }
+}
+@media (min-width: 1400px) {
+  html[data-look="new"] .rs-home { grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas: "top top top" "ban ban ban" "season season next" "now now now" "going ops log"; }
+  html[data-look="new"] .rs-home .hb-now { grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(0, 1fr)); }
+  html[data-look="new"] .rs-home .hb-now > .rs-grid2 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  html[data-look="new"] .rs-home .hb-now { grid-template-columns: minmax(0, 1.25fr) minmax(0, 3fr); }
+  html[data-look="new"] .rs-recapgrid .rc-charts .rs-stack { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  html[data-look="new"] .rs-recapgrid .rc-charts .rs-stack > * + * { margin-top: 0; }
+}

@@ -133,6 +133,7 @@ function RsSeason({ c, go, openLog }) {
               sub={m.taps > 0 && !m.firstRun ? rt(L,'nPerTap', { v: fmt(m.totals.syT / m.taps, 2), u: srU(c.units) }) : rt(L,'nNoTaps')} href={rsHref('stage/recap')} />
           </div>
         </div>
+        <div className="hb-ops rs-wideonly"><RsOpsCard c={c} ops={m.ops} /></div>
         <div className="hb-going">
           <h2 className="rs-sec">{rt(L,'howGoing')}<a className="rs-more" href={rsHref('stage/recap')}>{rt(L,'allCharts')}<RsIcon name="chev" size={18} /></a></h2>
           <RsSyrupVsLast c={c} slog={m.d.slog} prev={m.d.prevSlog} dayOfRun={m.series.dayOfRun} />
@@ -288,3 +289,20 @@ function RsSyrupVsLast({ c, slog, prev, dayOfRun, big }) {
   );
 }
 
+// Operations at a glance (iPad landscape and desktop only): pumps with their
+// live status and every line end with its latest reading. Phones reach the
+// same facts one tap away on the Pumps tab.
+function RsOpsCard({ c, ops }) {
+  const L = c.lang;
+  const lines = ops.lines.filter(l => l.latest || l.trees.length);
+  return <>
+    <h2 className="rs-sec">{rt(L,'opsCard')}<a className="rs-more" href={rsHref('pumps')}>{rt(L,'tabPumps')}<RsIcon name="chev" size={18} /></a></h2>
+    {ops.pumps.length || lines.length ? <div className="rs-list rs-opslist">
+      {ops.pumps.map(p => <a key={p.id} className="rs-row" href={rsHref('pumps/' + p.id)}><RsPumpTile p={p} size={36} />
+        <span className="rs-rt"><b>{p.name}</b><RsPumpStatus p={p} L={L} now={ops.now} still /></span></a>)}
+      {lines.map(l => <a key={l.id} className="rs-row" href={rsHref('bush/line/' + l.id)}><RsLinePlate l={l} size={36} />
+        <span className="rs-rt"><b>{l.label}</b><span className="tn">{l.latest ? rt(L,'readAgoShort', { a: srAgo(l.latest.ms, ops.now, L) }) : rt(L,'noReadingYet')}</span></span>
+        <RsVacValue l={l} L={L} /></a>)}
+    </div> : <div className="rs-empty"><p>{rt(L,'opsNone')}</p></div>}
+  </>;
+}

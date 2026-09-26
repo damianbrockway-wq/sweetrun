@@ -40,9 +40,9 @@ function RsRecapStage({ c }) {
         {!has ? (
           <div className="rs-empty"><div className="rs-mk"><M.jug size={52} /></div><b>{rt(L,'recapEmptyT', { y:c.season })}</b><p>{rt(L,'recapEmptyP')}</p></div>
         ) : null}
-        <div className="rs-cols">
-          <div>
-            <div className="rs-card">
+        <div className="rs-cols rs-recapgrid">
+          <div className="rc-col">
+            <div className="rc-kpi"><div className="rs-card">
               <div className="rs-split" style={{ alignItems:'center' }}>
                 <div><div className="rs-meta">{rt(L,'nSyrupSoFar')}</div><div className="rs-huge tn">{fmt(T_.syT, 1)}<small>{u}</small></div></div>
                 {pct != null && <RsRing pct={pct} size={104} label={rt(L,'goalAria', { p: Math.round(pct), g: srVol(m.goalGal, c.units), u })} />}
@@ -55,8 +55,8 @@ function RsRecapStage({ c }) {
                   <div className="rs-meta">{avgBx != null ? rt(L,'nReadings', { n: bxSeason.length }) : rt(L,'brixSetting')}</div></div>
                 <div><div className="rs-meta">{rt(L,'nBoilHours')}</div><div className="rs-mid tn">{fmt(T_.hoursT, 1)}<small>h</small></div></div>
               </div>
-            </div>
-            <h2 className="rs-sec">{rt(L,'seasonGrade')}</h2>
+            </div></div>
+            <div className="rc-grade"><h2 className="rs-sec">{rt(L,'seasonGrade')}</h2>
             {sc.suspect ? (
               <div className="rs-err"><b>{rt(L,'suspectT')}</b><p>{rt(L,'suspectP', { r: fmt(T_.sapT / (T_.syT || 1), 0), f: fmt(SR_RATIO_FLOOR, 0) })}</p>
                 <RsBtn kind="secondary" href={rsHref('shack/log')}>{rt(L,'checkEntries')}</RsBtn></div>
@@ -76,17 +76,18 @@ function RsRecapStage({ c }) {
             ) : (
               <div className="rs-empty"><b>{rt(L,'noGradeT')}</b><p>{rt(L,'noGradeP')}</p></div>
             )}
-            {gOrder.length > 0 && <>
+            </div>
+            {gOrder.length > 0 && <div className="rc-mix">
               <h2 className="rs-sec">{rt(L,'byGrade')}</h2>
               <div className="rs-card">
                 <div className="rs-gradebar" role="img" aria-label={rt(L,'gradeMixAria')}>{gOrder.map((g, i) => <i key={g} style={{ flex: grades[g], background: `var(--rs-grade-${g === 'none' ? 'x' : SR_GRADES.indexOf(g) + 1})` }} />)}</div>
                 <RsKv rows={gOrder.map(g => [<><span className="rs-swatch" style={{ background: `var(--rs-grade-${g === 'none' ? 'x' : SR_GRADES.indexOf(g) + 1})` }} />{g === 'none' ? rt(L,'noGradeGiven') : srGradeLabel(g, L)}</>,
                   `${fmt(grades[g], 1)} ${u} · ${fmt(grades[g] / gTot * 100, 0)}%`])} />
               </div>
-            </>}
+            </div>}
           </div>
-          <div>
-            <h2 className="rs-sec">{rt(L,'howGoing')}</h2>
+          <div className="rc-col">
+            <div className="rc-charts"><h2 className="rs-sec">{rt(L,'howGoing')}</h2>
             <div className="rs-stack">
               <RsSyrupVsLast c={c} slog={s} prev={m.d.prevSlog} dayOfRun={m.series.dayOfRun || nDays} />
               {sapDays.length > 0 && <RsStat title={rt(L,'sapADay')} value={fmt(sapDays[sapDays.length - 1], 0)} unit={rt(L,'uLast', { u })}
@@ -111,13 +112,14 @@ function RsRecapStage({ c }) {
                   xLabels={[[0, srDateShort(bl[0].date, L)], [bl.length - 1, srDateShort(bl[bl.length - 1].date, L)]]} label={rt(L,'brixTrendAria', { n: bl.length })} />
               </RsStat>}
             </div>
-            <h2 className="rs-sec">{rt(L,'moreRecap')}</h2>
+            </div>
+            <div className="rc-more"><h2 className="rs-sec">{rt(L,'moreRecap')}</h2>
             <RsDetailRows c={c} paths={['stage/recap/season','stage/recap/diagnose']} />
             <div className="rs-list" style={{ marginTop:12 }}>
               <RsRow icon="list" family="power" title={rt(L,'sc_log')} sub={rt(L,'exportCsvS')} href={rsHref('shack/log')} />
             </div>
             <div style={{ marginTop:16 }}><RsBtn icon="download" id="rs-recap-pdf"
-              onClick={() => exportSeasonPDF({ season:c.season, trees:c.trees, units:c.units, logs:m.d.logs, brixLog: ls.get('sg_brixlog',[]), sapBrix:c.sapBrix })}>{rt(L,'exportPdf', { y:c.season })}</RsBtn></div>
+              onClick={() => exportSeasonPDF({ season:c.season, trees:c.trees, units:c.units, logs:m.d.logs, brixLog: ls.get('sg_brixlog',[]), sapBrix:c.sapBrix })}>{rt(L,'exportPdf', { y:c.season })}</RsBtn></div></div>
           </div>
         </div>
       </div>

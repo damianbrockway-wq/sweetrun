@@ -288,9 +288,9 @@ function RsBoilStage({ c }) {
       <div className="rs-inner rs-boilroute">
         <RsStageHead c={c} id="boil" m={m} lede={rt(L,'boilLede')} />
         <RsBanners c={c} />
-        <div className="rs-cols">
-          <div>
-            <section className={`rs-card rs-boilcard${active ? ' on' : ''}`} aria-label={rt(L,'boilCard')}>
+        <div className="rs-cols rs-boilgrid">
+          <div className="bg-col">
+            <div className="bg-evap"><section className={`rs-card rs-boilcard${active ? ' on' : ''}`} aria-label={rt(L,'boilCard')}>
               <div className="rs-split">
                 <RsSt kind={active ? 'ok' : 'idle'}>{active ? rt(L,'boilingSince', { t: srClock(sess.start, L) }) : rt(L,'nNotBoiling')}</RsSt>
                 <span className="rs-fresh tn">{m.d.panRate > 0 ? `${panLbl} · ${fmt(fromGal(m.d.panRate, c.units), 0)} ${u}/h` : rt(L,'setPanFirst')}</span>
@@ -321,8 +321,8 @@ function RsBoilStage({ c }) {
                 </div>
                 <div style={{ marginTop:12 }}><RsBtn kind="secondary" onClick={() => { setArmed(false); setShowEnd(true); }} id="rs-boil-end">{rt(L,'endBoil')}</RsBtn></div>
               </> : <div style={{ marginTop:12 }}><RsBtn kind="secondary" icon="flame" onClick={start} id="rs-boil-start">{rt(L,'startBoil')}</RsBtn></div>}
-            </section>
-            <div className="rs-card" style={{ marginTop:12 }}>
+            </section></div>
+            <div className="rs-card bg-draw" style={{ marginTop:12 }}>
               <div className="rs-split"><div className="rs-meta">{rt(L,'drawOffAt')}</div>
                 <span className="rs-fresh"><RsIcon name="therm" size={14} />{rt(L,'waterBoilsAtV', { v: fmt(srTempD(c.waterBP, c.units), 1), u: uT })}</span></div>
               <div className="rs-huge tn">{fmt(srTempD(finT, c.units), 1)}<small>{uT}</small></div>
@@ -333,22 +333,24 @@ function RsBoilStage({ c }) {
               </div>
             </div>
           </div>
-          <div>
-            <h2 className="rs-sec">{rt(L,'todaysBoil')}</h2>
+          <div className="bg-col">
+            <div className="bg-today"><h2 className="rs-sec">{rt(L,'todaysBoil')}</h2>
             <div className="rs-grid2">
               <RsNum label={rt(L,'nSapBoiled')} value={fmt(srDayTotals(m.d.slog.sapEvap)[m.todayIso] || 0, 0)} unit={u} sub={rt(L,'todayWordL')} />
               <RsNum label={rt(L,'nBoilHours')} value={fmt(m.totals.hoursT, 1)} unit="h" sub={rt(L,'thisSeason')} />
             </div>
-            <h2 className="rs-sec">{rt(L,'filterPress')}</h2>
+            </div>
+            <div className="bg-press"><h2 className="rs-sec">{rt(L,'filterPress')}</h2>
             <div className="rs-list">
               <RsRow icon="filter" family="boil" title={rt(L,'deCalc')} sub={rt(L,'deCalcS')} href={rsHref('stage/boil/de')} />
               <RsRow icon="book" family="boil" title={rt(L,'sc_finish')} sub={rt(L,'finishGuideS')} href={rsHref('stage/boil/finishing')} />
               <RsRow icon="flame" family="boil" title={rt(L,'sc_evap')} sub={rt(L,'sc_evap_s')} href={rsHref('stage/boil/evaporator')} />
             </div>
-            <h2 className="rs-sec">{rt(L,'batchesWord')}<a className="rs-more" href={rsHref('shack/batches')}>{rt(L,'allWord')}<RsIcon name="chev" size={18} /></a></h2>
+            </div>
+            <div className="bg-batch"><h2 className="rs-sec">{rt(L,'batchesWord')}<a className="rs-more" href={rsHref('shack/batches')}>{rt(L,'allWord')}<RsIcon name="chev" size={18} /></a></h2>
             {batches.length ? <RsBatchRows c={c} batches={batches} limit={4} /> :
               <div className="rs-empty"><b>{rt(L,'noBatchesT')}</b><p>{rt(L,'noBatchesP')}</p></div>}
-            <div style={{ marginTop:16 }}><RsBtn icon="jug" onClick={() => setBatchSheet(true)} id="rs-batch-open">{rt(L,'recordBatch')}</RsBtn></div>
+            <div style={{ marginTop:16 }}><RsBtn icon="jug" onClick={() => setBatchSheet(true)} id="rs-batch-open">{rt(L,'recordBatch')}</RsBtn></div></div>
           </div>
         </div>
       </div>
