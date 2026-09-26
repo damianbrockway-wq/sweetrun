@@ -86,6 +86,7 @@
   --rs-pt-0: #ff7b54; --rs-pt-1: #a78bfa; --rs-pt-2: #f472b6; --rs-pt-3: #34d399; --rs-pt-4: #fbbf24; --rs-pt-5: #60a5fa;
   --rs-scrim: rgba(4, 3, 2, .66); --rs-shadow: rgba(0, 0, 0, .45); --rs-on-ok: #06140C;
   --rs-boilh: 900px;
+  --rs-boilph: 600px;   /* the boil photo while a boil runs: the numbers sit on the steam */
 
   /* ── Type ───────────────────────────────────────────────────────── */
   --rs-f: 'Barlow', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -114,6 +115,6 @@
   --rs-line: #221E1A; --rs-tx: #E2DCD4; --rs-dim: #A69D92; --rs-mute: #8E857B; --rs-acc: #C9742B;
 }
 
-@media (min-width: 760px)  { :root { --rs-heroh: 300px; --rs-boilh: 960px; } }
+@media (min-width: 760px)  { :root { --rs-heroh: 300px; --rs-boilh: 960px; --rs-boilph: 680px; } }
 @media (min-width: 1100px) { :root { --rs-nav: 0px; --rs-navw: 108px; --rs-heroh: 330px; } }
 @media (min-width: 1400px) { :root { --rs-navw: 236px; } }

@@ -153,7 +153,7 @@ function RsWatch({ c, sub }) {
                   {V.tempF != null ? <>
                     <div className="rs-wtemp tn">{fmt(V.tempF, 1)}<small>°F</small></div>
                     <div className="rs-wsub">{V.ft ? rt(L, 'trend_' + V.ft.trend) + (V.ft.cross ? ' · ' + rt(L, V.ft.cross.kind === 'freeze' ? 'freezeNear' : 'thawNear', { t: srClock(V.ft.cross.ms, L) }) : '') : ''}</div>
-                    <div className="rs-wsrc">{demo ? rt(L, 'wDemoTag') : rt(L, 'wTempSrc', { p: (loc && loc.name) || rt(L, 'yourPlace') })}</div>
+                    <div className="rs-wsrc">{demo ? rt(L, 'wDemoTag') : rt(L, 'wTempSrc', { p: (loc && loc.name) || rt(L, 'yourPlaceL') })}</div>
                   </> : <div className="rs-wsub">{!loc ? rt(L, 'wNoPlace') : hourly.status === 'loading' ? rt(L, 'wTempLoading') : rt(L, 'wTempErr')}</div>}
                 </div>
                 {V.tanks.length ? V.tanks.slice(0, 1).map(t => <RsWatchTank key={t.id} c={c} t={t} now={model.now} demo={demo} />)
@@ -235,7 +235,7 @@ function RsWatchMap({ c, model, V, onLine, one }) {
     srApplyBase(LL, map, 'sat');
     const dm = { ...model, lines: V.lines, pumps: V.pumps, tanks: model.tanksRaw, tankLevels: Object.fromEntries(V.tanks.map(t => [t.id, t])) };
     srDrawBush(LL, map, G, dm, { ...SR_BUSH_LAYERS, trees: false, brix: false }, {
-      watch: true, one, stale: V.stale, showHouse: true, noReading: rt(L, 'noReadingW'),
+      watch: true, one, stale: V.stale, showHouse: !one,   // one-line view frames the line only; a house marker would land clipped at its edge noReading: rt(L, 'noReadingW'),
       lineAria: l => rt(L, 'lineAria', { n: l.label, v: l.latest ? fmt(l.latest.v, 1) : rt(L, 'noReadingW') }),
       onLine: id => onLine && onLine(id),
     });

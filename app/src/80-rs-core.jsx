@@ -1,14 +1,11 @@
 // ─── Run Sheet core state ─────────────────────────────────────────────────────
-// Everything the classic App holds at the top (90-shell-classic.jsx) that the
-// screens need as props, plus the license/trial boot, the write-fail listener
-// and the once-a-day sap-run check. It MIRRORS App() line for line on purpose:
-// the classic shell is not touched until it is removed (Phase 11), and the two
-// shells never run in the same page load. If you change the boot sequence in
-// one, change it in the other.
+// The app state the screens need as props, plus the license/trial boot, the
+// write-fail listener and the once-a-day sap-run check. Carried over line for
+// line from the pre-cutover App() (removed at cutover), so the boot sequence,
+// storage keys and trial rules are unchanged.
 //
-// Differences from App(), all deliberate:
-//   - no sg_last_tab (the new shell routes by URL hash, so switching back to the
-//     classic look still opens where classic left off)
+// Differences from the old App(), all deliberate:
+//   - no sg_last_tab (routes are URL hashes; the key is left as stored)
 //   - adds firstName (sg_first_name, a preference key) for the greeting
 function useSrCore() {
   const [writeFail, setWriteFail] = useState(null);
@@ -95,10 +92,10 @@ function useSrCore() {
           const ideal = hi >= 40 && lo <= 28;
           if (ideal) {
             const day = i === 1 ? 'tomorrow' : 'in 2 days';
-            const msg = `Ideal sap run ${day} — high ${hi}°F, low ${lo}°F`;
+            const msg = `Ideal sap run ${day}: high ${hi}°F, low ${lo}°F`;
             setNotifBanner(msg);
             if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('SweetRun — Sap Run Alert', { body: msg, icon: './icon-512.png' });
+              new Notification('SweetRun: sap run alert', { body: msg, icon: '/app/icons/icon-e-192.png' });
             }
             break;
           }

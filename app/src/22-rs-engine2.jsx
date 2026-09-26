@@ -140,7 +140,8 @@ function srScoreRows(sc, o) {
   const brix = parseFloat(o.brix) || 2.0, yM = o.model, fuelDef = o.fuelDef || FUELS[0];
   if (sc.yieldScore !== null) {
     const ypp = o.syrupGal / o.taps;
-    rows.push({ id:'yield', score:sc.yieldScore, weight:30, ypp, band: ypp >= yM.high ? 'top' : ypp >= yM.low ? 'in' : 'below' });
+    const cls = srYieldClass(ypp);
+    rows.push({ id:'yield', score:sc.yieldScore, weight:30, ypp, band: cls === 'strong' ? 'top' : cls === 'low' ? 'below' : 'in' });
   }
   if (sc.effScore !== null) rows.push({ id:'eff', score:sc.effScore, weight:40, ratio: o.sapGal / o.syrupGal, theory: RULE_DIVISOR / brix });
   if (sc.fuelScore !== null) rows.push({ id:'fuel', score:sc.fuelScore, weight:20, fr: o.fuelT / o.syrupGal, bench: (RULE_DIVISOR / brix) / fuelDef.spu, unit: fuelDef.unit });
@@ -163,8 +164,9 @@ function srYieldGap(sapGal, syrupGal, taps, sapBrix, model, price) {
   const effPct = actualRatio ? Math.min(100, Math.round((theoretical / actualRatio) * 100)) : null;
   const ypp = syrupGal / taps;
   const causes = [];
-  if (ypp < model.low) causes.push({ id:'lowYield', sev:'high', fixes:['leaks','checkValve','freshWood'] });
-  else if (ypp < yieldMidOf(model)) causes.push({ id:'belowAvg', sev:'medium', add: (yieldMidOf(model) - ypp) * taps, fixes:['audit5','checkValveLow'] });
+  const cls = srYieldClass(ypp);   // the one benchmark; the model range is what his system can reach
+  if (cls === 'low') causes.push({ id:'lowYield', sev:'high', fixes:['leaks','checkValve','freshWood'] });
+  else if (ypp < yieldMidOf(model)) causes.push({ id:'belowAvg', sev:'medium', cls, add: (yieldMidOf(model) - ypp) * taps, fixes:['audit5','checkValveLow'] });
   if (effPct !== null && effPct < 80) causes.push({ id:'evapLow', sev:'high', fixes:['float','descale','drawTiming'] });
   else if (effPct !== null && effPct < 90) causes.push({ id:'evapMinor', sev:'medium', fixes:['floatCal'] });
   if (sapGal > 0 && syrupGal > 0 && sapGal / syrupGal > theoretical * 1.15) causes.push({ id:'considerRo', sev:'medium', fixes:['roSingle','roDiy'] });
@@ -235,12 +237,13 @@ function srDiagnose(o) {
   // 1 yield per tap
   if (sapGal > 0 && tapCount > 0) {
     const ypt = sapGal / tapCount;
-    const lo = vac === 'high' ? 30 : vac === 'vac15' ? 20 : 10, hi = vac === 'high' ? 45 : vac === 'vac15' ? 28 : 15;
+    // Graded on the one yield band (srYieldClass) as sap: the band times the Rule of 86 at his sap Brix.
+    const lo = SR_YIELD_BAND.low * _ratio, hi = SR_YIELD_BAND.high * _ratio;
     const gap = Math.max(0, lo - ypt);
     const potSyrup = (gap * tapCount) / (RULE_DIVISOR / sapBrix);
     const roi = potSyrup * price;
-    if (ypt < lo) R.push({ id:'yield', sev: ypt < lo * 0.6 ? 'high' : 'medium', roi, v:{ ypt, lo, hi, gap, taps:tapCount, lost: gap * tapCount, r: rule86(sapBrix), syr: potSyrup, price, vac } });
-    else R.push({ id:'yieldOk', sev:'good', roi:0, v:{ ypt, lo, hi } });
+    if (srSapYieldClass(ypt, sapBrix) === 'low') R.push({ id:'yield', sev: ypt < lo * 0.6 ? 'high' : 'medium', roi, v:{ ypt, lo, hi, gap, taps:tapCount, lost: gap * tapCount, r: rule86(sapBrix), syr: potSyrup, price, vac, bx: parseFloat(sapBrix) || 2.0 } });
+    else R.push({ id:'yieldOk', sev:'good', roi:0, v:{ ypt, lo, hi, bx: parseFloat(sapBrix) || 2.0 } });
   }
   // 2 conversion ratio
   if (sapGal > 0 && syrupGal > 0) {
@@ -312,7 +315,8 @@ function srDiagnose(o) {
 // ── Season insights (SeasonIntelligence, 40-21) ──────────────────────────────
 function srInsights(sapGal, syrupGal, roGal, fuelT, taps, brix, effScore, fuelDef) {
   const out = [];
-  if (taps > 0 && syrupGal > 0) { const ypp = syrupGal / taps; out.push({ id: ypp >= 0.3 ? 'yieldStrong' : ypp >= 0.2 ? 'yieldAvg' : 'yieldLow', type: ypp >= 0.3 ? 'ok' : ypp >= 0.2 ? 'info' : 'warn', v:{ ypp } }); }
+  if (taps > 0 && syrupGal > 0) { const ypp = syrupGal / taps, cls = srYieldClass(ypp);
+    out.push({ id: cls === 'strong' ? 'yieldStrong' : cls === 'normal' ? 'yieldAvg' : 'yieldLow', type: cls === 'strong' ? 'ok' : cls === 'normal' ? 'info' : 'warn', v:{ ypp } }); }
   if (sapGal > 0 && syrupGal > 0 && effScore != null) { const ratio = sapGal / syrupGal; out.push({ id: effScore >= 95 ? 'effTop' : effScore >= 80 ? 'effGood' : 'effLow', type: effScore >= 95 ? 'ok' : effScore >= 80 ? 'info' : 'warn', v:{ ratio, eff: effScore, gapPct: 100 - effScore, brix } }); }
   if (fuelT > 0 && syrupGal > 0) {
     const fr = fuelT / syrupGal, bench = (RULE_DIVISOR / brix) / fuelDef.spu;

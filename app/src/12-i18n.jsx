@@ -1,6 +1,5 @@
 // ─── Formatters ──────────────────────────────────────────────────────────────
 const fmt  = (n, d = 1) => isNaN(n) || !isFinite(n) ? '—' : Number(n).toLocaleString('en-US', { minimumFractionDigits:d, maximumFractionDigits:d });
-const fmtH = h => { if (!isFinite(h) || h <= 0) return '—'; const hh = Math.floor(h), mm = Math.round((h - hh) * 60); return `${hh}h ${mm}m`; };
 const DAY  = { en:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], fr:['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'] };
 const MON  = { en:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
                fr:['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'] };

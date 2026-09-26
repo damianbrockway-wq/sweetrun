@@ -470,7 +470,7 @@ const SR_STEAM_PUFFS = [[8,0,1.1,14],[26,1.6,1.4,36],[44,.8,1.2,26],[62,2.4,1.5,
 function RsBoilHero({ on, mode }) {
   const steamOnly = mode === 'steam';
   return (
-    <div className={`rs-hero rs-boilhero${steamOnly ? ' solo' : ''}`} aria-hidden="true">
+    <div className={`rs-hero rs-boilhero${steamOnly ? ' solo' : ''}${on ? ' live' : ''}`} aria-hidden="true">
       {!steamOnly && <><img src="/app/photos/evaporator-steam.webp" alt="" loading="lazy" decoding="async" /><div className="rs-hshade" /></>}
       {(on || steamOnly) && <div className={`rs-bsteam${steamOnly ? ' solo' : ''}${on ? '' : ' still'}`}>
         {SR_STEAM_PUFFS.map(([l, d, sc, b], i) => <i key={i} style={{ left:l + '%', animationDelay:d + 's', '--sc':sc, '--b':b + '%' }} />)}

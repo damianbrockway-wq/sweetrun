@@ -140,6 +140,28 @@ function yieldModelSaved() {
 }
 const yieldMidOf = m => (m.low + m.high) / 2;
 
+// ─── Yield verdict: the ONE benchmark every screen grades with ───────────────
+// Recap called 0.31 gal a tap "Low" (against the 0.45 to 0.70 mechanical vacuum
+// row above) while Diagnose called it "Strong" (a fixed 0.25 to 0.30). Every
+// low / normal / strong word now comes from srYieldClass and nothing else.
+// Source: maple-constants.md section 4 (2026-09-05). USDA NASS census yields run
+// 0.219 to 0.384 gal a tap by state and year (US 0.311 to 0.357), and a 25% swing
+// in one state from one year to the next is normal, so a single band is:
+//   under 0.20 low · 0.20 to 0.45 normal (both ends included) · over 0.45 strong
+// The YIELD_MODELS rows stay as what each system can reach: they still drive the
+// season goal, the yield gap in gallons and the yield score, unchanged.
+const SR_YIELD_BAND = { low: 0.20, high: 0.45 };
+function srYieldClass(syrupPerTap) {
+  const y = Number(syrupPerTap);
+  if (!(y > 0) || !isFinite(y)) return null;
+  return y < SR_YIELD_BAND.low ? 'low' : y > SR_YIELD_BAND.high ? 'strong' : 'normal';
+}
+// Sap per tap, graded on the same band as its syrup equivalent at the sap's Brix.
+function srSapYieldClass(sapPerTap, sapBrix) {
+  const r = rule86(parseFloat(sapBrix) || 2.0);
+  return r > 0 ? srYieldClass(sapPerTap / r) : null;
+}
+
 function tapsPer(dbh) {
   // Tap count is based on tree size only — vacuum increases yield per tap, not tap count
   if (dbh < 10) return 0;

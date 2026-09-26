@@ -80,7 +80,7 @@ function rsJobVars(j, c) {
   };
 }
 
-function RsSeason({ c, go, openLog }) {
+function RsSeason({ c, openLog }) {
   const L = c.lang;
   const m = useRsSeasonModel(c);
   const part = srDayPart(m.minutes);
@@ -238,7 +238,7 @@ function RsTankCard({ c, tanks, tankPins, big }) {
         <b>{pin ? rt(L,'tankPinT', { n: pin.label || rt(L,'tankWord') }) : rt(L,'tankNoneT')}</b>
         <p>{pin ? rt(L,'tankPinP') : rt(L,'tankNoneP')}</p>
       </div>
-      <div className="rs-tebtn"><RsBtn kind="secondary" icon="map" onClick={() => rsGo('bush')}>{rt(L, pin ? 'tankOpenBush' : 'tankAddBush')}</RsBtn></div>
+      <div className="rs-tebtn"><RsBtn kind="secondary" icon="plus" onClick={() => rsGo(pin ? 'pumps/add-tank/' + pin.id : 'pumps/add-tank')}>{rt(L, pin ? 'tankSetUp' : 'tankAdd')}</RsBtn></div>
     </div>
   );
 }

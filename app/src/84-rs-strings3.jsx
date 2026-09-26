@@ -17,7 +17,7 @@ Object.assign(RS_TR.en, {
   tilesDown:"Imagery isn't loading. You may be offline or the imagery service is down. Your trees and lines still show.",
   bushEmptyT:"Nothing pinned in your bush yet", bushEmptyP:'Stand at a tapped tree and add it where you are, or import your property line to get your bearings.',
   addTreeHere:'Add a tree where I am', leakSuspectW:'Leak suspect', noReadingW:'no reading', lineAria:'{n}, {v}',
-  gpsFinding:'Finding you…', gpsAcc:'GPS ± {a} m', gpsAccShort:'GPS ± {a} m', gpsDenied:'Location is turned off for SweetRun.', gpsLost:'Lost the GPS signal. Try in the open.',
+  gpsFinding:'Finding you…', gpsAcc:'GPS ± {a} m', gpsAccShort:'GPS ± {a} m', gpsDeniedS:'Location is turned off for SweetRun.', gpsLost:'Lost the GPS signal. Try in the open.',
   gpsNone:'This device has no GPS.', gpsCanopy:'GPS under canopy is often 5 to 15 m off. The accuracy is saved with the pin.',
   pinAdded:'{n} added', pinAddedAcc:'{n} added, ± {a} m', tapToAdd:'Tap the Bush to add a {k}', doneW:'Done', undoW:'Undo', cancelW:'Cancel',
   drawHint:'Tap points along {n}, top of the line first, down to the tank', drawPts:'{n} points', saveLine:'Save line', lineDrawn:'Line saved',
@@ -35,14 +35,13 @@ Object.assign(RS_TR.en, {
   // Tree detail
   elevation:'Elevation', placedBy:'Placed', placedByHand:'Placed by hand', h_excellent:'Excellent', h_good:'Good', h_fair:'Fair', h_poor:'Poor', h_dead:'Dead',
   brixHere:'Brix at this tree', noBrixHere:'No reading at this tree yet.', logBrixHere:'Log Brix at this tree', saveBrixV:'Save {v}% here',
-  brixSaved:'{v}% saved at {n}', brixAtTree:'At tree {n}', deleteTree:'Delete this tree', treeDeleted:'Tree deleted',
+  brixSaved:'{v}% saved at {n}', brixAtTreeN:'At tree {n}', deleteTree:'Delete this tree', treeDeleted:'Tree deleted',
   // Line detail
   readAgo:'Read {a}, {t}', readAgoShort:'Read {a}', agoNow:'just now', agoMin:'{n} min ago', agoH:'{n} h ago', agoD1:'yesterday', agoD:'{n} days ago',
   noReadingYet:'No reading yet', noReadingShort:'No reading', latestW:'Latest', lengthW:'Length', drawnW:'Drawn', lastChecked:'Last checked', neverW:'Never', servedBy:'Vacuum from',
   drawnByYou:'By you', drawnTrees:'Along its {n} trees, into the tank', drawnTreesElev:'Along its {n} trees, highest first', notDrawn:'Not yet: assign trees or draw it',
   tapsSetV:'{n} (set by you)', leakVerdict:'Leak suspect. {d} in under its own recent readings ({b} in). No pump reading within {h} h to compare.', holdingVerdict:'Holding. {d} in under its own recent readings ({b} in). No pump reading within {h} h to compare.',
   oneReadingVerdict:'One reading so far. The leak check needs a pump reading taken within {h} h of it, or a second reading at the end.', noReadingVerdict:'No vacuum reading at the end of this line yet.',
-  leakRuleNote:'Leak rule: {l} in or more under the median of its readings in the {d} days before. That is a default you can change in Sugar Shack.',
   logVacuum:'Log a vacuum reading', markChecked:'Mark checked', checkedSaved:'{n} marked checked', watchLine:'Watch this line', openOnBush:'Show on the Bush tab',
   editLine:'Name, taps and drawing', tapsOnLine:'Taps on this line', tapsOnLineNote:'Leave blank to count the taps on its trees ({n}).', drawThisLine:'Draw this line', redrawLine:'Draw it again',
   vacAtEnd:'Vacuum at the end of {n}', vacTrendAria:'{n}, the last {k} vacuum readings', kindW:'Kind', noteW:'Note', levelW:'Level', coordsW:'Coordinates',
@@ -54,7 +53,7 @@ Object.assign(RS_TR.en, {
   pumpsEmptyP2:'Your vacuum pump, transfer pump, RO and generator. Mark them running or stopped, and SweetRun keeps the runtime, fuel and service for you.',
   pumpsHonest:'No sensors needed. Everything here comes from what you mark and log, with the time you did it.',
   lineEnd:'{n} end', leakSuspectD:'Leak suspect · {d} in down', tankPctRead:'{p}% · read {a}', noLevelYet:'No level logged yet', freezePrep:'Freeze prep',
-  noForecastShort:'No forecast', lowTonightV:'{v}°F tonight', noFreezeV:'Low {v}°F, no freeze', ofN:'of {n}', byJob:'By job', vacAndLeaks:'Vacuum and leaks',
+  noForecastShort:'No forecast', lowTonightV:'{v}°F tonight', noFreezeV:'Low {v}°F, no freeze', byJob:'By job', vacAndLeaks:'Vacuum and leaks',
   allLinesW:'All lines', leaksOnV:'Leak suspect on {n}', allHoldingOrNone:'Line end readings and the leak rule', freezeRowS:'{d} of {t} done for tonight', freezeRowNone:'Add a pump to get a checklist',
   transferTimeS:'How long a haul takes, on Equipment', addPump:'Add a pump', addTank:'Add a tank', stRunning:'Running', stStopped:'Stopped',
   stStoppedSince:'Stopped since {t}', stFaultSince:'Fault since {t}', sinceT:'since {t}', hToday:'h today', noFuelShort:'No fuel logged',
@@ -120,7 +119,7 @@ Object.assign(RS_TR.en, {
   wStaleT:'Readings are old', wStaleP:'The newest reading was {a}. Log one from a line or a tank to bring this up to date.',
   wEmptyT:'Nothing to watch yet', wEmptyP:'Watch mode shows your lines, pumps and tanks. Put a mainline on the Bush tab or add a pump to start. Then read the gauges at the pump and at the end of each line, and log them on Pumps.',
   wEmptyDemo:'To see it move first, turn on Demo readings in Sugar Shack.', wMapAria:'Your mainlines coloured by vacuum', wTapLine:'Tap a line for its detail',
-  wOutside:'Outside', wTempSrc:'Forecast for {p}', yourPlace:'your place', wNoPlace:'Set your place on Weather watch to see it.', wTempLoading:'Checking…', wTempErr:"Couldn't get it",
+  wOutside:'Outside', wTempSrc:'Forecast for {p}', yourPlaceL:'your place', wNoPlace:'Set your place on Weather watch to see it.', wTempLoading:'Checking…', wTempErr:"Couldn't get it",
   wNoTank:'Add a tank on Pumps to see its level.', wNoPumps:'No pumps yet.', wAlerts:'Alerts', wNoAlerts:'Nothing needs you.', wNoAlertsDemo:'Demo readings raise no alerts.',
   wFault:'{n} fault', wLeak:'{n} leak suspect', wLeakS:'{v} in at the end, {d} in down', wFuel:'{n}: {h} of fuel', dryAt:'Dry near {t}',
   wTankFull:'{n} nearly full', wFreeze:'Freeze tonight, {v}°F', wFreezeS:'{n} jobs open', wLast24:'Last 24 hours', wRecent:'Recent readings', wNeedTwo:'Two readings draw the chart.',
@@ -129,7 +128,7 @@ Object.assign(RS_TR.en, {
   trend_falling:'Falling', trend_rising:'Rising', trend_steady:'Steady', freezeNear:'freeze near {t}', thawNear:'thaw near {t}',
   leakSuspicion:'Leak', susp_suspect:'Suspect', susp_ok:'Low', susp_single:'Needs a pump reading', susp_none:'No reading', baselineW:'Usual',
   // Sugar Shack: pumps and alerts
-  secOps:'Pumps and alerts', setLeak:'Leak suspect at', setLeakN:'Under the line’s usual reading. Default {d} in.', setFreeze:'Freeze prep at or under', setFreezeN:'Default {d}°F.',
+  secOps:'Pumps and alerts', setLeak:'Leak suspect at', setLeakN:'How far the line end can read under the pump before it counts as a leak. Default {d} in.', setFreeze:'Freeze prep at or under', setFreezeN:'Default {d}°F.',
   setFuel:'Warn when fuel runs out within', setStale:'Readings count as old after', setDefaultsN:'These are starting defaults, not rules from a source. Set them to your bush.',
   demoTitle:'Demo readings', demoOffS:'Off. Watch mode shows your own readings.', demoOnS:'On. Watch mode shows made-up numbers so you can see it move. Nothing is saved.',
   demoOnToast:'Demo readings on. Watch mode is showing made-up numbers.', demoOffToast:'Demo readings off',
@@ -167,4 +166,26 @@ Object.assign(RS_TR.fr, {
   wTitle:'Moniteur d’érablière', wExit:'Quitter', wAllLines:'Toutes les lignes', wManualPill:'Vos lectures', wDemoPill:'Lectures de démo, pas réelles',
   wOutside:'Dehors', wAlerts:'Alertes', sapRunning:'Ça coule!', sapNotRunning:'Ça ne coule pas', lastChecked:'Dernière vérification', watchLine:'Surveiller cette ligne',
   demoTitle:'Lectures de démo', secOps:'Pompes et alertes', trend_falling:'En baisse', trend_rising:'En hausse', trend_steady:'Stable',
+});
+
+Object.assign(RS_TR.en, {
+  // Boil in progress (cutover)
+  boilLive:'Boil in progress', boilStartedAt:'Started at {t}', boilClockAria:'Boiling for {d}, hours minutes seconds',
+  lastBrix:'Last Brix', brixU:'°Bx', dashNone:'None', noBrixYet:'No hydrometer reading yet', blReadAt:'Read at {t}',
+  drawsOne:'1 draw', drawsN:'{n} draws', syrupMadeEst:'Syrup made, estimate',
+  readingsT:'Readings', segTemp:'Temperature', segBrix:'Brix', drawAtL:'Draw off {v}', syrupBandL:'Syrup 66 to 67',
+  chartEmptyT:'Add a reading every so often and the line draws itself against your draw-off temperature.',
+  chartEmptyB:'Brix shows here when you add a hydrometer reading to a reading or a draw.',
+  chartTempAria:'Pan temperature this boil, {n} readings, against the draw-off temperature',
+  chartBrixAria:'Syrup Brix this boil, {n} readings, against 66 to 67',
+  addReading:'Add a reading', drawOffBtn:'Draw off', drawnNow:'Syrup drawn now ({u})', tempAtDraw:'Temperature at the draw ({u})',
+  panTempNow:'Pan temperature now ({u})', brixOpt:'Hydrometer Brix (if you took one)',
+  readNote:'Readings stay with this boil and draw the chart. The last Brix goes on the syrup entry when you log the boil.',
+  drawNote:'Adds to syrup drawn. Log the boil at the end to put it in your records.',
+  saveDraw:'Save the draw', readSaved:'Reading saved, {v}{u}', drawSaved:'Drew off {v} {u}',
+});
+Object.assign(RS_TR.fr, {
+  boilLive:'Bouillage en cours', boilStartedAt:'Commencé à {t}', lastBrix:'Dernier Brix',
+  noBrixYet:'Pas encore de lecture', syrupMadeEst:'Sirop fait, estimé', readingsT:'Lectures', segTemp:'Température',
+  addReading:'Ajouter une lecture', drawOffBtn:'Soutirer', saveReading:'Enregistrer la lecture', saveDraw:'Enregistrer le soutirage',
 });

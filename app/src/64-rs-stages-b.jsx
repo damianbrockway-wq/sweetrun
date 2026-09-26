@@ -244,6 +244,7 @@ function RsBoilStage({ c }) {
   const [showEnd, setShowEnd] = useState(false);
   const [armed, setArmed] = useState(false);
   const [batchSheet, setBatchSheet] = useState(false);
+  const [readSheet, setReadSheet] = useState(null);   // 'read' | 'draw'
   const mode = ls.get('sg_boil_bg', 'photo') === 'steam' ? 'steam' : 'photo';
   const persist = s => { if (!ls.set('sg_boil_session', s)) return false; setSess(s); srDataChanged(); return true; };
   const r1 = n => Math.round(n * 10) / 10;
@@ -273,7 +274,9 @@ function RsBoilStage({ c }) {
     const date = srToday(), note = L === 'fr' ? 'Bouillée' : 'Boil Day';
     let id = Date.now(); const dur = r1(hrs);
     if (sess.sap > 0)   slog.sapEvap   = [...(slog.sapEvap   || []), { id: id++, date, val: sess.sap,   note }];
-    if (sess.syrup > 0) slog.syrupMade = [...(slog.syrupMade || []), { id: id++, date, val: sess.syrup, note }];
+    // The last hydrometer Brix of the boil rides on the syrup entry (LogTab's optional brix field).
+    const lastBx = srBoilSeries(sess).lastBrix;
+    if (sess.syrup > 0) slog.syrupMade = [...(slog.syrupMade || []), { id: id++, date, val: sess.syrup, note, ...(lastBx ? { brix: lastBx } : {}) }];
     if (dur >= 0.1)     slog.boilHours = [...(slog.boilHours || []), { id: id++, date, val: dur,        note }];
     if (!ls.set('sg_logs2', { ...all, [c.season]: slog })) { setShowEnd(false); return; }
     srToast(rt(L,'boilLogged', { v: fmt(sess.syrup || 0, 1), u }));
@@ -285,43 +288,28 @@ function RsBoilStage({ c }) {
   return (
     <>
       <RsBoilHero on={active} mode={mode} />
-      <div className="rs-inner rs-boilroute">
-        <RsStageHead c={c} id="boil" m={m} lede={rt(L,'boilLede')} />
+      <div className={`rs-inner rs-boilroute${active ? ' live' : ''}`}>
+        <RsStageHead c={c} id="boil" m={m} lede={active ? false : rt(L,'boilLede')} />
         <RsBanners c={c} />
         <div className="rs-cols rs-boilgrid">
           <div className="bg-col">
-            <div className="bg-evap"><section className={`rs-card rs-boilcard${active ? ' on' : ''}`} aria-label={rt(L,'boilCard')}>
+            <div className="bg-evap">{active
+              ? <RsBoilLive c={c} sess={sess} now={now} est={est} rate={rate} state={state} stateWord={stateWord} finT={finT}
+                  onRead={() => setReadSheet('read')} onDraw={() => setReadSheet('draw')} onEnd={() => { setArmed(false); setShowEnd(true); }} onSap={n => add('sap', n)} />
+              : <section className="rs-card rs-boilcard" aria-label={rt(L,'boilCard')}>
               <div className="rs-split">
-                <RsSt kind={active ? 'ok' : 'idle'}>{active ? rt(L,'boilingSince', { t: srClock(sess.start, L) }) : rt(L,'nNotBoiling')}</RsSt>
+                <RsSt kind="idle">{rt(L,'nNotBoiling')}</RsSt>
                 <span className="rs-fresh tn">{m.d.panRate > 0 ? `${panLbl} · ${fmt(fromGal(m.d.panRate, c.units), 0)} ${u}/h` : rt(L,'setPanFirst')}</span>
               </div>
-              <RsEvap on={active} lang={L} />
+              <RsEvap on={false} lang={L} />
               <div className="rs-boilnums">
-                {active ? <div><div className="rs-meta">{rt(L,'syrupThisBoil')}</div>
-                  <div className="rs-huge tn"><span id="rs-syrup-now">{srVol(est, c.units, 3)}</span><small>{u}</small></div></div>
-                : <div><div className="rs-meta">{rt(L,'syrupToday')}</div>
-                  <div className="rs-huge tn">{fmt(m.today.syrupVal, 1)}<small>{u}</small></div></div>}
+                <div><div className="rs-meta">{rt(L,'syrupToday')}</div>
+                  <div className="rs-huge tn">{fmt(m.today.syrupVal, 1)}<small>{u}</small></div></div>
                 <div style={{ textAlign:'right' }}><div className="rs-meta">{rt(L,'seasonWord')}</div><div className="rs-mid tn">{fmt(seasonSy, 1)}</div>
-                  <div className="rs-meta tn">{active && rate > 0 ? rt(L,'perHour', { v: srVol(rate, c.units, 1), u }) : rt(L,'paused')}</div></div>
+                  <div className="rs-meta tn">{rt(L,'paused')}</div></div>
               </div>
-              {active && <RsJugs gal={fromGal(est, c.units)} label={rt(L,'jugsAria', { v: srVol(est, c.units, 1), u })} />}
-              {active && <p className="rs-note">{rt(L,'estNote', { b: fmt(parseFloat(c.sapBrix) || 2, 1) })}</p>}
-              {active ? <>
-                <label className="rs-fl">{rt(L,'panTemp')}</label>
-                <div className="rs-split" style={{ alignItems:'center' }}>
-                  <div className="rs-mid tn">{fmt(srTempD(sess.tempF, c.units), 1)}{uT}</div>
-                  <RsSt kind={state === 'draw' ? 'ok' : state === 'over' ? 'fault' : 'idle'}>{stateWord}</RsSt>
-                </div>
-                <div className="rs-keys" style={{ marginTop:10 }}>
-                  {[-0.5, -0.1, 0.1, 0.5].map(d => <button key={d} type="button" onClick={() => bumpT(d)} aria-label={`${d > 0 ? '+' : '-'}${Math.abs(d)}${uT}`}>{d > 0 ? '+' : '−'}{Math.abs(d)}</button>)}
-                </div>
-                <div className="rs-grid2 rs-counters" style={{ marginTop:12 }}>
-                  <RsCounter label={rt(L,'sapIn')} value={fmt(sess.sap || 0, 0)} unit={u} steps={[1, 5, 10]} onAdd={n => add('sap', n)} />
-                  <RsCounter label={rt(L,'syrupDrawn')} value={fmt(sess.syrup || 0, 1)} unit={u} steps={[0.5, 1, 5]} onAdd={n => add('syrup', n)} />
-                </div>
-                <div style={{ marginTop:12 }}><RsBtn kind="secondary" onClick={() => { setArmed(false); setShowEnd(true); }} id="rs-boil-end">{rt(L,'endBoil')}</RsBtn></div>
-              </> : <div style={{ marginTop:12 }}><RsBtn kind="secondary" icon="flame" onClick={start} id="rs-boil-start">{rt(L,'startBoil')}</RsBtn></div>}
-            </section></div>
+              <div style={{ marginTop:12 }}><RsBtn kind="secondary" icon="flame" onClick={start} id="rs-boil-start">{rt(L,'startBoil')}</RsBtn></div>
+            </section>}</div>
             <div className="rs-card bg-draw" style={{ marginTop:12 }}>
               <div className="rs-split"><div className="rs-meta">{rt(L,'drawOffAt')}</div>
                 <span className="rs-fresh"><RsIcon name="therm" size={14} />{rt(L,'waterBoilsAtV', { v: fmt(srTempD(c.waterBP, c.units), 1), u: uT })}</span></div>
@@ -350,7 +338,7 @@ function RsBoilStage({ c }) {
             <div className="bg-batch"><h2 className="rs-sec">{rt(L,'batchesWord')}<a className="rs-more" href={rsHref('shack/batches')}>{rt(L,'allWord')}<RsIcon name="chev" size={18} /></a></h2>
             {batches.length ? <RsBatchRows c={c} batches={batches} limit={4} /> :
               <div className="rs-empty"><b>{rt(L,'noBatchesT')}</b><p>{rt(L,'noBatchesP')}</p></div>}
-            <div style={{ marginTop:16 }}><RsBtn icon="jug" onClick={() => setBatchSheet(true)} id="rs-batch-open">{rt(L,'recordBatch')}</RsBtn></div></div>
+            <div style={{ marginTop:16 }}><RsBtn kind={active ? 'secondary' : 'primary'} icon="jug" onClick={() => setBatchSheet(true)} id="rs-batch-open">{rt(L,'recordBatch')}</RsBtn></div></div>
           </div>
         </div>
       </div>
@@ -362,6 +350,7 @@ function RsBoilStage({ c }) {
         <div style={{ marginTop:10 }}><RsBtn kind="bad" onClick={discard}>{rt(L, armed ? 'discardArm' : 'discardBoil')}</RsBtn></div>
       </RsSheet>}
       {batchSheet && <RsBatchSheet c={c} onClose={() => setBatchSheet(false)} />}
+      {readSheet && active && <RsBoilReadSheet c={c} mode={readSheet} sess={sess} persist={persist} onClose={() => setReadSheet(null)} />}
     </>
   );
 }
@@ -372,6 +361,137 @@ function RsCounter({ label, value, unit, steps, onAdd }) {
       <div className="rs-mid tn">{value}<small>{unit}</small></div>
       <div className="rs-keys sm">{steps.map(n => <button key={n} type="button" onClick={() => onAdd(n)} aria-label={`+${n} ${unit} ${label}`}>+{n}</button>)}</div>
     </div>
+  );
+}
+
+// ── A boil in progress (cutover; Damian's reference screen) ──────────────────
+// Status and a session clock, four translucent numbers over the steam, the
+// jugs, a readings chart, then one primary (Add a reading) and two secondaries
+// (Draw off, End the boil). Sap in stays a quick counter under them.
+function RsBoilLive({ c, sess, now, est, rate, state, stateWord, finT, onRead, onDraw, onEnd, onSap }) {
+  const L = c.lang, u = srU(c.units), uT = srTempU(c.units);
+  const hrs = Math.max(0, (now - sess.start) / 3600000);
+  const S = srBoilSeries(sess);
+  const [ser, setSer] = useState('temp');
+  const tNow = S.lastTemp != null ? S.lastTemp : sess.tempF;
+  return (
+    <section className="rs-boillive" aria-label={rt(L,'boilCard')}>
+      <div className="rs-blstatus">
+        <span className="rs-blic"><RsIcon name="flame" size={24} sw={2.4} /></span>
+        <span className="rs-blst"><b>{rt(L,'boilLive')}</b><span className="tn">{rt(L,'boilStartedAt', { t: srClock(sess.start, L) })}</span></span>
+        <span className="rs-bltimer tn" role="timer" aria-label={rt(L,'boilClockAria', { d: srHms(hrs) })}>{srHms(hrs)}</span>
+      </div>
+      <div className="rs-blgrid">
+        <div className="rs-blstat"><span className="rs-nl">{rt(L,'panTemp')}</span>
+          <span className="rs-nv tn">{fmt(srTempD(tNow, c.units), 1)}<small>{uT}</small></span>
+          <RsSt kind={state === 'draw' ? 'ok' : state === 'over' ? 'fault' : 'idle'}>{stateWord}</RsSt></div>
+        <div className="rs-blstat"><span className="rs-nl">{rt(L,'lastBrix')}</span>
+          <span className="rs-nv tn">{S.lastBrix != null ? fmt(S.lastBrix, 1) : rt(L,'dashNone')}<small>{rt(L,'brixU')}</small></span>
+          <span className="rs-bls tn">{S.lastBrix != null ? rt(L,'blReadAt', { t: srClock(S.lastBrixAt, L) }) : rt(L,'noBrixYet')}</span></div>
+        <div className="rs-blstat"><span className="rs-nl">{rt(L,'syrupDrawn')}</span>
+          <span className="rs-nv tn">{fmt(sess.syrup || 0, 1)}<small>{u}</small></span>
+          <span className="rs-bls">{rt(L, S.draws === 1 ? 'drawsOne' : 'drawsN', { n: S.draws })}</span></div>
+        <div className="rs-blstat"><span className="rs-nl">{rt(L,'syrupMadeEst')}</span>
+          <span className="rs-nv tn"><span id="rs-syrup-now">{srVol(est, c.units, 2)}</span><small>{u}</small></span>
+          <span className="rs-bls tn">{rate > 0 ? rt(L,'perHour', { v: srVol(rate, c.units, 1), u }) : rt(L,'setPanFirst')}</span></div>
+      </div>
+      <div className="rs-blchart">
+        <div className="rs-split rs-blchead"><h3>{rt(L,'readingsT')}</h3>
+          <RsSeg label={rt(L,'readingsT')} value={ser} onChange={setSer} options={[['temp', rt(L,'segTemp')], ['brix', rt(L,'segBrix')]]} /></div>
+        {ser === 'temp'
+          ? <RsBoilChart pts={S.temp.map(p => ({ ms: p.ms, v: srTempD(p.v, c.units) }))} from={sess.start} to={Math.max(now, ...S.temp.map(p => p.ms))} dp={1}
+              refV={srTempD(finT, c.units)} refL={rt(L,'drawAtL', { v: fmt(srTempD(finT, c.units), 1) })} unit={uT} lang={L}
+              h={136} empty={rt(L,'chartEmptyT')} label={rt(L,'chartTempAria', { n: S.temp.length })} />
+          : <RsBoilChart pts={S.brix} from={sess.start} to={Math.max(now, ...S.brix.map(p => p.ms))} dp={1}
+              band={[66, 67]} bandL={rt(L,'syrupBandL')} unit={rt(L,'brixU')} lang={L}
+              h={136} empty={rt(L,'chartEmptyB')} label={rt(L,'chartBrixAria', { n: S.brix.length })} />}
+      </div>
+      <div className="rs-blacts">
+        <RsBtn icon="plus" onClick={onRead} id="rs-boil-read">{rt(L,'addReading')}</RsBtn>
+        <div className="rs-btnrow">
+          <RsBtn kind="secondary" icon="jug" onClick={onDraw} id="rs-boil-draw">{rt(L,'drawOffBtn')}</RsBtn>
+          <RsBtn kind="secondary" onClick={onEnd} id="rs-boil-end">{rt(L,'endBoil')}</RsBtn>
+        </div>
+      </div>
+      <div className="rs-counters rs-blsap"><RsCounter label={rt(L,'sapIn')} value={fmt(sess.sap || 0, 0)} unit={u} steps={[1, 5, 10]} onAdd={onSap} /></div>
+      <RsJugs gal={fromGal(est, c.units)} label={rt(L,'jugsAria', { v: srVol(est, c.units, 1), u })} />
+      <p className="rs-note rs-blest">{rt(L,'estNote', { b: fmt(parseFloat(c.sapBrix) || 2, 1) })}</p>
+
+    </section>
+  );
+}
+// Readings over the session: one series, time across, a reference (draw-off
+// line or the 66 to 67 Brix band) so every dot reads against the target.
+function RsBoilChart({ pts, from, to, refV, refL, band, bandL, dp = 1, unit, lang, empty, label, h = 168 }) {
+  const [ref, W] = useRsWidth();
+  if (!pts.length) return <div ref={ref} className="rs-blempty" role="note"><RsIcon name="chart" size={22} /><span>{empty}</span></div>;
+  const vals = pts.map(p => p.v).concat(refV != null ? [refV] : []).concat(band || []);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  const pad = Math.max(0.5, (hi - lo) * 0.15); lo = Math.floor(lo - pad); hi = Math.ceil(hi + pad);
+  const step = (hi - lo) > 12 ? 5 : (hi - lo) > 5 ? 2 : 1;
+  const ticks = []; for (let t = Math.ceil(lo / step) * step; t <= hi; t += step) ticks.push(t);
+  const pl = 40, pr = 12, pt = 24, pb = 26, iw = Math.max(40, W - pl - pr), ih = h - pt - pb;   // pt: headroom for the end label
+  const span = Math.max(60000, to - from);
+  const X = ms => pl + (ms - from) / span * iw, Y = v => pt + (1 - (v - lo) / (hi - lo)) * ih;
+  const P = pts.map(p => [X(p.ms), Y(p.v)]);
+  const d = 'M' + P.map(p => p.map(q => q.toFixed(1)).join(' ')).join(' L');
+  const e = P[P.length - 1], last = pts[pts.length - 1];
+  // End label above the newest dot, or below it when above would sit on the
+  // draw-off line (a label's box is about 14 px over its baseline and 4 under).
+  const ry = refV != null ? Y(refV) : null, clear = y => ry == null || ry < y - 16 || ry > y + 6;
+  const ly = clear(e[1] - 12) ? e[1] - 12 : e[1] + 24;
+  return (
+    <div ref={ref} className="rs-chartwrap rs-blc">
+      <svg className="rs-chart" width={W} height={h} viewBox={`0 0 ${W} ${h}`} role="img" aria-label={label}>
+        {ticks.map(t => <g key={t}><line x1={pl} x2={W - pr} y1={Y(t)} y2={Y(t)} className="rs-grid" /><text x={pl - 6} y={Y(t) + 5} textAnchor="end" className="rs-ct">{t}</text></g>)}
+        {band && <g><rect x={pl} width={iw} y={Y(band[1])} height={Math.max(2, Y(band[0]) - Y(band[1]))} className="rs-blband" />
+          <text x={pl + 6} y={Y(band[1]) - 6} className="rs-ct strong">{bandL}</text></g>}
+        {refV != null && <g><line x1={pl} x2={W - pr} y1={Y(refV)} y2={Y(refV)} className="rs-refl" />
+          <text x={pl + 6} y={Y(refV) - 6} className="rs-ct strong">{refL}</text></g>}
+        {P.length > 1 && <path d={d} fill="none" className="rs-blline" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />}
+        {P.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r={i === P.length - 1 ? 6 : 4} className={`rs-bldot${i === P.length - 1 ? ' last' : ''}`} />)}
+        <text x={e[0] - 16} y={ly} textAnchor="end" className="rs-ct strong">{fmt(last.v, dp)}{unit}</text>
+        <text x={pl} y={h - 5} className="rs-ct">{srClock(from, lang)}</text>
+        <text x={W - pr} y={h - 5} textAnchor="end" className="rs-ct">{rt(lang,'nowW')}</text>
+      </svg>
+    </div>
+  );
+}
+// Add a reading (pan temperature, Brix if he took one) or a draw (syrup drawn,
+// Brix and temperature at the draw). Both go through srBoilAddReading and ls.set.
+function RsBoilReadSheet({ c, mode, sess, persist, onClose }) {
+  const L = c.lang, u = srU(c.units), uT = srTempU(c.units);
+  const S = srBoilSeries(sess);
+  const t0 = S.lastTemp != null ? S.lastTemp : sess.tempF;
+  const [temp, setTemp] = useState(String(Math.round(srTempD(t0, c.units) * 10) / 10));
+  const [brix, setBrix] = useState('');
+  const [draw, setDraw] = useState('');
+  const [fail, setFail] = useState(false);
+  const draw_ = mode === 'draw';
+  const save = () => {
+    const tv = parseFloat(temp);
+    if (!isFinite(tv)) { const el = document.getElementById('rs-bl-temp'); if (el) el.focus(); return; }
+    if (draw_ && !(parseFloat(draw) > 0)) { const el = document.getElementById('rs-bl-draw'); if (el) el.focus(); return; }
+    const tempF = c.units === 'L' ? tv * 9 / 5 + 32 : tv;
+    const next = srBoilAddReading(sess, { t: Date.now(), tempF, brix, draw: draw_ ? draw : null });
+    if (!persist(next)) { setFail(true); return; }
+    srToast(draw_ ? rt(L,'drawSaved', { v: fmt(parseFloat(draw), 1), u }) : rt(L,'readSaved', { v: fmt(tv, 1), u: uT }));
+    onClose();
+  };
+  return (
+    <RsSheet title={rt(L, draw_ ? 'drawOffBtn' : 'addReading')} onClose={onClose} id="rs-bl-sheet">
+      {draw_ && <><label className="rs-fl" htmlFor="rs-bl-draw">{rt(L,'drawnNow', { u })}</label>
+        <RsStepper id="rs-bl-draw" value={draw} onChange={setDraw} steps={[-1, -0.5, 0.5, 1]} dp={1} unit={u}  label={rt(L,'drawnNow', { u })} /></>}
+      <label className="rs-fl" htmlFor="rs-bl-temp">{rt(L, draw_ ? 'tempAtDraw' : 'panTempNow', { u: uT })}</label>
+      <RsStepper id="rs-bl-temp" value={temp} onChange={setTemp} steps={[-0.5, -0.1, 0.1, 0.5]} dp={1} unit={uT} min={0} max={400} label={rt(L, draw_ ? 'tempAtDraw' : 'panTempNow', { u: uT })} big={!draw_} />
+      <label className="rs-fl" htmlFor="rs-bl-brix">{rt(L,'brixOpt')}</label>
+      <RsStepper id="rs-bl-brix" value={brix} onChange={setBrix} steps={[-1, -0.1, 0.1, 1]} dp={1} unit={rt(L,'brixU')} min={0} max={80}  label={rt(L,'brixOpt')} big={false} />
+      <p className="rs-note">{rt(L, draw_ ? 'drawNote' : 'readNote')}</p>
+      <div className="rs-sheetfoot">
+        {fail && <p className="rs-errline" role="alert">{rt(L,'bNotSavedT')}. {rt(L,'bLockedP')}</p>}
+        <div><RsBtn onClick={save} id="rs-bl-save">{rt(L, draw_ ? 'saveDraw' : 'saveReading')}</RsBtn></div>
+      </div>
+    </RsSheet>
   );
 }
 

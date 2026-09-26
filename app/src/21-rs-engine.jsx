@@ -340,3 +340,33 @@ function srFreshHeat(hourly, startTs, now) {
   return { currentHU, pct, warnEta, critEta, bestBoilStart, currentTemp: cur ? cur.temp : null,
     level: pct < 40 ? 'fresh' : pct < 70 ? 'soon' : 'now', elapsedH: startTs ? (now - startTs) / 3600000 : 0 };
 }
+
+// ── Boil session readings (cutover: the Boil screen's readings chart) ────────
+// sg_boil_session keeps its fields ({ start, sap, syrup, tempF }) and gains an
+// optional readings list: [{ t, tempF, brix?, draw? }] (draw in the display unit,
+// like sap and syrup here, because logBoil writes them to sg_logs2 as entered). A session saved
+// before this had no list and reads as empty. tempF stays the latest pan
+// temperature and syrup the total drawn, so everything that read them before
+// reads them the same way.
+function srBoilAddReading(sess, r) {
+  if (!sess || !sess.start) return sess;
+  const t = Number(r.t), tempF = Number(r.tempF), brix = r.brix === '' || r.brix == null ? null : Number(r.brix);
+  const draw = r.draw === '' || r.draw == null ? 0 : Number(r.draw);
+  if (!isFinite(t) || !isFinite(tempF)) return sess;
+  const rd = { t, tempF: Math.round(tempF * 100) / 100 };
+  if (brix != null && isFinite(brix) && brix > 0) rd.brix = Math.round(brix * 10) / 10;
+  if (isFinite(draw) && draw > 0) rd.draw = Math.round(draw * 100) / 100;
+  const readings = [...(Array.isArray(sess.readings) ? sess.readings : []), rd].sort((a, b) => a.t - b.t);
+  return { ...sess, tempF: readings[readings.length - 1].tempF, syrup: Math.round(((sess.syrup || 0) + (rd.draw || 0)) * 10) / 10, readings };
+}
+// Series for the chart and the stat cards. temp: every reading; brix: readings
+// that carry one. The session's own starting temperature is the first point.
+function srBoilSeries(sess) {
+  if (!sess || !sess.start) return { temp: [], brix: [], lastBrix: null, lastTemp: null, draws: 0 };
+  const rs = (Array.isArray(sess.readings) ? sess.readings : []).filter(r => r && isFinite(r.t) && isFinite(r.tempF));
+  const temp = rs.map(r => ({ ms: r.t, v: r.tempF }));
+  const brix = rs.filter(r => r.brix > 0).map(r => ({ ms: r.t, v: r.brix }));
+  const lb = brix.length ? brix[brix.length - 1] : null;
+  return { temp, brix, lastBrix: lb ? lb.v : null, lastBrixAt: lb ? lb.ms : null,
+    lastTemp: rs.length ? rs[rs.length - 1].tempF : (isFinite(sess.tempF) ? sess.tempF : null), draws: rs.filter(r => r.draw > 0).length };
+}

@@ -2,8 +2,7 @@
 // Every row opens a Run Sheet screen or sheet. Built here: Sap to syrup,
 // Checklists, Equipment + transfer time, Backup and restore, and Settings
 // (first name, units, language, season, boil screen style). Import KML/GPX and
-// offline tiles open the Bush map, which is still the classic LinesTab until
-// Phase 7 rebuilds it.
+// offline tiles open the Bush tools sheet.
 
 function RsShack({ c }) {
   const L = c.lang;
@@ -15,7 +14,6 @@ function RsShack({ c }) {
   const [imp, setImp] = useState(false);
   const [bg, setBg] = useState(() => ls.get('sg_boil_bg', 'photo') === 'steam' ? 'steam' : 'photo');
   const setBoilBg = v => { setBg(v); ls.set('sg_boil_bg', v); };
-  const toClassic = () => { try { localStorage.setItem('sg_look', JSON.stringify('classic')); } catch {} location.href = '/app/?look=classic'; };
   const R = (p, icon, family) => { const sc = RS_SCREENS[p]; if (!sc || (sc.beta && !BETA_FEATURES)) return null;
     return <RsRow key={p} icon={icon || sc.icon} family={family || sc.family} title={rt(L, sc.title)} sub={rt(L, sc.sub)} href={rsHref(p)} />; };
   return (
@@ -75,7 +73,6 @@ function RsShack({ c }) {
           <RsOpsSettings c={c} />
           <div className="rs-list" style={{ marginTop:12 }}>
             <RsRow icon="tree" family="tap" title={rt(L,'set_wizard')} sub={rt(L,'set_wizard_s')} onClick={() => c.setShowWizard(true)} />
-            <RsRow icon="back" title={rt(L,'set_look')} sub={rt(L,'set_look_s')} onClick={toClassic} />
           </div>
         </div>
       </div>

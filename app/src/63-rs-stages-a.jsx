@@ -11,7 +11,7 @@ function RsStageHead({ c, id, m, lede }) {
       <RsPushBar href={rsHref('season')} label={rt(L,'tabSeason')} />
       <div className={`rs-eyebrow${here ? '' : ' plain'}`}>{rt(L,'stageOf', { n:i + 1 })}{here ? ' · ' + rt(L,'youAreHere') : done ? ' · ' + rt(L,'doneWord') : ''}</div>
       <h1 className="sm">{rt(L, 'st_' + id)}</h1>
-      <p className="rs-lede">{lede || rt(L, 'st_' + id + '_l')}</p>
+      {lede !== false && <p className="rs-lede">{lede || rt(L, 'st_' + id + '_l')}</p>}
     </header>
   );
 }

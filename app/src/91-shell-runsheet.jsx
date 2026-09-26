@@ -1,14 +1,11 @@
 // ─── Run Sheet shell ──────────────────────────────────────────────────────────
 // The new responsive shell (Phase 4). Tabs: Season · Bush · Log (+) · Pumps ·
-// Shack; side nav at >=1100px adds Watch. Every classic screen is mounted under
-// its new home (RS_SCREENS in 81-rs-routes.jsx), so nothing is lost on day one.
-// Later phases swap a route's render for the rebuilt screen; the shell, banner
-// slot and routes stay.
+// Shack; side nav at >=1100px adds Watch. The only shell since cutover: every
+// screen is a route in RS_SCREENS (81-rs-routes.jsx) or a branch below.
 
 // ── Global banner slot: directly above every screen ──────────────────────────
-// Same triggers, same meaning and same actions as the classic banners
-// (90-shell-classic.jsx): write refused, trial expired, first-season setup,
-// sap-run alert. Ordered by urgency: a refused write is the one that loses data.
+// Same triggers, meaning and actions as the pre-cutover app's banners: write
+// refused, trial expired, first-season setup, sap-run alert. Ordered by urgency: a refused write is the one that loses data.
 function RsBanners({ c }) {
   const L = c.lang;
   const out = [];
@@ -81,25 +78,6 @@ function RsNotifPrompt({ c }) {
   );
 }
 
-// ── A classic screen mounted under its new home ───────────────────────────────
-function RsClassicScreen({ c, path, go }) {
-  const L = c.lang;
-  const sc = RS_SCREENS[path];
-  const segs = path.split('/');
-  const parent = segs.slice(0, -1).join('/');
-  const parentLabel = segs[0] === 'shack' ? rt(L,'shackTitle') : rt(L, 'st_' + segs[1]);
-  return (
-    <div className="rs-inner">
-      <header className="rs-phead">
-        <RsPushBar href={rsHref(parent)} label={parentLabel} />
-        <h1 className="sm">{rt(L, sc.title)}</h1>
-      </header>
-      <RsBanners c={c} />
-      <div className="rs-classic rs-classic-wrap">{sc.render(c, go)}</div>
-    </div>
-  );
-}
-
 // Bush, Pumps and Watch are built in 50-rs-bush.jsx, 51-rs-pumps.jsx and 52-rs-watch.jsx (Phases 7-8).
 
 function RsNotFound({ c, to }) {
@@ -140,8 +118,6 @@ function RunSheetApp() {
   const top = seg[0] || 'season';
   const active = ['bush','pumps','watch','shack'].includes(top) ? top : 'season';
 
-  // Classic screens navigate with classic tab ids (go('boilpt')); send them home.
-  const go = React.useCallback(id => rsGo(CLASSIC_ROUTE[id] || 'season'), []);
   // Log, from the tab bar or side nav: the Run Sheet log sheet opens over the
   // current screen on the kind used last (sg_log_last_kind), as LogTab's did.
   const [logSheet, setLogSheet] = useState(null);
@@ -166,10 +142,9 @@ function RunSheetApp() {
   let view;
   const SV = top === 'stage' && seg.length === 2 ? RS_STAGE_VIEW[seg[1]] : null;
   const sc = RS_SCREENS[path] && !(RS_SCREENS[path].beta && !BETA_FEATURES) ? RS_SCREENS[path] : null;
-  if (!seg.length || top === 'season') view = <RsSeason c={c} go={go} openLog={openLog} />;
+  if (!seg.length || top === 'season') view = <RsSeason c={c} openLog={openLog} />;
   else if (SV) view = <SV c={c} openLog={openLog} />;
-  else if (sc && sc.view) view = sc.view(c, go, openLog);
-  else if (sc) view = <RsClassicScreen c={c} path={path} go={go} />;
+  else if (sc) view = sc.view(c, openLog);
   else if (path === 'stage/boil/day') view = <RsNotFound c={c} to="stage/boil" />;
   else if (top === 'bush') view = <RsBush c={c} sub={seg.slice(1)} />;
   else if (top === 'pumps') view = <RsPumps c={c} sub={seg.slice(1)} openLog={openLog} />;

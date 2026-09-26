@@ -388,7 +388,7 @@ function RsBush({ c, sub }) {
       const acc = p.coords.accuracy != null ? Math.round(p.coords.accuracy) : null;
       dropPin(p.coords.latitude, p.coords.longitude, M, acc);
       const map = mapRef.current; if (map) map.setView([p.coords.latitude, p.coords.longitude], 18);
-    }, e => setMsg({ bad: true, t: rt(L_, e && e.code === 1 ? 'gpsDenied' : 'gpsLost') }), { enableHighAccuracy: true, timeout: 12000 });
+    }, e => setMsg({ bad: true, t: rt(L_, e && e.code === 1 ? 'gpsDeniedS' : 'gpsLost') }), { enableHighAccuracy: true, timeout: 12000 });
   };
   const finishDraw = () => {
     if (!mode || mode.pts.length < 2) { setMode(null); return; }
@@ -428,7 +428,7 @@ function RsBush({ c, sub }) {
         </header>
         <div className="rs-mapnotes">
           <RsBanners c={c} />
-          {gps.on && <div className={`rs-accbadge ${accTier}`} role="status">{gps.err ? rt(L_, gps.err === 'denied' ? 'gpsDenied' : 'gpsLost') : gps.acc == null ? rt(L_, 'gpsFinding') : rt(L_, 'gpsAcc', { a: gps.acc })}</div>}
+          {gps.on && <div className={`rs-accbadge ${accTier}`} role="status">{gps.err ? rt(L_, gps.err === 'denied' ? 'gpsDeniedS' : 'gpsLost') : gps.acc == null ? rt(L_, 'gpsFinding') : rt(L_, 'gpsAcc', { a: gps.acc })}</div>}
           {tileTrouble && <div className="rs-mapmsg" role="status"><RsIcon name="info" size={20} />{rt(L_, 'tilesDown')}</div>}
           {msg && <div className={`rs-mapmsg${msg.bad ? ' bad' : ''}`} role="status">{msg.t}<button type="button" className="rs-xbtn" aria-label={rt(L_, 'dismiss')} onClick={() => setMsg(null)}><RsIcon name="x" size={20} /></button></div>}
           {mode && mode.kind === 'add' && <div className="rs-mapmode" role="status"><b>{rt(L_, 'tapToAdd', { k: rt(L_, 'pinK_' + mode.type).toLowerCase() })}</b>
@@ -579,7 +579,7 @@ function RsTreeDetail({ c, model, tree, onClose }) {
     if (!ls.set('sg_tree_brix', { ...all, [tree.id]: [...srArr(all[tree.id]), { t: t.toISOString(), brix: v }] })) { setFail(SR_WRITE_FAIL || 'locked'); return; }
     // Also a normal sg_brixlog entry (same shape SeasonTab writes), so the Brix trend counts it.
     const bl = srArr(ls.get('sg_brixlog', []));
-    ls.set('sg_brixlog', [...bl, { id: Date.now(), date: srToday(), brix: v, note: rt(L, 'brixAtTree', { n: tree.tagged || tree.label }) }]);
+    ls.set('sg_brixlog', [...bl, { id: Date.now(), date: srToday(), brix: v, note: rt(L, 'brixAtTreeN', { n: tree.tagged || tree.label }) }]);
     srDataChanged(); setBx(''); srToast(rt(L, 'brixSaved', { v: fmt(v, 1), n: tree.tagged || tree.label }));
   };
   const del = () => {

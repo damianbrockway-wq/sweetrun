@@ -12,8 +12,9 @@
 //   node scripts/build.mjs               build app/app.js
 //   node scripts/build.mjs --concat-only write app/src/.bundle.jsx only (tests)
 //
-// Output is byte-identical to the old `babel app/src/app.jsx -o app/app.js`:
-// Babel CLI writes the generated code plus one trailing newline.
+// Output was byte-identical to the old `babel app/src/app.jsx -o app/app.js`
+// until the cutover turned on minified output (below). The trailing newline is
+// kept, as Babel CLI wrote it.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -40,6 +41,10 @@ const out = babel.transformSync(source, {
   filename: bundlePath,
   configFile: join(ROOT, 'babel.config.json'),
   babelrc: false,
+  // Cutover (2026-09-26): whitespace and comments stripped, names kept (crash
+  // stacks stay readable). 835 KB -> 702 KB raw, 246 KB -> 209 KB gzipped.
+  minified: true,
+  comments: false,
 });
 writeFileSync(join(ROOT, 'app', 'app.js'), out.code + '\n');
 console.log(`build: ${parts.length} parts -> app/app.js (${Buffer.byteLength(out.code) + 1} bytes)`);

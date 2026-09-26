@@ -45,7 +45,6 @@ const RS_TR = {
     set_wizard:'Set up your season', set_wizard_s:'Trees, system and fuel, about 2 minutes',
     set_backup:'Backup and restore', set_backup_s:'Save every entry to a file, or bring one back',
     set_import:'Import sap monitor data', set_import_s:'CSV or PDF, on the Log history screen',
-    set_look:'Classic look', set_look_s:'Switch this device back to the old SweetRun screens',
     pass_licensed:'Season Pass active', pass_trial:'Season Trial, {n} days left', pass_expired:'Season Trial ended', pass_checking:'Checking your pass',
     pass_sub:'Enter a pass key, or get one',
     // license chip
@@ -98,7 +97,6 @@ const RS_TR = {
     set_wizard:'Configurer votre saison', set_wizard_s:'Arbres, système et combustible, environ 2 minutes',
     set_backup:'Sauvegarde et restauration', set_backup_s:'Enregistrer chaque entrée dans un fichier, ou la récupérer',
     set_import:'Importer les données d\'un capteur', set_import_s:'CSV ou PDF, sur l\'écran Historique du registre',
-    set_look:'Apparence classique', set_look_s:'Revenir aux anciens écrans SweetRun sur cet appareil',
     pass_licensed:'Passe saison active', pass_trial:'Essai de saison, {n} jours restants', pass_expired:'Essai de saison terminé', pass_checking:'Vérification de votre passe',
     pass_sub:'Entrer une clé, ou en obtenir une',
     chipPass:'Passe saison', chipTrial:'Essai · {n} jours', chipTrial1:'Essai · 1 jour', chipUnlock:'Débloquer',
@@ -122,9 +120,6 @@ function rt(lang, key, vars) {
 //   #/stage/<stage>             stage hub          #/stage/<stage>/<screen>  a screen
 //   #/bush                      the map            #/pumps  #/watch
 //   #/shack                     Sugar Shack hub    #/shack/<screen>
-// Every classic screen has exactly one home route (CLASSIC_ROUTE). Phase 6
-// replaced every `render` (a classic embed) with a `view` (a Run Sheet screen);
-// only the Bush map (LinesTab) is still classic, for the Phase 7 agent.
 const RS_STAGES = [
   { id:'weather', icon:'therm', family:'weather', photo:'frost-morning' },
   { id:'tap',     icon:'tree',  family:'tap',     photo:'tap-spout' },
@@ -133,41 +128,41 @@ const RS_STAGES = [
   { id:'boil',    icon:'flame', family:'boil',    photo:'evaporator-steam' },
   { id:'recap',   icon:'chart', family:'recap',   photo:'syrup-bottles' },
 ];
-// c = useSrCore() state, go = classic-id navigator for screens that link onward.
+// c = useSrCore() state; openLog opens the Log sheet.
 const RS_SCREENS = {
-  'stage/weather/forecast':  { classic:'weather',   title:'sc_forecast', sub:'sc_forecast_s', icon:'therm', family:'weather',
+  'stage/weather/forecast':  { title:'sc_forecast', sub:'sc_forecast_s', icon:'therm', family:'weather',
     view:(c)=> <RsForecast c={c} /> },
-  'stage/weather/degree-days': { classic:'season',  title:'sc_degree',   sub:'sc_degree_s',   icon:'chart', family:'weather',
+  'stage/weather/degree-days': { title:'sc_degree',   sub:'sc_degree_s',   icon:'chart', family:'weather',
     view:(c)=> <RsDegreeDays c={c} /> },
-  'stage/tap/guide':         { classic:'tapping',   title:'sc_tapping',  sub:'sc_tapping_s',  icon:'tree',  family:'tap',
+  'stage/tap/guide':         { title:'sc_tapping',  sub:'sc_tapping_s',  icon:'tree',  family:'tap',
     view:(c)=> <RsTapGuide c={c} /> },
-  'stage/lines/tubing':      { classic:'tubing',    title:'sc_tubing',   sub:'sc_tubing_s',   icon:'map',   family:'lines',
+  'stage/lines/tubing':      { title:'sc_tubing',   sub:'sc_tubing_s',   icon:'map',   family:'lines',
     view:(c)=> <RsTubing c={c} /> },
-  'stage/collect/ro':        { classic:'ro',        title:'sc_ro',       sub:'sc_ro_s',       icon:'ro',    family:'collect',
+  'stage/collect/ro':        { title:'sc_ro',       sub:'sc_ro_s',       icon:'ro',    family:'collect',
     view:(c)=> <RsROPlanner c={c} /> },
-  'stage/boil/evaporator':   { classic:'evap',      title:'sc_evap',     sub:'sc_evap_s',     icon:'flame', family:'boil',
+  'stage/boil/evaporator':   { title:'sc_evap',     sub:'sc_evap_s',     icon:'flame', family:'boil',
     view:(c)=> <RsEvaporator c={c} /> },
-  'stage/boil/finishing':    { classic:'finish',    title:'sc_finish',   sub:'sc_finish_s',   icon:'filter',family:'boil',
+  'stage/boil/finishing':    { title:'sc_finish',   sub:'sc_finish_s',   icon:'filter',family:'boil',
     view:(c)=> <RsFinishing c={c} /> },
-  'stage/boil/draw-off':     { classic:'boilpt',    title:'sc_boilpt',   sub:'sc_boilpt_s',   icon:'therm', family:'boil',
+  'stage/boil/draw-off':     { title:'sc_boilpt',   sub:'sc_boilpt_s',   icon:'therm', family:'boil',
     view:(c)=> <RsDrawOff c={c} /> },
   'stage/boil/de':           { title:'deCalc',     sub:'deCalcS',       icon:'filter',family:'boil',
     view:(c)=> <RsDE c={c} /> },
-  'stage/recap/season':      { classic:'recap',     title:'sc_recap',    sub:'sc_recap_s',    icon:'chart', family:'recap',
+  'stage/recap/season':      { title:'sc_recap',    sub:'sc_recap_s',    icon:'chart', family:'recap',
     view:(c)=> <RsRecapDetail c={c} /> },
-  'stage/recap/diagnose':    { classic:'diagnose',  title:'sc_diagnose', sub:'sc_diagnose_s', icon:'chart', family:'recap', beta:true,
+  'stage/recap/diagnose':    { title:'sc_diagnose', sub:'sc_diagnose_s', icon:'chart', family:'recap', beta:true,
     view:(c)=> <RsDiagnose c={c} /> },
-  'shack/log':               { classic:'log',       title:'sc_log',      sub:'sc_log_s',      icon:'list',  family:'power',
-    view:(c,go,openLog)=> <RsLogHistory c={c} openLog={openLog} /> },
+  'shack/log':               { title:'sc_log',      sub:'sc_log_s',      icon:'list',  family:'power',
+    view:(c,openLog)=> <RsLogHistory c={c} openLog={openLog} /> },
   'shack/batches':           { title:'batchesTitle', sub:'batchesSub',  icon:'jug',   family:'boil',
     view:(c)=> <RsBatches c={c} /> },
-  'shack/sap':               { classic:'sap',       title:'sc_sap',      sub:'sc_sap_s',      icon:'drop',  family:'power',
+  'shack/sap':               { title:'sc_sap',      sub:'sc_sap_s',      icon:'drop',  family:'power',
     view:(c)=> <RsSapCalc c={c} /> },
-  'shack/equipment':         { classic:'equip',     title:'sc_equip',    sub:'sc_equip_s',    icon:'wrench',family:'power',
+  'shack/equipment':         { title:'sc_equip',    sub:'sc_equip_s',    icon:'wrench',family:'power',
     view:(c)=> <RsEquipment c={c} /> },
-  'shack/checklists':        { classic:'tasks',     title:'sc_tasks',    sub:'sc_tasks_s',    icon:'check', family:'power',
+  'shack/checklists':        { title:'sc_tasks',    sub:'sc_tasks_s',    icon:'check', family:'power',
     view:(c)=> <RsChecklists c={c} /> },
-  'shack/guide':             { classic:'sugarsage', title:'sc_guide',    sub:'sc_guide_s',    icon:'book',  family:'power',
+  'shack/guide':             { title:'sc_guide',    sub:'sc_guide_s',    icon:'book',  family:'power',
     view:(c)=> <RsGuide c={c} /> },
   'shack/breakeven':         { title:'bevTitle',    sub:'bevSub',        icon:'calc',  family:'power',
     view:(c)=> <RsBreakeven c={c} /> },
@@ -181,11 +176,6 @@ const RS_STAGE_SCREENS = {
   boil:    ['stage/boil/evaporator', 'stage/boil/draw-off', 'stage/boil/de', 'stage/boil/finishing'],
   recap:   ['stage/recap/season', 'stage/recap/diagnose'],
 };
-// Classic tab id -> new home. Used by classic screens' go('boilpt') calls and by
-// the verification rig to prove all 18 classic screens are reachable.
-// Boil Day was rebuilt into the Boil stage screen itself (Phase 6).
-const CLASSIC_ROUTE = { today:'season', lines:'bush', boilday:'stage/boil' };
-Object.keys(RS_SCREENS).forEach(p => { if (RS_SCREENS[p].classic) CLASSIC_ROUTE[RS_SCREENS[p].classic] = p; });
 // Stage screens (Phase 6 replaces the Phase 4 hub lists).
 const RS_STAGE_VIEW = { weather:RsWeatherStage, tap:RsTapStage, lines:RsLinesStage, collect:RsCollectStage, boil:RsBoilStage, recap:RsRecapStage };
 

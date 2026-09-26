@@ -1,30 +1,46 @@
-// SweetRun Service Worker — v2
+// SweetRun Service Worker
 // Cache name: bump this string on every deploy to force all clients to update cleanly.
 // localStorage data is NEVER touched by this file — it is purely cache management.
 
-const CACHE      = 'sweetrun-v35';
+const CACHE      = 'sweetrun-v36';
 const TILE_CACHE = 'sweetrun-tiles-v1';   // kept separately — never auto-purged on app update
 
-// Core app shell — everything SweetRun needs to run fully offline
+// Everything SweetRun needs to run fully offline. v36 is the cutover build: the
+// Run Sheet UI is the only UI, so its header photos are precached too (they were
+// cached on first view while the classic UI was still the default). Activating
+// v36 deletes every older sweetrun-* cache, which drops the classic files
+// (the look flag script, the option D icons) from installed phones.
 const ASSETS = [
   '/app/',
   '/app/index.html',
   '/app/app.js',
-  '/app/icon-512.png',
-  // Run Sheet (redesign): look flag, tokens and the self-hosted Barlow faces.
-  // Fonts must be precached: without them the new look falls back to system type offline.
-  '/app/look.js',
   '/app/tokens.css',
   '/app/runsheet.css',
   '/app/manifest.webmanifest',
-  '/app/icons/icon-d-192.png',
-  '/app/icons/apple-touch-icon-d-180.png',
-  '/app/icons/favicon-d.svg',
+  '/app/icon-512.png',            // the in-app brand mark (RsBrandMark, notifications), unchanged
+  // Home screen and tab icons: option E (Damian's own)
+  '/app/icons/icon-e-192.png',
+  '/app/icons/icon-e-512.png',
+  '/app/icons/icon-e-512-maskable.png',
+  '/app/icons/apple-touch-icon-e-180.png',
+  '/app/icons/favicon-e-32.png',
+  '/app/icons/favicon-e-16.png',
+  // Self-hosted Barlow: without these the app falls back to system type offline
   '/app/fonts/barlow-latin-500-normal.woff2',
   '/app/fonts/barlow-latin-600-normal.woff2',
   '/app/fonts/barlow-latin-700-normal.woff2',
   '/app/fonts/barlow-latin-800-normal.woff2',
   '/app/fonts/barlow-semi-condensed-latin-700-normal.woff2',
+  // Header photos (one per stage, the greeting set, pumps, watch)
+  '/app/photos/bush-aerial.webp',
+  '/app/photos/evaporator-steam.webp',
+  '/app/photos/frost-morning.webp',
+  '/app/photos/hillside-panorama.webp',
+  '/app/photos/pumphouse.webp',
+  '/app/photos/sap-tank.webp',
+  '/app/photos/sugarhouse-dawn.webp',
+  '/app/photos/syrup-bottles.webp',
+  '/app/photos/tap-spout.webp',
   'https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
@@ -135,10 +151,9 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Run Sheet static assets (fonts, header photos, home screen icons): cache-first.
-  // Photos are NOT precached (about 840 KB that classic users would download for
-  // nothing); each one is cached the first time a screen shows it, then works offline.
-  // Replacing a photo means a new file name or a CACHE bump.
+  // Static assets (fonts, header photos, icons): cache-first. All are precached;
+  // this branch also catches any added later. Replacing a photo in place means a
+  // new file name or a CACHE bump.
   const isStatic = url.origin === self.location.origin
                 && /^\/app\/(fonts|photos|icons)\//.test(url.pathname);
 

@@ -20,10 +20,7 @@
 /app/app.js
   Cache-Control: public, max-age=0, must-revalidate
 
-# Run Sheet (redesign) shell files — revalidate like app.js so deploys land at once
-/app/look.js
-  Cache-Control: public, max-age=0, must-revalidate
-
+# Stylesheets and manifest: revalidate like app.js so deploys land at once
 /app/tokens.css
   Cache-Control: public, max-age=0, must-revalidate
 

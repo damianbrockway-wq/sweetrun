@@ -114,7 +114,7 @@ function RsRecapDetail({ c }) {
                 <div><div className="rs-meta">{rt(L, gap.gapMid > 0 ? 'gapGap' : 'gapSurplus')}</div><div className="rs-mid tn">{gap.gapMid > 0 ? srVol(gap.gapMid, c.units) : '+' + srVol(Math.abs(gap.gapLow), c.units)}<small>{u}</small></div></div>
               </div>
               <RsKv rows={[[rt(L,'gapBench'), `${srVol(gap.lo, c.units)} to ${srVol(gap.hi, c.units)} ${u}`]]} />
-              <p className="rs-meta tn">{rt(L,'gapBenchNote', { a: fmt(fromGal(D.model.low, c.units), 2), b: fmt(fromGal(D.model.high, c.units), 2), u, m: D.model.label })}</p>
+              <p className="rs-meta tn">{rt(L,'gapBenchNote', { a: fmt(fromGal(D.model.low, c.units), 2), b: fmt(fromGal(D.model.high, c.units), 2), u, m: D.model.label, na: fmt(fromGal(SR_YIELD_BAND.low, c.units), 2), nb: fmt(fromGal(SR_YIELD_BAND.high, c.units), 2) })}</p>
               {gap.gapMid > 0 && <RsBarRow label={rt(L,'gapYours')} value={`${srVol(f.syrupGal, c.units, 1)} / ${srVol(gap.hi, c.units)} ${u}`} pct={Math.min(100, f.syrupGal / gap.hi * 100)} />}
               {gap.gapMid > 2 && <div className="rs-split" style={{ marginTop:12, alignItems:'flex-end' }}><div><b>{rt(L,'gapCosts')}</b><div className="rs-meta">{rt(L,'gapAtPrice', { p: srMoney(srPerU(parseFloat(price) || 0, c.units), c.units === 'L' ? 2 : 0), u })}</div></div>
                 <div className="rs-big tn">{srMoney(gap.dollarGap)}</div></div>}
@@ -123,7 +123,7 @@ function RsRecapDetail({ c }) {
             </div>
             <h2 className="rs-sec">{rt(L,'gapCausesT')}</h2>
             <div className="rs-stack">{gap.causes.map(cz => <RsDisclose key={cz.id} tone={cz.sev} kicker={rt(L, 'sev_' + cz.sev)} title={rt(L, 'gc_' + cz.id)}
-              sub={rt(L, 'gc_' + cz.id + '_d', { u, y: fmt(fromGal(gap.ypp, c.units), 2), a: fmt(fromGal(D.model.low, c.units), 2), b: fmt(fromGal(D.model.high, c.units), 2), m: D.model.label, add: srVol(cz.add || 0, c.units), r: fmt(gap.actualRatio || 0, 0), p: fmt(100 - (gap.effPct || 0), 0), bx: fmt(D.brix, 1) })}>
+              sub={rt(L, 'gc_' + cz.id + '_d', { u, y: fmt(fromGal(gap.ypp, c.units), 2), a: fmt(fromGal(D.model.low, c.units), 2), b: fmt(fromGal(D.model.high, c.units), 2), m: D.model.label, na: fmt(fromGal(SR_YIELD_BAND.low, c.units), 2), nb: fmt(fromGal(SR_YIELD_BAND.high, c.units), 2), cw: rt(L, cz.cls === 'strong' ? 'ycStrong' : 'ycNormal'), add: srVol(cz.add || 0, c.units), r: fmt(gap.actualRatio || 0, 0), p: fmt(100 - (gap.effPct || 0), 0), bx: fmt(D.brix, 1) })}>
               <div className="rs-list">{cz.fixes.map(fx => <div key={fx} className="rs-row rs-fix"><span className="rs-rt"><b>{rt(L, 'fix_' + fx)}</b>
                 <span>{rt(L,'fixMeta', { c: SR_FIXES[fx].cost, t: SR_FIXES[fx].time })}</span></span><span className="rs-rv">{rt(L, 'imp_' + SR_FIXES[fx].impact)}</span></div>)}</div>
             </RsDisclose>)}</div>
@@ -147,7 +147,7 @@ function RsRecapDetail({ c }) {
 // Per-tap and per-gallon figures are computed in gallons and shown in the display unit.
 function srScoreSub(r, model, L, units) {
   const u = srU(units);
-  if (r.id === 'yield') return rt(L, 'srs_yield_' + r.band, { y: fmt(fromGal(r.ypp, units), 2), a: fmt(fromGal(model.low, units), 2), b: fmt(fromGal(model.high, units), 2), m: model.label, u });
+  if (r.id === 'yield') return rt(L, 'srs_yield_' + r.band, { y: fmt(fromGal(r.ypp, units), 2), a: fmt(fromGal(SR_YIELD_BAND.low, units), 2), b: fmt(fromGal(SR_YIELD_BAND.high, units), 2), m: model.label, u });
   if (r.id === 'eff') return rt(L, 'srs_eff', { a: fmt(r.ratio, 0), t: fmt(r.theory, 0) });
   if (r.id === 'fuel') return rt(L, 'srs_fuel', { f: srFine(srPerU(r.fr, units)), b: srFine(srPerU(r.bench, units)), fu: r.unit, w: rt(L, units === 'L' ? 'litreW' : 'gallonW') });
   return rt(L, 'srs_data', { n: r.pts });
@@ -234,8 +234,9 @@ function RsReplay({ c, D, onClose, onShare }) {
 }
 
 // ── Share card: 1200 x 630 PNG drawn on this device. The same four totals as
-// the classic card; Ember colours read from the tokens at draw time. Shared
+// the pre-cutover card; Ember colours read from the tokens at draw time. Shared
 // through the OS sheet when it takes files, otherwise downloaded. ────────────
+const SR_CARD_W = 1200, SR_CARD_H = 630;
 function srShareCardPng(c, D, op) {
   const L = c.lang, u = srU(c.units), f = D.f;
   const cv = document.createElement('canvas'); cv.width = SR_CARD_W; cv.height = SR_CARD_H;
@@ -327,7 +328,7 @@ function RsDiagnose({ c }) {
           {ins.length > 0 && <>
             <h2 className="rs-sec">{rt(L,'insT')}</h2>
             <div className="rs-stack">{ins.map(i => <RsDisclose key={i.id} tone={i.type === 'warn' ? 'medium' : i.type === 'ok' ? 'good' : 'low'} title={rt(L, 'ins_' + i.id)}
-              sub={rt(L, 'ins_' + i.id + '_b', { su: u, y: fmt(fromGal(i.v.ypp || 0, c.units), 2), lo: fmt(fromGal(0.25, c.units), 2), hi: fmt(fromGal(0.3, c.units), 2), r: fmt(i.v.ratio || 0, 0), e: i.v.eff, g: i.v.gapPct, bx: fmt(i.v.brix || 0, 1),
+              sub={rt(L, 'ins_' + i.id + '_b', { su: u, y: fmt(fromGal(i.v.ypp || 0, c.units), 2), lo: fmt(fromGal(SR_YIELD_BAND.low, c.units), 2), hi: fmt(fromGal(SR_YIELD_BAND.high, c.units), 2), n: fmt(fromGal(NASS_US_AVG, c.units), 2), r: fmt(i.v.ratio || 0, 0), e: i.v.eff, g: i.v.gapPct, bx: fmt(i.v.brix || 0, 1),
                 f: srFine(srPerU(i.v.fr || 0, c.units)), b: srFine(srPerU(i.v.bench || 0, c.units)), u: i.v.unit, w: rt(L, c.units === 'L' ? 'litreW' : 'gallonW'), p: i.v.pct })}>
               <p className="rs-body">{rt(L, 'ins_' + i.id + '_a')}</p></RsDisclose>)}</div>
           </>}

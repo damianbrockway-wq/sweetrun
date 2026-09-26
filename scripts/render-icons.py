@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""Render the Run Sheet home screen icon set from one square SVG.
+"""Render an ALTERNATE home screen icon set (options B or D) from its square SVG.
 
-    python3 scripts/render-icons.py            # option D (the live choice)
-    python3 scripts/render-icons.py B          # switch to option B
+The live icon is option E, Damian's own raster (scripts/render-icon-e.py).
+This script is kept so B or D can be rendered again if he switches back:
+
+    python3 scripts/render-icons.py D
+    python3 scripts/render-icons.py B
 
 Reads brand/icon-options/sweetrun-icon-<X>.svg and writes app/icons/:
   icon-<x>-192.png, icon-<x>-512.png, icon-<x>-512-maskable.png,
   apple-touch-icon-<x>-180.png, favicon-<x>-32.png, favicon-<x>.svg
 The option letter is in every file name so a switch never collides with a
 year-long immutable cache. After switching, update the file names in
-app/look.js and app/manifest.webmanifest, and bump CACHE in app/sw.js.
+app/index.html, app/manifest.webmanifest and the ASSETS list in app/sw.js,
+then bump CACHE in app/sw.js.
 
 Needs Python Playwright with Chromium (it renders the SVG exactly as a browser
 does). Both source SVGs are full-bleed squares with the leaf inside the central

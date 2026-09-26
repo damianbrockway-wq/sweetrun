@@ -30,8 +30,9 @@ const srArr = v => Array.isArray(v) ? v : [];
 const srObj = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
 const srIso = ms => new Date(ms).toISOString();
 const srUid = p => p + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);
-// The classic mainline palette, stored in sg_mainlines for classic's sake
-// (data, not UI colour: the new look draws lines white with a dash per line).
+// The mainline palette the pre-cutover app stored in sg_mainlines. Still written,
+// so the key keeps its {id,label,color} shape (data, not UI colour: lines are
+// drawn white with a dash per line).
 const SR_ML_STORED = ['#3b82f6','#8b5cf6','#ec4899','#f97316','#14b8a6','#eab308','#ef4444','#22c55e'];
 const SR_LINE_DASH = ['', '14 7', '1 7', '12 5 2 5'];   // A solid, B long dash, C dotted, D dash-dot
 
@@ -215,14 +216,12 @@ function srAddMainline(label) {
   if (!id) return null;
   const list = [...base, { id, label: label || 'Mainline ' + id, color: SR_ML_STORED[base.length % SR_ML_STORED.length] }];
   if (!srOpsSet('sg_mainlines', list)) return null;
-  try { if (typeof _ML_LIST !== 'undefined') _ML_LIST = null; } catch {}   // classic's cache re-reads next time
   return id;
 }
 function srRenameMainline(id, label) {
   const saved = srArr(ls.get('sg_mainlines', null)).filter(m => m && m.id);
   const base = saved.length ? saved : selMainlines(ls.get('sg_lines_pins', [])).map((m, i) => ({ ...m, color: SR_ML_STORED[i % SR_ML_STORED.length] }));
   const ok = srOpsSet('sg_mainlines', base.map(m => String(m.id) === id ? { id: String(m.id), label, color: m.color || SR_ML_STORED[0] } : { id: String(m.id), label: String(m.label || 'Mainline ' + m.id), color: m.color || SR_ML_STORED[0] }));
-  try { if (ok && typeof _ML_LIST !== 'undefined') _ML_LIST = null; } catch {}
   return ok;
 }
 // Tree pins: the same write classic's updatePinField does (whole array back to sg_lines_pins).

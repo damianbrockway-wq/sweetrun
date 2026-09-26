@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Run Sheet (redesign) pure-logic tests. Same approach as formulas.test.mjs:
 // evaluate the REAL shipped source, not a copy.
-//   - app/look.js: the look flag (hostname default, ?look= override, stored pref)
+//   - the cutover: one UI, icons, manifest and precache list
 //   - the formula band of the concatenated source: Run Sheet additions
 // Run: npm test (runs both test files).
 import { readFileSync } from 'node:fs';
@@ -15,37 +15,42 @@ function eq(name, got, want) {
   if (ok) pass++; else { fail++; console.error(`FAIL ${name}: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`); }
 }
 
-// ── Look flag (app/look.js) ──
-const lookSrc = readFileSync(join(ROOT, 'app', 'look.js'), 'utf8');
-const lookWin = {};                       // no document/location: logic only
-new Function('window', 'globalThis', lookSrc)(lookWin, lookWin);
-const L = lookWin.srLook;
-eq('look api present', typeof L.decide, 'function');
-// hostname defaults
-eq('prod apex is classic',  L.decide('sweetrun.app', '', null).look, 'classic');
-eq('prod www is classic',   L.decide('www.sweetrun.app', '', null).look, 'classic');
-eq('prod host case-folded', L.decide('SweetRun.App', '', null).look, 'classic');
-eq('prod trailing dot',     L.decide('sweetrun.app.', '', null).look, 'classic');
-eq('preview is new',        L.decide('redesign.sugarcalc.pages.dev', '', null).look, 'new');
-eq('commit preview is new', L.decide('1a2b3c4d.sugarcalc.pages.dev', '', null).look, 'new');
-eq('localhost is new',      L.decide('localhost', '', null).look, 'new');
-eq('lookalike host is new', L.decide('sweetrun.app.evil.dev', '', null).look, 'new');
-eq('sub of prod is new',    L.decide('beta.sweetrun.app', '', null).look, 'new');
-eq('no write by default',   L.decide('sweetrun.app', '', null).write, null);
-// query override wins and is persisted
-eq('?look=new on prod',        L.decide('sweetrun.app', '?look=new', null), { look:'new', write:'new', clear:false });
-eq('?look=classic on preview', L.decide('localhost', '?look=classic', null), { look:'classic', write:'classic', clear:false });
-eq('?look= among params',      L.decide('localhost', '?a=1&look=classic&b=2', null).look, 'classic');
-eq('?look= beats stored',      L.decide('localhost', '?look=classic', 'new').look, 'classic');
-eq('?look=NEW case',           L.decide('sweetrun.app', '?look=NEW', null).look, 'new');
-eq('?look=bogus ignored',      L.decide('sweetrun.app', '?look=bogus', null), { look:'classic', write:null, clear:false });
-eq('?looks=new not a match',   L.decide('sweetrun.app', '?looks=new', null).look, 'classic');
-eq('?look=auto clears',        L.decide('sweetrun.app', '?look=auto', 'new'), { look:'classic', write:null, clear:true });
-// stored preference
-eq('stored new on prod',       L.decide('sweetrun.app', '', 'new').look, 'new');
-eq('stored classic on preview',L.decide('localhost', '', 'classic').look, 'classic');
-eq('stored junk ignored',      L.decide('localhost', '', 'purple').look, 'new');
-eq('stored non-string ignored',L.decide('sweetrun.app', '', 42).look, 'classic');
+// ── Cutover: one UI everywhere (the look flag, hostname gate and ?look= are gone) ──
+const APP = f => readFileSync(join(ROOT, 'app', f), 'utf8');
+const { existsSync } = await import('node:fs');
+const idx = APP('index.html'), sw = APP('sw.js'), mf = JSON.parse(APP('manifest.webmanifest')), rcss = APP('runsheet.css');
+eq('no look.js file', existsSync(join(ROOT, 'app', 'look.js')), false);
+eq('index.html loads no look flag', /look\.js|srLook|data-look/.test(idx), false);
+eq('index.html carries no classic stylesheet', /<style|--c-bg|--c-brand/.test(idx), false);
+eq('index.html manifest is the file, not a data URI', /<link rel="manifest" href="\/app\/manifest\.webmanifest"/.test(idx), true);
+eq('index.html theme colour is Ember ground', /name="theme-color" content="#0C0B0A"/.test(idx), true);
+eq('runsheet.css has no data-look scope', rcss.includes('data-look'), false);
+eq('runsheet.css has no classic mount rules', rcss.includes('rs-classic'), false);
+eq('sw has no look.js', sw.includes('look.js'), false);
+eq('sw cache bumped past v35', +(/sweetrun-v(\d+)/.exec(sw) || [0, 0])[1] > 35, true);
+// Every icon the head and the manifest name exists, is precached, and is the size it claims (PNG IHDR).
+const pngSize = f => { const b = readFileSync(join(ROOT, f.replace(/^\//, ''))); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
+const iconRefs = [...idx.matchAll(/href="(\/app\/icons\/[^"]+)"/g)].map(m => m[1]).concat(mf.icons.map(i => i.src));
+eq('head names 3 icons and the manifest 3', iconRefs.length, 6);
+for (const ref of new Set(iconRefs)) {
+  eq(`icon exists ${ref}`, existsSync(join(ROOT, ref.slice(1))), true);
+  eq(`icon precached ${ref}`, sw.includes(`'${ref}'`), true);
+}
+for (const i of mf.icons) { const [w, h] = pngSize(i.src); eq(`manifest icon size ${i.src}`, `${w}x${h}`, i.sizes); }
+eq('manifest has a maskable icon', mf.icons.some(i => i.purpose === 'maskable'), true);
+eq('manifest id and scope unchanged', [mf.id, mf.start_url, mf.scope], ['/app/', '/app/', '/app/']);
+eq('apple touch icon 180', pngSize('/app/icons/apple-touch-icon-e-180.png'), [180, 180]);
+eq('favicon 16 is 16', pngSize('/app/icons/favicon-e-16.png'), [16, 16]);
+{ const { readdirSync: rd } = await import('node:fs');
+  for (const f of rd(join(ROOT, 'app', 'photos')).filter(f => f.endsWith('.webp'))) eq(`photo precached ${f}`, sw.includes(`'/app/photos/${f}'`), true);
+  for (const f of rd(join(ROOT, 'app', 'fonts')).filter(f => f.endsWith('.woff2'))) eq(`font precached ${f}`, sw.includes(`'/app/fonts/${f}'`), true); }
+{ const parts = JSON.parse(APP('src/parts.json'));
+  eq('no classic shell part', parts.some(p => /shell-classic/.test(p)), false);
+  const mount = APP('src/99-mount.jsx');
+  eq('mount renders only RunSheetApp', /<RunSheetApp \/>/.test(mount) && !/\bApp\b(?!ErrorBoundary)/.test(mount.replace(/RunSheetApp/g, '')), true);
+  const bundle = readFileSync(process.env.SWEETRUN_SRC || join(ROOT, 'app', 'src', '.bundle.jsx'), 'utf8');
+  eq('bundle has no classic App, LogTab, SettingsSheet or look flag', ['function App(', 'function LogTab(', 'function SettingsSheet(', 'srLook', 'function RsClassicScreen', 'CLASSIC_ROUTE'].filter(k => bundle.includes(k)), []);
+  eq('sg_look stays a preference key (old backups restore quietly)', /'sg_look'/.test(APP('src/10-storage.jsx')), true); }
 
 // ── Formula band: Run Sheet additions (greeting, routes) ──
 const SRC = process.env.SWEETRUN_SRC || join(ROOT, 'app', 'src', '.bundle.jsx');
@@ -303,7 +308,9 @@ eq('ro savings withheld when ro > sap', E2.srRoSavings(100, 200, 50, 23, false, 
 // yield gap
 const yg = E2.srYieldGap(1000, 20, 100, 2, E2.YIELD_MODELS.gravity, 40);
 eq('gap numbers', [yg.hi, yg.lo, yg.gapHigh, yg.gapLow, yg.gapMid, yg.dollarGap, yg.effPct], [45, 30, 25, 10, 17.5, 700, 86]);
-eq('gap causes', yg.causes.map(c => c.id), ['lowYield', 'evapMinor', 'considerRo']);
+// 0.20 gal a tap is the low edge of the one normal band (cutover): room to grow on gravity, not "low".
+eq('gap causes', yg.causes.map(c => c.id), ['belowAvg', 'evapMinor', 'considerRo']);
+eq('gap causes under the band', E2.srYieldGap(1000, 15, 100, 2, E2.YIELD_MODELS.gravity, 40).causes[0].id, 'lowYield');
 eq('gap good', E2.srYieldGap(900, 40, 100, 2, E2.YIELD_MODELS.gravity, 40).causes.map(c => c.id), ['good']);
 eq('gap withheld on suspect ratio', E2.srYieldGap(100, 20, 100, 2, E2.YIELD_MODELS.gravity, 40), null);
 // diagnose
@@ -511,9 +518,70 @@ eq('tile urls sat pairs imagery and labels', [tu.urls.length === tu.tiles * 2, t
 eq('tile urls topo only to z16', E3.srTileUrls(tb2, 17, 'topo').urls.every(u => /tile\/1[0-6]\//.test(u)), true);
 eq('tile urls cap', E3.srTileUrls({ north: 45, south: 44, west: -70, east: -69 }, 17, 'sat').tooMany, true);
 
+// ── Yield verdict: one benchmark (srYieldClass), every screen ──
+const Y = new Function('ls', src.slice(a, b) +
+  '\nreturn { srYieldClass, srSapYieldClass, SR_YIELD_BAND, NASS_US_AVG, srYieldGap, srInsights, srScoreRows, srDiagnose, seasonScore, YIELD_MODELS, FUELS, rule86 };')
+  ({ get: (_k, d) => d, set: () => true });
+eq('band is 0.20 to 0.45', Y.SR_YIELD_BAND, { low: 0.20, high: 0.45 });
+eq('yield class boundaries', [0.19, 0.1999, 0.20, 0.31, 0.33, 0.45, 0.4501, 0.7].map(Y.srYieldClass), ['low', 'low', 'normal', 'normal', 'normal', 'normal', 'strong', 'strong']);
+eq('yield class no data', [0, -1, NaN, null, undefined, Infinity, 'x'].map(Y.srYieldClass), [null, null, null, null, null, null, null]);
+eq('NASS US average is normal', Y.srYieldClass(Y.NASS_US_AVG), 'normal');
+eq('sap class at 2.0 Brix: 8 gal low, 18.2 normal, 20 strong', [8, 18.2, 20].map(v => Y.srSapYieldClass(v, 2.0)), ['low', 'normal', 'strong']);
+eq('sap class follows Brix: 10 gal at 3.0 is 0.347, at 1.5 is 0.174', [Y.srSapYieldClass(10, 3.0), Y.srSapYieldClass(10, 1.5)], ['normal', 'low']);
+// The reported contradiction: 0.31 gal a tap on mechanical vacuum. Every screen now agrees it is normal.
+{ const taps = 640, syr = 0.31 * taps, sap = syr * 43.2 * 1.05, vac = Y.YIELD_MODELS.vacuum;
+  const gap = Y.srYieldGap(sap, syr, taps, 2.0, vac, 45);
+  const ins = Y.srInsights(sap, syr, 0, 0, taps, 2.0, null, Y.FUELS[0]).find(i => /^yield/.test(i.id));
+  const sc = Y.seasonScore({ sapT: sap, syT: syr, fuelT: 0, taps, brix: 2.0, yieldModel: vac, fuelSpu: Y.FUELS[0].spu });
+  const row = Y.srScoreRows(sc, { brix: 2.0, model: vac, syrupGal: syr, taps, sapGal: sap, fuelT: 0 }).find(r => r.id === 'yield');
+  const slog = { sapCollected: [{ id: 1, date: '2027-03-10', val: 18.2 * taps }], syrupMade: [{ id: 2, date: '2027-03-10', val: syr }] };
+  const dx = Y.srDiagnose({ slog, units: 'GAL', sapBrix: 2.0, syrupPrice: 45, woodCost: 250, laborRate: 20, trees: taps, vacLevel: 'high' }).find(f => /^yield/.test(f.id));
+  eq('0.31 on vacuum: Recap yield gap has no "low" cause', gap.causes.some(c => c.id === 'lowYield'), false);
+  eq('0.31 on vacuum: Recap names room to grow as normal', gap.causes.find(c => c.id === 'belowAvg').cls, 'normal');
+  eq('0.31 on vacuum: Recap score row is inside the band', row.band, 'in');
+  eq('0.31 on vacuum: Diagnose insight is normal, not strong', ins.id, 'yieldAvg');
+  eq('18.2 gal sap a tap on high vacuum: Diagnose finding is ok, not low', dx.id, 'yieldOk');
+  eq('calculations unchanged: yield gap gallons still use the vacuum range', [Math.round(gap.lo), Math.round(gap.hi)], [Math.round(taps * 0.45), Math.round(taps * 0.70)]);
+  eq('calculations unchanged: yield score still against the vacuum middle', sc.yieldScore, Math.min(100, Math.round((syr / taps) / 0.575 * 100))); }
+eq('insight strong above the band', Y.srInsights(0, 50, 0, 0, 100, 2, null, Y.FUELS[0])[0].id, 'yieldStrong');
+eq('insight low under the band', Y.srInsights(0, 15, 0, 0, 100, 2, null, Y.FUELS[0])[0].id, 'yieldLow');
+{ const slog = { sapCollected: [{ id: 1, date: '2027-03-10', val: 600 }], syrupMade: [{ id: 2, date: '2027-03-10', val: 12 }] };
+  const f = Y.srDiagnose({ slog, units: 'GAL', sapBrix: 2.0, syrupPrice: 45, woodCost: 250, laborRate: 20, trees: 100, vacLevel: 'gravity' }).find(f => f.id === 'yield');
+  eq('Diagnose low sap: 6 gal a tap under 8.64', [f && f.id, f && +f.v.lo.toFixed(2), f && +f.v.hi.toFixed(2)], ['yield', 8.64, 19.44]); }
+
+// ── Boil readings (sg_boil_session.readings, optional) ──
+{ const B = new Function('ls', src.slice(a, b) + '\nreturn { srBoilAddReading, srBoilSeries };')({ get: (_k, d) => d, set: () => true });
+  const s0 = { start: 1000, sap: 40, syrup: 0, tempF: 211.4 };
+  eq('old session reads as no readings', B.srBoilSeries(s0), { temp: [], brix: [], lastBrix: null, lastBrixAt: null, lastTemp: 211.4, draws: 0 });
+  const s1 = B.srBoilAddReading(s0, { t: 2000, tempF: 217.26, brix: '' });
+  eq('reading keeps the old fields and sets tempF', [s1.start, s1.sap, s1.syrup, s1.tempF, s1.readings], [1000, 40, 0, 217.26, [{ t: 2000, tempF: 217.26 }]]);
+  const s2 = B.srBoilAddReading(s1, { t: 3000, tempF: 218.5, brix: 66.54, draw: 1.5 });
+  eq('draw adds to syrup and stores Brix', [s2.syrup, s2.readings[1]], [1.5, { t: 3000, tempF: 218.5, brix: 66.5, draw: 1.5 }]);
+  const s3 = B.srBoilAddReading(s2, { t: 2500, tempF: 218, brix: 0 });
+  eq('readings sorted by time, zero Brix dropped', s3.readings.map(r => [r.t, r.brix || null]), [[2000, null], [2500, null], [3000, 66.5]]);
+  eq('series', (({ temp, brix, lastBrix, lastBrixAt, draws }) => [temp.length, brix, lastBrix, lastBrixAt, draws])(B.srBoilSeries(s3)), [3, [{ ms: 3000, v: 66.5 }], 66.5, 3000, 1]);
+  eq('last temp is the newest reading, not the last typed', [B.srBoilSeries(s3).lastTemp, s3.tempF], [218.5, 218.5]);
+  eq('no session no change', B.srBoilAddReading(null, { t: 1, tempF: 1 }), null);
+  eq('bad temperature ignored', B.srBoilAddReading(s0, { t: 5, tempF: NaN }), s0); }
+
+// ── Strings: no key defined twice (Object.assign lets a later block silently replace an
+// earlier one; the cutover audit found three live screens showing another screen's string) ──
+{ const grab = i => { let d = 0; for (let j = i; j < src.length; j++) { const ch = src[j];
+      if (ch === "'" || ch === '"' || ch === '`') { const q = ch; j++; while (j < src.length && src[j] !== q) { if (src[j] === '\\') j++; j++; } continue; }
+      if (ch === '{') d++; else if (ch === '}' && !--d) return src.slice(i, j + 1); } return ''; };
+  const blocks = []; const re = /Object\.assign\(RS_TR\.(en|fr),\s*\{/g; let mm;
+  while ((mm = re.exec(src))) blocks.push([mm[1], grab(mm.index + mm[0].length - 1)]);
+  const T = grab(src.indexOf('{', src.indexOf('const RS_TR = {'))), fi = T.indexOf('\n  fr:');
+  blocks.push(['en', T.slice(0, fi)], ['fr', T.slice(fi)]);
+  const keysOf = b => [...b.replace(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|`[^`]*`/g, "''").matchAll(/[{,\s]([A-Za-z_$][\w$]*)\s*:/g)].map(x => x[1]);
+  for (const lang of ['en', 'fr']) { const seen = new Set(), dup = [];
+    for (const [l, b] of blocks) if (l === lang) for (const k of keysOf(b)) { if (seen.has(k) && k !== 'en' && k !== 'fr') dup.push(k); seen.add(k); }
+    eq(`no ${lang} string key defined twice`, dup, []);
+    eq(`${lang} strings parsed`, seen.size > (lang === 'en' ? 1500 : 200), true); } }
+
 // ── Token law: no hex colour literals in Run Sheet code (tokens.css is the only home) ──
 const { readdirSync } = await import('node:fs');
-const rsFiles = readdirSync(join(ROOT, 'app', 'src')).filter(f => /^(3[1-9]|5\d|6\d|8\d|9[1-8])-.*\.jsx$/.test(f) && f !== '90-shell-classic.jsx');
+const rsFiles = readdirSync(join(ROOT, 'app', 'src')).filter(f => /^(3[1-9]|5\d|6\d|8\d|9[1-8])-.*\.jsx$/.test(f) || f === '40-19-error-boundary.jsx');
 for (const f of [...rsFiles.map(f => join('app', 'src', f)), join('app', 'runsheet.css')]) {
   const code = readFileSync(join(ROOT, f), 'utf8').split('\n').filter(l => !/^\s*(\/\/|\/\*|\*)/.test(l)).join('\n');
   const hits = code.match(/#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b/g) || [];

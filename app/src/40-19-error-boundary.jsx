@@ -1,17 +1,20 @@
+// ─── Crash screen ──────────────────────────────────────────────────────────────
+// Shown only if a screen throws while rendering. Run Sheet tokens (.rs-crash in
+// runsheet.css); the error text stays so a screenshot of it can be debugged.
 class AppErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false, error: null }; }
   static getDerivedStateFromError(error) { return { hasError: true, error }; }
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding:20, background:'#1a0000', border:'2px solid #f85149', borderRadius:12, margin:20, color:'#ff6b6b' }}>
-          <h2 style={{ color:'#f85149', marginBottom:10, display:'flex', alignItems:'center', gap:8 }}><I.alert size={20} color="#f85149" /> App Error</h2>
-          <pre style={{ whiteSpace:'pre-wrap', fontSize:12, color:'#ccc' }}>{String(this.state.error)}</pre>
-          <pre style={{ whiteSpace:'pre-wrap', fontSize:13, color:'#888', marginTop:10 }}>{this.state.error?.stack}</pre>
+        <div className="rs-crash" role="alert">
+          <h1><RsIcon name="alert" size={26} sw={2.4} /> SweetRun hit a problem</h1>
+          <p>Your entries are safe on this device. Reload the app to carry on. If it happens again, send a screenshot of this screen.</p>
+          <button type="button" className="rs-btn" onClick={() => location.reload()}>Reload SweetRun</button>
+          <pre>{String(this.state.error)}{this.state.error && this.state.error.stack ? '\n\n' + this.state.error.stack : ''}</pre>
         </div>
       );
     }
     return this.props.children;
   }
 }
-
