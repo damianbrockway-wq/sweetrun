@@ -69,47 +69,6 @@ function rsWhen(d, lang) {
   return `${day} · ${time}`;
 }
 
-// ── Season (home) ─────────────────────────────────────────────────────────────
-function RsSeason({ c, go }) {
-  const L = c.lang;
-  const now = useRsNow();
-  const part = srDayPart(srMinutesOf(now));
-  return (
-    <>
-      <RsHero photo={SR_GREET_PHOTO[part]} />
-      <div className="rs-inner">
-        <header className="rs-phead">
-          <div className="rs-topbar">
-            <div className="rs-greet"><RsBrandMark /><span className="rs-gname" data-part={part}>{srGreeting(part, c.firstName, L)}</span></div>
-          </div>
-          <div className="rs-whenrow">
-            <span className="rs-when tn">{rsWhen(now, L)}</span>
-            <RsLicenseChip c={c} />
-          </div>
-          <div className="rs-eyebrow">{rt(L,'seasonN', { y:c.season })}</div>
-          <h1>{rt(L,'today')}</h1>
-        </header>
-        <RsBanners c={c} />
-        <section className="rs-card" aria-label={rt(L,'stages')}>
-          <div className="rs-eyebrow plain">{rt(L,'stages')}</div>
-          <div className="rs-spills">
-            {RS_STAGES.map(s => (
-              <a key={s.id} className="rs-sp" href={rsHref('stage/' + s.id)} style={{ textDecoration:'none' }}>
-                <RsTile icon={s.icon} family={s.family} size={36} />
-                <span>{rt(L, 'st_' + s.id + '_s')}</span>
-              </a>
-            ))}
-          </div>
-        </section>
-        <h2 className="rs-sec">{rt(L,'todayCard')}</h2>
-        <div className="rs-classic">
-          <TodayTab lang={c.lang} units={c.units} season={c.season} trees={c.trees} sapBrix={c.sapBrix} go={go} />
-          <RsNotifPrompt c={c} />
-        </div>
-      </div>
-    </>
-  );
-}
 // The classic run-alert permission prompt, carried over unchanged in behaviour.
 function RsNotifPrompt({ c }) {
   if (!('Notification' in window) || Notification.permission !== 'default' || !ls.get('sg_ddlat', null)) return null;
@@ -119,34 +78,6 @@ function RsNotifPrompt({ c }) {
       <span className="rs-bt"><b>{t(c.lang,'runAlertTitle')}</b><span>{t(c.lang,'runAlertDesc')}</span></span>
       <button type="button" className="rs-bbtn" onClick={()=>Notification.requestPermission()}>{t(c.lang,'enable')}</button>
     </div>
-  );
-}
-
-// ── Stage hub ─────────────────────────────────────────────────────────────────
-function RsStage({ c, id }) {
-  const L = c.lang;
-  const i = RS_STAGES.findIndex(s => s.id === id);
-  const st = RS_STAGES[i];
-  if (!st) return <RsNotFound c={c} />;
-  const rows = (RS_STAGE_SCREENS[id] || []).filter(p => p === '#bush' ? BETA_FEATURES : !(RS_SCREENS[p].beta && !BETA_FEATURES));
-  return (
-    <>
-      <RsHero photo={st.photo} />
-      <div className="rs-inner">
-        <header className="rs-phead">
-          <RsPushBar href={rsHref('season')} label={rt(L,'tabSeason')} />
-          <div className="rs-eyebrow">{rt(L,'stageOf', { n:i + 1 })}</div>
-          <h1 className="sm">{rt(L, 'st_' + id)}</h1>
-          <p className="rs-lede">{rt(L, 'st_' + id + '_l')}</p>
-        </header>
-        <RsBanners c={c} />
-        <div className="rs-list">
-          {rows.map(p => p === '#bush'
-            ? <RsRow key={p} icon="map" family="lines" title={rt(L,'sc_map')} sub={rt(L,'sc_map_s')} href={rsHref('bush')} />
-            : <RsRow key={p} icon={RS_SCREENS[p].icon} family={RS_SCREENS[p].family} title={rt(L, RS_SCREENS[p].title)} sub={rt(L, RS_SCREENS[p].sub)} href={rsHref(p)} />)}
-        </div>
-      </div>
-    </>
   );
 }
 
@@ -232,66 +163,8 @@ function RsWatch({ c }) {
   );
 }
 
-// ── Sugar Shack ───────────────────────────────────────────────────────────────
-function RsShack({ c }) {
-  const L = c.lang;
-  const row = p => <RsRow key={p} icon={RS_SCREENS[p].icon} family={RS_SCREENS[p].family}
-    title={rt(L, RS_SCREENS[p].title)} sub={rt(L, RS_SCREENS[p].sub)} href={rsHref(p)} />;
-  const s = c.lic.status;
-  const passTitle = s === 'licensed' ? rt(L,'pass_licensed') : s === 'expired' ? rt(L,'pass_expired')
-    : s === 'trial' ? rt(L,'pass_trial', { n:c.lic.daysLeft }) : rt(L,'pass_checking');
-  const [nameDraft, setNameDraft] = useState(c.firstName || '');
-  const toClassic = () => {
-    try { localStorage.setItem('sg_look', JSON.stringify('classic')); } catch {}
-    location.href = '/app/?look=classic';
-  };
-  return (
-    <div className="rs-inner">
-      <header className="rs-phead">
-        <h1>{rt(L,'shackTitle')}</h1>
-        <p className="rs-lede">{rt(L,'shackLede')}</p>
-      </header>
-      <RsBanners c={c} />
-      <div className="rs-cols three">
-        <div>
-          <h2 className="rs-sec">{rt(L,'secCalc')}</h2>
-          <div className="rs-list">
-            {['shack/sap','stage/boil/evaporator','stage/collect/ro','stage/boil/draw-off','stage/boil/finishing','stage/lines/tubing'].map(row)}
-          </div>
-        </div>
-        <div>
-          <h2 className="rs-sec">{rt(L,'secRecords')}</h2>
-          <div className="rs-list">{['shack/log','shack/equipment','shack/checklists'].map(row)}</div>
-          <h2 className="rs-sec">{rt(L,'secGuide')}</h2>
-          <div className="rs-list">{['shack/guide'].map(row)}</div>
-        </div>
-        <div>
-          <h2 className="rs-sec">{rt(L,'secPass')}</h2>
-          <div className="rs-list">
-            <RsRow icon="pass" family={s === 'expired' ? 'bad' : 'power'} title={passTitle} sub={rt(L,'pass_sub')} onClick={()=>c.setShowLicense(true)} />
-          </div>
-          <h2 className="rs-sec">{rt(L,'secSettings')}</h2>
-          <div className="rs-card" style={{ marginBottom:12 }}>
-            <label className="rs-fl" htmlFor="rs-first-name">{rt(L,'firstName')}</label>
-            <input id="rs-first-name" className="rs-field" type="text" autoComplete="given-name" maxLength={24}
-              value={nameDraft} onChange={e=>setNameDraft(e.target.value)} onBlur={()=>c.setFirstName(srGreetName(nameDraft))} />
-            <div className="rs-note">{rt(L,'firstNameHint')}</div>
-          </div>
-          <div className="rs-list">
-            <RsRow icon="gear" title={rt(L,'set_prefs')} sub={rt(L,'set_prefs_s')} onClick={()=>c.setShowSettings(true)} />
-            <RsRow icon="tree" family="tap" title={rt(L,'set_wizard')} sub={rt(L,'set_wizard_s')} onClick={()=>c.setShowWizard(true)} />
-            <RsRow icon="data" title={rt(L,'set_backup')} sub={rt(L,'set_backup_s')} onClick={()=>c.setShowBackup(true)} />
-            <RsRow icon="up" title={rt(L,'set_import')} sub={rt(L,'set_import_s')} href={rsHref('shack/log')} />
-            <RsRow icon="back" title={rt(L,'set_look')} sub={rt(L,'set_look_s')} onClick={toClassic} />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function RsNotFound({ c }) {
-  useEffect(() => { rsGo('season'); }, []);
+function RsNotFound({ c, to }) {
+  useEffect(() => { rsGo(to || 'season'); }, []);
   return null;
 }
 
@@ -330,13 +203,16 @@ function RunSheetApp() {
 
   // Classic screens navigate with classic tab ids (go('boilpt')); send them home.
   const go = React.useCallback(id => rsGo(CLASSIC_ROUTE[id] || 'season'), []);
-  // Log, from the tab bar or side nav: open Log history and ask LogTab for its
-  // entry sheet, exactly as the classic "Log a run" button does.
-  const onLog = () => {
-    const already = location.hash === rsHref('shack/log');
-    rsGo('shack/log');
-    setTimeout(() => window.dispatchEvent(new Event('sr-log-a-run')), already ? 0 : 150);
-  };
+  // Log, from the tab bar or side nav: the Run Sheet log sheet opens over the
+  // current screen on the kind used last (sg_log_last_kind), as LogTab's did.
+  const [logSheet, setLogSheet] = useState(null);
+  const openLog = React.useCallback(kind => setLogSheet({ kind: kind || ls.get('sg_log_last_kind', 'sapCollected'), n: Date.now() }), []);
+  const onLog = () => openLog(null);
+  useEffect(() => {
+    const h = () => openLog(null);
+    window.addEventListener('sr-log-a-run', h);
+    return () => window.removeEventListener('sr-log-a-run', h);
+  }, []);
   // Recap's ratio-check card jumps to the entry list.
   useEffect(() => {
     const h = () => rsGo('shack/log');
@@ -346,18 +222,22 @@ function RunSheetApp() {
   useEffect(() => { try { window.scrollTo(0, 0); } catch {} }, [path]);
 
   let view;
-  if (!seg.length || top === 'season') view = <RsSeason c={c} go={go} />;
-  else if (top === 'stage' && seg.length === 2) view = <RsStage c={c} id={seg[1]} />;
-  else if (RS_SCREENS[path] && !(RS_SCREENS[path].beta && !BETA_FEATURES)) view = <RsClassicScreen c={c} path={path} go={go} />;
+  const SV = top === 'stage' && seg.length === 2 ? RS_STAGE_VIEW[seg[1]] : null;
+  const sc = RS_SCREENS[path] && !(RS_SCREENS[path].beta && !BETA_FEATURES) ? RS_SCREENS[path] : null;
+  if (!seg.length || top === 'season') view = <RsSeason c={c} go={go} openLog={openLog} />;
+  else if (SV) view = <SV c={c} openLog={openLog} />;
+  else if (sc && sc.view) view = sc.view(c, go, openLog);
+  else if (sc) view = <RsClassicScreen c={c} path={path} go={go} />;
+  else if (path === 'stage/boil/day') view = <RsNotFound c={c} to="stage/boil" />;
   else if (path === 'bush') view = <RsBush c={c} />;
   else if (path === 'pumps') view = <RsPumps c={c} />;
   else if (path === 'watch') view = <RsWatch c={c} />;
   else if (path === 'shack') view = <RsShack c={c} />;
   else view = <RsNotFound c={c} />;
 
-  const hasHero = !seg.length || top === 'season' || (top === 'stage' && seg.length === 2) || path === 'pumps' || path === 'watch';
+  const hasHero = !seg.length || top === 'season' || !!SV || path === 'pumps' || path === 'watch';
   return (
-    <div className={`rs-app${hasHero ? ' rs-hashero' : ''}`} data-route={path || 'season'}>
+    <div className={`rs-app${hasHero ? ' rs-hashero' : ''}${path === 'stage/boil' ? ' rs-boilroute' : ''}`} data-route={path || 'season'}>
       <RsNav side active={active} lang={c.lang} onLog={onLog} />
       <main className="rs-main" key={path}>
         {(c.onboard || c.showWizard) && (
@@ -379,6 +259,8 @@ function RunSheetApp() {
         season={c.season} setSeason={c.setSeason} onWizard={()=>c.setShowWizard(true)}
         onBackup={()=>c.setShowBackup(true)} onClose={()=>c.setShowSettings(false)} />}
       {c.showBackup && <BackupModal onClose={()=>c.setShowBackup(false)} />}
+      {logSheet && <RsLogSheet key={logSheet.n} c={c} kind={logSheet.kind} onClose={() => setLogSheet(null)} />}
+      <RsToast />
       {c.showLicense && <LicenseModal lic={c.lic} onClose={()=>c.setShowLicense(false)}
         onLicenseSaved={p=>c.setLic({ status:'licensed', until:p.x })} />}
     </div>

@@ -68,6 +68,22 @@
   /* Drawn map ground */
   --rs-map-g: #12110E; --rs-map-c: #211E19; --rs-map-t: #A99F8F;
 
+
+  /* ── Phase 5-6: drawings (evaporator, tanks, charts), grades, sheets ── */
+  --rs-fire-a: #FFC061; --rs-fire-b: #D2492B;             /* firebox glow */
+  --rs-sap-lt: #8FC9E6; --rs-syrup-lt: #C9A45C;           /* flue pan gradient, sap to syrup */
+  --rs-steam: #E4EEF1; --rs-bubble: #EAF3F6;
+  --rs-ev-pan: #A39E97; --rs-ev-arch: #211E1A; --rs-ev-edge: #4A433B; --rs-ev-rib: #2B2621;
+  --rs-ev-door: #16130F; --rs-ev-door-edge: #5A5248; --rs-ev-valve: #B3AA9F;
+  --rs-tank-bg: #100E0C; --rs-tank-wall: #4A433B; --rs-tank-tick: #6B6258; --rs-tank-hi: #BFE3F5;
+  --rs-conc: #6FB0C9; --rs-conc2: #8A6A35;                /* concentrate tank fill */
+  --rs-hatch: #3B352F; --rs-strip-some: #4599C9; --rs-strip-none: #5A5248;
+  --rs-grade-1: #EDE3C8; --rs-grade-2: #E3B45E; --rs-grade-3: #A8712F; --rs-grade-4: #5E3A1C; --rs-grade-x: #6B6258;
+  /* Collection point colours: the exact values LogTab assigns (stored in sg_cpoints) */
+  --rs-pt-0: #ff7b54; --rs-pt-1: #a78bfa; --rs-pt-2: #f472b6; --rs-pt-3: #34d399; --rs-pt-4: #fbbf24; --rs-pt-5: #60a5fa;
+  --rs-scrim: rgba(4, 3, 2, .66); --rs-shadow: rgba(0, 0, 0, .45); --rs-on-ok: #06140C;
+  --rs-boilh: 900px;
+
   /* ── Type ───────────────────────────────────────────────────────── */
   --rs-f: 'Barlow', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --rs-fc: 'Barlow Semi Condensed', 'Barlow', system-ui, sans-serif;   /* tracked caps labels only */
@@ -95,6 +111,6 @@
   --rs-line: #221E1A; --rs-tx: #E2DCD4; --rs-dim: #A69D92; --rs-mute: #8E857B; --rs-acc: #C9742B;
 }
 
-@media (min-width: 760px)  { :root { --rs-heroh: 300px; } }
+@media (min-width: 760px)  { :root { --rs-heroh: 300px; --rs-boilh: 960px; } }
 @media (min-width: 1100px) { :root { --rs-nav: 0px; --rs-navw: 108px; --rs-heroh: 330px; } }
 @media (min-width: 1400px) { :root { --rs-navw: 236px; } }

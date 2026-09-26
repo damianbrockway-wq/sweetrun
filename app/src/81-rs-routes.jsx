@@ -143,27 +143,29 @@ const RS_SCREENS = {
   'stage/lines/tubing':      { classic:'tubing',    title:'sc_tubing',   sub:'sc_tubing_s',   icon:'map',   family:'lines',
     render:(c)=> <TubingTab trees={c.trees} /> },
   'stage/collect/ro':        { classic:'ro',        title:'sc_ro',       sub:'sc_ro_s',       icon:'ro',    family:'collect',
-    render:(c)=> <ROTab sapBrix={c.sapBrix} setSapBrix={c.setSapBrix} evapRate={c.evapRate} fuelType={c.fuelType} fuelCost={c.fuelCost} units={c.units} lang={c.lang} /> },
-  'stage/boil/day':          { classic:'boilday',   title:'sc_boilday',  sub:'sc_boilday_s',  icon:'flame', family:'boil',
-    render:(c,go)=> <BoilDayTab units={c.units} season={c.season} sapBrix={c.sapBrix} waterBP={c.waterBP} lang={c.lang} go={go} /> },
+    view:(c)=> <RsROPlanner c={c} /> },
   'stage/boil/evaporator':   { classic:'evap',      title:'sc_evap',     sub:'sc_evap_s',     icon:'flame', family:'boil',
     render:(c)=> <EvapTab sapBrix={c.sapBrix} setSapBrix={c.setSapBrix} units={c.units} setEvapRate={c.setEvapRate} fuelType={c.fuelType} setFuelType={c.setFuelType} fuelCost={c.fuelCost} setFuelCost={c.setFuelCost} season={c.season} trees={c.trees} lang={c.lang} /> },
   'stage/boil/finishing':    { classic:'finish',    title:'sc_finish',   sub:'sc_finish_s',   icon:'filter',family:'boil',
     render:(c)=> <FinishTab waterBP={c.waterBP} setWaterBP={c.setWaterBP} lang={c.lang} /> },
   'stage/boil/draw-off':     { classic:'boilpt',    title:'sc_boilpt',   sub:'sc_boilpt_s',   icon:'therm', family:'boil',
-    render:(c)=> <BoilPtTab waterBP={c.waterBP} setWaterBP={c.setWaterBP} lang={c.lang} /> },
+    view:(c)=> <RsDrawOff c={c} /> },
+  'stage/boil/de':           { title:'deCalc',     sub:'deCalcS',       icon:'filter',family:'boil',
+    view:(c)=> <RsDE c={c} /> },
   'stage/recap/season':      { classic:'recap',     title:'sc_recap',    sub:'sc_recap_s',    icon:'chart', family:'recap',
     render:(c)=> <RecapTab season={c.season} units={c.units} sapBrix={c.sapBrix} trees={c.trees} lang={c.lang} /> },
   'stage/recap/diagnose':    { classic:'diagnose',  title:'sc_diagnose', sub:'sc_diagnose_s', icon:'chart', family:'recap', beta:true,
     render:(c)=> <DiagnoseTab season={c.season} trees={c.trees} units={c.units} sapBrix={c.sapBrix} lang={c.lang} /> },
   'shack/log':               { classic:'log',       title:'sc_log',      sub:'sc_log_s',      icon:'list',  family:'power',
-    render:(c)=> <LogTab season={c.season} setSeason={c.setSeason} trees={c.trees} setTrees={c.setTrees} units={c.units} sapBrix={c.sapBrix} lang={c.lang} /> },
+    view:(c,go,openLog)=> <RsLogHistory c={c} openLog={openLog} /> },
+  'shack/batches':           { title:'batchesTitle', sub:'batchesSub',  icon:'jug',   family:'boil',
+    view:(c)=> <RsBatches c={c} /> },
   'shack/sap':               { classic:'sap',       title:'sc_sap',      sub:'sc_sap_s',      icon:'drop',  family:'power',
-    render:(c)=> <SapTab sapBrix={c.sapBrix} setSapBrix={c.setSapBrix} trees={c.trees} units={c.units} lang={c.lang} /> },
+    view:(c)=> <RsSapCalc c={c} /> },
   'shack/equipment':         { classic:'equip',     title:'sc_equip',    sub:'sc_equip_s',    icon:'wrench',family:'power',
-    render:(c)=> <EquipTab lang={c.lang} /> },
+    view:(c)=> <RsEquipment c={c} /> },
   'shack/checklists':        { classic:'tasks',     title:'sc_tasks',    sub:'sc_tasks_s',    icon:'check', family:'power',
-    render:(c)=> <TasksTab season={c.season} lang={c.lang} /> },
+    view:(c)=> <RsChecklists c={c} /> },
   'shack/guide':             { classic:'sugarsage', title:'sc_guide',    sub:'sc_guide_s',    icon:'book',  family:'power',
     render:(c)=> <SugarSageTab season={c.season} sapBrix={c.sapBrix} trees={c.trees} units={c.units} /> },
 };
@@ -173,13 +175,16 @@ const RS_STAGE_SCREENS = {
   tap:     ['stage/tap/guide'],
   lines:   ['#bush', 'stage/lines/tubing'],
   collect: ['stage/collect/ro', 'shack/log'],
-  boil:    ['stage/boil/day', 'stage/boil/evaporator', 'stage/boil/draw-off', 'stage/boil/finishing'],
+  boil:    ['stage/boil/evaporator', 'stage/boil/draw-off', 'stage/boil/de', 'stage/boil/finishing'],
   recap:   ['stage/recap/season', 'stage/recap/diagnose'],
 };
 // Classic tab id -> new home. Used by classic screens' go('boilpt') calls and by
 // the verification rig to prove all 18 classic screens are reachable.
-const CLASSIC_ROUTE = { today:'season', lines:'bush' };
-Object.keys(RS_SCREENS).forEach(p => { CLASSIC_ROUTE[RS_SCREENS[p].classic] = p; });
+// Boil Day was rebuilt into the Boil stage screen itself (Phase 6).
+const CLASSIC_ROUTE = { today:'season', lines:'bush', boilday:'stage/boil' };
+Object.keys(RS_SCREENS).forEach(p => { if (RS_SCREENS[p].classic) CLASSIC_ROUTE[RS_SCREENS[p].classic] = p; });
+// Stage screens (Phase 6 replaces the Phase 4 hub lists).
+const RS_STAGE_VIEW = { weather:RsWeatherStage, tap:RsTapStage, lines:RsLinesStage, collect:RsCollectStage, boil:RsBoilStage, recap:RsRecapStage };
 
 function rsHref(path) { return '#/' + path; }
 function rsGo(path) { const h = rsHref(path); if (location.hash !== h) location.hash = h; }
