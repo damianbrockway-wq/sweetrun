@@ -381,6 +381,7 @@ function RsBoilLive({ c, sess, now, est, rate, state, stateWord, finT, onRead, o
         <span className="rs-blst"><b>{rt(L,'boilLive')}</b><span className="tn">{rt(L,'boilStartedAt', { t: srClock(sess.start, L) })}</span></span>
         <span className="rs-bltimer tn" role="timer" aria-label={rt(L,'boilClockAria', { d: srHms(hrs) })}>{srHms(hrs)}</span>
       </div>
+      <div className="rs-blevap"><RsEvap on lang={L} /></div>
       <div className="rs-blgrid">
         <div className="rs-blstat"><span className="rs-nl">{rt(L,'panTemp')}</span>
           <span className="rs-nv tn">{fmt(srTempD(tNow, c.units), 1)}<small>{uT}</small></span>
