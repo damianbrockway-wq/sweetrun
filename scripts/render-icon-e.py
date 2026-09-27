@@ -12,6 +12,9 @@ for iOS masking. Writes app/icons/:
                                             linear slope), feathered at the seam
   apple-touch-icon-e-180.png                iOS home screen
   favicon-e-32.png                          browser tab (the glossy tile reads at 32)
+  mark-e-<size>@<n>x.png                    the in-app brand mark (side nav, greeting,
+                                            Watch header) at its exact CSS size, 30 px,
+                                            1x to 3x, so the browser never resamples it
   favicon-e-16.png                          flat version: at 16 px the gloss and glow
                                             blur the outline into mush, so this one is
                                             the leaf outline, thickened, white on a
@@ -36,6 +39,11 @@ def save(img, name, size):
 for name, size in [('icon-e-512.png', 512), ('icon-e-192.png', 192), ('apple-touch-icon-e-180.png', 180),
                    ('favicon-e-32.png', 32)]:
     save(src, name, size)
+
+# In-app brand mark: exact pixel sizes for RsBrandMark (30 px and 34 px CSS).
+for css in (30,):
+    for n in (1, 2, 3):
+        save(src, f'mark-e-{css}@{n}x.png', css * n)
 
 # ── Leaf mask (shared by the flat favicon and the maskable) ──
 mx, mn = A.max(-1), A.min(-1)

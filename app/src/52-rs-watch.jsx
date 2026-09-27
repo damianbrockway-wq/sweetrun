@@ -108,7 +108,7 @@ function RsWatch({ c, sub }) {
   return (
     <div className={`rs-watch${V.stale ? ' stale' : ''}${demo ? ' demo' : ''}`}>
       <header className="rs-wh">
-        <div className="rs-whb"><RsBrandMark size={34} /><b>SweetRun</b><span className="rs-wtitle">{rt(L, 'wTitle')}</span></div>
+        <div className="rs-whb"><RsBrandMark /><b>SweetRun</b><span className="rs-wtitle">{rt(L, 'wTitle')}</span></div>
         <div className="rs-whr">
           {demo ? <button type="button" className="rs-srcpill demo" onClick={() => setDemo(false)} id="rs-demo-off" aria-label={rt(L, 'wDemoPill') + '. ' + rt(L, 'wDemoOff')}>
               {rt(L, 'wDemoPill')}<span className="rs-pillx"><RsIcon name="x" size={16} />{rt(L, 'wDemoOff')}</span></button>

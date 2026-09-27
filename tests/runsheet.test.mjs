@@ -41,6 +41,12 @@ eq('manifest has a maskable icon', mf.icons.some(i => i.purpose === 'maskable'),
 eq('manifest id and scope unchanged', [mf.id, mf.start_url, mf.scope], ['/app/', '/app/', '/app/']);
 eq('apple touch icon 180', pngSize('/app/icons/apple-touch-icon-e-180.png'), [180, 180]);
 eq('favicon 16 is 16', pngSize('/app/icons/favicon-e-16.png'), [16, 16]);
+// In-app brand mark: option E at exact sizes, precached; the Amber Glass image is gone from the app.
+for (const css of [30]) for (const n of [1, 2, 3]) {
+  const f = `/app/icons/mark-e-${css}@${n}x.png`;
+  eq(`brand mark ${css}@${n}x size`, pngSize(f), [css * n, css * n]);
+  eq(`brand mark ${css}@${n}x precached`, sw.includes(`'${f}'`), true); }
+eq('no Amber Glass icon in the app', [existsSync(join(ROOT, 'app', 'icon-512.png')), /\/app\/icon-512\.png|'\.\/icon-512\.png'/.test(sw + idx + readFileSync(process.env.SWEETRUN_SRC || join(ROOT, 'app', 'src', '.bundle.jsx'), 'utf8'))], [false, false]);
 { const { readdirSync: rd } = await import('node:fs');
   for (const f of rd(join(ROOT, 'app', 'photos')).filter(f => f.endsWith('.webp'))) eq(`photo precached ${f}`, sw.includes(`'/app/photos/${f}'`), true);
   for (const f of rd(join(ROOT, 'app', 'fonts')).filter(f => f.endsWith('.woff2'))) eq(`font precached ${f}`, sw.includes(`'/app/fonts/${f}'`), true); }

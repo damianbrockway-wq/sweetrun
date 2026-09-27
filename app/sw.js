@@ -9,7 +9,7 @@ const TILE_CACHE = 'sweetrun-tiles-v1';   // kept separately — never auto-purg
 // Run Sheet UI is the only UI, so its header photos are precached too (they were
 // cached on first view while the classic UI was still the default). Activating
 // v36 deletes every older sweetrun-* cache, which drops the classic files
-// (the look flag script, the option D icons) from installed phones.
+// (the look flag script, the option D icons, the old Amber Glass mark) from installed phones.
 const ASSETS = [
   '/app/',
   '/app/index.html',
@@ -17,7 +17,6 @@ const ASSETS = [
   '/app/tokens.css',
   '/app/runsheet.css',
   '/app/manifest.webmanifest',
-  '/app/icon-512.png',            // the in-app brand mark (RsBrandMark, notifications), unchanged
   // Home screen and tab icons: option E (Damian's own)
   '/app/icons/icon-e-192.png',
   '/app/icons/icon-e-512.png',
@@ -25,6 +24,8 @@ const ASSETS = [
   '/app/icons/apple-touch-icon-e-180.png',
   '/app/icons/favicon-e-32.png',
   '/app/icons/favicon-e-16.png',
+  // In-app brand mark (side nav, greeting, Watch header) at exact sizes
+  '/app/icons/mark-e-30@1x.png', '/app/icons/mark-e-30@2x.png', '/app/icons/mark-e-30@3x.png',
   // Self-hosted Barlow: without these the app falls back to system type offline
   '/app/fonts/barlow-latin-500-normal.woff2',
   '/app/fonts/barlow-latin-600-normal.woff2',

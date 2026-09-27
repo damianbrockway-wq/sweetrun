@@ -54,9 +54,12 @@ function RsTile({ icon, family = 'power', size = 40 }) {
     </span>
   );
 }
-// The in-app brand mark: the live SweetRun app icon, unchanged (precached).
-function RsBrandMark({ size = 30 }) {
-  return <img className="rs-brandmark" src="/app/icon-512.png" width={size} height={size} alt="" />;
+// The in-app brand mark: the home screen icon (option E), rendered at its exact
+// CSS size (30 px, .rs-brandmark) for 1x, 2x and 3x screens by
+// scripts/render-icon-e.py, so the browser never resamples it.
+function RsBrandMark() {
+  const f = n => `/app/icons/mark-e-30@${n}x.png`;
+  return <img className="rs-brandmark" src={f(1)} srcSet={`${f(1)} 1x, ${f(2)} 2x, ${f(3)} 3x`} width={30} height={30} alt="" />;
 }
 // A tappable list row. `href` rows are links (hash routes); `onClick` rows are buttons.
 function RsRow({ icon, family, title, sub, value, href, onClick, chev = true }) {
