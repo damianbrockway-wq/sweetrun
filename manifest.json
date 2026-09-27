@@ -1,12 +1,12 @@
 {
   "name": "SweetRun",
   "short_name": "SweetRun",
-  "description": "The complete maple production platform — map your sugarbush, forecast sap runs, track every gallon.",
+  "description": "Maple production for sugarmakers: plan and tap, map your bush, watch your lines and pumps, track every gallon.",
   "start_url": "/app/",
   "scope": "/app/",
   "display": "standalone",
-  "background_color": "#07090f",
-  "theme_color": "#07090f",
+  "background_color": "#0C0B0A",
+  "theme_color": "#0C0B0A",
   "orientation": "portrait-primary",
   "icons": [
     {
