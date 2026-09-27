@@ -19,6 +19,8 @@ async function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix })
   try { await srLoadJsPDF(); }
   catch { alert(t(ls.get('sg_lang','en'),'pdfOffline')); return; }
   const { jsPDF } = window.jspdf;
+  const loc0 = SR_NUM_LOC; SR_NUM_LOC = 'en-US';   // the report is English
+  try {
   const doc = new jsPDF({ unit:'mm', format:'a4' });
   const u = units === 'L' ? 'L' : 'gal';
   const conv = v => units === 'L' ? (v*3.78541).toFixed(1) : v.toFixed(1);
@@ -143,6 +145,7 @@ async function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix })
   doc.text(`sugarcalc.netlify.app`, W-M, 287, { align:'right' });
 
   doc.save(`SweetRun-Season-${season}.pdf`);
+  } finally { SR_NUM_LOC = loc0; }
 }
 
 

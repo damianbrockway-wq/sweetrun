@@ -189,7 +189,7 @@ function RsEquipment({ c }) {
   const [lift, setLift] = useState(() => P('sg_pump_lift', 0));
   const [setup, setSetup] = useState(() => P('sg_pump_setup', 4));
   const sv = (k, set, d) => x => { set(x); ls.set(k, x === '' ? d : x); };
-  const sapT = seasonTotals((ls.get('sg_logs2', {}) || {})[c.season] || {}).sapT;
+  const sapT = React.useMemo(() => seasonTotals((ls.get('sg_logs2', {}) || {})[c.season] || {}).sapT, [v, c.season]);
   const tt = srTransferTime(parseFloat(gpm) || 28, parseFloat(tank) || 300, parseFloat(line) || 0, parseFloat(lift) || 0, parseFloat(setup) || 0, toGal(sapT, c.units));
   const del = i => { if (armed !== i) { setArmed(i); srToast(rt(L,'tapAgainDelete')); return; } if (ls.set('sg_equip2', items.filter((_, j) => j !== i))) { setArmed(null); srDataChanged(); } };
   const cond = x => x === 'Good' ? 'ok' : x === 'Poor' ? 'fault' : 'check';

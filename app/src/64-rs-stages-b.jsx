@@ -214,7 +214,7 @@ function RsROPlanner({ c }) {
           <div className="rs-card">
             <RsKv big rows={[
               [rt(L,'boilSaved'), rate > 0 && ok ? srDur(saved, L) : rt(L,'setPanFirst')],
-              [rt(L,'fuelSavedW'), rate > 0 && ok ? `${fmt(fSaved, 1)} ${L === 'fr' ? fuel.unitFr : fuel.unit} ${fuelLabel(fuel, L).replace(/ \(.*\)/, '').toLowerCase()} · $${fmt(mSaved, 0)}` : ''],
+              [rt(L,'fuelSavedW'), rate > 0 && ok ? `${fmt(fSaved, 1)} ${L === 'fr' ? fuel.unitFr : fuel.unit} ${fuelLabel(fuel, L).replace(/ \(.*\)/, '').toLowerCase()} · ${srMoney(mSaved, 0)}` : ''],
               [rt(L,'evapRate'), rate > 0 ? `${fmt(fromGal(rate, c.units), 0)} ${u}/h` : ''],
             ]} />
             <p className="rs-note">{rt(L,'roSavesNote', { c: fmt(parseFloat(c.fuelCost) || 0, 2), f: fuel.unit })}</p>
@@ -396,6 +396,15 @@ function RsBoilLive({ c, sess, now, est, rate, state, stateWord, finT, onRead, o
           <span className="rs-nv tn"><span id="rs-syrup-now">{srVol(est, c.units, 2)}</span><small>{u}</small></span>
           <span className="rs-bls tn">{rate > 0 ? rt(L,'perHour', { v: srVol(rate, c.units, 1), u }) : rt(L,'setPanFirst')}</span></div>
       </div>
+      {/* The actions sit above the chart: while boiling, Add a reading is the screen's job, and
+          under the chart it fell below the fold at 390x844, 1180x820 and 1440x900. */}
+      <div className="rs-blacts">
+        <RsBtn icon="plus" onClick={onRead} id="rs-boil-read">{rt(L,'addReading')}</RsBtn>
+        <div className="rs-btnrow">
+          <RsBtn kind="secondary" icon="jug" onClick={onDraw} id="rs-boil-draw">{rt(L,'drawOffBtn')}</RsBtn>
+          <RsBtn kind="secondary" onClick={onEnd} id="rs-boil-end">{rt(L,'endBoil')}</RsBtn>
+        </div>
+      </div>
       <div className="rs-blchart">
         <div className="rs-split rs-blchead"><h2>{rt(L,'readingsT')}</h2>
           <RsSeg label={rt(L,'readingsT')} value={ser} onChange={setSer} options={[['temp', rt(L,'segTemp')], ['brix', rt(L,'segBrix')]]} /></div>
@@ -406,13 +415,6 @@ function RsBoilLive({ c, sess, now, est, rate, state, stateWord, finT, onRead, o
           : <RsBoilChart pts={S.brix} from={sess.start} to={Math.max(now, ...S.brix.map(p => p.ms))} dp={1}
               band={[66, 67]} bandL={rt(L,'syrupBandL')} unit={rt(L,'brixU')} lang={L}
               h={136} empty={rt(L,'chartEmptyB')} label={rt(L,'chartBrixAria', { n: S.brix.length })} />}
-      </div>
-      <div className="rs-blacts">
-        <RsBtn icon="plus" onClick={onRead} id="rs-boil-read">{rt(L,'addReading')}</RsBtn>
-        <div className="rs-btnrow">
-          <RsBtn kind="secondary" icon="jug" onClick={onDraw} id="rs-boil-draw">{rt(L,'drawOffBtn')}</RsBtn>
-          <RsBtn kind="secondary" onClick={onEnd} id="rs-boil-end">{rt(L,'endBoil')}</RsBtn>
-        </div>
       </div>
       <div className="rs-counters rs-blsap"><RsCounter label={rt(L,'sapIn')} value={fmt(sess.sap || 0, 0)} unit={u} steps={[1, 5, 10]} onAdd={onSap} /></div>
       <RsJugs gal={fromGal(est, c.units)} label={rt(L,'jugsAria', { v: srVol(est, c.units, 1), u })} />
@@ -447,7 +449,7 @@ function RsBoilChart({ pts, from, to, refV, refL, band, bandL, dp = 1, unit, lan
   return (
     <div ref={ref} className="rs-chartwrap rs-blc">
       <svg className="rs-chart" width={W} height={h} viewBox={`0 0 ${W} ${h}`} role="img" aria-label={label}>
-        {ticks.map(t => <g key={t}><line x1={pl} x2={W - pr} y1={Y(t)} y2={Y(t)} className="rs-grid" /><text x={pl - 6} y={Y(t) + 5} textAnchor="end" className="rs-ct">{t}</text></g>)}
+        {ticks.map(t => <g key={t}><line x1={pl} x2={W - pr} y1={Y(t)} y2={Y(t)} className="rs-grid" /><text x={pl - 6} y={Y(t) + 5} textAnchor="end" className="rs-ct">{srNumIn(t)}</text></g>)}
         {band && <g><rect x={pl} width={iw} y={Y(band[1])} height={Math.max(2, Y(band[0]) - Y(band[1]))} className="rs-blband" />
           <text x={refX} y={Y(band[1]) - 6} textAnchor={refA} className="rs-ct strong">{bandL}</text></g>}
         {refV != null && <g><line x1={pl} x2={W - pr} y1={Y(refV)} y2={Y(refV)} className="rs-refl" />
@@ -634,7 +636,7 @@ function RsDrawOff({ c }) {
             <RsStepper id="rs-alt" value={alt} onChange={useAlt} steps={[-100, 100]} dp={0} unit="ft" label={rt(L,'altitudeFt')} min={0} max={15000} big={false} />
           </div>
           <div className="rs-list" style={{ marginTop:12 }}>
-            {ALT_REF.map(r => <RsRow key={r.alt} chev={false} title={r.alt.replace(/ ft$/, ' ' + srUnitL('ft', L))} value={rt(L,'altRow', { bp: fmt(r.bp, 1), fin: fmt(r.fin, 1) })} />)}
+            {ALT_REF.map(r => <RsRow key={r.alt} chev={false} title={(L === 'fr' ? r.alt.replace(/,/g, '\u00a0') : r.alt).replace(/ ft$/, ' ' + srUnitL('ft', L))} value={rt(L,'altRow', { bp: fmt(r.bp, 1), fin: fmt(r.fin, 1) })} />)}
           </div>
         </div>
         <div>

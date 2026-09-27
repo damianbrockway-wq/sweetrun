@@ -19,6 +19,12 @@ function useSrDataVersion() {
   return v;
 }
 
+// sg_logs2 for a screen: parsed once per data change (a Run Sheet write or another
+// tab's storage event), not on every render. Each screen keeps its own parse, so no
+// screen can see an object another screen changed (the bundle is not strict mode,
+// where a shared frozen copy would drop a stray write silently).
+function useSrLogs() { const v = useSrDataVersion(); return React.useMemo(() => ls.get('sg_logs2', {}) || {}, [v]); }
+
 // Everything the Season screen and the stage screens read, in one pass.
 function selSeason(season) {
   const logs = ls.get('sg_logs2', {}) || {};

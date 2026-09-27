@@ -126,7 +126,7 @@ function srFactorRows(d, L) {
     [n('fSwing'), `${sw}°F · ${n(sw >= 25 ? 'fExcellent' : sw >= 18 ? 'fGood' : 'fLimited')}`],
     [n('fWind'),  `${d.windMph} mph · ${n(d.windMph <= 10 ? 'fCalm' : d.windMph <= 20 ? 'fLightWind' : 'fCutsFlow')}`],
     [n('fRain'),  `${d.precipIn} ${srUnitL('in', L)} · ${n(d.precipIn < 0.05 ? 'fDry' : d.precipIn < 0.2 ? 'fLightRain' : 'fHeavyRain')}`],
-    [n('fSun'),   `${sunH.toFixed(1)} h · ${n(sunH >= 7 ? 'fSunny' : sunH >= 4 ? 'fPartSun' : 'fOvercast')}`],
+    [n('fSun'),   `${fmt(sunH, 1)} h · ${n(sunH >= 7 ? 'fSunny' : sunH >= 4 ? 'fPartSun' : 'fOvercast')}`],
   ];
 }
 // Freeze-thaw ribbon: highs and lows as two lines, the 32°F line, run days
@@ -149,10 +149,10 @@ function RsRibbon({ days, lang, dayName }) {
         {days.map((d, i) => <g key={'p' + i}><circle cx={X(i)} cy={Y(d.hiF)} r="3" style={{ fill:T.acc }} /><circle cx={X(i)} cy={Y(d.loF)} r="3" style={{ fill:T.ice }} /></g>)}
         {days.map((d, i) => <text key={'t' + i} x={X(i)} y={H - 4} textAnchor="middle" className="rs-ct">{d.i === 0 ? rt(lang,'todayShort') : dayName(d).slice(0, 3)}</text>)}
       </svg>
-      <RsDataTable caption={rt(lang,'ribbonAria', { n: days.filter(d => d.hiF >= 40 && d.loF <= 28).length })} head={['', rt(lang,'lgHigh'), rt(lang,'lgLow')]}
-        rows={days.map(d => [dayName(d), fmt(d.hiF, 0) + '°F', fmt(d.loF, 0) + '°F'])} />
       <div className="rs-legend"><span><i className="lg" style={{ background:T.acc }} />{rt(lang,'lgHigh')}</span><span><i className="lg" style={{ background:T.ice }} />{rt(lang,'lgLow')}</span>
         <span><i className="lg" style={{ background:T.accSoft, outline:`1px solid ${T.acc}` }} />{rt(lang,'lgRunDay')}</span></div>
+      <RsDataTable caption={rt(lang,'ribbonAria', { n: days.filter(d => d.hiF >= 40 && d.loF <= 28).length })} head={['', rt(lang,'lgHigh'), rt(lang,'lgLow')]}
+        rows={days.map(d => [dayName(d), fmt(d.hiF, 0) + '°F', fmt(d.loF, 0) + '°F'])} />
     </div>
   );
 }
@@ -186,7 +186,7 @@ function RsDegreeDays({ c }) {
   useEffect(() => { if (armed == null) return; const tm = setTimeout(() => setArmed(null), 3000); return () => clearTimeout(tm); }, [armed]);
   const setStart = s => { setStartS(s); ls.set('sg_ddstart', s); };
   const setPlace = (la, lo, name) => { ls.set('sg_ddlat', la); ls.set('sg_ddlon', lo); ls.set('sg_ddloc', name); };
-  const slog = ((ls.get('sg_logs2', {}) || {})[c.season]) || {};
+  const slog = React.useMemo(() => ((ls.get('sg_logs2', {}) || {})[c.season]) || {}, [v, c.season]);
   const firstSap = srFirstIso(slog.sapCollected);
   useEffect(() => {
     if (!place || !start) { setSt({ status:'idle', d:null, err:'' }); return; }

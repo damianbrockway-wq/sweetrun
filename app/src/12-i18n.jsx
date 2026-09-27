@@ -1,5 +1,9 @@
 // ─── Formatters ──────────────────────────────────────────────────────────────
-const fmt  = (n, d = 1) => isNaN(n) || !isFinite(n) ? '—' : Number(n).toLocaleString('en-US', { minimumFractionDigits:d, maximumFractionDigits:d });
+// Numbers follow the app's language: en-US "1,000.5", fr-CA "1 000,5" (no-break space).
+// The shell sets SR_NUM_LOC while it renders (80-rs-core); input parsing (srParseNum)
+// reads both. The PDF report is English and formats in en-US.
+let SR_NUM_LOC = 'en-US';
+const fmt  = (n, d = 1) => isNaN(n) || !isFinite(n) ? '—' : Number(n).toLocaleString(SR_NUM_LOC, { minimumFractionDigits:d, maximumFractionDigits:d });
 const DAY  = { en:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], fr:['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'] };
 const MON  = { en:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
                fr:['janv.','févr.','mars','avr.','mai','juin','juill.','août','sept.','oct.','nov.','déc.'] };   // fr-CA, as Intl writes them (srDateShort)

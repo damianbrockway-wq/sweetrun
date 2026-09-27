@@ -30,6 +30,8 @@ Object.assign(RS_GLYPH, {
   tag:    <><path d="M3 12V4h8l10 10-8 8z"/><path d="M7.5 7.5h.01"/></>,
   trash:  <><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></>,
   minus:  <path d="M5 12h14"/>,
+  down:   <><path d="M12 5v14"/><path d="m5 12 7 7 7-7"/></>,
+  search: <><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></>,
 });
 
 const srRM = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
@@ -96,7 +98,8 @@ function RsNextCard({ title, why, btn, onAct, icon = 'drop', eyebrow }) {
       <div className="rs-k"><RsIcon name={icon} size={18} sw={2.4} />{eyebrow}</div>
       <h2 id="rs-next-t">{title}</h2>
       {why && <p className="tn">{why}</p>}
-      <RsBtn onClick={onAct} id="rs-next-btn">{btn}</RsBtn>
+      {/* During an expired trial the banner's Get a Pass is the screen's one primary. */}
+      <RsBtn onClick={onAct} id="rs-next-btn" kind={SR_LOCKED ? 'secondary' : 'primary'}>{btn}</RsBtn>
     </section>
   );
 }
@@ -171,10 +174,12 @@ const srUnitL = (u, L) => (L || ls.get('sg_lang', 'en')) === 'fr' && SR_UNIT_FR[
 // The yield method's name in the reader's language (YIELD_MODELS labels are English).
 const srModelName = (label, L) => { const k = Object.keys(YIELD_MODELS).find(x => YIELD_MODELS[x].label === label); return k ? rt(L, 'ym_' + k) : label; };
 let _srCv = null;
+// A number as an input shows it: "2.5", or "2,5" in French (no grouping, so it edits cleanly).
+const srNumIn = n => { const s = String(n); return SR_NUM_LOC === 'fr-CA' ? s.replace('.', ',') : s; };
 function RsStepper({ id, value, onChange, steps, dp = 0, unit, label, min = 0, max = 1e7, big = true, base, pre, ph }) {
   const inRef = React.useRef(null);
   const [draft, setDraft] = useState(null);           // text while typing
-  const shown = draft != null ? draft : (value === '' || value == null ? '' : String(+(+value).toFixed(dp)));
+  const shown = draft != null ? draft : (value === '' || value == null ? '' : srNumIn(+(+value).toFixed(dp)));
   React.useLayoutEffect(() => {
     const el = inRef.current; if (!el) return;
     try {
@@ -202,8 +207,8 @@ function RsStepper({ id, value, onChange, steps, dp = 0, unit, label, min = 0, m
       </label>
       <div className="rs-keys">
         {steps.map(d => (
-          <button key={d} type="button" onClick={() => bump(d)} aria-label={`${d > 0 ? '+' : '-'}${Math.abs(d)} ${srUnitL(unit || '')}`.trim()}>
-            {d > 0 ? '+' : '−'}{Math.abs(d)}
+          <button key={d} type="button" onClick={() => bump(d)} aria-label={`${d > 0 ? '+' : '-'}${srNumIn(Math.abs(d))} ${srUnitL(unit || '')}`.trim()}>
+            {d > 0 ? '+' : '−'}{srNumIn(Math.abs(d))}
           </button>
         ))}
       </div>
@@ -212,14 +217,38 @@ function RsStepper({ id, value, onChange, steps, dp = 0, unit, label, min = 0, m
 }
 
 // ── Sheet ────────────────────────────────────────────────────────────────────
-function RsSheet({ title, onClose, children, id }) {
+// Open sheets, bottom to top. Only the top one answers Escape and traps Tab, so a
+// reading sheet opened over a line's detail sheet closes alone.
+const _rsSheets = [];
+// Focus back to what opened the sheet. The Bush map redraws its markers on every
+// selection, so the opener may be gone: its replacement carries the same data-fk.
+function srFocusBack(prev, key) {
+  const byKey = () => { try { return key ? document.querySelector(`[data-fk="${String(key).replace(/["\\]/g, '')}"]`) : null; } catch { return null; } };
+  const go = t => { try { t && t.focus && t.focus({ preventScroll:true }); } catch {} };
+  // Last resort: the screen's heading, never the page body (a sheet opened on arriving at a
+  // screen, such as a line detail from a Season alert, has no opener on this screen).
+  const heading = () => { const h = document.querySelector('main h1, .rs-app h1'); if (h && !h.hasAttribute('tabindex')) h.setAttribute('tabindex', '-1'); return h; };
+  go((prev && prev.isConnected && prev !== document.body ? prev : null) || byKey() || heading());
+  // The map redraws after the sheet closes and can remove what just took focus: look again.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const a = document.activeElement;
+    if (!a || a === document.body || !a.isConnected) go(byKey() || heading());
+  }));
+}
+function RsSheet({ title, onClose, children, id, returnTo }) {
   const ref = React.useRef(null);
+  const closeRef = React.useRef(onClose); closeRef.current = onClose;
   useEffect(() => {
     const prev = document.activeElement;
+    const fkEl = prev && prev.closest ? prev.closest('[data-fk]') : null;
+    const prevKey = (fkEl ? fkEl.getAttribute('data-fk') : null) || returnTo || null;
     const el = ref.current;
-    const t0 = setTimeout(() => { try { el && el.focus({ preventScroll:true }); } catch {} }, 20);
+    const me = {}; _rsSheets.push(me);
+    // Focus the sheet itself (announced by its label), or the field it exists for (data-autofocus).
+    const t0 = setTimeout(() => { try { const f = el && el.querySelector('[data-autofocus]'); (f || el).focus({ preventScroll:true }); } catch {} }, 20);
     const onKey = e => {
-      if (e.key === 'Escape') { e.stopPropagation(); onClose(); return; }
+      if (_rsSheets[_rsSheets.length - 1] !== me) return;
+      if (e.key === 'Escape') { e.stopPropagation(); closeRef.current(); return; }
       if (e.key !== 'Tab' || !el) return;
       const f = [...el.querySelectorAll('button,a[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x => !x.disabled && x.offsetParent !== null);
       if (!f.length) return;
@@ -231,8 +260,9 @@ function RsSheet({ title, onClose, children, id }) {
     document.documentElement.classList.add('rs-sheet-open');
     return () => {
       clearTimeout(t0); document.removeEventListener('keydown', onKey, true);
-      document.documentElement.classList.remove('rs-sheet-open');
-      try { prev && prev.focus && prev.focus({ preventScroll:true }); } catch {}
+      const i = _rsSheets.indexOf(me); if (i >= 0) _rsSheets.splice(i, 1);
+      if (!_rsSheets.length) document.documentElement.classList.remove('rs-sheet-open');
+      srFocusBack(prev, prevKey);
     };
   }, []);
   // Portalled to <body>: a sheet opened from inside a fixed full-screen view (the
@@ -317,17 +347,29 @@ function RsRing({ pct, size = 112, label }) {
   );
 }
 
-// The table behind a chart, for screen readers (visually hidden). Every chart that
-// draws data renders one: a caption (the chart's label), column heads, one row per point.
-function RsDataTable({ caption, head, rows }) {
+// The table behind a chart. Every chart that draws data renders one: a caption (the
+// chart's label), column heads, one row per point. It is always there for screen
+// readers; "Show as a table" under the chart shows it to everyone (toggle={false}
+// where the screen has no room for the switch, like Watch's fixed one-screen layout).
+let _rsTbl = 0;
+function RsDataTable({ caption, head, rows, toggle = true }) {
+  const [open, setOpen] = useState(false);
+  const id = React.useMemo(() => 'rstb' + (++_rsTbl), []);
   if (!rows || !rows.length) return null;
-  return (
-    <table className="rs-vh">
+  const L = ls.get('sg_lang', 'en');
+  const heads = head.map((h, i) => h || rt(L, i === 0 ? 'rpDay' : 'tblValue'));
+  const table = (
+    <table className={open ? 'rs-dtable' : 'rs-vh'} id={open ? undefined : id}>
       <caption>{caption}</caption>
-      <thead><tr>{head.map((h, i) => <th key={i} scope="col">{h || (i === 0 ? rt(ls.get('sg_lang', 'en'), 'rpDay') : '')}</th>)}</tr></thead>
+      <thead><tr>{heads.map((h, i) => <th key={i} scope="col">{h}</th>)}</tr></thead>
       <tbody>{rows.map((r, i) => <tr key={i}><th scope="row">{r[0]}</th>{r.slice(1).map((v, k) => <td key={k}>{v}</td>)}</tr>)}</tbody>
     </table>
   );
+  if (!toggle) return table;
+  return <>
+    <div className="rs-tbltog"><button type="button" className="rs-linkbtn" aria-expanded={open} aria-controls={id} onClick={() => setOpen(o => !o)}>{rt(L, open ? 'tblHide' : 'tblShow')}</button></div>
+    {open ? <div className="rs-dtable-wrap" id={id} role="region" aria-label={caption} tabIndex={0}>{table}</div> : table}
+  </>;
 }
 // ── Charts (dataviz rules: thin marks, one axis, hairline grid, text colours) ─
 function RsLineChart({ series, yMax, yTicks, xLabels, refLine, h = 150, label, rowLabel, rowHead = '', dp = 2 }) {
@@ -338,7 +380,7 @@ function RsLineChart({ series, yMax, yTicks, xLabels, refLine, h = 150, label, r
   return (
     <div ref={ref} className="rs-chartwrap">
       <svg className="rs-chart" width={W} height={h} viewBox={`0 0 ${W} ${h}`} role="img" aria-label={label}>
-        {yTicks.map(t => <g key={t}><line x1={pl} x2={W - pr} y1={Y(t)} y2={Y(t)} className="rs-grid" /><text x={pl - 6} y={Y(t) + 4} textAnchor="end" className="rs-ct">{t}</text></g>)}
+        {yTicks.map(t => <g key={t}><line x1={pl} x2={W - pr} y1={Y(t)} y2={Y(t)} className="rs-grid" /><text x={pl - 6} y={Y(t) + 4} textAnchor="end" className="rs-ct">{srNumIn(t)}</text></g>)}
         {refLine && (() => {
           // Keep the reference label clear of the series end labels (both sit in the right margin).
           const ry = Y(refLine.v), ends = series.filter(s => s.end && s.v.length).map(s => Y(s.v[s.v.length - 1]));
@@ -446,8 +488,6 @@ function RsSeasonChart({ series, units, lang, wxStatus }) {
           <rect x="0" y="0" width={W} height={H} fill="transparent" />
         </svg>
       </div>
-      <RsDataTable caption={rt(lang,'chartAria', { n: series.days.filter(d => d.sap > 0).length, peak: fmt(series.peak.sap, 0), u })} head={[rt(lang,'date'), rt(lang,'sapWordC', { u })]}
-        rows={series.days.filter(d => d.sap > 0).map(d => [srDayLabel(d.iso, lang), fmt(d.sap, 0)])} />
       <div className="rs-sread tn" id="rs-sread" aria-live="polite">{read(sel == null ? ti : sel)}</div>
       <div className="rs-legend">
         <span><i className="lg" style={{ background:T.bar }} />{rt(lang,'lgSap')}</span>
@@ -455,6 +495,8 @@ function RsSeasonChart({ series, units, lang, wxStatus }) {
         <span><i className="lg here" />{rt(lang,'lgToday')}</span>
       </div>
       {wxStatus !== 'ok' && <p className="rs-note" style={{ marginTop:6 }}>{rt(lang, wxStatus === 'none' ? 'wxStripNone' : wxStatus === 'loading' ? 'wxStripLoading' : 'wxStripErr')}</p>}
+      <RsDataTable caption={rt(lang,'chartAria', { n: series.days.filter(d => d.sap > 0).length, peak: fmt(series.peak.sap, 0), u })} head={[rt(lang,'date'), rt(lang,'sapWordC', { u })]}
+        rows={series.days.filter(d => d.sap > 0).map(d => [srDayLabel(d.iso, lang), fmt(d.sap, 0)])} />
     </div>
   );
 }

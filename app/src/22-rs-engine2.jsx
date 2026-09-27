@@ -133,6 +133,19 @@ function srBrixTrend(brixLog) {
     buddy: v.length >= 3 && last < peak * 0.7 };
 }
 
+// seasonScore, memoized on its inputs (Recap renders three times while it loads, and
+// Diagnose re-rendered it on every keystroke in a price field, which is not an input).
+// The formula is seasonScore's, untouched; the last 8 input sets are kept.
+const SR_SCORE_MEMO = [];
+function srSeasonScore(a) {
+  const key = JSON.stringify([a.sapT, a.syT, a.fuelT, a.taps, a.brix, a.yieldModel, a.fuelSpu]);
+  const hit = SR_SCORE_MEMO.find(e => e.key === key);
+  if (hit) return hit.sc;
+  const sc = seasonScore(a);
+  SR_SCORE_MEMO.unshift({ key, sc }); SR_SCORE_MEMO.length = Math.min(SR_SCORE_MEMO.length, 8);
+  return sc;
+}
+
 // ── Score detail rows (SweetRunScore, 40-26) ─────────────────────────────────
 // sc = seasonScore(...). Rows carry the numbers the classic card printed.
 function srScoreRows(sc, o) {
@@ -417,8 +430,10 @@ function srWizardData(o) {
 // House rule: no em or en dashes on screen. Number ranges read "to"; a dash
 // used as a pause becomes a comma. Reference text only; UI copy is written
 // dash-free in RS_TR.
+// Decimals written into English reference text read "1,5" in French.
+function srDecL(s, lang) { return lang === 'fr' ? String(s).replace(/(\d)\.(\d)/g, '$1,$2') : String(s); }
 function srPlain(s, lang) {
-  return String(s == null ? '' : s)
+  return srDecL(String(s == null ? '' : s), lang)
     .replace(/(\d[\d.,]*\s*(?:°F|°C|°|%|"|in|ft|gal|h|hrs|mm|cm)?)\s*[–—]\s*(\$?\d)/g, lang === 'fr' ? '$1 à $2' : '$1 to $2')
     .replace(/\s*—\s*/g, ', ').replace(/\s*–\s*/g, ', ')
     .replace(/,\s*,/g, ',').replace(/\s+,/g, ',');

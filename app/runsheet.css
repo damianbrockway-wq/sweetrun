@@ -214,7 +214,7 @@ label.rs-fl { display: block; font: 700 13px var(--rs-fc); letter-spacing: .12em
    primary 60, secondary 56, chips/segments 48, stepper keys 64.
    ════════════════════════════════════════════════════════════════════════════ */
 :where(.rs-btn, .rs-btn2, .rs-seg button, .rs-chip, .rs-keys button, .rs-xbtn, .rs-al, .rs-iconbtn,
-  .rs-sw, .rs-chkbtn, .rs-linkbtn, .rs-more, .rs-toast) { font: inherit; color: inherit; background: none; border: 0; cursor: pointer;
+  .rs-sw, .rs-chkbtn, .rs-linkbtn, .rs-more, .rs-toast, .rs-grow, .rs-mfind) { font: inherit; color: inherit; background: none; border: 0; cursor: pointer;
   -webkit-tap-highlight-color: transparent; touch-action: manipulation; text-decoration: none; }
 .rs-split { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px 12px; flex-wrap: wrap; }
 .rs-meta { color: var(--rs-dim); font-size: 15px; }
@@ -508,6 +508,9 @@ a.rs-tankcard:active { background: var(--rs-s2); }
     -webkit-backdrop-filter: blur(10px) saturate(1.1); backdrop-filter: blur(10px) saturate(1.1); border-radius: 16px; padding: 4px 12px 8px; margin-bottom: 8px; }
   .rs-blevap .rs-ct { fill: var(--rs-tx); }
 }
+/* Desktop and iPad landscape: capped at 230 px (it drew 338 at 1180) so Add a reading sits above
+   the fold at 1180x820 and 1440x900; the drawing scales down centred, labels kept. */
+@media (min-width: 1100px) { .rs-blevap .rs-evap { height: 230px; } }
 .rs-steam { opacity: 0; transform-box: fill-box; transform-origin: center bottom; animation: rs-steam 3.8s ease-out infinite; }
 @keyframes rs-steam { 0% { opacity: 0; transform: translateY(0) scale(.5); } 25% { opacity: .6; } 100% { opacity: 0; transform: translateY(-70px) scale(2); } }
 .rs-bub { fill: var(--rs-bubble); animation: rs-bub 1.4s ease-in infinite; opacity: 0; transform-box: fill-box; transform-origin: center; }
@@ -880,7 +883,7 @@ html.rs-sheet-open .rs-toast.show { transform: translate(-50%, 0); }
 .rs-maptop > * { pointer-events: auto; }
 .rs-mapt { background: color-mix(in srgb, var(--rs-bg) 88%, transparent); border: 1px solid var(--rs-line2); border-radius: 16px; padding: 8px 14px; min-width: 0; }
 .rs-mapt h1 { font: 800 22px/1.15 var(--rs-f) !important; margin: 0 !important; letter-spacing: -.01em; white-space: nowrap; }
-.rs-mapt span { display: block; color: var(--rs-dim); font-size: 14px; white-space: nowrap; }
+.rs-mapt span { display: block; color: var(--rs-dim); font-size: 14px; text-wrap: balance; }   /* wraps at 320 in French instead of running under the buttons */
 .rs-mbtns { display: flex; gap: 8px; flex: none; }
 .rs-mbtn { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 16px; background: color-mix(in srgb, var(--rs-bg) 88%, transparent);
   border: 1px solid var(--rs-line2) !important; color: var(--rs-tx); }
@@ -1078,6 +1081,7 @@ html.rs-sheet-open .rs-toast.show { transform: translate(-50%, 0); }
 .rs-wcard { background: var(--rs-s1); border-radius: 18px; padding: 16px; color: var(--rs-tx); text-decoration: none; }
 .rs-wk { font: 800 30px/1.1 var(--rs-f); margin: 0; }
 .rs-wk.big { font-size: 40px; }
+@media (max-width: 380px) { .rs-wk.big { font-size: 32px; } }   /* "Mainline C" stays on one line beside its 72 px plate on a 320 phone */
 .rs-wpanel:focus { outline: none; }   /* receives focus on open so it is announced; its controls keep their rings */
 .rs-wk2 { font: 700 14px var(--rs-fc); letter-spacing: .14em; text-transform: uppercase; color: var(--rs-dim); margin-bottom: 8px; }
 .rs-wsub { color: var(--rs-dim); font-size: 18px; line-height: 1.35; }
@@ -1310,3 +1314,79 @@ button.rs-wwake.on { color: var(--rs-tx); border-color: var(--rs-ok); }
 .rs-mid { text-wrap: balance; }
 /* Pan sizes: three across on phones (five across left 48 px per label at 390; "Sur mesure" broke mid-word). */
 @media (max-width: 459px) { .rs-opts.five { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* ── Fix pass 2 ──────────────────────────────────────────────────────────────
+   Gauge chain with mid-line gauges: a ladder in walking order (pump at the top,
+   far end at the bottom), the rail between rows carries each stretch's drop and
+   the leaking stretch turns --rs-bad. Same card, eyebrow and value scale as .rs-chain. */
+.rs-gchain { margin: 12px 0; padding: 12px 14px; border-radius: 14px; background: var(--rs-s2); }
+.rs-gh { margin: 4px 0 6px; }
+.rs-gh b { display: block; font: 800 18px/1.25 var(--rs-f); }
+.rs-gh span { display: block; margin-top: 4px; font-size: 15px; line-height: 1.45; color: var(--rs-dim); }
+.rs-gh.bad b { color: var(--rs-bad); }
+.rs-gl { list-style: none; margin: 8px 0 0; padding: 0; }
+.rs-grow { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 4px 0; text-align: left; border-radius: 10px; }
+button.rs-grow { grid-template-columns: 20px minmax(0, 1fr) auto 32px; }
+.rs-gdot { position: relative; z-index: 1; justify-self: center; width: 14px; height: 14px; border-radius: 4px; background: var(--rs-tx); box-shadow: 0 0 0 3px var(--rs-s2); }
+.rs-gdot.bad { background: var(--rs-bad); }
+.rs-gdot.off { background: var(--rs-s2); box-shadow: inset 0 0 0 2px var(--rs-line2), 0 0 0 3px var(--rs-s2); }
+.rs-gname { min-width: 0; }
+.rs-gname b { display: block; font: 700 16px/1.25 var(--rs-f); overflow-wrap: anywhere; }
+.rs-gname small { display: block; font: 500 14px/1.3 var(--rs-f); color: var(--rs-dim); overflow-wrap: anywhere; }
+.rs-gval { text-align: right; }
+.rs-gval b { display: block; font: 800 22px/1.1 var(--rs-f); white-space: nowrap; }
+.rs-gval b small { font: 600 13px var(--rs-f); color: var(--rs-dim); }
+.rs-gval .rs-gago { display: block; font-size: 13px; color: var(--rs-mute); white-space: nowrap; }
+.rs-gval.none { font-size: 15px; color: var(--rs-mute); }
+.rs-glog { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--rs-s3); color: var(--rs-dim); }
+.rs-gseg { display: grid; grid-template-columns: 20px minmax(0, 1fr); align-items: center; gap: 10px; min-height: 24px; font: 600 13px var(--rs-f); color: var(--rs-dim); }
+.rs-grail { justify-self: center; align-self: stretch; width: 3px; min-height: 24px; background: var(--rs-line2); }
+.rs-gseg.bad .rs-grail { width: 6px; background: var(--rs-bad); }
+/* The rail runs on through each node row, so pump to far end reads as one line. */
+.rs-gnode { position: relative; }
+.rs-gnode::before, .rs-gnode::after { content: ''; position: absolute; left: 8.5px; width: 3px; background: var(--rs-line2); }
+.rs-gnode::before { top: 0; height: 50%; } .rs-gnode::after { top: 50%; bottom: 0; }
+.rs-gl > .rs-gnode:first-child::before, .rs-gl > .rs-gnode:last-child::after { display: none; }
+.rs-gnode.badin::before, .rs-gnode.badout::after { left: 7px; width: 6px; background: var(--rs-bad); }
+.rs-gseg.bad span { color: var(--rs-bad); font-weight: 700; }
+/* Watch size: the same chain as one row (the prototype's layout), so the one-screen
+   Watch never scrolls: value above, dot on the rail, gauge name and tag below. */
+.rs-gchain.big .rs-chlbl { font-size: 14px; }
+.rs-gchain.big .rs-gh { margin-top: 0; }
+.rs-gchain.big .rs-gh b { font-size: 24px; }
+.rs-wonel { overflow-y: auto; min-height: 0; }   /* like the rail: a tall line detail scrolls inside its card instead of clipping */
+.rs-gchain.big .rs-gh span { font-size: 16px; }
+.rs-grow-h { list-style: none; display: grid; margin: 12px 0 0; padding: 0; }
+.rs-gcol { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; text-align: center; }
+.rs-gcol > b { font: 800 26px/1.1 var(--rs-f); white-space: nowrap; }
+.rs-gcol > b.none { color: var(--rs-mute); } .rs-gcol > b.bad { color: var(--rs-bad); }
+.rs-gcol .rs-gcn { font: 700 16px/1.2 var(--rs-f); max-width: 100%; overflow-wrap: anywhere; }
+.rs-gcol small { font: 500 16px/1.2 var(--rs-f); color: var(--rs-dim); max-width: 100%; overflow-wrap: anywhere; }
+.rs-gcol::before, .rs-gcol::after { content: ''; position: absolute; top: calc(26px * 1.1 + 6px + 5.5px); height: 3px; background: var(--rs-line2); }
+.rs-gcol::before { left: 0; right: 50%; } .rs-gcol::after { left: 50%; right: 0; }
+.rs-grow-h > .rs-gcol:first-child::before, .rs-grow-h > .rs-gcol:last-child::after { display: none; }
+.rs-gcol.badin::before, .rs-gcol.badout::after { top: calc(26px * 1.1 + 6px + 4px); height: 6px; background: var(--rs-bad); }
+.rs-gedit .rs-row { gap: 8px; }
+.rs-gedit .rs-xbtn:disabled { opacity: .35; cursor: default; }
+.rs-linkbtn.bad { color: var(--rs-bad); }
+
+/* Chart tables: "Show as a table" under every chart. Collapsed, the table stays
+   visually hidden for screen readers (.rs-vh); open, it is a quiet data table. */
+.rs-tbltog { display: flex; justify-content: flex-end; margin-top: 2px; }
+.rs-tbltog .rs-linkbtn { padding: 0 2px; font-size: 14px; }
+.rs-dtable-wrap { max-height: 280px; overflow: auto; margin-top: 6px; border-radius: 10px; background: var(--rs-s2); }
+.rs-dtable { width: 100%; border-collapse: collapse; font-size: 15px; font-variant-numeric: tabular-nums; }
+.rs-dtable caption { text-align: left; padding: 10px 12px 4px; font-size: 14px; color: var(--rs-dim); }
+.rs-dtable th, .rs-dtable td { padding: 8px 12px; border-top: 1px solid var(--rs-line); text-align: right; white-space: nowrap; }
+.rs-dtable th:first-child { text-align: left; }
+.rs-dtable thead th { position: sticky; top: 0; background: var(--rs-s2); border-top: 0; font: 700 12px var(--rs-f); letter-spacing: .08em; text-transform: uppercase; color: var(--rs-dim); }
+.rs-dtable tbody th { font-weight: 600; color: var(--rs-dim); }
+.rs-dtable td { font-weight: 700; }
+
+/* Bush: the tree finder button tops the map's control column on phones, a step apart from zoom. */
+.rs-mzoom .rs-mfind { margin-bottom: 8px; }
+/* Bush pins are focusable (fix pass 2). The Leaflet anchor is 0x0, so the ring goes on the tile it carries. */
+.rs-app .rs-divicon[tabindex]:focus-visible { outline: none; }
+.rs-app .rs-divicon[tabindex]:focus-visible > :is(.rs-mtank, .rs-mpump, .rs-mhouse, .rs-mpin) { outline: 3px solid var(--rs-acc); outline-offset: 3px; }
+/* A 44 px hit area around every pin tile (pump 28, waypoint 14, tank 30 draw smaller). */
+.rs-app .rs-center > span:first-child::before { content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }

@@ -73,6 +73,55 @@ function srLeakFind(end, rel, limit, days, pairH) {
     baseline: base.baseline, drop, n: base.n };
 }
 
+// The gauge chain's leak localizer (DESIGN.md line 104: "localizes the drop between
+// two gauges and names the taps at each"). It answers WHERE on a line the vacuum
+// is lost; WHETHER the line leaks stays srLeakFind's verdict.
+//   nodes: in walking order from the pump, [{ id, hist:[{ ms, v }] }]; the first is
+//          the pump (releaser), the last the line's far end, mid-line gauges between.
+//   limit inHg (a line losing this much end to end is leaking) · pairH hours
+// Each node takes its reading nearest the reference time (the far end's latest
+// reading, else the newest reading on the line), within pairH. Consecutive read
+// nodes make segments; unread nodes between them are named in `skipped`.
+// Returns { status, refMs, reads:[{ v, ms }|null per node], segs:[{ from, to, drop, skipped }],
+//           total, seg }: status 'none' (no reading), 'few' (fewer than two nodes read
+// in the window), 'ok' (total loss under the limit), 'located' (the segment with the
+// largest drop carries at least half the total: seg is it), or 'spread' (the loss is
+// shared along the line, no one segment carries half).
+function srGaugeLocate(nodes, limit, pairH) {
+  const lim = srFin(limit) ? limit : SR_OPS_DEFAULTS.leakLimitIn;
+  const win = (srFin(pairH) ? pairH : SR_OPS_DEFAULTS.pairH) * SR_H_MS;
+  const N = (nodes || []).map(n => (n && n.hist || []).filter(x => x && srFin(x.ms) && srFin(x.v)));
+  const none = { status: 'none', refMs: null, reads: N.map(() => null), segs: [], total: null, seg: null };
+  if (N.length < 2) return none;
+  const last = a => a.reduce((m, x) => (m == null || x.ms > m.ms ? x : m), null);
+  const endLast = last(N[N.length - 1]);
+  const anyLast = last([].concat(...N.slice(1)));
+  const ref = endLast || anyLast;
+  if (!ref) return none;
+  const reads = N.map(a => a.filter(x => Math.abs(x.ms - ref.ms) <= win)
+    .sort((p, q) => Math.abs(p.ms - ref.ms) - Math.abs(q.ms - ref.ms) || q.ms - p.ms)[0] || null);
+  const idx = reads.map((r, i) => r ? i : -1).filter(i => i >= 0);
+  if (idx.length < 2) return { ...none, status: 'few', refMs: ref.ms, reads };
+  const r2 = x => Math.round(x * 100) / 100;
+  const segs = idx.slice(1).map((to, k) => {
+    const from = idx[k];
+    return { from, to, drop: r2(reads[from].v - reads[to].v), skipped: Array.from({ length: to - from - 1 }, (_, j) => from + 1 + j) };
+  });
+  const total = r2(reads[idx[0]].v - reads[idx[idx.length - 1]].v);
+  if (total < lim - 1e-9) return { status: 'ok', refMs: ref.ms, reads, segs, total, seg: null };
+  const best = segs.reduce((m, g) => (g.drop > m.drop + 1e-9 ? g : m), segs[0]);
+  const located = best.drop >= total / 2 - 1e-9;
+  return { status: located ? 'located' : 'spread', refMs: ref.ms, reads, segs, total, seg: located ? best : null };
+}
+// Sensor id of a mid-line gauge: line:<lineId>:g:<gaugeId> (sg_readings rows, sg_sensors records).
+function srGaugeSid(lineId, gaugeId) { return `line:${lineId}:g:${gaugeId}`; }
+// Next free gauge name on a line: "C1", "C2", ... (the prototype's naming).
+function srNextGaugeName(lineId, gauges) {
+  const used = new Set((gauges || []).map(g => String(g && g.name)));
+  for (let n = 1; n < 100; n++) if (!used.has(`${lineId}${n}`)) return `${lineId}${n}`;
+  return `${lineId}${(gauges || []).length + 1}`;
+}
+
 // ── Runtime ──────────────────────────────────────────────────────────────────
 // Hours a pump ran inside [fromMs, toMs]. runs: [{ start, end }] in ms (closed
 // runs from sg_pump_log); runStart: ms of the open run while it is marked

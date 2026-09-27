@@ -1,5 +1,17 @@
 # SweetRun changelog
 
+## 2026-09-27: Fix pass 2 (gauge chain, keyboard, French numbers)
+
+What a sugarmaker sees:
+- **Gauges along a line.** A mainline can carry gauges between the pump and the far end (C1 at tree T022, C2 at T024, and so on). Read them on your walk and the line's detail shows the whole chain, pump to far end, with the drop across every stretch, and names the stretch that loses the vacuum: "Walk from C2 to C3. Vacuum holds to C2 at T024, then drops 5.7 in by C3 at T027. About 330 ft apart on the map." When the loss is shared along the line it says so instead. Tap any gauge in the chain to log it. Add, order and remove gauges under "Gauges along this line". Watch shows the same chain as one row.
+- **Numbers in French read the Quebec way.** 1 000 gal, 2,5 %, 0,88 $. Type 2,5 or 2.5; both work. English is unchanged.
+- **"Show as a table" under every chart**, for anyone who would rather read the numbers than the picture.
+- **Keyboard.** On the Bush, tanks, pumps and the sugarhouse can be reached with Tab and opened with Enter; "Find a tree" (the search button beside "Watch the bush", or the side panel on a wide screen) reaches any tree by its tag. When one sheet is open over another, Escape closes only the top one, and focus goes back to what opened it, even on the map.
+- **Boil.** While boiling, "Add a reading", "Draw off" and "End the boil" now sit above the readings chart, so they show without scrolling on a phone, an iPad and a laptop.
+- During an expired trial the Season screen has one main button, Get a Pass.
+
+Under the hood: new key `sg_line_gauges` (gauge positions only; their readings are ordinary `sg_readings` rows, and no existing key or shape changed); the leak localizer `srGaugeLocate` is tested. `sg_logs2` is parsed once per data change on each screen (Degree days re-read it twice a keystroke) and the season score is computed once per set of inputs (Diagnose re-scored on every keystroke). Service worker `sweetrun-v39`. 619 tests. app.js 823 KB (247 KB gzipped).
+
 ## 2026-09-27: Fix pass (French, accessibility, layout, speed)
 
 What a sugarmaker sees:

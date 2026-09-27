@@ -19,7 +19,7 @@
 | 40-04, 40-17, 40-19, 40-20, 40-21 | shared pieces kept from the old UI: batch labels, PDF report, crash screen (restyled), sap-run score, the guide's knowledge base |
 | 50 to 52 | Bush (Leaflet), Pumps, Watch |
 | 60 to 72 | kit, Season, Log, stages, Recap, Sugar Shack, tools, guide, sheets |
-| 80 to 84 | core state (`useSrCore`), routes (`RS_SCREENS`), strings `RS_TR` (en complete, fr partial) |
+| 80 to 85 | core state (`useSrCore`), routes (`RS_SCREENS`), strings `RS_TR` (en and fr complete since the 2026-09-27 fix pass; 85 is the French table) |
 | 91, 99 | shell (`RunSheetApp`: tabs, side nav, banners) and mount |
 
 **Styles.** `app/tokens.css` (the only home for colours, type, radii; Ember palette) and `app/runsheet.css` (unscoped since cutover; rules on Leaflet-owned elements are anchored under `.rs-app` so they outrank `leaflet.css`, which loads later). No inline stylesheet in `app/index.html`. Token law (no hex literals in Run Sheet parts or `runsheet.css`) is a test.
@@ -31,6 +31,8 @@
 **Tests.** `npm test`: 134 formula assertions and 405 Run Sheet assertions (539), including cutover guards (and the in-app brand mark) (head tags, manifest icons and their pixel sizes, precache list, no classic shell in the bundle), the yield verdict, boil readings, and no string key defined twice.
 
 **Data.** No key or field changed shape at cutover. One optional field was added: `sg_boil_session.readings` `[{ t, tempF, brix?, draw? }]` (draw in the display unit like the session's sap and syrup). A session without it reads as empty.
+
+**Fix passes (2026-09-27).** French is complete, numbers included: `fmt` formats in `SR_NUM_LOC` ('en-US', or 'fr-CA' while the shell renders in French: "1 000", "2,5", money "0,88 $" via `srMoney`), steppers show "2,5" (`srNumIn`), and `srParseNum` reads a comma as the decimal in French; the PDF report stays en-US. One new data key, `sg_line_gauges` `{ [lineId]: [{ id, name, at, pinId }] }` (mid-line vacuum gauges in walking order; readings are ordinary `sg_readings` rows under `line:<id>:g:<gaugeId>`), with `srGaugeLocate` in the formula band. Screens read `sg_logs2` once per data change (`useSrLogs` or a memo on the data version) and score through `srSeasonScore` (a memo on `seasonScore`'s inputs). Sheets keep a stack: only the top one answers Escape and Tab, and focus goes back to the opener, to a redrawn map control by its `data-fk`, or to the screen's h1. SW `sweetrun-v39`. `app.js` 823,008 bytes (247,450 gzipped); shell 274,708 gzipped. Tests 619 (134 formula, 485 Run Sheet).
 
 ## 1. The map (full read, 2026-09-19)
 
@@ -124,6 +126,13 @@ One single-file React 18 app, compiled by Babel (JSX transform only — no bundl
 ---
 
 ## 5. Decision log
+
+**2026-09-27 — Mid-line gauges get their own key.** The prototype's gauge chain needs each gauge's place on a line. `sg_line_meta[id].gaugeIds` (the PORT-PLAN sketch) would add a field to an existing shape, so positions live in a new data key, `sg_line_gauges`, and readings reuse `sg_readings` and `sg_sensors` unchanged. Whether a line leaks stays `srLeakFind` (pump against far end); `srGaugeLocate` only says where, and says "spread" rather than guess when no stretch carries half the loss.
+
+**2026-09-27 — One parse per screen, not one shared parse.** A single frozen `sg_logs2` object shared by every reader was the first plan. The bundle is not strict mode, so a stray write to a frozen object would be dropped silently instead of throwing. Each screen memoizes its own parse on the data version instead: same count for the user (one parse per data change), nothing shared to corrupt.
+
+**2026-09-27 — The number locale is a module variable the shell sets while rendering.** `fmt` has 250-odd callers with no language argument. The shell assigns `SR_NUM_LOC` before its children render, and the two places that must not follow the reader (the English PDF, input parsing's US grouping in English) are explicit. English output is byte-identical (tests).
+
 
 **2026-09-21 — License verify: decode before the try, narrow the fallback.**
 `verifyLicense` decoded the signature *inside* the try that wrapped Ed25519

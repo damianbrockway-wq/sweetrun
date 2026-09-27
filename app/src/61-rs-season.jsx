@@ -73,7 +73,7 @@ function rsJobVars(j, c) {
     full: v.fullH != null ? srDur(v.fullH, L) : '', run: v.runH != null ? srDur(v.runH, L) : '',
     at: v.startAtMs ? srClock(v.startAtMs, L) : '',
     // Phases 7-8 (pump jobs): inches of vacuum, fuel, clock times
-    v: v.v != null ? fmt(v.v, 1) : '', base: v.base != null ? fmt(v.base, 1) : '', drop: v.drop != null ? fmt(v.drop, 1) : '',
+    v: v.v != null ? fmt(v.v, 1) : '', base: v.base != null ? fmt(v.base, 1) : '', drop: v.drop != null ? fmt(v.drop, 1) : '', rel: v.rel != null ? fmt(v.rel, 1) : '',
     lim: v.lim != null ? fmt(v.lim, 1) : '', left: v.left, note: v.note || '',
     empty: v.emptyAtMs ? srWhenAhead(v.emptyAtMs, v.nowMs || Date.now(), L) : '', since: v.startMs ? srClock(v.startMs, L) : '',
     fuel: v.lvl != null ? srVol(v.lvl, c.units, 1) : '',

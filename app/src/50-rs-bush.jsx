@@ -150,8 +150,8 @@ function srDrawBush(L, map, G, model, ly, o) {
     const val = l.latest ? fmt(l.latest.v, 1) : null;
     const cls = 'rs-plate' + (vacOn && leak ? ' leak' : '') + (isSel ? ' sel' : '') + (bigPlates ? ' big' : '') + (watchOne ? ' dim' : '');
     const html = bigPlates
-      ? `<button type="button" class="${cls}" data-line="${srEsc(l.id)}" aria-label="${srEsc(opt.lineAria ? opt.lineAria(l) : l.label)}"><b>${srEsc(l.id)}</b><span class="rs-pv">${val ? srEsc(val) : '&middot;'}</span><small>${val ? srEsc(opt.unitIn || 'in') : srEsc(opt.noReading || '')}</small></button>`
-      : `<button type="button" class="${cls}" data-line="${srEsc(l.id)}" aria-label="${srEsc(opt.lineAria ? opt.lineAria(l) : l.label)}"><b>${srEsc(l.id)}</b>${vacOn && val ? `<span class="rs-pv">${srEsc(val)}</span>` : ''}</button>`;
+      ? `<button type="button" class="${cls}" data-line="${srEsc(l.id)}" data-fk="line:${srEsc(l.id)}" aria-label="${srEsc(opt.lineAria ? opt.lineAria(l) : l.label)}"><b>${srEsc(l.id)}</b><span class="rs-pv">${val ? srEsc(val) : '&middot;'}</span><small>${val ? srEsc(opt.unitIn || 'in') : srEsc(opt.noReading || '')}</small></button>`
+      : `<button type="button" class="${cls}" data-line="${srEsc(l.id)}" data-fk="line:${srEsc(l.id)}" aria-label="${srEsc(opt.lineAria ? opt.lineAria(l) : l.label)}"><b>${srEsc(l.id)}</b>${vacOn && val ? `<span class="rs-pv">${srEsc(val)}</span>` : ''}</button>`;
     const mk = L.marker(top, { icon: L.divIcon({ className: 'rs-divicon', html, iconSize: null, iconAnchor: [0, 0] }), keyboard: false, zIndexOffset: 800, bubblingMouseEvents: false });
     mk.on('click', () => opt.onLine && opt.onLine(l.id));
     mk.addTo(G.marks);
@@ -201,8 +201,19 @@ function srDrawBush(L, map, G, model, ly, o) {
       if (watch) return;
       html = `<span class="rs-mpin${isSel ? ' sel' : ''}"></span><span class="rs-mlbl dim">${srEsc(p.label || '')}</span>`;
     }
-    const mk = L.marker([p.lat, p.lon], { icon: L.divIcon({ className: 'rs-divicon rs-center', html, iconSize: null, iconAnchor: anchor }), keyboard: false, bubblingMouseEvents: false, zIndexOffset: 600 });
+    // Focusable when it opens something (the Bush, not Watch): Tab reaches it, Enter or
+    // Space opens its detail, and data-fk lets focus find it again after a redraw.
+    const kb = !!opt.onPin;
+    const mk = L.marker([p.lat, p.lon], { icon: L.divIcon({ className: 'rs-divicon rs-center', html, iconSize: null, iconAnchor: anchor }), keyboard: kb, bubblingMouseEvents: false, zIndexOffset: 600 });
     mk.on('click', () => opt.onPin && opt.onPin(p.id));
+    // Set on 'add', when Leaflet has made the icon element (it does not exist yet while
+    // the marker group is off the map, as on the first draw).
+    if (kb) mk.on('add', () => {
+      const mel = mk.getElement && mk.getElement(); if (!mel || mel.hasAttribute('data-fk')) return;
+      mel.setAttribute('aria-label', opt.pinAria ? opt.pinAria(p, (mel.textContent || '').replace(/\s+/g, ' ').trim()) : String(p.label || p.type));
+      mel.setAttribute('data-fk', 'pin:' + p.id);
+      mel.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); mk.fire('click'); } });
+    });
     mk.addTo(G.marks);
     if (p.type === 'tank') tankPts.push([p.lat, p.lon]); else if (p.type === 'pump') pumpMks.push(mk);
   });
@@ -314,6 +325,8 @@ function RsBush({ c, sub }) {
       sel, draft: mode && mode.kind === 'draw' ? mode.pts : null, leakWord: rt(L_, 'leakSuspectW'),
       unitIn: srUnitL('in', L_),
       lineAria: l => rt(L_, 'lineAria', { n: l.label, v: l.latest ? fmt(l.latest.v, 1) : rt(L_, 'noReadingW') }),
+      // The name a screen reader hears is what the map shows ("Vacuum pump", "Tank 1 · 78%"), plus the kind when the label does not say it.
+      pinAria: (p, shown) => { const k = rt(L_, 'pinK_' + p.type), t = shown || p.label || ''; return !t ? k : t.toLowerCase().includes(k.toLowerCase()) ? t : `${t}, ${k}`; },
       onLine: id => { if (mode) return; setSel({ type: 'line', id }); },
       onTree: id => { if (mode) return; setSel({ type: 'tree', id }); },
       onPin: id => { if (mode) return; const p = model.pins.find(x => x.id === id); if (p) setSel({ type: 'pin', id }); },
@@ -399,6 +412,17 @@ function RsBush({ c, sub }) {
     const id = mode.id; setMode(null); setSel({ type: 'line', id }); srToast(rt(L_, 'lineDrawn'));
   };
 
+  // Closing the wide panel's detail: focus goes back to the plate or pin that opened it
+  // (redrawn meanwhile, found by data-fk), or to the tree finder for a tree.
+  const closeSide = () => {
+    const s = sel; setSel(null);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (s && s.type === 'tree') { const q = document.getElementById('rs-tfind-q'); if (q) { q.focus(); return; } }
+      if (s) srFocusBack(null, (s.type === 'pin' ? 'pin:' : 'line:') + s.id);
+    }));
+  };
+  // A tree picked from the finder: select it and bring it into view.
+  const pickTree = t => { setSel({ type: 'tree', id: t.id }); const map = mapRef.current; if (map && srFin(t.lat) && srFin(t.lon)) map.setView([t.lat, t.lon], Math.max(map.getZoom(), 18)); };
   const selTree = sel && sel.type === 'tree' ? model.pins.find(p => p.id === sel.id && p.type === 'tree') : null;
   const selLine = sel && sel.type === 'line' ? model.lines.find(l => l.id === sel.id) : null;
   const selPin = sel && sel.type === 'pin' ? model.pins.find(p => p.id === sel.id) : null;
@@ -420,7 +444,7 @@ function RsBush({ c, sub }) {
         {lf === 'error' && <div className="rs-mapstate"><div className="rs-empty"><b>{rt(L_, 'mapLoadT')}</b><p>{rt(L_, 'mapLoadP')}</p>
           <RsBtn kind="secondary" onClick={retryLf}>{rt(L_, 'tryAgain')}</RsBtn></div></div>}
         <header className="rs-phead rs-maptop">
-          <div className="rs-mapt"><h1>{rt(L_, 'bushMap')}</h1><span className="tn">{rt(L_, 'bushCountsT', { t: fmt(taps, 0), l: model.lines.length })}</span></div>
+          <div className="rs-mapt"><h1>{rt(L_, 'bushMap')}</h1><span className="tn">{rt(L_, 'bushCountsT', { t: fmt(taps, 0), l: model.lines.length }).replace(' · ', '\u00a0· ')}</span></div>
           <div className="rs-mbtns">
             <button type="button" className="rs-mbtn" aria-label={rt(L_, 'addToMap')} onClick={() => setSheet('add')}><RsIcon name="plus" size={26} sw={2.4} /></button>
             <button type="button" className="rs-mbtn" aria-label={rt(L_, 'bushLayers')} onClick={() => setSheet('layers')}><RsIcon name="layers" size={25} sw={2.2} /></button>
@@ -452,6 +476,7 @@ function RsBush({ c, sub }) {
         <div className="rs-mapfoot">
           <a className="rs-mbtn wide" href={rsHref('watch')}><RsIcon name="watch" size={24} /><span>{rt(L_, 'watchBush')}</span></a>
           <div className="rs-mzoom">
+            {!wide && trees.length > 0 && <button type="button" className="rs-mbtn rs-mfind" data-fk="find" aria-label={rt(L_, 'findTree')} onClick={() => setSheet('find')}><RsIcon name="search" size={24} /></button>}
             <button type="button" className="rs-mbtn" aria-label={rt(L_, 'zoomIn')} onClick={() => mapRef.current && mapRef.current.zoomIn()}><RsIcon name="plus" size={24} /></button>
             <button type="button" className="rs-mbtn" aria-label={rt(L_, 'zoomOut')} onClick={() => mapRef.current && mapRef.current.zoomOut()}><RsIcon name="minus" size={24} /></button>
           </div>
@@ -463,12 +488,15 @@ function RsBush({ c, sub }) {
       </div>
       {wide && <aside className="rs-bushside" aria-label={rt(L_, 'bushPanel')}>
         {detail ? <div className="rs-sidedetail">
-          <div className="rs-shead"><h2>{detailTitle}</h2><button type="button" className="rs-xbtn" aria-label={rt(L_, 'close')} onClick={() => setSel(null)}><RsIcon name="x" size={22} /></button></div>
+          <div className="rs-shead"><h2>{detailTitle}</h2><button type="button" className="rs-xbtn" aria-label={rt(L_, 'close')} onClick={closeSide}><RsIcon name="x" size={22} /></button></div>
           {detail}
-        </div> : <RsBushOverview c={c} model={model} layers={layers} setLayers={setLayers} onLine={id => { setSel({ type: 'line', id }); const l = model.lines.find(x => x.id === id); if (l && l.geo.pts.length >= 2 && mapRef.current) mapRef.current.fitBounds(window.L.latLngBounds(l.geo.pts), { padding: [60, 60], maxZoom: 18 }); }}
+        </div> : <RsBushOverview c={c} model={model} layers={layers} setLayers={setLayers} onTree={pickTree} onLine={id => { setSel({ type: 'line', id }); const l = model.lines.find(x => x.id === id); if (l && l.geo.pts.length >= 2 && mapRef.current) mapRef.current.fitBounds(window.L.latLngBounds(l.geo.pts), { padding: [60, 60], maxZoom: 18 }); }}
           onTools={() => setSheet('tools')} onAdd={() => setSheet('add')} />}
       </aside>}
-      {!wide && detail && <RsSheet title={detailTitle} onClose={() => setSel(null)} id="rs-bush-detail">{detail}</RsSheet>}
+      {!wide && detail && <RsSheet title={detailTitle} onClose={() => setSel(null)} id="rs-bush-detail"
+        returnTo={selLine ? 'line:' + selLine.id : selPin ? 'pin:' + selPin.id : selTree ? 'find' : null}>{detail}</RsSheet>}
+      {sheet === 'find' && <RsSheet title={rt(L_, 'findTree')} onClose={() => setSheet(null)} id="rs-tfind-sheet">
+        <RsTreeFinder c={c} model={model} autoFocus onPick={t => { setSheet(null); pickTree(t); }} /></RsSheet>}
       {sheet === 'layers' && <RsLayersSheet c={c} layers={layers} setLayers={setLayers} hasProperty={!!model.property} onClose={() => setSheet(null)} />}
       {sheet === 'add' && <RsAddSheet c={c} model={model} onClose={() => setSheet(null)}
         onGps={M => { setSheet(null); addAtGps(M); }} onTap={M => { setSheet(null); setSel(null); setMode({ kind: 'add', keep: true, ...M }); }}
@@ -480,8 +508,39 @@ function RsBush({ c, sub }) {
   );
 }
 
+// Find a tree: the keyboard and screen-reader path to every tree on the map (trees
+// are drawn as SVG dots, and hundreds of Tab stops would be worse than none). A
+// search by tag or name, then the same tree detail a tap on the map opens.
+function RsTreeFinder({ c, model, onPick, autoFocus, cap = 40 }) {
+  const L = c.lang;
+  const [q, setQ] = useState('');
+  const tagOf = t => String(t.tagged || t.label || '');
+  const all = React.useMemo(() => model.pins.filter(p => p.type === 'tree')
+    .sort((a, b) => tagOf(a).localeCompare(tagOf(b), undefined, { numeric: true })), [model.pins]);
+  if (!all.length) return null;
+  const k = q.trim().toLowerCase();
+  const hits = k ? all.filter(t => tagOf(t).toLowerCase().includes(k)) : all;
+  const shown = hits.slice(0, cap);
+  return (
+    <div className="rs-tfind">
+      <label className="rs-vh" htmlFor="rs-tfind-q">{rt(L, 'findTree')}</label>
+      <input id="rs-tfind-q" className="rs-field" type="search" autoComplete="off" value={q} placeholder={rt(L, 'findTreePh')} data-autofocus={autoFocus ? '' : undefined}
+        onChange={e => setQ(e.target.value)} />
+      {shown.length ? <div className="rs-list" style={{ marginTop: 10 }}>{shown.map(t => (
+        <button key={t.id} type="button" className="rs-row" onClick={() => onPick(t)}>
+          <span className="rs-rt"><b>{tagOf(t) || rt(L, 'pinK_tree')}</b>
+            <span className="tn">{[t.mainline ? rt(L, 'lineN', { id: t.mainline }) : rt(L, 'noLineW'), rt(L, 'nTaps', { n: parseInt(t.taps) || 0 })].join(' · ')}</span></span>
+          <span className="rs-chev"><RsIcon name="chev" size={22} /></span>
+        </button>))}</div>
+        : <div className="rs-empty" style={{ marginTop: 10 }}><b>{rt(L, 'findNone', { q: q.trim() })}</b><p>{rt(L, 'findNoneP')}</p>
+          <RsBtn kind="secondary" onClick={() => setQ('')}>{rt(L, 'showAllTrees')}</RsBtn></div>}
+      {hits.length > cap && <p className="rs-note" role="status">{rt(L, 'findMore', { n: cap, t: hits.length })}</p>}
+    </div>
+  );
+}
+
 // Wide side panel with nothing selected: lines, tanks, pumps, layer switches.
-function RsBushOverview({ c, model, layers, setLayers, onLine, onTools, onAdd }) {
+function RsBushOverview({ c, model, layers, setLayers, onLine, onTree, onTools, onAdd }) {
   const L = c.lang, u = srU(c.units);
   return (
     <div className="rs-sideov">
@@ -493,6 +552,7 @@ function RsBushOverview({ c, model, layers, setLayers, onLine, onTools, onAdd })
           <RsVacValue l={l} L={L} />
         </button>))}</div>
         : <div className="rs-empty"><b>{rt(L, 'noLinesT')}</b><p>{rt(L, 'noLinesBush')}</p></div>}
+      {onTree && model.pins.some(p => p.type === 'tree') && <><h2 className="rs-sec">{rt(L, 'findTree')}</h2><RsTreeFinder c={c} model={model} onPick={onTree} cap={8} /></>}
       {model.tanks.length > 0 && <><h2 className="rs-sec">{rt(L, 'tanksWord')}</h2>
         <div className="rs-list">{model.tanks.map(t => (
           <RsRow key={t.id} icon="tank" family="collect" title={t.name} href={rsHref('pumps/tank/' + t.id)}
@@ -558,6 +618,110 @@ function RsLeakChain({ c, l, now, P, demo, big, onLogPump }) {
       {!rel && onLogPump && <button type="button" className="rs-btn2 rs-chlog" onClick={onLogPump}><RsIcon name="gauge" size={18} />{rt(L, 'chainLogPump')}</button>}
     </div>
   );
+}
+
+// The gauge chain with mid-line gauges (fix pass 2; DESIGN.md line 104): the pump,
+// every gauge in walking order, the far end, the drop across each stretch, and the
+// stretch that loses the vacuum, named by its gauges and taps (srGaugeLocate). The
+// line's leak verdict above it is still srLeakFind's. onLog(node) makes each row a
+// button that logs that gauge; Watch shows it read-only at big size.
+function RsGaugeChain({ c, l, now, P, big, onLog, hasPump }) {
+  const L = c.lang, ch = l.chain, loc = ch.loc, u = srUnitL('in', L);
+  const nm = n => n.kind === 'pump' ? rt(L, 'chainPump') : n.kind === 'end' ? rt(L, 'chainEnd') : n.name;
+  const full = n => n.kind === 'gauge' && n.at ? `${n.name} ${rt(L, 'gAt', { t: n.at })}` : nm(n);
+  const seg = loc.seg;
+  // The span the readings cover ("from the pump to C2"), and the gauges this round did not read.
+  const noun = n => n.kind === 'pump' ? rt(L, 'gThePump') : n.kind === 'end' ? rt(L, 'gTheEnd') : n.name;
+  const readIdx = loc.reads.map((r, i) => r ? i : -1).filter(i => i >= 0);
+  const span = readIdx.length >= 2 ? { a: noun(ch.nodes[readIdx[0]]), b: noun(ch.nodes[readIdx[readIdx.length - 1]]) } : null;
+  const unread = ch.nodes.filter((n, i) => !loc.reads[i]).map(nm).join(', ');
+  const tail = unread ? ' ' + rt(L, 'gSkipped', { n: unread }) : '';
+  let head;
+  if (loc.status === 'located') {
+    const a = ch.nodes[seg.from], b = ch.nodes[seg.to];
+    const ft = a.pos && b.pos ? Math.round(srDistM(a.pos, b.pos) * 3.28084 / 10) * 10 : null;
+    head = ['bad', rt(L, 'gWalkT', { a: nm(a), b: nm(b) }), [rt(L, 'gWalkP', { a: full(a), b: full(b), d: fmt(seg.drop, 1), u }),
+      ft ? rt(L, 'gDist', { f: fmt(ft, 0), u: srUnitL('ft', L) }) : '', unread ? rt(L, 'gSkipped', { n: unread }) : ''].filter(Boolean).join(' ')];
+  } else if (loc.status === 'spread') head = ['bad', rt(L, 'gSpreadT'), rt(L, 'gSpreadP', { t: fmt(loc.total, 1), u, ...span }) + tail];
+  else if (loc.status === 'ok') head = ['ok', rt(L, 'gOkT'), rt(L, 'gOkP', { t: fmt(loc.total, 1), l: fmt(P.leakLimitIn, 1), u, ...span }) + tail];
+  else head = ['idle', rt(L, 'gFewT'), rt(L, 'gFewP', { h: fmt(P.pairH, 0) })];
+  return (
+    <div className={`rs-gchain${big ? ' big' : ''}`} role="group" aria-label={rt(L, 'gAria', { n: l.label })}>
+      {!big && <span className="rs-chlbl">{rt(L, 'gChainLbl')}</span>}
+      <p className={`rs-gh ${head[0]}`}><b>{head[1]}</b><span>{head[2]}</span></p>
+      {big ? <ol className="rs-grow-h" style={{ gridTemplateColumns: `repeat(${ch.nodes.length}, minmax(0, 1fr))` }}>
+        {ch.nodes.map((n, i) => { const r = loc.reads[i];
+          return <li key={i} className={`rs-gcol${seg && i > seg.from && i <= seg.to ? ' badin' : ''}${seg && i >= seg.from && i < seg.to ? ' badout' : ''}`}
+            aria-label={`${full(n)}, ${r ? fmt(r.v, 1) + ' ' + u : rt(L, 'gNotRead')}`}>
+            <b className={`tn${r ? '' : ' none'}${r && seg && i >= seg.to ? ' bad' : ''}`} aria-hidden="true">{r ? fmt(r.v, 1) : '·'}</b>
+            <span className={`rs-gdot${r ? (seg && i >= seg.to ? ' bad' : '') : ' off'}`} aria-hidden="true" />
+            <span className="rs-gcn" aria-hidden="true">{n.kind === 'gauge' ? n.name : rt(L, n.kind === 'pump' ? 'gPumpS' : 'gEndS')}</span>
+            {n.kind === 'gauge' && n.at ? <small aria-hidden="true">{n.at}</small> : null}
+          </li>; })}
+      </ol> : <ol className="rs-gl">
+        {ch.nodes.map((n, i) => {
+          const r = loc.reads[i], g = loc.segs.find(x => x.to === i), bad = !!(seg && i > seg.from && i <= seg.to);
+          const val = r ? `${fmt(r.v, 1)} ${u}` : rt(L, 'gNotRead');
+          const can = onLog && (n.kind !== 'pump' || hasPump);
+          const body = <>
+            <span className={`rs-gdot${r ? (seg && i >= seg.to ? ' bad' : '') : ' off'}`} aria-hidden="true" />
+            <span className="rs-gname"><b>{nm(n)}</b>{n.kind === 'gauge' && n.at ? <small>{rt(L, 'gAt', { t: n.at })}</small> : null}</span>
+            <span className={`rs-gval tn${r ? '' : ' none'}`}>{r ? <><b>{fmt(r.v, 1)}<small> {u}</small></b><small className="rs-gago">{srAgo(r.ms, now, L)}</small></> : rt(L, 'gNotRead')}</span>
+          </>;
+          return <React.Fragment key={i}>
+            {i > 0 && <li className={`rs-gseg${bad ? ' bad' : ''}`}><span className="rs-grail" aria-hidden="true" />
+              {g ? <span className="tn">{seg && g === seg ? rt(L, 'gLosesHere', { d: fmt(Math.max(0, g.drop), 1), u }) : rt(L, 'chainDrop', { d: fmt(Math.max(0, g.drop), 1) })}</span> : null}</li>}
+            <li className={`rs-gnode${seg && i > seg.from && i <= seg.to ? ' badin' : ''}${seg && i >= seg.from && i < seg.to ? ' badout' : ''}`}>{can
+              ? <button type="button" className="rs-grow" onClick={() => onLog(n)} aria-label={rt(L, 'gLogAria', { n: full(n), v: val })}>{body}<span className="rs-glog" aria-hidden="true"><RsIcon name="plus" size={18} sw={2.4} /></span></button>
+              : <div className="rs-grow">{body}</div>}</li>
+          </React.Fragment>;
+        })}
+      </ol>}
+    </div>
+  );
+}
+
+// Gauges along a line: add, order (walking order from the pump) and remove.
+// Written to sg_line_gauges; their readings stay in sg_readings under the gauge id.
+function RsGaugeEdit({ c, line, onFail }) {
+  const L = c.lang, list = line.gauges;
+  const [name, setName] = useState('');
+  const [pin, setPin] = useState('');
+  const [at, setAt] = useState('');
+  const [armed, setArmed] = useState(null);
+  useEffect(() => { if (armed == null) return; const tm = setTimeout(() => setArmed(null), 3000); return () => clearTimeout(tm); }, [armed]);
+  const save = next => { if (!srSaveLineGauges(line.id, next)) { onFail(SR_WRITE_FAIL || 'locked'); return false; } onFail(null); return true; };
+  const defName = srNextGaugeName(line.id, list);
+  const tagOf = t => String(t.tagged || t.label || '');
+  const trees = line.trees.slice().sort((a, b) => tagOf(a).localeCompare(tagOf(b), undefined, { numeric: true }));
+  const add = () => {
+    const tr = pin !== '' ? trees.find(t => String(t.id) === pin) : null;
+    const g = { id: srUid('g'), name: name.trim() || defName, at: tr ? tagOf(tr) : at.trim(), pinId: tr ? tr.id : null };
+    if (save([...list, g])) { setName(''); setPin(''); setAt(''); srToast(rt(L, 'gAdded', { n: g.name })); }
+  };
+  const move = (i, d) => { const a = list.slice(), j = i + d; if (j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; save(a); };
+  const del = i => { if (armed !== i) { setArmed(i); return; } setArmed(null); if (save(list.filter((_, k) => k !== i))) srToast(rt(L, 'gRemoved', { n: list[i].name })); };
+  return <>
+    {list.length ? <ol className="rs-list rs-gedit">{list.map((g, i) => (
+      <li key={g.id} className="rs-row">
+        <span className="rs-rt"><b>{g.name}</b><span>{g.at ? rt(L, 'gAt', { t: g.at }) : rt(L, 'gAtNone')}</span></span>
+        <button type="button" className="rs-xbtn" aria-label={rt(L, 'gUp', { n: g.name })} disabled={i === 0} onClick={() => move(i, -1)}><RsIcon name="up" size={20} /></button>
+        <button type="button" className="rs-xbtn" aria-label={rt(L, 'gDown', { n: g.name })} disabled={i === list.length - 1} onClick={() => move(i, 1)}><RsIcon name="down" size={20} /></button>
+        <button type="button" className={`rs-linkbtn${armed === i ? ' bad' : ''}`} onClick={() => del(i)} aria-label={armed === i ? undefined : rt(L, 'gRemove', { n: g.name })}>{rt(L, armed === i ? 'tapAgainDelete' : 'remove')}</button>
+      </li>))}</ol>
+      : <p className="rs-meta">{rt(L, 'gNone')}</p>}
+    <p className="rs-note">{rt(L, 'gOrder')}</p>
+    <label className="rs-fl" htmlFor="rs-g-name">{rt(L, 'gName')}</label>
+    <input id="rs-g-name" className="rs-field" value={name} placeholder={defName} onChange={e => setName(e.target.value)} />
+    {trees.length > 0 && <><label className="rs-fl" htmlFor="rs-g-pin">{rt(L, 'gAtL')}</label>
+      <select id="rs-g-pin" className="rs-field" value={pin} onChange={e => setPin(e.target.value)}>
+        <option value="">{rt(L, 'gAtNone')}</option>
+        {trees.map(t => <option key={t.id} value={String(t.id)}>{tagOf(t) || rt(L, 'pinK_tree')}</option>)}
+      </select></>}
+    {pin === '' && <><label className="rs-fl" htmlFor="rs-g-at">{rt(L, 'gAtText')}</label>
+      <input id="rs-g-at" className="rs-field" value={at} placeholder="C-058" onChange={e => setAt(e.target.value)} /></>}
+    <div style={{ marginTop: 12 }}><RsBtn kind="secondary" icon="plus" onClick={add} id="rs-g-add">{rt(L, 'gAdd', { n: name.trim() || defName })}</RsBtn></div>
+  </>;
 }
 
 // ── Detail: a tree ───────────────────────────────────────────────────────────
@@ -644,7 +808,9 @@ function RsLineDetail({ c, model, line, onClose, onDraw, watch }) {
           <div className="rs-meta tn">{line.latest ? rt(L, 'readAgo', { a: srAgo(line.latest.ms, model.now, L), t: srClock(line.latest.ms, L) }) : rt(L, 'noReadingYet')}</div></div>
       </div>
       <p className={`rs-verdict ${verdict[0]}`}>{verdict[1]}</p>
-      <RsLeakChain c={c} l={line} now={model.now} P={P} onLogPump={relPump ? () => setReading('pump') : null} />
+      {line.chain ? <RsGaugeChain c={c} l={line} now={model.now} P={P} hasPump={!!relPump}
+          onLog={n => setReading(n.kind === 'pump' ? 'pump' : n.kind === 'end' ? true : { g: n })} />
+        : <RsLeakChain c={c} l={line} now={model.now} P={P} onLogPump={relPump ? () => setReading('pump') : null} />}
       {hist.length >= 2 && <RsTimeChart series={[{ id: line.id, pts: hist, dash: line.dash, leak: lk.status === 'suspect' }]} from={hist[0].ms - SR_H_MS} to={model.now}
         yMin={14} yMax={28} yTicks={[16, 20, 24, 28]} h={140} lang={L} label={rt(L, 'vacTrendAria', { n: line.label, k: hist.length })} />}
       <RsKv rows={[
@@ -671,6 +837,12 @@ function RsLineDetail({ c, model, line, onClose, onDraw, watch }) {
         <p className="rs-note">{rt(L, 'tapsOnLineNote', { n: line.treeTaps })}</p>
         {onDraw && <div style={{ marginTop: 12 }}><RsBtn kind="secondary" icon="pen" onClick={onDraw}>{rt(L, line.geo.source === 'drawn' ? 'redrawLine' : 'drawThisLine')}</RsBtn></div>}
       </RsDisclose>}
+      {!watch && <RsDisclose title={rt(L, 'gEditT')} sub={line.gauges.length ? rt(L, 'gCount', { n: line.gauges.length }) : null} icon="gauge" family="lines">
+        <RsGaugeEdit c={c} line={line} onFail={setFail} />
+      </RsDisclose>}
+      {reading && reading.g && <RsReadingSheet c={c} title={rt(L, 'gReadT', { n: reading.g.name })} unit="in" dp={1} steps={[-1, -0.1, 0.1, 1]} min={0} max={30}
+        base={(reading.g.hist.slice(-1)[0] || {}).v || (line.latest ? line.latest.v : 24)} sensor={{ id: reading.g.sid, quantity: 'vacuum', target: { type: 'line', id: line.id }, unit: 'inHg' }}
+        onClose={() => setReading(false)} />}
       {reading === 'pump' && relPump && <RsReadingSheet c={c} title={rt(L, 'releaserOf', { n: relPump.name })} unit="in" dp={1} steps={[-1, -0.1, 0.1, 1]} min={0} max={30}
         base={relPump.vac ? relPump.vac.v : 25} sensor={{ id: srSensorId('pump', relPump.id), quantity: 'vacuum', target: { type: 'pump', id: relPump.id }, unit: 'inHg' }} onClose={() => setReading(false)} />}
       {reading === true && <RsReadingSheet c={c} title={rt(L, 'vacAtEnd', { n: line.label })} unit="in" dp={1} steps={[-1, -0.1, 0.1, 1]} min={0} max={30}
@@ -730,7 +902,7 @@ function RsAddSheet({ c, model, onClose, onGps, onTap, onCoords, onTools }) {
   const [err, setErr] = useState(null);
   const M = { type, line: type === 'tree' ? line : null };
   const byCoords = () => {
-    const a = parseFloat(lat), b = parseFloat(lon);
+    const a = srParseNum(lat), b = srParseNum(lon);   // "44,5412" typed in French reads as 44.5412
     if (!srFin(a) || !srFin(b) || a < -90 || a > 90 || b < -180 || b > 180) { setErr(rt(L, 'coordsBad')); return; }
     onCoords(a, b, M);
   };

@@ -50,7 +50,8 @@ function RsBarRow({ label, value, pct, sub, tone, marker }) {
 function RsPlain({ text, className }) { return <p className={className || 'rs-body'}>{srPlain(text)}</p>; }
 
 function RsMoney({ id, value, onChange, label, steps = [-10, -1, 1, 10], dp = 0, max = 1e6, unit }) {
-  return <RsStepper id={id} value={value} onChange={onChange} steps={steps} dp={dp} pre="$" unit={unit} label={label} min={0} max={max} big={false} />;
+  const fr = SR_NUM_LOC === 'fr-CA';
+  return <RsStepper id={id} value={value} onChange={onChange} steps={steps} dp={dp} pre={fr ? undefined : '$'} unit={fr ? '$' + (unit || '') : unit} label={label} min={0} max={max} big={false} />;
 }
 
 // A setting in one sg_ key. Writes go through ls.set (quota, trial lock); the
@@ -63,7 +64,8 @@ function useRsPref(key, def) {
 // Display helpers for money and litre-aware rates.
 // Small ratios keep a third decimal so a real 0.004 never reads as 0.00.
 const srFine = n => (n == null || !isFinite(n)) ? '' : fmt(n, Math.abs(n) > 0 && Math.abs(n) < 0.1 ? 3 : 2);
-const srMoney = (n, dp = 0) => (n == null || !isFinite(n)) ? '' : (n < 0 ? '-$' : '$') + fmt(Math.abs(n), dp);
+// Money: "$1,250" in English, "1 250 $" in French (Quebec puts the sign after).
+const srMoney = (n, dp = 0) => (n == null || !isFinite(n)) ? '' : SR_NUM_LOC === 'fr-CA' ? (n < 0 ? '-' : '') + fmt(Math.abs(n), dp) + '\u00a0$' : (n < 0 ? '-$' : '$') + fmt(Math.abs(n), dp);
 // A price per gallon shown per the display unit (per litre in litre mode).
 const srPerU = (perGal, units) => units === 'L' ? perGal / SR_L_PER_GAL : perGal;
 const srPerGal = (perU, units) => units === 'L' ? perU * SR_L_PER_GAL : perU;

@@ -12,6 +12,10 @@
 //   sg_line_meta    { [mainlineId]: { taps, path:[[lat,lon]], pathFrom (index of the sg_property_geo feature it came from, or null), tankId, checkedAt, note } }
 //                   (sg_mainlines keeps exactly {id,label,color}: mainlinesSaved() drops
 //                   anything else, so per-line data lives here, keyed by the same id)
+//   sg_line_gauges  { [mainlineId]: [{ id, name, at, pinId }] }   (fix pass 2) mid-line vacuum
+//                   gauges in walking order from the pump; `at` is the tap or tree tag he
+//                   reads it by, pinId the tree pin it sits at (or null). Their readings are
+//                   ordinary sg_readings rows, sensor id line:<id>:g:<gaugeId>.
 //   sg_tanks        [{ id, name, role, capGal, pinId }]                (PORT-PLAN 3.5)
 //   sg_sensors      [{ id, quantity, target:{ type, id }, unit, source:'manual' }]
 //   sg_readings     { [season]: [{ id, s, t, v, src:'manual' }] }     (inHg, gallons)
@@ -53,6 +57,7 @@ function selOps(season) {
     pumps: srArr(ls.get('sg_pumps', [])),
     log: srArr(ls.get('sg_pump_log', [])),
     lineMeta: srObj(ls.get('sg_line_meta', {})),
+    lineGauges: srObj(ls.get('sg_line_gauges', {})),
     tanksRaw: srArr(ls.get('sg_tanks', [])),
     sensors: srArr(ls.get('sg_sensors', [])),
     readings: srArr(srObj(ls.get('sg_readings', {}))[season]),
@@ -105,7 +110,19 @@ function srOpsModel(d, now) {
     const treeTaps = trees.reduce((s, p) => s + (parseInt(p.taps) || 0), 0);
     const checked = Math.max(Date.parse(meta.checkedAt) || -Infinity, leak.latest ? leak.latest.ms : -Infinity);
     const pumpsOn = relPumps;   // flow dots and "Vacuum from": the releaser this line is read against
-    return { ...m, idx: i, relPumps, relHist, dash: SR_LINE_DASH[i % SR_LINE_DASH.length], meta, trees, sid, hist, leak,
+    // Mid-line gauges and where the loss sits between them (srGaugeLocate).
+    const gauges = srArr((d.lineGauges || {})[m.id]).filter(g => g && g.id).map(g => {
+      const pin = g.pinId != null ? d.pins.find(p => String(p.id) === String(g.pinId)) : null;
+      const gsid = srGaugeSid(m.id, g.id);
+      return { ...g, sid: gsid, hist: src.history(gsid), pos: pin && srFin(pin.lat) && srFin(pin.lon) ? [pin.lat, pin.lon] : null };
+    });
+    const relPin = relPumps.length ? d.pins.find(p => String(p.id) === String(relPumps[0].pinId)) : null;
+    const chain = gauges.length ? {
+      nodes: [{ kind: 'pump', hist: relHist, pos: relPin && srFin(relPin.lat) ? [relPin.lat, relPin.lon] : null },
+        ...gauges.map(g => ({ kind: 'gauge', ...g })), { kind: 'end', hist }],
+    } : null;
+    if (chain) chain.loc = srGaugeLocate(chain.nodes, P.leakLimitIn, P.pairH);
+    return { ...m, idx: i, relPumps, relHist, gauges, chain, dash: SR_LINE_DASH[i % SR_LINE_DASH.length], meta, trees, sid, hist, leak,
       latest: leak.latest, taps: isFinite(parseInt(meta.taps)) ? parseInt(meta.taps) : treeTaps, treeTaps, tapsSet: isFinite(parseInt(meta.taps)),
       geo, lengthFt: geo.pts.length >= 2 ? srPathFt(geo.pts) : null, checkedMs: isFinite(checked) ? checked : null,
       pumps: pumpsOn, flowing: pumpsOn.some(p => p.status === 'running'), tier: srAgeTier(leak.latest ? leak.latest.ms : null, now, P.staleH) };
@@ -186,6 +203,12 @@ function srSetPumpStatus(id, status, note, now, startMs) {
   srDataChanged(); return true;
 }
 function srLogPumpEvent(e) { return srOpsSet('sg_pump_log', [...srArr(ls.get('sg_pump_log', [])), { id: srUid('e'), ...e }]); }
+// Gauges on one line, the whole list in walking order (sg_line_gauges; data key, so an
+// expired trial refuses it and the caller shows "not saved").
+function srSaveLineGauges(lineId, list) {
+  const all = srObj(ls.get('sg_line_gauges', {}));
+  return srOpsSet('sg_line_gauges', { ...all, [lineId]: srArr(list).map(g => ({ id: g.id, name: g.name, at: g.at || '', pinId: g.pinId != null ? g.pinId : null })) });
+}
 function srSaveLineMeta(id, patch) {
   const all = srObj(ls.get('sg_line_meta', {}));
   return srOpsSet('sg_line_meta', { ...all, [id]: { ...srObj(all[id]), ...patch } });

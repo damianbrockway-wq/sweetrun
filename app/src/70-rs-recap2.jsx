@@ -18,7 +18,7 @@ function useRsRecapData(c) {
     const model = yieldModelSaved();
     const fuelDef = FUELS.find(x => x.label === ls.get('sg_fuel', 'Firewood (cord)')) || FUELS[0];
     const brix = parseFloat(c.sapBrix) || 2.0;
-    const sc = seasonScore({ sapT:f.sapGal, syT:f.syrupGal, fuelT:f.fuelT, taps, brix, yieldModel:model, fuelSpu:fuelDef.spu });
+    const sc = srSeasonScore({ sapT:f.sapGal, syT:f.syrupGal, fuelT:f.fuelT, taps, brix, yieldModel:model, fuelSpu:fuelDef.spu });
     const replay = srReplaySteps(slog);
     return { slog, prev, brixArr, f, taps, model, fuelDef, brix, sc, replay, moments: srReplayMoments(replay.steps, brixArr),
       cpoints: ls.get('sg_cpoints', []) || [] };
@@ -41,7 +41,9 @@ function RsRecapDetail({ c }) {
   const rows = has ? srScoreRows(sc, { syrupGal:f.syrupGal, sapGal:f.sapGal, fuelT:f.fuelT, taps:D.taps, brix:D.brix, model:D.model, fuelDef:D.fuelDef }) : [];
   const share = () => srShareCardPng(c, D, op);
   const copyScore = () => { const tx = rt(L,'scoreShareText', { y:c.season, s:sc.overall, g:sc.grade });
-    try { navigator.clipboard.writeText(tx).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); } catch {} };
+    // The clipboard can refuse (permissions, an insecure page): say so instead of failing silently.
+    const done = ok => { setCopied(ok ? true : 'fail'); if (!ok) srToast(rt(L, 'copyFailed')); setTimeout(() => setCopied(false), 2000); };
+    try { navigator.clipboard.writeText(tx).then(() => done(true), () => done(false)); } catch { done(false); } };
   const bp = srByPoint(D.slog, D.cpoints);
   return (
     <div className="rs-inner">
@@ -80,7 +82,7 @@ function RsRecapDetail({ c }) {
             </div>
           </>}
           {has && <>
-            <h2 className="rs-sec">{rt(L,'rdScoreT')}{sc.graded && <button type="button" className="rs-more" onClick={copyScore}>{rt(L, copied ? 'copied' : 'copyScore')}</button>}</h2>
+            <h2 className="rs-sec">{rt(L,'rdScoreT')}{sc.graded && <button type="button" className="rs-more" onClick={copyScore}>{rt(L, copied === true ? 'copied' : 'copyScore')}</button>}</h2>
             {sc.suspect ? <div className="rs-err"><b>{rt(L,'suspectT')}</b><p>{rt(L,'suspectP', { r: fmt(f.sapGal / (f.syrupGal || 1), 0), f: fmt(SR_RATIO_FLOOR, 0) })}</p>
                 <RsBtn kind="secondary" href={rsHref('shack/log')}>{rt(L,'checkEntries')}</RsBtn></div>
               : <div className="rs-card rs-stack">
@@ -303,7 +305,7 @@ function RsDiagnose({ c }) {
   const G = seasonTotalsGal(slog, c.units);
   const fuelDef = FUELS.find(x => x.label === ls.get('sg_fuel', 'Firewood (cord)')) || FUELS[0];
   const brix = parseFloat(c.sapBrix) || 2.0, taps = parseInt(c.trees) || 0;
-  const sc = seasonScore({ sapT:G.sapGal, syT:G.syrupGal, fuelT:G.fuelT, taps, brix, yieldModel:yieldModelSaved(), fuelSpu:fuelDef.spu });
+  const sc = srSeasonScore({ sapT:G.sapGal, syT:G.syrupGal, fuelT:G.fuelT, taps, brix, yieldModel:yieldModelSaved(), fuelSpu:fuelDef.spu });
   const ins = srInsights(G.sapGal, G.syrupGal, G.roGal, G.fuelT, taps, brix, sc.effScore, fuelDef);
   const kind = s => s === 'high' ? 'fault' : s === 'medium' ? 'check' : s === 'low' ? 'idle' : 'ok';
   return (

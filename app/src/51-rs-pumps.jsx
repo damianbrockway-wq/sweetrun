@@ -168,13 +168,14 @@ function RsVacCard({ c, model, h = 170 }) {
     <div className="rs-card">
       <div className="rs-split"><div className="rs-meta">{rt(L, 'last7')}</div><span className="rs-fresh"><RsIcon name="clock" size={14} />{rt(L, 'newestRead', { a: srAgo(newest, model.now, L) })}</span></div>
       {series.length ? <RsTimeChart series={series} from={since} to={model.now} yMin={14} yMax={28} yTicks={[16, 20, 24, 28]} h={h} lang={L}
-        label={rt(L, 'vacChartAria', { n: series.length })} /> : <p className="rs-meta">{rt(L, 'noVac7')}</p>}
-      <div className="rs-legend">{series.map(s => <span key={s.id}><svg width="26" height="8" aria-hidden="true"><line x1="1" y1="4" x2="25" y2="4" className={s.leak ? 'rs-lg bad' : 'rs-lg'} strokeDasharray={s.dash || undefined} /></svg>{s.id}</span>)}</div>
+        label={rt(L, 'vacChartAria', { n: series.length })}
+        legend={<div className="rs-legend">{series.map(s => <span key={s.id}><svg width="26" height="8" aria-hidden="true"><line x1="1" y1="4" x2="25" y2="4" className={s.leak ? 'rs-lg bad' : 'rs-lg'} strokeDasharray={s.dash || undefined} /></svg>{s.id}</span>)}</div>} />
+        : <p className="rs-meta">{rt(L, 'noVac7')}</p>}
     </div>
   );
 }
 // A line chart on a real time axis (readings are irregular). Drawn at its width.
-function RsTimeChart({ series, from, to, yMin, yMax, yTicks, h = 160, label, lang }) {
+function RsTimeChart({ series, from, to, yMin, yMax, yTicks, h = 160, label, lang, tableToggle = true, legend }) {
   const [ref, W] = useRsWidth();
   const pl = 30, pr = 40, pt = 10, pb = 22, iw = Math.max(40, W - pl - pr), ih = h - pt - pb;
   const X = ms => pl + (ms - from) / Math.max(1, to - from) * iw, Y = v => pt + (1 - (Math.max(yMin, Math.min(yMax, v)) - yMin) / (yMax - yMin)) * ih;
@@ -186,7 +187,7 @@ function RsTimeChart({ series, from, to, yMin, yMax, yTicks, h = 160, label, lan
   return (
     <div ref={ref} className="rs-chartwrap">
       <svg className="rs-chart" width={W} height={h} viewBox={`0 0 ${W} ${h}`} role="img" aria-label={label}>
-        {yTicks.map(t => <g key={t}><line x1={pl} x2={W - pr} y1={Y(t)} y2={Y(t)} className="rs-grid" /><text x={pl - 6} y={Y(t) + 4} textAnchor="end" className="rs-ct">{t}</text></g>)}
+        {yTicks.map(t => <g key={t}><line x1={pl} x2={W - pr} y1={Y(t)} y2={Y(t)} className="rs-grid" /><text x={pl - 6} y={Y(t) + 4} textAnchor="end" className="rs-ct">{srNumIn(t)}</text></g>)}
         {series.map(s => {
           const pts = s.pts.map(p => [X(p.ms), Y(p.v)]);
           const d = 'M' + pts.map(p => p.map(q => q.toFixed(1)).join(' ')).join(' L');
@@ -200,8 +201,9 @@ function RsTimeChart({ series, from, to, yMin, yMax, yTicks, h = 160, label, lan
         {lbl.map((ms, k) => <text key={k} x={X(ms)} y={h - 4} textAnchor={k === 0 ? 'start' : k === lbl.length - 1 ? 'end' : 'middle'} className="rs-ct">
           {k === lbl.length - 1 ? rt(lang, 'nowW') : srDayLabel(srIsoOf(new Date(ms)), lang)}</text>)}
       </svg>
+      {legend}
       <RsDataTable caption={label} head={[rt(lang,'mainlineWord'), rt(lang,'readWhen'), srUnitL('in', lang)]}
-        rows={series.flatMap(s => s.pts.map(p => [s.id, srClock(p.ms, lang), fmt(p.v, 1)]))} />
+        rows={series.flatMap(s => s.pts.map(p => [s.id, srClock(p.ms, lang), fmt(p.v, 1)]))}  toggle={tableToggle} />
     </div>
   );
 }

@@ -312,7 +312,7 @@ function RsFinishing({ c }) {
   const bp = c.waterBP, fin = finTemp(bp), toC = f => (f - 32) * 5 / 9;
   const grades = [['gradeGolden', '>75%', '66.0 to 66.5', 1, 'fgNote1'], ['gradeAmber', '25 to 75%', '66.5 to 67.5', 2, 'fgNote2'],
     ['gradeDark', '<25%', '67.0 to 68.9', 3, 'fgNote3'], ['gradeVeryDark', '<10%', '67.0 to 68.9', 4, 'fgNote4']];
-  const R = s => s.replace(/^(.+?) to (.+)$/, (_, a, b) => rt(L, 'rangeTo', { a, b }));   // "66.0 to 66.5" in the reader's language
+  const R = s => srDecL(s.replace(/^(.+?) to (.+)$/, (_, a, b) => rt(L, 'rangeTo', { a, b })), L);   // "66.0 to 66.5" in the reader's language
   return (
     <div className="rs-inner">
       <RsSubHead c={c} back="stage/boil" backLabel={rt(L,'st_boil')} eyebrow={rt(L,'stageOf', { n:5 })} title={rt(L,'sc_finish')} lede={rt(L,'fiLede')} />

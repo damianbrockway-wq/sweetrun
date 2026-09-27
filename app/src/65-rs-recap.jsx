@@ -14,7 +14,7 @@ function RsRecapStage({ c }) {
   const bxSeason = m.d.brixlog.filter(e => String(e.date || '').startsWith(yr) || (srDateParts(e.date) || {}).y === +yr).map(e => parseFloat(e.brix)).filter(isFinite);
   const avgBx = bxSeason.length ? bxSeason.reduce((a, b) => a + b, 0) / bxSeason.length : null;
   const fuelDef = FUELS.find(f => f.label === ls.get('sg_fuel', 'Firewood (cord)')) || FUELS[0];
-  const sc = seasonScore({ sapT: G.sapGal, syT: G.syrupGal, fuelT: G.fuelT, taps: m.taps, brix: parseFloat(c.sapBrix) || 2.0, yieldModel: m.model, fuelSpu: fuelDef.spu });
+  const sc = srSeasonScore({ sapT: G.sapGal, syT: G.syrupGal, fuelT: G.fuelT, taps: m.taps, brix: parseFloat(c.sapBrix) || 2.0, yieldModel: m.model, fuelSpu: fuelDef.spu });
   // Sap a day, first sap day to today (or the last logged day for a past season)
   const first = m.series.firstSap;
   const sapBy = srDayTotals(s.sapCollected);

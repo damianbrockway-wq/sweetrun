@@ -31,6 +31,7 @@ eq('sw cache bumped past v35', +(/sweetrun-v(\d+)/.exec(sw) || [0, 0])[1] > 35, 
 // Fix pass: the worker registers after load (its precache never competes with first paint),
 // and a first visit (no controller when the page opened) is never reloaded by clients.claim().
 eq('sw cache bumped past v37 (fix pass)', +(/sweetrun-v(\d+)/.exec(sw) || [0, 0])[1] >= 38, true);
+eq('sw cache bumped for fix pass 2', +(/sweetrun-v(\d+)/.exec(sw) || [0, 0])[1] >= 39, true);
 eq('sw registers after load', /addEventListener\('load', register/.test(idx) && !/^\s*navigator\.serviceWorker\.register\(/m.test(idx), true);
 eq('first visit is not reloaded on controllerchange', /const hadController = !!navigator\.serviceWorker\.controller/.test(idx) && /if \(!hadController \|\| refreshing\) return;/.test(idx), true);
 // Every icon the head and the manifest name exists, is precached, and is the size it claims (PNG IHDR).
@@ -371,12 +372,13 @@ eq('insights', E2.srInsights(1200, 25, 600, 0.5, 100, 2, 90, E2.FUELS[0]).map(i 
 eq('plain ranges', E2.srPlain('10–15 gal, 20–24°F nights, $35–$70/gal'), '10 to 15 gal, 20 to 24°F nights, $35 to $70/gal');
 eq('plain pauses', E2.srPlain('Stop the boil — do not stir'), 'Stop the boil, do not stir');
 eq('plain no dash left', /[–—]/.test(E2.srPlain('a — b – c 1–2')), false);
-eq('plain ranges in French', E2.srPlain('25–30 cm, 1.5–2 in', 'fr'), '25 à 30 cm, 1.5 à 2 in');
+eq('plain ranges in French', E2.srPlain('25–30 cm, 1.5–2 in', 'fr'), '25 à 30 cm, 1,5 à 2 in');
+eq('plain English decimals unchanged', E2.srPlain('1.5–2 in, 0.25 gal'), '1.5 to 2 in, 0.25 gal');
 
 // ── Phases 7-8: leak rule, runtime, fuel, readings, freeze/thaw, lines, pump jobs ──
 const E3 = new Function('ls', src.slice(a, b) +
   '\nreturn { srLeakCheck, srLeakFind, srImportedLines, srRunHours, srHms, srTimeToEmpty, srFuelLeft, srAgeTier, srVacStep, srFreezeThaw, srSapRunning, srLinePath,' +
-  ' srNearestOnPath, srPathFt, srSensorId, srTileXY, srTileUrls, srManualSource, srSimSource, srPickSource, srFreezeItems, srPumpJobs, srOpsPrefs, srMedian, srJobs, SR_OPS_DEFAULTS };')
+  ' srGaugeLocate, srGaugeSid, srNextGaugeName, srNearestOnPath, srPathFt, srSensorId, srTileXY, srTileUrls, srManualSource, srSimSource, srPickSource, srFreezeItems, srPumpJobs, srOpsPrefs, srMedian, srJobs, SR_OPS_DEFAULTS };')
   ({ get: (_k, d) => d, set: () => true });
 const HR = 3600000, DAY = 24 * HR, t0 = Date.UTC(2027, 2, 16, 20, 0);
 // Leak rule: latest >= 2.0 in under the median of the 7 days before it
@@ -398,6 +400,30 @@ eq('finder uses the latest end reading', LF([rd(-1, 12), rd(0, 24)], [rd(0, 24.4
 eq('finder limit is his', LF([rd(0, 21.5)], [rd(0, 24.5)], 3.5).status, 'ok');
 eq('finder pairH is his', LF([rd(0, 17)], [rd(-5, 24.5)], 2, 6).method, 'releaser');
 eq('finder junk pump readings skipped', LF([rd(0, 17)], [{ ms:t0, v:null }, { ms:NaN, v:25 }]).method, null);
+
+// Gauge chain leak localizer (fix pass 2): WHERE on the line the vacuum is lost.
+{ const G = (...vals) => vals.map(v => ({ hist: v == null ? [] : Array.isArray(v) ? v : [rd(0, v)] }));
+  const GL = (nodes, lim = 2, pairH = 3) => E3.srGaugeLocate(nodes, lim, pairH);
+  const proto = GL(G(24.5, 24.1, 23.6, 17.9, 17.2));
+  eq('gauges: prototype line C locates C2 to C3', [proto.status, proto.seg.from, proto.seg.to, proto.seg.drop, proto.total], ['located', 2, 3, 5.7, 7.3]);
+  eq('gauges: every segment drop', proto.segs.map(g => g.drop), [0.4, 0.5, 5.7, 0.7]);
+  eq('gauges: holding line is ok, no segment named', (({ status, seg, total }) => ({ status, seg, total }))(GL(G(24.5, 24.3, 24.1, 23.9))), { status:'ok', seg:null, total:0.6 });
+  eq('gauges: loss shared along the line is spread', (({ status, seg }) => ({ status, seg }))(GL(G(24.5, 23.5, 22.5, 21.5, 20.5))), { status:'spread', seg:null });
+  eq('gauges: exactly half the total counts as located', GL(G(24, 23, 22, 20)).status, 'located');
+  eq('gauges: an unread gauge between is named as skipped', (({ status, seg }) => [status, seg.from, seg.to, seg.skipped])(GL(G(24.5, 24.2, null, 17.0))), ['located', 1, 3, [2]]);
+  eq('gauges: no pump reading still localizes between gauges', (({ status, seg }) => [status, seg.from, seg.to])(GL(G(null, 24.1, 23.9, 18.0))), ['located', 2, 3]);
+  eq('gauges: one reading is too few', GL(G(null, null, 21)).status, 'few');
+  eq('gauges: nothing read', GL(G(null, null, null)).status, 'none');
+  eq('gauges: a reading outside the pair window is ignored', GL([{ hist:[rd(-5, 24.5)] }, { hist:[rd(0, 24.2)] }, { hist:[rd(0, 17)] }]).seg.from, 1);
+  eq('gauges: pairH is his (the pump 5 h earlier counts at 6 h)', GL([{ hist:[rd(-5, 24.5)] }, { hist:[rd(0, 24.2)] }, { hist:[rd(0, 17)] }], 2, 6).reads[0].v, 24.5);
+  eq('gauges: each gauge takes the reading nearest the far end reading', GL([{ hist:[rd(-2, 20), rd(-0.1, 24.5)] }, { hist:[rd(0, 17)] }]).reads[0].v, 24.5);
+  eq('gauges: the reference is the far end, else the newest on the line', GL([{ hist:[rd(0, 24.5)] }, { hist:[rd(-1, 24)] }, { hist:[] }]).refMs, t0 - HR);
+  eq('gauges: the limit is his', [GL(G(24.5, 24.0, 21.5), 3.5).status, GL(G(24.5, 24.0, 21.0), 3.5).status], ['ok', 'located']);
+  eq('gauges: two equal drops name the one nearer the pump', (({ seg }) => [seg.from, seg.to])(GL(G(24, 21, 18))), [0, 1]);
+  eq('gauges: junk readings skipped', GL([{ hist:[{ ms:NaN, v:24 }, { ms:t0, v:null }] }, { hist:[rd(0, 17)] }]).status, 'few');
+  eq('gauges: sensor id', E3.srGaugeSid('C', 'g1'), 'line:C:g:g1');
+  eq('gauges: next name', [E3.srNextGaugeName('C', []), E3.srNextGaugeName('C', [{ name:'C1' }, { name:'C3' }])], ['C1', 'C2']);
+}
 eq('finder keeps the baseline for display', LF([rd(-24, 24), rd(0, 17)], [rd(0, 25)]).baseline, 24);
 eq('prefs pairH default 3', E3.srOpsPrefs({}).pairH, 3);
 // Imported KML/GPX lines offered as mainline paths
@@ -650,6 +676,65 @@ for (const f of [...rsFiles.map(f => join('app', 'src', f)), join('app', 'runshe
   const code = readFileSync(join(ROOT, f), 'utf8').split('\n').filter(l => !/^\s*(\/\/|\/\*|\*)/.test(l)).join('\n');
   const hits = code.match(/#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b/g) || [];
   eq(`no hex literals in ${f}`, hits, []);
+}
+
+// ── Fix pass 2 ───────────────────────────────────────────────────────────────
+{
+  const fn = name => { const m = src.match(new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}')); if (!m) throw new Error(name + ' not found'); return m[0]; };
+  const fmtLine = src.match(/const fmt {2}= \(n, d = 1\) => [^\n]+/)[0];
+  const numIn = src.match(/const srNumIn = [^\n]+/)[0];
+  const money = src.match(/const srMoney = [^\n]+/)[0];
+  const mk = loc => new Function(`let SR_NUM_LOC = '${loc}'; ${fmtLine}; ${numIn}; ${money}; ${fn('srParseNum')}; return { fmt, srNumIn, srMoney, srParseNum };`)();
+  const EN = mk('en-US'), FR = mk('fr-CA');
+  // English output is byte-identical to before; French uses fr-CA separators.
+  eq('fmt en unchanged', [EN.fmt(1012, 0), EN.fmt(2.5, 1), EN.fmt(1234567.891, 2), EN.fmt(NaN)], ['1,012', '2.5', '1,234,567.89', '—']);
+  eq('fmt fr', [FR.fmt(1012, 0), FR.fmt(2.5, 1), FR.fmt(0.307, 3)], ['1 012', '2,5', '0,307']);
+  eq('money en unchanged', [EN.srMoney(1250), EN.srMoney(-5), EN.srMoney(0.88, 2)], ['$1,250', '-$5', '$0.88']);
+  eq('money fr: sign after', [FR.srMoney(1250), FR.srMoney(0.88, 2)], ['1 250 $', '0,88 $']);
+  eq('stepper shows fr decimals, no grouping', [EN.srNumIn(2.5), FR.srNumIn(2.5), FR.srNumIn(1500)], ['2.5', '2,5', '1500']);
+  eq('parse en unchanged', [EN.srParseNum('1,500'), EN.srParseNum('2,5'), EN.srParseNum('12,345.67')], [1500, 2.5, 12345.67]);
+  eq('parse fr: comma is always the decimal', [FR.srParseNum('1,500'), FR.srParseNum('2,5'), FR.srParseNum('1 000,5'), FR.srParseNum('1 000,5'), FR.srParseNum('24.5')], [1.5, 2.5, 1000.5, 1000.5, 24.5]);
+  eq('parse fr: coordinates typed with a comma', FR.srParseNum('-69,6203'), -69.6203);
+  eq('PDF report formats in en-US', /const loc0 = SR_NUM_LOC; SR_NUM_LOC = 'en-US';[\s\S]*finally \{ SR_NUM_LOC = loc0; \}/.test(src.slice(src.indexOf('async function exportSeasonPDF('))), true);
+  eq('shell sets the number locale while rendering', /SR_NUM_LOC = lang === 'fr' \? 'fr-CA' : 'en-US';/.test(src), true);
+  // Season score memo: same numbers as seasonScore, computed once per input set.
+  const E2m = new Function('ls', src.slice(a, b) + '\nreturn { seasonScore, srSeasonScore, YIELD_MODELS, FUELS };')({ get: (_k, d) => d, set: () => true });
+  const args = { sapT: 1200, syT: 25, fuelT: 1.2, taps: 100, brix: 2, yieldModel: E2m.YIELD_MODELS.gravity, fuelSpu: E2m.FUELS[0].spu };
+  const m1 = E2m.srSeasonScore(args), m2 = E2m.srSeasonScore({ ...args });
+  eq('score memo equals seasonScore', JSON.stringify(m1), JSON.stringify(E2m.seasonScore(args)));
+  eq('score memo returns the same result for the same inputs', m1 === m2, true);
+  eq('score memo recomputes when an input changes', E2m.srSeasonScore({ ...args, syT: 30 }) === m1, false);
+  eq('score memo, other inputs', JSON.stringify(E2m.srSeasonScore({ ...args, taps: 0, fuelT: 0 })), JSON.stringify(E2m.seasonScore({ ...args, taps: 0, fuelT: 0 })));
+  eq('no screen calls seasonScore directly', (src.match(/[^.\w]seasonScore\(\{/g) || []).length, 1);   // only srSeasonScore's own call
+  eq('sg_logs2 read through a memo on the screens that re-rendered per keystroke', [
+    /const slog = React\.useMemo\(\(\) => \(\(ls\.get\('sg_logs2'/.test(src.slice(src.indexOf('function RsDegreeDays('))),
+    /const logs = useSrLogs\(\);/.test(src.slice(src.indexOf('function RsGuide('))),
+    /const sapT = React\.useMemo\(\(\) => seasonTotals/.test(src.slice(src.indexOf('function RsEquipment(')))], [true, true, true]);
+  // Gauge chain: a new data key (locked in an expired trial, backed up), sg_line_meta untouched.
+  const prefs = src.match(/const SR_PREF_KEYS = \[[\s\S]*?\];/)[0];
+  eq('sg_line_gauges is a data key, not a preference', prefs.includes('sg_line_gauges'), false);
+  eq('gauge writer keeps the documented shape', /\{ id: g\.id, name: g\.name, at: g\.at \|\| '', pinId: g\.pinId != null \? g\.pinId : null \}/.test(fn('srSaveLineGauges')), true);
+  eq('line meta writer unchanged', fn('srSaveLineMeta').includes('gauge'), false);
+  eq('gauge readings use the ordinary reading writer', /sensor=\{\{ id: reading\.g\.sid, quantity: 'vacuum', target: \{ type: 'line', id: line\.id \}, unit: 'inHg' \}\}/.test(src), true);
+  eq('Watch shows the gauge row read-only and never with demo readings', (src.match(/l\.chain && !demo \? <RsGaugeChain c=\{c\} l=\{l\} now=\{model\.now\} P=\{model\.prefs\} big \/>/g) || []).length, 2);
+  // Keyboard: one sheet answers at a time; focus finds a redrawn map control.
+  const sheet = src.slice(src.indexOf('function RsSheet('), src.indexOf('\n}\n', src.indexOf('function RsSheet(')));
+  eq('only the top sheet answers keys', /if \(_rsSheets\[_rsSheets\.length - 1\] !== me\) return;/.test(sheet), true);
+  eq('scroll lock lifts only when the last sheet closes', /if \(!_rsSheets\.length\) document\.documentElement\.classList\.remove\('rs-sheet-open'\)/.test(sheet), true);
+  eq('sheet focuses its data-autofocus field', sheet.includes("querySelector('[data-autofocus]')"), true);
+  eq('Bush pins focusable only where they open something, labelled once Leaflet made the icon', /const kb = !!opt\.onPin;/.test(src) && /keyboard: kb/.test(src) && /if \(kb\) mk\.on\('add'[\s\S]{0,400}data-fk', 'pin:'/.test(src), true);
+  eq('line plates carry a focus key', (src.match(/data-fk="line:\$\{srEsc\(l\.id\)\}"/g) || []).length, 2);
+  // Charts: a visible table on request everywhere, except Watch's fixed one-screen layout.
+  eq('chart table has a Show as a table toggle', /aria-expanded=\{open\} aria-controls=\{id\}/.test(src.slice(src.indexOf('function RsDataTable('))), true);
+  eq('legends sit between a chart and its table link', [
+    (t => t.indexOf('{legend}') < t.indexOf('<RsDataTable'))(src.slice(src.indexOf('function RsTimeChart('))),
+    (t => t.indexOf('className="rs-legend"') < t.indexOf('<RsDataTable'))(src.slice(src.indexOf('function RsSeasonChart('), src.indexOf('\n}\n', src.indexOf('function RsSeasonChart(')))),
+    (t => t.indexOf('className="rs-legend"') < t.indexOf('<RsDataTable'))(src.slice(src.indexOf('function RsRibbon('), src.indexOf('\n}\n', src.indexOf('function RsRibbon('))))], [true, true, true]);
+  eq('Watch time charts keep the table but not the toggle', (src.match(/tableToggle=\{false\}/g) || []).length, 2);
+  // Hierarchy: live Boil actions sit above the chart; the Next card yields to Get a Pass while locked.
+  const live = src.slice(src.indexOf('function RsBoilLive('));
+  eq('live Boil: Add a reading before the readings chart', live.indexOf('id="rs-boil-read"') < live.indexOf('className="rs-blchart"'), true);
+  eq('Next card is secondary during an expired trial', /id="rs-next-btn" kind=\{SR_LOCKED \? 'secondary' : 'primary'\}/.test(src), true);
 }
 
 console.log(`${pass} passed, ${fail} failed`);

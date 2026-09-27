@@ -264,15 +264,15 @@ function RsWatchPanel({ c, model, l, demo, onClose }) {
   return (
     <section className="rs-wpanel" ref={ref} tabIndex={-1} aria-labelledby="rs-wpanel-h">
       <div className="rs-split" style={{ alignItems: 'center' }}>
-        <div className="rs-wlh"><RsLinePlate l={l} size={56} /><div><h2 className="rs-wk" id="rs-wpanel-h">{l.label}</h2><div className="rs-wsub tn">{rt(L, 'treesTaps', { t: l.trees.length, n: l.taps })}{l.lengthFt ? ` · ${fmt(l.lengthFt, 0)} ${srUnitL('ft', L)}` : ''}</div></div></div>
+        <div className="rs-wlh"><RsLinePlate l={l} size={56} /><div><h2 className="rs-wk" id="rs-wpanel-h">{l.label}</h2><div className="rs-wsub tn">{rt(L, 'treesTaps', { t: l.trees.length, n: l.taps })}{l.lengthFt ? `\u00a0· ${fmt(l.lengthFt, 0)}\u00a0${srUnitL('ft', L)}` : ''}</div></div></div>
         <button type="button" className="rs-xbtn" aria-label={rt(L, 'close')} onClick={close}><RsIcon name="x" size={26} /></button>
       </div>
       <div className={`rs-wbig tn${lk.status === 'suspect' ? ' bad' : ''}${l.tier === 'old' ? ' old' : ''}`}>{l.latest ? fmt(l.latest.v, 1) : '·'}<small> {srUnitL('in', L)}</small></div>
       <div className="rs-wsub">{l.latest ? (demo ? rt(L, 'wDemoTag') : rt(L, 'readAgo', { a: srAgo(l.latest.ms, model.now, L), t: srClock(l.latest.ms, L) })) : rt(L, 'noReadingYet')}</div>
       <p className={`rs-wverdict ${lk.status === 'suspect' ? 'bad' : lk.status === 'ok' ? 'ok' : ''}`}>{srLeakVerdict(L, lk, model.prefs)[1]}</p>
-      <RsLeakChain c={c} l={l} now={model.now} P={model.prefs} demo={demo} big />
+      {l.chain && !demo ? <RsGaugeChain c={c} l={l} now={model.now} P={model.prefs} big /> : <RsLeakChain c={c} l={l} now={model.now} P={model.prefs} demo={demo} big />}
       {hist.length >= 2 && <div className="rs-wcard" style={{ marginTop: 12 }}><div className="rs-wk2">{rt(L, demo ? 'wLast24' : 'wRecent')}</div>
-        <RsTimeChart series={[{ id: l.id, pts: hist, dash: '', leak: lk.status === 'suspect' }]} from={hist[0].ms} to={model.now} yMin={14} yMax={28} yTicks={[14, 18, 22, 26]} h={170} lang={L} label={rt(L, 'vacTrendAria', { n: l.label, k: hist.length })} /></div>}
+        <RsTimeChart series={[{ id: l.id, pts: hist, dash: '', leak: lk.status === 'suspect' }]} from={hist[0].ms} to={model.now} yMin={14} yMax={28} yTicks={[14, 18, 22, 26]} h={170} lang={L} tableToggle={false} label={rt(L, 'vacTrendAria', { n: l.label, k: hist.length })} /></div>}
       <dl className="rs-wkv tn">
         <dt>{rt(L, 'tapsWordC')}</dt><dd>{fmt(l.taps, 0)}</dd>
         <dt>{rt(L, 'lastChecked')}</dt><dd>{l.checkedMs ? srAgo(l.checkedMs, model.now, L) : rt(L, 'neverW')}</dd>
@@ -292,11 +292,11 @@ function RsWatchOne({ c, model, V, l, demo }) {
     <div className="rs-wone">
       <section className="rs-wcard rs-wonel">
         <div className="rs-wlh"><RsLinePlate l={l} size={72} /><div><div className="rs-wk big">{l.label}</div>
-          <div className="rs-wsub tn">{rt(L, 'treesTaps', { t: l.trees.length, n: l.taps })}{l.lengthFt ? ` · ${fmt(l.lengthFt, 0)} ${srUnitL('ft', L)}` : ''}</div></div></div>
+          <div className="rs-wsub tn">{rt(L, 'treesTaps', { t: l.trees.length, n: l.taps })}{l.lengthFt ? `\u00a0· ${fmt(l.lengthFt, 0)}\u00a0${srUnitL('ft', L)}` : ''}</div></div></div>
         <div className={`rs-wgiant tn${lk.status === 'suspect' ? ' bad' : ''}${l.tier === 'old' ? ' old' : ''}`}>{l.latest ? fmt(l.latest.v, 1) : '·'}<small>{srUnitL('in', L)}</small></div>
         <div className="rs-wsub">{l.latest ? (demo ? rt(L, 'wDemoTag') : rt(L, 'readAgo', { a: srAgo(l.latest.ms, model.now, L), t: srClock(l.latest.ms, L) })) : rt(L, 'noReadingYet')}</div>
         <p className={`rs-wverdict big ${lk.status === 'suspect' ? 'bad' : lk.status === 'ok' ? 'ok' : ''}`}>{srLeakVerdict(L, lk, model.prefs)[1]}</p>
-        <RsLeakChain c={c} l={l} now={model.now} P={model.prefs} demo={demo} big />
+        {l.chain && !demo ? <RsGaugeChain c={c} l={l} now={model.now} P={model.prefs} big /> : <RsLeakChain c={c} l={l} now={model.now} P={model.prefs} demo={demo} big />}
         <dl className="rs-wkv big tn">
           <dt>{rt(L, 'lastChecked')}</dt><dd>{l.checkedMs ? srAgo(l.checkedMs, model.now, L) : rt(L, 'neverW')}</dd>
           <dt>{rt(L, 'servedBy')}</dt><dd>{(l.relPumps || l.pumps).length ? (l.relPumps || l.pumps).map(p => p.name).join(', ') : rt(L, 'noneW')}</dd>
@@ -305,7 +305,7 @@ function RsWatchOne({ c, model, V, l, demo }) {
       </section>
       <section className="rs-wcard rs-wonec">
         <div className="rs-wk2">{rt(L, demo ? 'wLast24' : 'wRecent')}</div>
-        {hist.length >= 2 ? <RsTimeChart series={[{ id: l.id, pts: hist, dash: '', leak: lk.status === 'suspect' }]} from={hist[0].ms} to={model.now} yMin={14} yMax={28} yTicks={[14, 18, 22, 26]} h={300} lang={L}
+        {hist.length >= 2 ? <RsTimeChart series={[{ id: l.id, pts: hist, dash: '', leak: lk.status === 'suspect' }]} from={hist[0].ms} to={model.now} yMin={14} yMax={28} yTicks={[14, 18, 22, 26]} h={300} lang={L} tableToggle={false}
           label={rt(L, 'vacTrendAria', { n: l.label, k: hist.length })} /> : <p className="rs-wsub">{rt(L, 'wNeedTwo')}</p>}
         <div className="rs-wonemap"><RsWatchMap c={c} model={model} V={V} one={l.id} /></div>
       </section>

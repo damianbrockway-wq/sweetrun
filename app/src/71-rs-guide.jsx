@@ -10,7 +10,8 @@ function RsGuide({ c }) {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('all');
   const [res, setRes] = useState(null);
-  const slog = ((ls.get('sg_logs2', {}) || {})[c.season]) || {};
+  const logs = useSrLogs();
+  const slog = logs[c.season] || {};
   const ctx = { hasRO: (slog.sapRO || []).reduce((s, e) => s + (parseFloat(e.val) || 0), 0) > 0, hasVacuum: ls.get('sg_dx_vac', 'gravity') !== 'gravity', trees: c.trees || 0 };
   useEffect(() => {
     const id = setTimeout(() => {

@@ -2,6 +2,8 @@
 **Last updated: September 26, 2026 (Run Sheet cutover)**
 
 > **Sept 26, 2026, cutover:** The app at `/app/` is the Run Sheet design everywhere, sweetrun.app included. The old UI, the look flag (`app/look.js`, `?look=`) and the "Classic look" switch are gone. Tabs: Season, Bush, Log, Pumps, Sugar Shack, plus Watch in the side nav on iPad landscape and desktop. Home screen icon is option E, Damian's own orange tile with the white outline leaf (`app/icons/*-e-*`, source in `brand/icon-options/`). Service worker `sweetrun-v36`. Data keys and formulas unchanged. Details: `CHANGELOG.md`, `ARCH.md` section 0.
+>
+> **Sept 27, 2026, fix passes:** French complete (numbers read 1 000, 2,5, 0,88 $), keyboard and screen-reader pass (axe finds nothing on any screen), gauges along a line with a leak localizer (new key `sg_line_gauges`), "Show as a table" under every chart. Service worker `sweetrun-v39`. Details: `CHANGELOG.md`, `ARCH.md` section 0.
 
 > **Sept 19, 2026 update:** Added free public SEO calculator pages (`/calculators`, `/draw-off-calculator`, `/sap-to-syrup-calculator`, `/tap-calculator`, `/de-filter-calculator` + shared `calc-shared.css`), all linked from the landing page nav/footer and sitemap.xml. New app icon set (amber leaf + teal sap drop): `icon-512.png`, `app/icon-512.png`, `icon-192.png`, `icon-512-maskable.png`, `apple-touch-icon.png`, `favicon.png/.ico/.svg`, regenerated the inline manifest in `app/index.html`, and bumped the service worker cache to `sweetrun-v11`. Competitive analysis of Sap Spy in `SAPSPY-TEARDOWN.md`.
 
@@ -54,7 +56,7 @@ A maple syrup production platform for serious sugarmakers. Offline-first PWA (Pr
 | `app/manifest.webmanifest` | Home screen name, colours and icons |
 | `app/icons/` | Home screen, tab and maskable icons (option E) |
 | `app/photos/`, `app/fonts/` | Header photos and the self-hosted Barlow type |
-| `app/sw.js` | Service worker — handles offline caching. Current cache: `sweetrun-v36` |
+| `app/sw.js` | Service worker — handles offline caching. Current cache: `sweetrun-v39` |
 | `tests/` | `npm test`: formula tests and Run Sheet tests |
 | `sitemap.xml` | Submitted to Google Search Console |
 | `package.json` | Build config — `npm run build` runs `scripts/build.mjs` |
@@ -160,13 +162,13 @@ Previously used Formspree — submissions were captured in dashboard but email f
 
 ## Service Worker / Caching
 
-The app uses a service worker for offline support. Current cache name: `sweetrun-v36`. It precaches the app, stylesheets, fonts, icons and header photos, so the whole app works offline after one load. Map tiles have their own cache (`sweetrun-tiles-v1`) that is never cleared.
+The app uses a service worker for offline support. Current cache name: `sweetrun-v39`. It precaches the app, stylesheets, fonts, icons and header photos, so the whole app works offline after one load. Map tiles have their own cache (`sweetrun-tiles-v1`) that is never cleared.
 
 **File:** `app/sw.js`
 
 If you update the app and users are seeing an old cached version, bump the cache version:
 ```javascript
-const CACHE = 'sweetrun-v37';  // increment this number
+const CACHE = 'sweetrun-v40';  // increment this number
 ```
 Then commit and push. Users will get the fresh version on their next visit.
 
