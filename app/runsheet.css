@@ -1390,3 +1390,45 @@ button.rs-grow { grid-template-columns: 20px minmax(0, 1fr) auto 32px; }
 .rs-app .rs-divicon[tabindex]:focus-visible > :is(.rs-mtank, .rs-mpump, .rs-mhouse, .rs-mpin) { outline: 3px solid var(--rs-acc); outline-offset: 3px; }
 /* A 44 px hit area around every pin tile (pump 28, waypoint 14, tank 30 draw smaller). */
 .rs-app .rs-center > span:first-child::before { content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
+
+/* ── LiDAR terrain layers ────────────────────────────────────────────────────
+   Legend: a bar (elevation ramp or slope classes) with its numbers under it, or
+   the aspect swatches; compact on the map, full in the layers sheet. Data colours
+   are set inline from 24-rs-terrain (they are data, not chrome). */
+.rs-tlg { width: 100%; }
+.rs-tlg-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.rs-tlg-h b { font: 700 15px var(--rs-f); }
+.rs-tlg-h span { font-size: 13px; color: var(--rs-dim); }
+.rs-tlg-bar { margin-top: 8px; }
+.rs-tlg-bar > i { display: block; height: 12px; border-radius: 6px; }
+.rs-tlg-bar > i.segs { display: flex; overflow: hidden; }
+.rs-tlg-bar > i.segs b { flex: 1; }
+.rs-tlg-ticks { position: relative; height: 20px; margin-top: 4px; font: 600 13px var(--rs-f); color: var(--rs-dim); }
+.rs-tlg-ticks span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.rs-tlg-ticks span.first { transform: none; } .rs-tlg-ticks span.last { transform: translateX(-100%); }
+.rs-tlg-aspect { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px 10px; margin-top: 8px; font: 600 13px var(--rs-f); color: var(--rs-dim); }
+.rs-tlg-aspect span { display: inline-flex; align-items: center; gap: 6px; }
+.rs-tlg-aspect i { width: 14px; height: 14px; border-radius: 4px; flex: none; }
+.rs-tlg-fb { margin: 6px 0 0; font-size: 14px; line-height: 1.4; color: var(--rs-dim); }
+.rs-tlg-wrap { margin-top: 12px; padding: 14px; border-radius: 14px; background: var(--rs-s2); }
+.rs-tlg-fit { display: flex; justify-content: flex-end; }
+.rs-tlg.compact { padding: 10px 12px 8px; border-radius: 14px; background: color-mix(in srgb, var(--rs-bg) 90%, transparent); border: 1px solid var(--rs-line2); width: min(300px, 100%); }
+.rs-tlg.compact .rs-tlg-aspect { grid-template-columns: repeat(5, auto); }
+.rs-needsig { display: flex; align-items: center; gap: 8px; }
+/* Colour strength: a range slider in Ember (44 px tall target, amber thumb). */
+.rs-range { -webkit-appearance: none; appearance: none; width: 100%; height: 44px; background: transparent; margin: 2px 0 0; accent-color: var(--rs-acc); }
+.rs-range::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--rs-s4); }
+.rs-range::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; margin-top: -10px; border-radius: 50%; background: var(--rs-acc); border: 3px solid var(--rs-bg); }
+.rs-range::-moz-range-track { height: 6px; border-radius: 3px; background: var(--rs-s4); }
+.rs-range::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--rs-acc); border: 3px solid var(--rs-bg); }
+/* Tap to read the ground: a card with the height, and a ring where he tapped. */
+.rs-readcard { display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 14px; border-radius: 14px; background: color-mix(in srgb, var(--rs-bg) 92%, transparent); border: 1px solid var(--rs-line2); }
+.rs-readcard .rs-rt b { display: block; font: 800 22px/1.15 var(--rs-f); }
+.rs-readcard .rs-rt span { display: block; font-size: 13px; color: var(--rs-dim); }
+.rs-app .rs-readpt { stroke: var(--rs-acc); }
+/* Hillshade darkens what is under it instead of greying it. */
+.rs-app .leaflet-rs-hill-pane { mix-blend-mode: multiply; }
+.rs-linefall .rs-chartwrap { margin-top: 12px; }
+
+.rs-mfootl { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; }
+.rs-mfootl .rs-readcard { max-width: min(300px, calc(100vw - 100px)); }

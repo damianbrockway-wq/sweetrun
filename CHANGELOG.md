@@ -1,5 +1,16 @@
 # SweetRun changelog
 
+## 2026-09-27: Terrain from LiDAR on the Bush (elevation, slope, aspect, water, trails)
+
+What a sugarmaker sees:
+- **Elevation heat map.** The Bush layers sheet has "Terrain from LiDAR": Elevation colours the ground by height from USGS 3DEP LiDAR, scaled to your own bush (for example 294 to 448 ft), with a legend in feet (metres in metric) and a colour strength slider. "Fit the colours to this view" rescales it where you are looking.
+- **Slope and aspect.** Slope shows steepness in percent (0 to 5, 5 to 10, 10 to 15, 15 to 30, 30+), aspect shows which way each slope faces. Hillshade adds shaded relief. One coloured layer at a time, so the legend always matches.
+- **Waterways and trails.** Streams and ponds from the USGS National Hydrography Dataset, recreational trails from the USGS National Map. Property lines keep their switch.
+- **Tap to read the ground.** With a terrain layer on, tap open ground to see its height there. A tree's detail shows its LiDAR ground height. A mainline's detail shows its high end, low end, fall and average grade, whether the tank sits at the low end, and any rise that sap cannot cross on gravity or low spot where it can pool, with a profile of the ground along the line.
+- **Offline.** Terrain layers need signal. Saving an area offline now keeps the terrain, water and trail layers that are on, and the sheet says when a layer needs signal.
+
+Under the hood: one new preference key `sg_bush_terrain`; no data key or shape changed. Requests follow the documented ArcGIS REST API (3DEP ImageServer `exportImage` per 256 px tile with a `renderingRule`, `getSamples`; MapServer `export` and cached tiles); if a custom rendering is refused, the layer switches to the service's published function. The sandbox could not reach USGS, so the layers were verified against a stub that implements the documented semantics; the first open on a real device is the live check. Service worker `sweetrun-v40`. 674 tests.
+
 ## 2026-09-27: Fix pass 2 (gauge chain, keyboard, French numbers)
 
 What a sugarmaker sees:

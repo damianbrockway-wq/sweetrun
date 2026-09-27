@@ -34,6 +34,8 @@
 
 **Fix passes (2026-09-27).** French is complete, numbers included: `fmt` formats in `SR_NUM_LOC` ('en-US', or 'fr-CA' while the shell renders in French: "1 000", "2,5", money "0,88 $" via `srMoney`), steppers show "2,5" (`srNumIn`), and `srParseNum` reads a comma as the decimal in French; the PDF report stays en-US. One new data key, `sg_line_gauges` `{ [lineId]: [{ id, name, at, pinId }] }` (mid-line vacuum gauges in walking order; readings are ordinary `sg_readings` rows under `line:<id>:g:<gaugeId>`), with `srGaugeLocate` in the formula band. Screens read `sg_logs2` once per data change (`useSrLogs` or a memo on the data version) and score through `srSeasonScore` (a memo on `seasonScore`'s inputs). Sheets keep a stack: only the top one answers Escape and Tab, and focus goes back to the opener, to a redrawn map control by its `data-fk`, or to the screen's h1. SW `sweetrun-v39`. `app.js` 823,008 bytes (247,450 gzipped); shell 274,708 gzipped. Tests 619 (134 formula, 485 Run Sheet).
 
+**Terrain layers (2026-09-27).** Parts `24-rs-terrain` (formula band: units, tile boxes, rendering rules, request URLs, sample parsing, legend scales, line profile; tested) and `53-rs-terrain-ui` (Leaflet layers built from those URLs, legend, layers sheet, tap reading, a line's fall). Preference key `sg_bush_terrain` `{ overlay, opacity, hillshade, water, trails, range }`. Sources: USGS 3DEP ImageServer (exportImage, getSamples), USGSHydroCached tiles, the National Map transportation MapServer layer 37 (trails). Heights sampled for display are never stored. The tile cache also holds `elevation.nationalmap.gov` and `carto.nationalmap.gov`. SW `sweetrun-v40`; 674 tests.
+
 ## 1. The map (full read, 2026-09-19)
 
 ### The shape of the building
@@ -126,6 +128,9 @@ One single-file React 18 app, compiled by Babel (JSX transform only — no bundl
 ---
 
 ## 5. Decision log
+
+**2026-09-27 — Terrain as tiles from exportImage, coloured by our own rules.** Leaflet has no ImageServer layer and adding esri-leaflet would add a library outside the CDN allowlist, so a small `L.TileLayer` subclass asks `exportImage` for each 256 px tile in 3857. The URLs are deterministic, so the existing tile cache and offline save hold them. Colour is set by `renderingRule` chains (Stretch then Colormap for elevation scaled to his bush's own range; Slope with SlopeType 2 and a 1/cos(latitude) z factor, remapped to the percent classes; Aspect remapped to compass sectors), because the published "Slope Map" and "Aspect Map" have no published class breaks to write a legend from. If a chain is refused, the layer falls back to the published function and says so. The chains were built from Esri's raster function reference and not exercised against the live service from the sandbox.
+
 
 **2026-09-27 — Mid-line gauges get their own key.** The prototype's gauge chain needs each gauge's place on a line. `sg_line_meta[id].gaugeIds` (the PORT-PLAN sketch) would add a field to an existing shape, so positions live in a new data key, `sg_line_gauges`, and readings reuse `sg_readings` and `sg_sensors` unchanged. Whether a line leaks stays `srLeakFind` (pump against far end); `srGaugeLocate` only says where, and says "spread" rather than guess when no stretch carries half the loss.
 

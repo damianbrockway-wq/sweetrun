@@ -300,6 +300,14 @@ function RsBush({ c, sub }) {
   const wide = useRsWide();
   const [layers, setLayersState] = useState(() => ({ ...SR_BUSH_LAYERS, ...srObj(ls.get('sg_bush_layers', {})) }));
   const setLayers = patch => setLayersState(s => { const n = { ...s, ...patch }; ls.set('sg_bush_layers', n); return n; });
+  // LiDAR terrain layers (sg_bush_terrain). tfb: kinds drawn with the service's published
+  // function because the custom one was refused; tdown: kinds whose tiles do not load.
+  const [terrain, setTerrainState] = useState(() => ({ ...SR_BUSH_TERRAIN, ...srObj(ls.get('sg_bush_terrain', {})) }));
+  const setTerrain = patch => setTerrainState(s => { const n = { ...s, ...patch }; ls.set('sg_bush_terrain', n); return n; });
+  const [tfb, setTfb] = useState({}), [tdown, setTdown] = useState({}), [fitting, setFitting] = useState(false);
+  const [readPt, setReadPt] = useState(null);   // { lat, lon, st, m } for the tap reading
+  const online = useSrOnline();
+  const tfbRef = React.useRef(tfb); tfbRef.current = tfb;
   const s0 = sub || [];
   const [sel, setSelState] = useState(() => s0[0] === 'tree' ? { type: 'tree', id: +s0[1] } : s0[0] === 'line' ? { type: 'line', id: s0[1] } : null);
   const [sheet, setSheet] = useState(() => s0[0] === 'tools' ? 'tools' : null);
@@ -315,6 +323,44 @@ function RsBush({ c, sub }) {
   };
   const tankLevels = React.useMemo(() => { const o = {}; model.tanks.forEach(t => { o[t.id] = t; }); return o; }, [model.tanks]);
   const drawModel = React.useMemo(() => ({ ...model, tanks: model.tanksRaw, tankLevels }), [model, tankLevels]);
+  // The bush's bounds (for the heat map's range) and its latitude (slope's Mercator factor).
+  const bushB = React.useMemo(() => { const p = srBushBounds(drawModel); if (p.length < 2) return null;
+    const la = p.map(x => x[0]), lo = p.map(x => x[1]); return { north: Math.max(...la), south: Math.min(...la), east: Math.max(...lo), west: Math.min(...lo) }; }, [drawModel]);
+  const bushLat = bushB ? (bushB.north + bushB.south) / 2 : null;
+  // Heights over an area to scale the heat map: 25 samples, low and high padded 5 %.
+  const fitRange = b => { if (!b) return Promise.reject(new Error('area')); setFitting(true);
+    return srFetchElev(srGridPoints(b, 5)).then(v => { const r = srElevRange(v); if (!r) throw new Error('none'); setTerrain({ range: r }); }).finally(() => setFitting(false)); };
+  useEffect(() => {
+    if (terrain.overlay !== 'elev' || terrain.range || tfb.elev || !online || lf !== 'ready') return;
+    // His bush's own bounds; with no pins or lines, the view once the map has one.
+    const map = mapRef.current, bb = !bushB && map && map._loaded ? map.getBounds() : null;
+    fitRange(bushB || (bb && { north: bb.getNorth(), south: bb.getSouth(), east: bb.getEast(), west: bb.getWest() })).catch(() => setTfb(f => ({ ...f, elev: true })));
+  }, [terrain.overlay, terrain.range, online, lf]);
+  const onHealth = React.useCallback((kind, h) => {
+    if (h.ok > 0) { setTdown(d => d[kind] ? { ...d, [kind]: false } : d); return; }
+    if (h.err < 3) return;
+    // A custom rendering refused while online: use the service's published function. Offline,
+    // keep the custom tiles (a saved area holds those) and say the layer needs signal.
+    if (SR_TERRAIN_KINDS.includes(kind) && !tfbRef.current[kind] && navigator.onLine !== false) setTfb(f => ({ ...f, [kind]: true }));
+    else setTdown(d => d[kind] ? d : { ...d, [kind]: true });
+  }, []);
+  useEffect(() => {
+    const map = mapRef.current; if (!map || lf !== 'ready') return;
+    srApplyTerrain(window.L, map, terrain, { fb: !!(terrain.overlay && tfb[terrain.overlay]), lat: bushLat, onHealth });
+  }, [lf, terrain, tfb, bushLat]);
+  const terrainOn = !!(terrain.overlay || terrain.hillshade);
+  const terrainRef = React.useRef(terrainOn); terrainRef.current = terrainOn;
+  // Tap to read the ground: one 3DEP sample where he tapped.
+  const readAt = (lat, lon) => {
+    setReadPt({ lat, lon, st: 'loading' });
+    srFetchElev([[lat, lon]]).then(v => setReadPt(r => r && r.lat === lat ? { ...r, st: v[0] == null ? 'none' : 'ok', m: v[0] } : r),
+      () => setReadPt(r => r && r.lat === lat ? { ...r, st: 'err' } : r));
+  };
+  useEffect(() => {
+    const map = mapRef.current; if (!map || lf !== 'ready') return;
+    if (map._rsRead) { map.removeLayer(map._rsRead); map._rsRead = null; }
+    if (readPt) map._rsRead = window.L.circleMarker([readPt.lat, readPt.lon], { radius: 8, className: 'rs-readpt', weight: 3, fillOpacity: 0, interactive: false }).addTo(map);
+  }, [readPt && readPt.lat, readPt && readPt.lon, lf]);
 
   // Draw (and first fit) whenever the data, the layers or the selection change.
   useEffect(() => {
@@ -351,6 +397,7 @@ function RsBush({ c, sub }) {
       const M = modeRef.current;
       if (M && M.kind === 'draw') { setMode(m => ({ ...m, pts: [...m.pts, [e.latlng.lat, e.latlng.lng]] })); return; }
       if (M && M.kind === 'add') { dropPin(e.latlng.lat, e.latlng.lng, M, null); return; }
+      if (terrainRef.current) readAt(e.latlng.lat, e.latlng.lng); else setReadPt(null);
       setSel(null);
     };
     map.on('click', h);
@@ -455,6 +502,9 @@ function RsBush({ c, sub }) {
           <RsBanners c={c} />
           {gps.on && <div className={`rs-accbadge ${accTier}`} role="status">{gps.err ? rt(L_, gps.err === 'denied' ? 'gpsDeniedS' : 'gpsLost') : gps.acc == null ? rt(L_, 'gpsFinding') : rt(L_, 'gpsAcc', { a: gps.acc })}</div>}
           {tileTrouble && <div className="rs-mapmsg" role="status"><RsIcon name="info" size={20} />{rt(L_, 'tilesDown')}</div>}
+          {terrain.overlay && !tdown[terrain.overlay] && <RsTerrainLegend c={c} kind={terrain.overlay} range={terrain.range} fb={tfb[terrain.overlay]} compact />}
+          {(() => { const dn = ['overlay', 'hillshade', 'water', 'trails'].map(k => k === 'overlay' ? terrain.overlay : terrain[k] ? k : null).filter(k => k && tdown[k]);
+            return dn.length ? <div className="rs-mapmsg" role="status"><RsIcon name="info" size={20} />{rt(L_, online ? 'layerDownMap' : 'needsSignalMap', { n: dn.map(k => rt(L_, 'lyN_' + k)).join(', ') })}</div> : null; })()}
           {msg && <div className={`rs-mapmsg${msg.bad ? ' bad' : ''}`} role="status">{msg.t}<button type="button" className="rs-xbtn" aria-label={rt(L_, 'dismiss')} onClick={() => setMsg(null)}><RsIcon name="x" size={20} /></button></div>}
           {mode && mode.kind === 'add' && <div className="rs-mapmode" role="status"><b>{rt(L_, 'tapToAdd', { k: rt(L_, 'pinK_' + mode.type).toLowerCase() })}</b>
             <button type="button" className="rs-btn2 sm" onClick={() => setMode(null)}>{rt(L_, 'doneW')}</button></div>}
@@ -474,7 +524,15 @@ function RsBush({ c, sub }) {
           <div style={{ marginTop: 10 }}><RsBtn kind="secondary" icon="up" onClick={() => setSheet('tools')}>{rt(L_, 'importBoundary')}</RsBtn></div>
         </div>}
         <div className="rs-mapfoot">
-          <a className="rs-mbtn wide" href={rsHref('watch')}><RsIcon name="watch" size={24} /><span>{rt(L_, 'watchBush')}</span></a>
+          {/* The ground reading sits above Watch the bush, clear of the line plates at the top. */}
+          <div className="rs-mfootl">
+            {readPt && <div className="rs-readcard" role="status" aria-live="polite">
+            <span className="rs-rt"><b className="tn">{readPt.st === 'ok' ? srElevText(readPt.m, c.units, L_) : readPt.st === 'loading' ? rt(L_, 'readLoading') : readPt.st === 'none' ? rt(L_, 'readNone') : rt(L_, 'readNoSignal')}</b>
+              <span>{readPt.st === 'ok' ? rt(L_, 'readHere') : rt(L_, 'src3dep')}</span></span>
+            <button type="button" className="rs-xbtn" aria-label={rt(L_, 'dismiss')} onClick={() => setReadPt(null)}><RsIcon name="x" size={20} /></button>
+          </div>}
+            <a className="rs-mbtn wide" href={rsHref('watch')}><RsIcon name="watch" size={24} /><span>{rt(L_, 'watchBush')}</span></a>
+          </div>
           <div className="rs-mzoom">
             {!wide && trees.length > 0 && <button type="button" className="rs-mbtn rs-mfind" data-fk="find" aria-label={rt(L_, 'findTree')} onClick={() => setSheet('find')}><RsIcon name="search" size={24} /></button>}
             <button type="button" className="rs-mbtn" aria-label={rt(L_, 'zoomIn')} onClick={() => mapRef.current && mapRef.current.zoomIn()}><RsIcon name="plus" size={24} /></button>
@@ -482,6 +540,7 @@ function RsBush({ c, sub }) {
           </div>
         </div>
         {!wide && <div className="rs-mapchips" role="group" aria-label={rt(L_, 'bushLayers')}>
+          <button type="button" className={`rs-chip${terrain.overlay === 'elev' ? ' on' : ''}`} aria-pressed={terrain.overlay === 'elev'} onClick={() => setTerrain({ overlay: terrain.overlay === 'elev' ? null : 'elev' })}>{rt(L_, 'lyElev')}</button>
           {[['trees', 'lyTrees'], ['mainlines', 'lyLines'], ['vacuum', 'lyVacuum'], ['brix', 'lyBrix'], ['pumps', 'lyPumps'], ['tanks', 'lyTanks']].map(([k, l]) =>
             <button key={k} type="button" className={`rs-chip${layers[k] ? ' on' : ''}`} aria-pressed={!!layers[k]} onClick={() => setLayers({ [k]: !layers[k] })}>{rt(L_, l)}</button>)}
         </div>}
@@ -497,12 +556,16 @@ function RsBush({ c, sub }) {
         returnTo={selLine ? 'line:' + selLine.id : selPin ? 'pin:' + selPin.id : selTree ? 'find' : null}>{detail}</RsSheet>}
       {sheet === 'find' && <RsSheet title={rt(L_, 'findTree')} onClose={() => setSheet(null)} id="rs-tfind-sheet">
         <RsTreeFinder c={c} model={model} autoFocus onPick={t => { setSheet(null); pickTree(t); }} /></RsSheet>}
-      {sheet === 'layers' && <RsLayersSheet c={c} layers={layers} setLayers={setLayers} hasProperty={!!model.property} onClose={() => setSheet(null)} />}
+      {sheet === 'layers' && <RsLayersSheet c={c} layers={layers} setLayers={setLayers} terrain={terrain} setTerrain={setTerrain} hasProperty={!!model.property}
+        online={online} fb={tfb} down={tdown} fitting={fitting} onClose={() => setSheet(null)}
+        onFit={() => { const m = mapRef.current, bb = m && m._loaded ? m.getBounds() : null; if (bb) fitRange({ north: bb.getNorth(), south: bb.getSouth(), east: bb.getEast(), west: bb.getWest() }).catch(() => {}); }} />}
       {sheet === 'add' && <RsAddSheet c={c} model={model} onClose={() => setSheet(null)}
         onGps={M => { setSheet(null); addAtGps(M); }} onTap={M => { setSheet(null); setSel(null); setMode({ kind: 'add', keep: true, ...M }); }}
         onCoords={(lat, lon, M) => { setSheet(null); dropPin(lat, lon, M, null); const map = mapRef.current; if (map) map.setView([lat, lon], 18); }}
         onTools={() => setSheet('tools')} />}
       {sheet === 'tools' && <RsMapTools c={c} model={model} mapRef={mapRef} base={layers.base} onClose={() => setSheet(null)}
+        extra={{ terrain: terrain.overlay && !(terrain.overlay === 'elev' && !terrain.range) ? { kind: terrain.overlay, o: { range: terrain.range, lat: bushLat, fallback: !!tfb[terrain.overlay] } } : null,
+          hillshade: terrain.hillshade, water: terrain.water, trails: terrain.trails }}
         onDraw={id => { setSheet(null); setSel(null); setMode({ kind: 'draw', id, pts: [] }); }} />}
     </div>
   );
@@ -529,7 +592,7 @@ function RsTreeFinder({ c, model, onPick, autoFocus, cap = 40 }) {
       {shown.length ? <div className="rs-list" style={{ marginTop: 10 }}>{shown.map(t => (
         <button key={t.id} type="button" className="rs-row" onClick={() => onPick(t)}>
           <span className="rs-rt"><b>{tagOf(t) || rt(L, 'pinK_tree')}</b>
-            <span className="tn">{[t.mainline ? rt(L, 'lineN', { id: t.mainline }) : rt(L, 'noLineW'), rt(L, 'nTaps', { n: parseInt(t.taps) || 0 })].join(' · ')}</span></span>
+            <span className="tn">{[t.mainline ? rt(L, 'mainlineN', { id: t.mainline }) : rt(L, 'noLineW'), ((parseInt(t.taps) || 0) === 1 ? rt(L, 'nTap1') : rt(L, 'nTaps', { n: parseInt(t.taps) || 0 }))].join(' · ')}</span></span>
           <span className="rs-chev"><RsIcon name="chev" size={22} /></span>
         </button>))}</div>
         : <div className="rs-empty" style={{ marginTop: 10 }}><b>{rt(L, 'findNone', { q: q.trim() })}</b><p>{rt(L, 'findNoneP')}</p>
@@ -754,6 +817,7 @@ function RsTreeDetail({ c, model, tree, onClose }) {
     onClose(); srToast(rt(L, 'treeDeleted'));
   };
   const lines = model.lines;
+  const ev = useSrElev(srFin(tree.lat) && srFin(tree.lon) ? [[tree.lat, tree.lon]] : null);
   return (
     <div className="rs-detail">
       <RsKv rows={[
@@ -761,6 +825,7 @@ function RsTreeDetail({ c, model, tree, onClose }) {
         tree.species ? [rt(L, 'species'), String(tree.species).replace(/_/g, ' ')] : null,
         tree.dbh ? [rt(L, 'diameter'), `${tree.dbh} ${srUnitL('in', L)}`] : null,
         srFin(parseFloat(tree.elev)) ? [rt(L, 'elevation'), `${fmt(parseFloat(tree.elev), 0)} ft`] : null,
+        ev.st !== 'idle' ? [rt(L, 'groundLidar'), ev.st === 'ok' ? (ev.v[0] != null ? srElevText(ev.v[0], c.units, L) : rt(L, 'noLidarShort')) : ev.st === 'loading' ? '·' : rt(L, 'needsSignalShort')] : null,
         tree.accuracy != null ? [rt(L, 'placedBy'), <span className={`rs-acc ${tree.accuracy <= 5 ? 'ok' : tree.accuracy <= 15 ? 'check' : 'bad'}`}>{rt(L, 'gpsAccShort', { a: tree.accuracy })}</span>] : [rt(L, 'placedBy'), rt(L, 'placedByHand')],
       ]} />
       <label className="rs-fl" htmlFor="rs-tree-taps" style={{ marginTop: 16 }}>{rt(L, 'tapsWordC')}</label>
@@ -822,6 +887,7 @@ function RsLineDetail({ c, model, line, onClose, onDraw, watch }) {
         pumps ? [rt(L, 'servedBy'), pumps] : null,
       ]} />
       <p className="rs-note">{rt(L, 'leakRuleNote', { l: fmt(P.leakLimitIn, 1), d: fmt(P.baselineDays, 0), h: fmt(P.pairH, 0) })}</p>
+      {!watch && <RsLineFall c={c} model={model} line={line} />}
       {fail && <p className="rs-errline" role="alert">{rt(L, 'bNotSavedT')} {rt(L, fail === 'quota' ? 'bQuotaP' : 'bLockedP')}</p>}
       <div style={{ marginTop: 14 }}><RsBtn icon="gauge" onClick={() => setReading(true)} id="rs-line-read">{rt(L, 'logVacuum')}</RsBtn></div>
       <div className="rs-btnrow">
@@ -876,24 +942,7 @@ function RsPinDetail({ c, model, pin }) {
 }
 
 // ── Sheets: layers, add, map tools ───────────────────────────────────────────
-function RsLayersSheet({ c, layers, setLayers, hasProperty, onClose }) {
-  const L = c.lang;
-  const rows = [['trees', 'lyTrees', 'lyTreesS'], ['laterals', 'lyLaterals', 'lyLateralsS'], ['mainlines', 'lyLines', 'lyLinesS'], ['vacuum', 'lyVacuum', 'lyVacuumS'],
-    ['brix', 'lyBrix', 'lyBrixS'], ['pumps', 'lyPumps', 'lyPumpsS'], ['tanks', 'lyTanks', 'lyTanksS'], ...(hasProperty ? [['property', 'lyProperty', 'lyPropertyS']] : [])];
-  return (
-    <RsSheet title={rt(L, 'bushLayers')} onClose={onClose} id="rs-layers">
-      <label className="rs-fl">{rt(L, 'baseMap')}</label>
-      <RsSeg label={rt(L, 'baseMap')} wrap value={layers.base} onChange={v => setLayers({ base: v })}
-        options={[['sat', rt(L, 'baseSat')], ['sat-terrain', rt(L, 'baseSatT')], ['topo', rt(L, 'baseTopo')], ['street', rt(L, 'baseStreet')]]} />
-      <div className="rs-list" style={{ marginTop: 16 }}>
-        {rows.map(([k, t, s]) => <button key={k} type="button" className={`rs-row rs-chk tog${layers[k] ? ' on' : ''}`} aria-pressed={!!layers[k]} onClick={() => setLayers({ [k]: !layers[k] })}>
-          <span className="rs-box"><RsIcon name="check" size={18} sw={3} /></span>
-          <span className="rs-rt"><b>{rt(L, t)}</b><span>{rt(L, s)}</span></span></button>)}
-      </div>
-      <p className="rs-note">{rt(L, 'layersNote')}</p>
-    </RsSheet>
-  );
-}
+// RsLayersSheet moved to 53-rs-terrain-ui (terrain layers, legend, sources).
 function RsAddSheet({ c, model, onClose, onGps, onTap, onCoords, onTools }) {
   const L = c.lang;
   const [type, setType] = useState('tree');
@@ -957,7 +1006,7 @@ function srBoundaryCount(gj) {
   const f = gj && (gj.type === 'FeatureCollection' ? gj.features : [gj]) || [];
   return f.filter(x => x && x.geometry && ['Polygon', 'LineString'].includes(x.geometry.type)).length;
 }
-function RsMapTools({ c, model, mapRef, base, onClose, onDraw }) {
+function RsMapTools({ c, model, mapRef, base, onClose, onDraw, extra }) {
   const L = c.lang;
   const [imp, setImp] = useState(null);
   const [save, setSave] = useState(null);   // {pct, done, total} | {result}
@@ -987,7 +1036,7 @@ function RsMapTools({ c, model, mapRef, base, onClose, onDraw }) {
     const map = mapRef.current; if (!map || busy) return;
     const bb = map.getBounds();
     const mode = base === 'street' ? 'sat' : base;
-    const plan = srTileUrls({ north: bb.getNorth(), south: bb.getSouth(), west: bb.getWest(), east: bb.getEast() }, map.getZoom(), mode);
+    const plan = srTileUrls({ north: bb.getNorth(), south: bb.getSouth(), west: bb.getWest(), east: bb.getEast() }, map.getZoom(), mode, extra);
     if (!plan.urls.length) { setSave({ result: { bad: true, t: rt(L, 'tilesZoomOut') } }); return; }
     if (plan.tooMany) { setSave({ result: { bad: true, t: rt(L, 'tilesTooMany', { n: fmt(plan.tiles, 0) }) } }); return; }
     let done = 0, errors = 0;
@@ -1058,6 +1107,7 @@ function RsMapTools({ c, model, mapRef, base, onClose, onDraw }) {
       {model.property && <div style={{ marginTop: 10 }}><RsBtn kind="bad" onClick={clearProp}>{rt(L, armed ? 'tapAgainClear' : 'clearBoundary')}</RsBtn></div>}
       <h3 className="rs-sec">{rt(L, 'offlineTiles')}</h3>
       <p className="rs-meta">{rt(L, 'offlineP')}</p>
+      {extra && (extra.terrain || extra.hillshade || extra.water || extra.trails) && <p className="rs-note">{rt(L, 'offlineTerrain', { n: [extra.terrain ? rt(L, 'lyN_' + extra.terrain.kind) : null, extra.hillshade ? rt(L, 'lyN_hillshade') : null, extra.water ? rt(L, 'lyN_water') : null, extra.trails ? rt(L, 'lyN_trails') : null].filter(Boolean).join(', ') })}</p>}
       {busy ? <div className="rs-progress" role="progressbar" aria-valuenow={save.pct} aria-valuemin="0" aria-valuemax="100"><i style={{ width: save.pct + '%' }} />
         <span className="tn">{rt(L, 'tilesSaving', { d: save.done, t: save.total })}</span></div>
         : <div style={{ marginTop: 10 }}><RsBtn kind={fileLines.length ? 'secondary' : undefined} icon="download" onClick={saveTiles} id="rs-save-tiles">{rt(L, 'saveArea')}</RsBtn></div>}

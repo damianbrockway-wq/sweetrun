@@ -18,6 +18,8 @@ const SR_PREF_KEYS = [
   'sg_look','sg_first_name','sg_boil_bg',
   // Phases 7-8: Bush layer choice, leak/freeze/fuel/stale defaults he can change, demo readings switch
   'sg_bush_layers','sg_watch_prefs','sg_demo_readings',
+  // LiDAR terrain: which terrain layers are on, their strength, the heat map's range
+  'sg_bush_terrain',
 ];
 const SR_PREF_PREFIXES = ['sg_last_screen','sg_pan','sg_dx_','sg_bev_','sg_recap_'];
 const _srIsPref = k => SR_PREF_KEYS.includes(k) || SR_PREF_PREFIXES.some(p => k.startsWith(p));

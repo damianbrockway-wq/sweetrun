@@ -419,7 +419,10 @@ function srTileXY(lat, lng, z) {
   const y = Math.floor((1 - Math.log(Math.tan(latR) + 1 / Math.cos(latR)) / Math.PI) / 2 * n);
   return { x: Math.max(0, Math.min(n - 1, x)), y: Math.max(0, Math.min(n - 1, y)) };
 }
-function srTileUrls(b, zoom, mode) {
+// extra (optional): the terrain layers that are on, saved with the area to z17:
+//   { terrain: { kind, o } | null, hillshade, water, trails }  (24-rs-terrain builds the URLs)
+function srTileUrls(b, zoom, mode, extra) {
+  const X = extra || {};
   const z = Math.round(zoom), minZ = Math.max(12, z - 1), maxZ = Math.min(18, z + 1);
   const T = (u, zz, x, y) => u.replace('{z}', zz).replace('{y}', y).replace('{x}', x);
   const urls = []; let tiles = 0;
@@ -427,9 +430,17 @@ function srTileUrls(b, zoom, mode) {
     const nw = srTileXY(b.north, b.west, zz), se = srTileXY(b.south, b.east, zz);
     for (let x = nw.x; x <= se.x; x++) for (let y = nw.y; y <= se.y; y++) {
       tiles++;
-      if (mode === 'topo') { if (zz <= 16) urls.push(T(SR_TILE.topo, zz, x, y)); continue; }
-      urls.push(T(SR_TILE.sat, zz, x, y), T(SR_TILE.labels, zz, x, y));
-      if (mode === 'sat-terrain' && zz <= 16) urls.push(T(SR_TILE.hill, zz, x, y));
+      if (mode === 'topo') { if (zz <= 16) urls.push(T(SR_TILE.topo, zz, x, y)); }
+      else {
+        urls.push(T(SR_TILE.sat, zz, x, y), T(SR_TILE.labels, zz, x, y));
+        if (mode === 'sat-terrain' && zz <= 16) urls.push(T(SR_TILE.hill, zz, x, y));
+      }
+      if (zz <= 17) {
+        if (X.terrain) urls.push(srTerrainTileUrl(X.terrain.kind, zz, x, y, X.terrain.o));
+        if (X.hillshade) urls.push(srTerrainTileUrl('hillshade', zz, x, y));
+        if (X.water) urls.push(srHydroTileUrl(zz, x, y));
+        if (X.trails) urls.push(srTrailsTileUrl(zz, x, y));
+      }
     }
   }
   return { urls, tiles, tooMany: urls.length > 600 };

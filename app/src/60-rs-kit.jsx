@@ -372,11 +372,11 @@ function RsDataTable({ caption, head, rows, toggle = true }) {
   </>;
 }
 // ── Charts (dataviz rules: thin marks, one axis, hairline grid, text colours) ─
-function RsLineChart({ series, yMax, yTicks, xLabels, refLine, h = 150, label, rowLabel, rowHead = '', dp = 2 }) {
+function RsLineChart({ series, yMax, yTicks, xLabels, refLine, h = 150, label, rowLabel, rowHead = '', dp = 2, yMin = 0 }) {
   const [ref, W] = useRsWidth();
   const pl = 34, pr = 58, pt = 10, pb = 24, iw = Math.max(40, W - pl - pr), ih = h - pt - pb;
   const n = Math.max(2, ...series.map(s => s.v.length));
-  const X = i => pl + i / (n - 1) * iw, Y = v => pt + (1 - v / (yMax || 1)) * ih;
+  const X = i => pl + i / (n - 1) * iw, Y = v => pt + (1 - (v - yMin) / ((yMax - yMin) || 1)) * ih;   // yMin 0 unless a chart starts higher (a line profile)
   return (
     <div ref={ref} className="rs-chartwrap">
       <svg className="rs-chart" width={W} height={h} viewBox={`0 0 ${W} ${h}`} role="img" aria-label={label}>

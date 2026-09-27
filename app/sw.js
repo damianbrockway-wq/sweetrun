@@ -2,7 +2,7 @@
 // Cache name: bump this string on every deploy to force all clients to update cleanly.
 // localStorage data is NEVER touched by this file — it is purely cache management.
 
-const CACHE      = 'sweetrun-v39';
+const CACHE      = 'sweetrun-v40';
 const TILE_CACHE = 'sweetrun-tiles-v1';   // kept separately — never auto-purged on app update
 
 // Everything SweetRun needs to run fully offline. v36 is the cutover build: the
@@ -109,6 +109,8 @@ self.addEventListener('fetch', event => {
   const isTile = url.hostname === 'server.arcgisonline.com'
               || url.hostname === 'services.arcgisonline.com'   // Esri World Hillshade (terrain layer)
               || url.hostname === 'basemap.nationalmap.gov'      // USGS Topo (+ shaded-relief fallback)
+              || url.hostname === 'elevation.nationalmap.gov'    // USGS 3DEP LiDAR: elevation, slope, aspect, hillshade tiles and heights
+              || url.hostname === 'carto.nationalmap.gov'        // USGS trails
               || url.hostname === 'clarity.maptiles.arcgis.com'
               || url.hostname === 'gis.apfo.usda.gov'
               || url.hostname.endsWith('openstreetmap.org');

@@ -378,7 +378,7 @@ eq('plain English decimals unchanged', E2.srPlain('1.5–2 in, 0.25 gal'), '1.5 
 // ── Phases 7-8: leak rule, runtime, fuel, readings, freeze/thaw, lines, pump jobs ──
 const E3 = new Function('ls', src.slice(a, b) +
   '\nreturn { srLeakCheck, srLeakFind, srImportedLines, srRunHours, srHms, srTimeToEmpty, srFuelLeft, srAgeTier, srVacStep, srFreezeThaw, srSapRunning, srLinePath,' +
-  ' srGaugeLocate, srGaugeSid, srNextGaugeName, srNearestOnPath, srPathFt, srSensorId, srTileXY, srTileUrls, srManualSource, srSimSource, srPickSource, srFreezeItems, srPumpJobs, srOpsPrefs, srMedian, srJobs, SR_OPS_DEFAULTS };')
+  ' srGaugeLocate, srGaugeSid, srNextGaugeName, srMToFt, srFtToM, srDegToPct, srPctToDeg, srElevU, srElevUnit, srTileBBox3857, srSlopeZ, srSlopeRule, srAspectRule, srElevRule, srTerrainRule, srTerrainTileUrl, srTrailsTileUrl, srHydroTileUrl, srSamplesUrl, srParseSamples, srGridPoints, srElevRange, srElevTicks, srAspectWord, srAlongPath, srLineProfile, SR_3DEP, SR_3DEP_PUBLISHED, SR_SLOPE_CLASSES, SR_ASPECT_CLASSES, SR_ELEV_RAMP, SR_MERC, srNearestOnPath, srPathFt, srSensorId, srTileXY, srTileUrls, srManualSource, srSimSource, srPickSource, srFreezeItems, srPumpJobs, srOpsPrefs, srMedian, srJobs, SR_OPS_DEFAULTS };')
   ({ get: (_k, d) => d, set: () => true });
 const HR = 3600000, DAY = 24 * HR, t0 = Date.UTC(2027, 2, 16, 20, 0);
 // Leak rule: latest >= 2.0 in under the median of the 7 days before it
@@ -676,6 +676,88 @@ for (const f of [...rsFiles.map(f => join('app', 'src', f)), join('app', 'runshe
   const code = readFileSync(join(ROOT, f), 'utf8').split('\n').filter(l => !/^\s*(\/\/|\/\*|\*)/.test(l)).join('\n');
   const hits = code.match(/#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b/g) || [];
   eq(`no hex literals in ${f}`, hits, []);
+}
+
+// ── LiDAR terrain (USGS 3DEP) ────────────────────────────────────────────────
+{
+  const T3 = E3, near = (a, b, e = 1e-6) => Math.abs(a - b) < e;
+  // Units
+  eq('m to ft', [T3.srMToFt(100), T3.srMToFt(0)], [328.084, 0]);
+  eq('ft to m round trip', near(T3.srFtToM(T3.srMToFt(123.4)), 123.4), true);
+  eq('slope 45 degrees is 100 %', near(T3.srDegToPct(45), 100), true);
+  eq('slope 0 degrees is 0 %, 30 degrees is 57.7 %', [T3.srDegToPct(0), +T3.srDegToPct(30).toFixed(1)], [0, 57.7]);
+  eq('percent to degrees', [+T3.srPctToDeg(100).toFixed(6), +T3.srPctToDeg(15).toFixed(2)], [45, 8.53]);
+  eq('degrees to percent round trip', near(T3.srDegToPct(T3.srPctToDeg(12.5)), 12.5), true);
+  eq('elevation in feet, metres in metric', [T3.srElevU(100, 'GAL'), T3.srElevU(100, 'L'), T3.srElevUnit('GAL'), T3.srElevUnit('L')], [328.084, 100, 'ft', 'm']);
+  // Tile boxes in Web Mercator
+  const E = T3.SR_MERC;
+  eq('tile 0/0/0 is the world', T3.srTileBBox3857(0, 0, 0), [-E, -E, E, E]);
+  eq('tile 1/1/0 is the north-east quarter', T3.srTileBBox3857(1, 1, 0), [0, 0, E, E]);
+  eq('tile 1/0/1 is the south-west quarter', T3.srTileBBox3857(1, 0, 1), [-E, -E, 0, 0]);
+  eq('tile width halves each zoom', near((b => b[2] - b[0])(T3.srTileBBox3857(17, 5, 5)) * 2, (b => b[2] - b[0])(T3.srTileBBox3857(16, 5, 5)), 1e-6), true);
+  // Slope rule: percent rise, Web Mercator corrected, the board's five classes
+  eq('slope z factor', [T3.srSlopeZ(0), +T3.srSlopeZ(60).toFixed(6), +T3.srSlopeZ(44.54).toFixed(3)], [1, 2, 1.403]);
+  const sr = T3.srSlopeRule(44.54), remap = sr.rasterFunctionArguments.Raster, slope = remap.rasterFunctionArguments.Raster;
+  eq('slope rule chain', [sr.rasterFunction, remap.rasterFunction, slope.rasterFunction], ['Colormap', 'Remap', 'Slope']);
+  eq('slope rule asks for percent rise', [slope.rasterFunctionArguments.SlopeType, slope.rasterFunctionArguments.ZFactor], [2, +(1 / Math.cos(44.54 * Math.PI / 180)).toFixed(4)]);
+  eq('slope classes match the legend', remap.rasterFunctionArguments.InputRanges, [0, 5, 5, 10, 10, 15, 15, 30, 30, 100000]);
+  eq('slope colormap one entry per class', sr.rasterFunctionArguments.Colormap.map(x => x[0]), [1, 2, 3, 4, 5]);
+  eq('slope legend ends 30+', T3.SR_SLOPE_CLASSES.map(k => [k.lo, k.hi]), [[0, 5], [5, 10], [10, 15], [15, 30], [30, null]]);
+  // Aspect rule: every direction lands in exactly one class; north wraps
+  const ar = T3.srAspectRule().rasterFunctionArguments.Raster.rasterFunctionArguments, R = ar.InputRanges, O = ar.OutputValues;
+  const cls = d => { const hits = []; for (let i = 0; i < O.length; i++) if (d >= R[2 * i] && d < R[2 * i + 1]) hits.push(O[i]); return hits; };
+  eq('aspect: every whole degree in exactly one class', Array.from({ length: 360 }, (_, d) => cls(d).length).every(n => n === 1), true);
+  eq('aspect: flat, N both sides, E, S, W', [cls(-1), cls(350), cls(10), cls(90), cls(180), cls(270)].map(x => x[0]), [1, 2, 2, 4, 6, 8]);
+  eq('aspect legend: flat and eight directions', T3.SR_ASPECT_CLASSES.map(k => k.k), ['flat', 'N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']);
+  eq('aspect words', [-1, 0, 44, 46, 180, 359, NaN].map(T3.srAspectWord), ['flat', 'N', 'NE', 'NE', 'S', 'N', 'flat']);
+  // Elevation rule: his range, stretched min-max, the ramp in five parts
+  const er = T3.srElevRule({ min: 80, max: 140 }), st = er.rasterFunctionArguments.Raster;
+  eq('elevation rule chain', [er.rasterFunction, st.rasterFunction, st.rasterFunctionArguments.StretchType, st.outputPixelType], ['Colormap', 'Stretch', 5, 'U8']);
+  eq('elevation stretch uses his range', st.rasterFunctionArguments.Statistics[0].slice(0, 2), [80, 140]);
+  eq('elevation ramp parts join', er.rasterFunctionArguments.Colorramp.colorRamps.length, T3.SR_ELEV_RAMP.length - 1);
+  eq('published fallbacks by name', ['hillshade', 'elev', 'slope', 'aspect'].map(k => T3.srTerrainRule(k, { fallback: true }).rasterFunction), ['Hillshade Gray', 'Hillshade Elevation Tinted', 'Slope Map', 'Aspect Map']);
+  eq('hillshade is always the published one', T3.srTerrainRule('hillshade').rasterFunction, 'Hillshade Gray');
+  // Request building
+  const u = T3.srTerrainTileUrl('slope', 16, 19782, 23583, { lat: 44.54 }), q = new URL(u).searchParams;
+  eq('tile URL is exportImage on 3DEP', u.startsWith(T3.SR_3DEP + '/exportImage?'), true);
+  eq('tile URL params', ['bboxSR', 'imageSR', 'size', 'format', 'transparent', 'f'].map(k => q.get(k)), ['3857', '3857', '256,256', 'png', 'true', 'image']);
+  eq('tile URL bbox is the tile', q.get('bbox').split(',').map(Number), T3.srTileBBox3857(16, 19782, 23583).map(v => +v.toFixed(3)));
+  eq('tile URL rendering rule round-trips', JSON.parse(q.get('renderingRule')), T3.srSlopeRule(44.54));
+  eq('tile URL is deterministic (the tile cache can hold it)', u === T3.srTerrainTileUrl('slope', 16, 19782, 23583, { lat: 44.54 }), true);
+  eq('trails tile shows layer 37 from export', (p => [p.get('layers'), p.get('transparent'), p.get('f')])(new URL(T3.srTrailsTileUrl(15, 9891, 11791)).searchParams), ['show:37', 'true', 'image']);
+  eq('hydro tile is z/y/x', T3.srHydroTileUrl(15, 9891, 11791).endsWith('/USGSHydroCached/MapServer/tile/15/11791/9891'), true);
+  const su = new URL(T3.srSamplesUrl([[44.54, -69.62], [44.55, -69.61]])).searchParams, g = JSON.parse(su.get('geometry'));
+  eq('samples: multipoint in WGS84, x = longitude', [su.get('geometryType'), g.spatialReference.wkid, g.points[0]], ['esriGeometryMultipoint', 4326, [-69.62, 44.54]]);
+  eq('samples: first value only, json', [su.get('returnFirstValueOnly'), su.get('f')], ['true', 'json']);
+  eq('parse samples by location id', T3.srParseSamples({ samples: [{ locationId: 1, value: '101.5' }, { locationId: 0, value: '99.25' }] }, 2), [99.25, 101.5]);
+  eq('parse samples: NoData and missing are null', T3.srParseSamples({ samples: [{ locationId: 0, value: 'NoData' }, { locationId: 2, value: '-3.4e38' }] }, 3), [null, null, null]);
+  eq('parse samples: an error answer is null', T3.srParseSamples({ error: { code: 400 } }, 2), null);
+  // Range and legend
+  eq('grid points: n x n with the corners', (p => [p.length, p[0], p[p.length - 1]])(T3.srGridPoints({ north: 2, south: 0, west: 10, east: 12 }, 3)), [9, [0, 10], [2, 12]]);
+  eq('range padded 5 % and rounded to the half metre', T3.srElevRange([80.2, 120.1, 100, null]), { min: 78, max: 122.5 });
+  eq('range of flat ground still has width', T3.srElevRange([50, 50.4]), { min: 49, max: 51.5 });
+  eq('range needs two heights', T3.srElevRange([50, null]), null);
+  const tk = T3.srElevTicks({ min: 78, max: 122.5 }, 'GAL');
+  eq('legend ticks run low to high in feet', [tk[0].v, tk[tk.length - 1].v, tk[0].at, tk[tk.length - 1].at], [256, 402, 0, 1]);
+  eq('legend ticks between are round and inside', tk.slice(1, -1).every(t => t.v % 50 === 0 && t.at > 0 && t.at < 1), true);
+  eq('legend ticks in metres', (t => [t[0].v, t[t.length - 1].v])(T3.srElevTicks({ min: 78, max: 122.5 }, 'L')), [78, 123]);
+  // Line profile
+  const along = T3.srAlongPath([[44.54, -69.62], [44.541, -69.62]], 5);
+  eq('along a path: n points, evenly spaced, ends kept', [along.length, near(along[0][0], 44.54), near(along[4][0], 44.541), near(along[2][2] * 2, along[4][2], 1e-6)], [5, true, true, true]);
+  const pr = T3.srLineProfile(along, [120, 118, 116, 114, 110]);
+  eq('profile: fall, grade, which end is high', [pr.fallM, +pr.gradePct.toFixed(2), pr.highIsStart, pr.dip], [10, +(10 / along[4][2] * 100).toFixed(2), true, null]);
+  const pd = T3.srLineProfile(along, [110, 105, 103, 108, 112]);
+  eq('profile: a low spot under both ends', [pd.highIsStart, pd.dip.depth, near(pd.dip.at, along[4][2] - along[2][2], 1e-6)], [false, 7, true]);
+  const pr2 = T3.srLineProfile(along, [110, 116, 121, 114, 104]);
+  eq('profile: a rise over both ends (sap cannot cross it on gravity)', [pr2.highIsStart, pr2.rise.height, pr2.rise.m, pr2.dip], [true, 11, 121, null]);
+  eq('profile: a steady line has no rise and no dip', [pr.rise, pr.dip], [null, null]);
+  eq('profile: under the threshold is not a rise', T3.srLineProfile(along, [110, 110.5, 110.8, 109, 105], 1).rise, null);
+  eq('profile: missing heights skipped, fewer than two is null', [T3.srLineProfile(along, [null, 100, null, null, 98]).fallM, T3.srLineProfile(along, [null, 100, null, null, null])], [2, null]);
+  // Offline save carries the terrain layers that are on (to z17)
+  const bb = { north: 44.5425, south: 44.5415, west: -69.6215, east: -69.6205 };
+  const base = T3.srTileUrls(bb, 17, 'sat'), more = T3.srTileUrls(bb, 17, 'sat', { terrain: { kind: 'elev', o: { range: { min: 80, max: 140 } } }, water: true });
+  eq('offline: terrain and water added up to z17 only', more.urls.length - base.urls.length, 2 * base.urls.filter(x => /\/tile\/(16|17)\//.test(x) && /World_Imagery/.test(x)).length);
+  eq('offline: topo saves them too', T3.srTileUrls(bb, 17, 'topo', { hillshade: true }).urls.some(x => x.includes('exportImage')), true);
 }
 
 // ── Fix pass 2 ───────────────────────────────────────────────────────────────
