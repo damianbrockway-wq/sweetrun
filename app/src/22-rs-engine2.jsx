@@ -417,9 +417,9 @@ function srWizardData(o) {
 // House rule: no em or en dashes on screen. Number ranges read "to"; a dash
 // used as a pause becomes a comma. Reference text only; UI copy is written
 // dash-free in RS_TR.
-function srPlain(s) {
+function srPlain(s, lang) {
   return String(s == null ? '' : s)
-    .replace(/(\d[\d.,]*\s*(?:°F|°C|°|%|"|in|ft|gal|h|hrs|mm)?)\s*[–—]\s*(\$?\d)/g, '$1 to $2')
+    .replace(/(\d[\d.,]*\s*(?:°F|°C|°|%|"|in|ft|gal|h|hrs|mm|cm)?)\s*[–—]\s*(\$?\d)/g, lang === 'fr' ? '$1 à $2' : '$1 to $2')
     .replace(/\s*—\s*/g, ', ').replace(/\s*–\s*/g, ', ')
     .replace(/,\s*,/g, ',').replace(/\s+,/g, ',');
 }

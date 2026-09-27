@@ -97,7 +97,7 @@ const RS_NAV = [
 function RsNav({ side, active, lang, onLog }) {
   const items = RS_NAV.filter(n => side || !n.sideOnly);
   return (
-    <nav className={side ? 'rs-side' : 'rs-tabs'} aria-label="Main">
+    <nav className={side ? 'rs-side' : 'rs-tabs'} aria-label={rt(lang, 'navMain')}>
       {side && <div className="rs-navbrand"><RsBrandMark /><b>SweetRun</b></div>}
       {items.map(n => n.id === 'log'
         ? <button key={n.id} type="button" className="log" style={side ? { order:-1 } : undefined} aria-label={rt(lang,'logAria')} onClick={onLog}>

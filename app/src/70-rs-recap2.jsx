@@ -60,7 +60,7 @@ function RsRecapDetail({ c }) {
             <div className="rs-grid2 rs-recapnums" style={{ marginTop:0 }}>
               <div><div className="rs-meta">{rt(L,'rdRatio')}</div><div className="rs-mid tn">{f.ratio > 0 ? fmt(f.ratio, 1) + ':1' : '0'}</div><div className="rs-meta tn">{rt(L,'rdTheory', { r: fmt(theory, 1) })}</div></div>
               <div><div className="rs-meta">{rt(L,'rdLength')}</div><div className="rs-mid tn">{f.days != null ? f.days : '0'}<small>{rt(L,'daysW')}</small></div>
-                <div className="rs-meta tn">{f.first && f.last ? `${srDateShort(f.first, L)} to ${srDateShort(f.last, L)}` : rt(L,'rdNoDates')}</div></div>
+                <div className="rs-meta tn">{f.first && f.last ? rt(L,'rangeTo', { a: srDateShort(f.first, L), b: srDateShort(f.last, L) }) : rt(L,'rdNoDates')}</div></div>
               <div><div className="rs-meta">{rt(L,'rdBest')}</div><div className="rs-mid tn">{f.best ? fmt(parseFloat(f.best.val) || 0, 0) : '0'}<small>{u}</small></div><div className="rs-meta tn">{f.best ? srDateShort(f.best.date, L) : ''}</div></div>
               <div><div className="rs-meta">{rt(L,'rdRo')}</div><div className="rs-mid tn">{srVol(f.roGal, c.units)}<small>{u}</small></div>
                 <div className="rs-meta tn">{f.roGal > 0 && f.evapGal > 0 ? rt(L,'rdUtil', { p: fmt(f.roGal / f.evapGal * 100, 0) }) : ''}</div></div>
@@ -113,8 +113,8 @@ function RsRecapDetail({ c }) {
                 <div><div className="rs-meta">{rt(L,'gapMade')}</div><div className="rs-mid tn">{srVol(f.syrupGal, c.units, 1)}<small>{u}</small></div></div>
                 <div><div className="rs-meta">{rt(L, gap.gapMid > 0 ? 'gapGap' : 'gapSurplus')}</div><div className="rs-mid tn">{gap.gapMid > 0 ? srVol(gap.gapMid, c.units) : '+' + srVol(Math.abs(gap.gapLow), c.units)}<small>{u}</small></div></div>
               </div>
-              <RsKv rows={[[rt(L,'gapBench'), `${srVol(gap.lo, c.units)} to ${srVol(gap.hi, c.units)} ${u}`]]} />
-              <p className="rs-meta tn">{rt(L,'gapBenchNote', { a: fmt(fromGal(D.model.low, c.units), 2), b: fmt(fromGal(D.model.high, c.units), 2), u, m: D.model.label, na: fmt(fromGal(SR_YIELD_BAND.low, c.units), 2), nb: fmt(fromGal(SR_YIELD_BAND.high, c.units), 2) })}</p>
+              <RsKv rows={[[rt(L,'gapBench'), `${rt(L,'rangeTo', { a: srVol(gap.lo, c.units), b: srVol(gap.hi, c.units) })} ${u}`]]} />
+              <p className="rs-meta tn">{rt(L,'gapBenchNote', { a: fmt(fromGal(D.model.low, c.units), 2), b: fmt(fromGal(D.model.high, c.units), 2), u, m: srModelName(D.model.label, L), na: fmt(fromGal(SR_YIELD_BAND.low, c.units), 2), nb: fmt(fromGal(SR_YIELD_BAND.high, c.units), 2) })}</p>
               {gap.gapMid > 0 && <RsBarRow label={rt(L,'gapYours')} value={`${srVol(f.syrupGal, c.units, 1)} / ${srVol(gap.hi, c.units)} ${u}`} pct={Math.min(100, f.syrupGal / gap.hi * 100)} />}
               {gap.gapMid > 2 && <div className="rs-split" style={{ marginTop:12, alignItems:'flex-end' }}><div><b>{rt(L,'gapCosts')}</b><div className="rs-meta">{rt(L,'gapAtPrice', { p: srMoney(srPerU(parseFloat(price) || 0, c.units), c.units === 'L' ? 2 : 0), u })}</div></div>
                 <div className="rs-big tn">{srMoney(gap.dollarGap)}</div></div>}
@@ -123,9 +123,9 @@ function RsRecapDetail({ c }) {
             </div>
             <h2 className="rs-sec">{rt(L,'gapCausesT')}</h2>
             <div className="rs-stack">{gap.causes.map(cz => <RsDisclose key={cz.id} tone={cz.sev} kicker={rt(L, 'sev_' + cz.sev)} title={rt(L, 'gc_' + cz.id)}
-              sub={rt(L, 'gc_' + cz.id + '_d', { u, y: fmt(fromGal(gap.ypp, c.units), 2), a: fmt(fromGal(D.model.low, c.units), 2), b: fmt(fromGal(D.model.high, c.units), 2), m: D.model.label, na: fmt(fromGal(SR_YIELD_BAND.low, c.units), 2), nb: fmt(fromGal(SR_YIELD_BAND.high, c.units), 2), cw: rt(L, cz.cls === 'strong' ? 'ycStrong' : 'ycNormal'), add: srVol(cz.add || 0, c.units), r: fmt(gap.actualRatio || 0, 0), p: fmt(100 - (gap.effPct || 0), 0), bx: fmt(D.brix, 1) })}>
+              sub={rt(L, 'gc_' + cz.id + '_d', { u, y: fmt(fromGal(gap.ypp, c.units), 2), a: fmt(fromGal(D.model.low, c.units), 2), b: fmt(fromGal(D.model.high, c.units), 2), m: srModelName(D.model.label, L), na: fmt(fromGal(SR_YIELD_BAND.low, c.units), 2), nb: fmt(fromGal(SR_YIELD_BAND.high, c.units), 2), cw: rt(L, cz.cls === 'strong' ? 'ycStrong' : 'ycNormal'), add: srVol(cz.add || 0, c.units), r: fmt(gap.actualRatio || 0, 0), p: fmt(100 - (gap.effPct || 0), 0), bx: fmt(D.brix, 1) })}>
               <div className="rs-list">{cz.fixes.map(fx => <div key={fx} className="rs-row rs-fix"><span className="rs-rt"><b>{rt(L, 'fix_' + fx)}</b>
-                <span>{rt(L,'fixMeta', { c: SR_FIXES[fx].cost, t: SR_FIXES[fx].time })}</span></span><span className="rs-rv">{rt(L, 'imp_' + SR_FIXES[fx].impact)}</span></div>)}</div>
+                <span>{rt(L,'fixMeta', { c: rt(L, 'fixC_' + fx), t: rt(L, 'fixT_' + fx) })}</span></span><span className="rs-rv">{rt(L, 'imp_' + SR_FIXES[fx].impact)}</span></div>)}</div>
             </RsDisclose>)}</div>
           </>}
           {has && <RsRoSavings c={c} f={f} brix={D.brix} />}
@@ -147,7 +147,7 @@ function RsRecapDetail({ c }) {
 // Per-tap and per-gallon figures are computed in gallons and shown in the display unit.
 function srScoreSub(r, model, L, units) {
   const u = srU(units);
-  if (r.id === 'yield') return rt(L, 'srs_yield_' + r.band, { y: fmt(fromGal(r.ypp, units), 2), a: fmt(fromGal(SR_YIELD_BAND.low, units), 2), b: fmt(fromGal(SR_YIELD_BAND.high, units), 2), m: model.label, u });
+  if (r.id === 'yield') return rt(L, 'srs_yield_' + r.band, { y: fmt(fromGal(r.ypp, units), 2), a: fmt(fromGal(SR_YIELD_BAND.low, units), 2), b: fmt(fromGal(SR_YIELD_BAND.high, units), 2), m: srModelName(model.label, L), u });
   if (r.id === 'eff') return rt(L, 'srs_eff', { a: fmt(r.ratio, 0), t: fmt(r.theory, 0) });
   if (r.id === 'fuel') return rt(L, 'srs_fuel', { f: srFine(srPerU(r.fr, units)), b: srFine(srPerU(r.bench, units)), fu: r.unit, w: rt(L, units === 'L' ? 'litreW' : 'gallonW') });
   return rt(L, 'srs_data', { n: r.pts });

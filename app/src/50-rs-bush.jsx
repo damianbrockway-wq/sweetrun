@@ -150,8 +150,8 @@ function srDrawBush(L, map, G, model, ly, o) {
     const val = l.latest ? fmt(l.latest.v, 1) : null;
     const cls = 'rs-plate' + (vacOn && leak ? ' leak' : '') + (isSel ? ' sel' : '') + (bigPlates ? ' big' : '') + (watchOne ? ' dim' : '');
     const html = bigPlates
-      ? `<button type="button" class="${cls}" aria-label="${srEsc(opt.lineAria ? opt.lineAria(l) : l.label)}"><b>${srEsc(l.id)}</b><span class="rs-pv">${val ? srEsc(val) : '&middot;'}</span><small>${val ? 'in' : srEsc(opt.noReading || '')}</small></button>`
-      : `<button type="button" class="${cls}" aria-label="${srEsc(opt.lineAria ? opt.lineAria(l) : l.label)}"><b>${srEsc(l.id)}</b>${vacOn && val ? `<span class="rs-pv">${srEsc(val)}</span>` : ''}</button>`;
+      ? `<button type="button" class="${cls}" data-line="${srEsc(l.id)}" aria-label="${srEsc(opt.lineAria ? opt.lineAria(l) : l.label)}"><b>${srEsc(l.id)}</b><span class="rs-pv">${val ? srEsc(val) : '&middot;'}</span><small>${val ? srEsc(opt.unitIn || 'in') : srEsc(opt.noReading || '')}</small></button>`
+      : `<button type="button" class="${cls}" data-line="${srEsc(l.id)}" aria-label="${srEsc(opt.lineAria ? opt.lineAria(l) : l.label)}"><b>${srEsc(l.id)}</b>${vacOn && val ? `<span class="rs-pv">${srEsc(val)}</span>` : ''}</button>`;
     const mk = L.marker(top, { icon: L.divIcon({ className: 'rs-divicon', html, iconSize: null, iconAnchor: [0, 0] }), keyboard: false, zIndexOffset: 800, bubblingMouseEvents: false });
     mk.on('click', () => opt.onLine && opt.onLine(l.id));
     mk.addTo(G.marks);
@@ -312,6 +312,7 @@ function RsBush({ c, sub }) {
     srApplyBase(L, map, layers.base);
     srDrawBush(L, map, G, drawModel, layers, {
       sel, draft: mode && mode.kind === 'draw' ? mode.pts : null, leakWord: rt(L_, 'leakSuspectW'),
+      unitIn: srUnitL('in', L_),
       lineAria: l => rt(L_, 'lineAria', { n: l.label, v: l.latest ? fmt(l.latest.v, 1) : rt(L_, 'noReadingW') }),
       onLine: id => { if (mode) return; setSel({ type: 'line', id }); },
       onTree: id => { if (mode) return; setSel({ type: 'tree', id }); },
@@ -525,7 +526,7 @@ function RsLinePlate({ l, size = 44 }) {
 function RsVacValue({ l, L }) {
   if (!l.latest) return <span className="rs-rv rs-mute">{rt(L, 'noReadingW')}</span>;
   const leak = l.leak.status === 'suspect';
-  return <span className={`rs-rv tn${leak ? ' bad' : ''}${l.tier === 'old' ? ' old' : ''}`}>{fmt(l.latest.v, 1)}<small> in</small></span>;
+  return <span className={`rs-rv tn${leak ? ' bad' : ''}${l.tier === 'old' ? ' old' : ''}`}>{fmt(l.latest.v, 1)}<small> {srUnitL('in', L)}</small></span>;
 }
 // One verdict sentence for a srLeakFind result, the same on every screen.
 // Returns [tone, text]: tone is 'bad' | 'ok' | 'idle'.
@@ -548,12 +549,12 @@ function RsLeakChain({ c, l, now, P, demo, big, onLogPump }) {
   return (
     <div className={`rs-chain${big ? ' big' : ''}${bad ? ' bad' : ''}`} role="group"
       aria-label={rel ? rt(L, 'chainAria', { r: fmt(rel.v, 1), e: fmt(end.v, 1), d: fmt(lk.drop, 1), l: fmt(P.leakLimitIn, 1) }) : rt(L, 'chainNoPump', { h: fmt(P.pairH, 0) })}>
-      <div className="rs-chg"><span className="rs-chk">{rt(L, 'chainPump')}</span>
-        {rel ? <><b className="tn">{fmt(rel.v, 1)}<small> in</small></b><span className="rs-chw">{when(rel.ms)}</span></>
+      <div className="rs-chg"><span className="rs-chlbl">{rt(L, 'chainPump')}</span>
+        {rel ? <><b className="tn">{fmt(rel.v, 1)}<small> {srUnitL('in', L)}</small></b><span className="rs-chw">{when(rel.ms)}</span></>
           : <><b className="rs-mute">·</b><span className="rs-chw">{rt(L, 'chainNoPump', { h: fmt(P.pairH, 0) })}</span></>}</div>
       <div className="rs-cha" aria-hidden="true"><span className="tn">{rel ? rt(L, 'chainDrop', { d: fmt(lk.drop, 1) }) : ''}</span><i /><span>{rt(L, 'chainLimit', { l: fmt(P.leakLimitIn, 1) })}</span></div>
-      <div className="rs-chg"><span className="rs-chk">{rt(L, 'chainEnd')}</span>
-        <b className={`tn${bad ? ' bad' : ''}`}>{fmt(end.v, 1)}<small> in</small></b><span className="rs-chw">{when(end.ms)}</span></div>
+      <div className="rs-chg"><span className="rs-chlbl">{rt(L, 'chainEnd')}</span>
+        <b className={`tn${bad ? ' bad' : ''}`}>{fmt(end.v, 1)}<small> {srUnitL('in', L)}</small></b><span className="rs-chw">{when(end.ms)}</span></div>
       {!rel && onLogPump && <button type="button" className="rs-btn2 rs-chlog" onClick={onLogPump}><RsIcon name="gauge" size={18} />{rt(L, 'chainLogPump')}</button>}
     </div>
   );
@@ -594,7 +595,7 @@ function RsTreeDetail({ c, model, tree, onClose }) {
       <RsKv rows={[
         tree.label && tree.tagged ? [rt(L, 'nameWord'), tree.label] : null,
         tree.species ? [rt(L, 'species'), String(tree.species).replace(/_/g, ' ')] : null,
-        tree.dbh ? [rt(L, 'diameter'), `${tree.dbh} in`] : null,
+        tree.dbh ? [rt(L, 'diameter'), `${tree.dbh} ${srUnitL('in', L)}`] : null,
         srFin(parseFloat(tree.elev)) ? [rt(L, 'elevation'), `${fmt(parseFloat(tree.elev), 0)} ft`] : null,
         tree.accuracy != null ? [rt(L, 'placedBy'), <span className={`rs-acc ${tree.accuracy <= 5 ? 'ok' : tree.accuracy <= 15 ? 'check' : 'bad'}`}>{rt(L, 'gpsAccShort', { a: tree.accuracy })}</span>] : [rt(L, 'placedBy'), rt(L, 'placedByHand')],
       ]} />
@@ -639,7 +640,7 @@ function RsLineDetail({ c, model, line, onClose, onDraw, watch }) {
     <div className="rs-detail">
       <div className="rs-linehead">
         <RsLinePlate l={line} size={56} />
-        <div><div className={`rs-bigv tn${lk.status === 'suspect' ? ' bad' : ''}`}>{line.latest ? fmt(line.latest.v, 1) : '·'}<small>{line.latest ? ' in' : ''}</small></div>
+        <div><div className={`rs-bigv tn${lk.status === 'suspect' ? ' bad' : ''}`}>{line.latest ? fmt(line.latest.v, 1) : '·'}<small>{line.latest ? ' ' + srUnitL('in', L) : ''}</small></div>
           <div className="rs-meta tn">{line.latest ? rt(L, 'readAgo', { a: srAgo(line.latest.ms, model.now, L), t: srClock(line.latest.ms, L) }) : rt(L, 'noReadingYet')}</div></div>
       </div>
       <p className={`rs-verdict ${verdict[0]}`}>{verdict[1]}</p>
@@ -649,7 +650,7 @@ function RsLineDetail({ c, model, line, onClose, onDraw, watch }) {
       <RsKv rows={[
         [rt(L, 'treesWord'), String(line.trees.length)],
         [rt(L, 'tapsWordC'), line.tapsSet ? rt(L, 'tapsSetV', { n: fmt(line.taps, 0) }) : fmt(line.taps, 0)],
-        line.lengthFt ? [rt(L, 'lengthW'), `${fmt(line.lengthFt, 0)} ft`] : null,
+        line.lengthFt ? [rt(L, 'lengthW'), `${fmt(line.lengthFt, 0)} ${srUnitL('ft', L)}`] : null,
         [rt(L, 'drawnW'), rt(L, line.geo.source === 'drawn' ? (line.meta && line.meta.pathFrom != null ? 'drawnImported' : 'drawnByYou') : line.geo.source === 'trees' ? (line.geo.byElev ? 'drawnTreesElev' : 'drawnTrees') : 'notDrawn', { n: line.trees.length })],
         [rt(L, 'lastChecked'), line.checkedMs ? `${srDayLabel(srIsoOf(new Date(line.checkedMs)), L)}, ${srClock(line.checkedMs, L)}` : rt(L, 'neverW')],
         pumps ? [rt(L, 'servedBy'), pumps] : null,
@@ -871,7 +872,7 @@ function RsMapTools({ c, model, mapRef, base, onClose, onDraw }) {
           const nm = x.name || rt(L, 'impUnnamed', { i: k + 1 });
           return (
             <div key={x.i} className="rs-row rs-implrow">
-              <span className="rs-rt"><b>{nm}</b><span className="tn">{fmt(x.ft, 0)} ft</span></span>
+              <span className="rs-rt"><b>{nm}</b><span className="tn">{fmt(x.ft, 0)} {srUnitL('ft', L)}</span></span>
               <select className="rs-field rs-sel" aria-label={rt(L, 'impLineAria', { n: nm })} value={pick[x.i] || ''}
                 onChange={e => { const v = e.target.value; setPathMsg(null); setPick(p => { const n = { ...p }; Object.keys(n).forEach(k2 => { if (v && n[k2] === v) n[k2] = ''; }); n[x.i] = v; return n; }); }}>
                 <option value="">{rt(L, 'impNotUsed')}</option>

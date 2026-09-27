@@ -64,7 +64,7 @@ function RsWizard({ c, onClose, onComplete }) {
   };
   const Opt = ({ k, val, label, sub }) => <button type="button" className={`rs-opt${o[k] === val ? ' on' : ''}`} aria-pressed={o[k] === val} onClick={() => set(k)(val)}>
     <b>{label}</b>{sub && <span>{sub}</span>}</button>;
-  const Y = m => `${fmt(fromGal(m.low, c.units), 2)} to ${fmt(fromGal(m.high, c.units), 2)} ${u}`;
+  const Y = m => `${rt(L,'rangeTo', { a: fmt(fromGal(m.low, c.units), 2), b: fmt(fromGal(m.high, c.units), 2) })} ${u}`;
   const steps = [
     <div key="0">
       <p className="rs-meta" style={{ marginTop:0 }}>{rt(L,'wz0P')}</p>
@@ -88,7 +88,7 @@ function RsWizard({ c, onClose, onComplete }) {
       {o.hasEvap && <><label className="rs-fl">{rt(L,'evPan')}</label>
         <RsSeg wrap label={rt(L,'evPan')} value={o.panSize} onChange={set('panSize')} options={Object.keys(SR_WIZ_PANS).map(k => [k, k.replace('x', '×')])} /></>}
       <label className="rs-fl">{rt(L,'evFuelT')}</label>
-      <RsSeg wrap label={rt(L,'evFuelT')} value={o.fuelType} onChange={set('fuelType')} options={FUELS.map(f => [f.label, f.unit === 'ccf' ? rt(L,'fuelGas') : fuelLabel(f, L).replace(/ \(.*\)/, '')])} />
+      <RsSeg wrap label={rt(L,'evFuelT')} value={o.fuelType} onChange={set('fuelType')} options={FUELS.map(f => [f.label, f.unit === 'ccf' ? rt(L,'fuelGas') : f.unit === 'cord' ? rt(L,'fuelWood') : fuelLabel(f, L).replace(/ \(.*\)/, '')])} />
     </div>,
     <div key="3">
       <p className="rs-meta" style={{ marginTop:0 }}>{rt(L,'wz3P')}</p>

@@ -30,8 +30,14 @@
 // Registers /app/sw.js — handles caching, offline support, and cache versioning.
 // localStorage data (all sg_* keys) is NEVER touched by the service worker.
 // To force all users to get the latest app: bump CACHE name in app/sw.js.
+// Registered after the page has loaded, so the precache (photos, fonts, jsPDF, Leaflet)
+// never competes with the first paint for bandwidth.
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  navigator.serviceWorker.register('/app/sw.js', { scope: '/app/' })
+  // A page that opened with no worker in control is the first visit: the new worker's
+  // clients.claim() fires controllerchange, and reloading then would restart the app
+  // mid-use for nothing. Reload only when an older worker was replaced.
+  const hadController = !!navigator.serviceWorker.controller;
+  const register = () => navigator.serviceWorker.register('/app/sw.js', { scope: '/app/' })
     .then(reg => {
       console.log('[SweetRun] SW registered, scope:', reg.scope);
       // Check for a waiting SW update and activate it immediately
@@ -47,11 +53,13 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
       });
     })
     .catch(err => console.warn('[SweetRun] SW registration failed:', err));
+  if (document.readyState === 'complete') register(); else window.addEventListener('load', register, { once: true });
 
-  // When a new SW takes over, reload to get the latest app shell
+  // When a new SW replaces an old one, reload to get the latest app shell
   let refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) { refreshing = true; window.location.reload(); }
+    if (!hadController || refreshing) return;
+    refreshing = true; window.location.reload();
   });
 }
 </script>

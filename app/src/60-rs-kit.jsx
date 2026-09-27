@@ -33,6 +33,16 @@ Object.assign(RS_GLYPH, {
 });
 
 const srRM = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
+// Looping animations (steam, fire, bubbles, the tank wave) pause while scrolled out of
+// view: an IntersectionObserver sets .rs-offscreen on the node, and CSS pauses every
+// animation under it. Nothing re-renders.
+function useRsPauseOffscreen(ref) {
+  useEffect(() => {
+    const el = ref.current; if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(es => es.forEach(e => el.classList.toggle('rs-offscreen', !e.isIntersecting)), { rootMargin: '48px' });
+    io.observe(el); return () => io.disconnect();
+  }, []);
+}
 function srToast(text) { try { window.dispatchEvent(new CustomEvent('sr-toast', { detail:text })); } catch {} }
 
 // Display helpers. Canonical gallons -> display unit, and the unit label.
@@ -84,7 +94,7 @@ function RsNextCard({ title, why, btn, onAct, icon = 'drop', eyebrow }) {
   return (
     <section className="rs-next" aria-labelledby="rs-next-t">
       <div className="rs-k"><RsIcon name={icon} size={18} sw={2.4} />{eyebrow}</div>
-      <h3 id="rs-next-t">{title}</h3>
+      <h2 id="rs-next-t">{title}</h2>
       {why && <p className="tn">{why}</p>}
       <RsBtn onClick={onAct} id="rs-next-btn">{btn}</RsBtn>
     </section>
@@ -155,6 +165,11 @@ function RsChips({ options, value, onChange, label }) {
 
 // ── Stepper: 72px number whose box is measured from the rendered text ────────
 // (DESIGN.md lesson 3: ch units misjudge proportional digits both ways.)
+// Imperial length units in the reader's language (po, pi in French). Display only.
+const SR_UNIT_FR = { 'in':'po', 'ft':'pi', 'in Hg':'po Hg', 'hr':'h' };
+const srUnitL = (u, L) => (L || ls.get('sg_lang', 'en')) === 'fr' && SR_UNIT_FR[u] ? SR_UNIT_FR[u] : u;
+// The yield method's name in the reader's language (YIELD_MODELS labels are English).
+const srModelName = (label, L) => { const k = Object.keys(YIELD_MODELS).find(x => YIELD_MODELS[x].label === label); return k ? rt(L, 'ym_' + k) : label; };
 let _srCv = null;
 function RsStepper({ id, value, onChange, steps, dp = 0, unit, label, min = 0, max = 1e7, big = true, base, pre, ph }) {
   const inRef = React.useRef(null);
@@ -183,11 +198,11 @@ function RsStepper({ id, value, onChange, steps, dp = 0, unit, label, min = 0, m
           onChange={e => { const raw = e.target.value; if (!/^[\d.,\s]*$/.test(raw)) return; setDraft(raw); const n = srParseNum(raw); onChange(n == null ? '' : clamp(n)); }}
           onFocus={e => { try { e.target.select(); } catch {} }}
           onBlur={() => setDraft(null)} />
-        {unit && <small>{unit}</small>}
+        {unit && <small>{srUnitL(unit)}</small>}
       </label>
       <div className="rs-keys">
         {steps.map(d => (
-          <button key={d} type="button" onClick={() => bump(d)} aria-label={`${d > 0 ? '+' : '-'}${Math.abs(d)} ${unit || ''}`.trim()}>
+          <button key={d} type="button" onClick={() => bump(d)} aria-label={`${d > 0 ? '+' : '-'}${Math.abs(d)} ${srUnitL(unit || '')}`.trim()}>
             {d > 0 ? '+' : '−'}{Math.abs(d)}
           </button>
         ))}
@@ -242,7 +257,7 @@ function RsToast() {
   const [msg, setMsg] = useState(null);
   useEffect(() => {
     let tm = null;
-    const h = e => { setMsg(e.detail); clearTimeout(tm); tm = setTimeout(() => setMsg(null), 2600); };
+    const h = e => { setMsg(null); clearTimeout(tm); requestAnimationFrame(() => setMsg(e.detail)); tm = setTimeout(() => setMsg(null), 2600); };
     window.addEventListener('sr-toast', h);
     return () => { window.removeEventListener('sr-toast', h); clearTimeout(tm); };
   }, []);
@@ -259,13 +274,15 @@ function RsTankViz({ level, cap, w = 92, h = 150, tone = 'sap', empty }) {
   const p = cap > 0 && level != null ? Math.max(0, Math.min(1, level / cap)) : 0;
   const ix = 8, iy = 8, iw = w - 16, ih = h - 16, y = iy + ih * (1 - p);
   const [shown, setShown] = useState(srRM());
-  useEffect(() => { if (shown) return; let a = requestAnimationFrame(() => { a = requestAnimationFrame(() => setShown(true)); }); return () => cancelAnimationFrame(a); }, []);
+  useEffect(() => { if (shown) return; let a = requestAnimationFrame(() => { a = requestAnimationFrame(() => setShown(true)); });
+  return () => cancelAnimationFrame(a); }, []);
+  const ref = React.useRef(null); useRsPauseOffscreen(ref);
   const ty = shown ? y : iy + ih;
   const wl = iw;
   const wave = `M${ix - wl} 4 q ${wl/4} -7 ${wl/2} 0 t ${wl/2} 0 t ${wl/2} 0 t ${wl/2} 0`;
   return (
-    <svg className="rs-tankviz" width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="img"
-      aria-label={empty ? 'Empty tank outline' : `${Math.round(p * 100)} percent full`}>
+    <svg ref={ref} className="rs-tankviz" width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="img"
+      aria-label={rt(ls.get('sg_lang', 'en'), empty ? 'noLevelYet' : 'tankPct', { p: Math.round(p * 100) })}>
       <defs>
         <clipPath id={id}><rect x={ix} y={iy} width={iw} height={ih} rx={Math.min(12, w / 8)} /></clipPath>
         <linearGradient id={id + 'g'} x1="0" x2="0" y1="0" y2="1">
@@ -300,8 +317,20 @@ function RsRing({ pct, size = 112, label }) {
   );
 }
 
+// The table behind a chart, for screen readers (visually hidden). Every chart that
+// draws data renders one: a caption (the chart's label), column heads, one row per point.
+function RsDataTable({ caption, head, rows }) {
+  if (!rows || !rows.length) return null;
+  return (
+    <table className="rs-vh">
+      <caption>{caption}</caption>
+      <thead><tr>{head.map((h, i) => <th key={i} scope="col">{h || (i === 0 ? rt(ls.get('sg_lang', 'en'), 'rpDay') : '')}</th>)}</tr></thead>
+      <tbody>{rows.map((r, i) => <tr key={i}><th scope="row">{r[0]}</th>{r.slice(1).map((v, k) => <td key={k}>{v}</td>)}</tr>)}</tbody>
+    </table>
+  );
+}
 // ── Charts (dataviz rules: thin marks, one axis, hairline grid, text colours) ─
-function RsLineChart({ series, yMax, yTicks, xLabels, refLine, h = 150, label }) {
+function RsLineChart({ series, yMax, yTicks, xLabels, refLine, h = 150, label, rowLabel, rowHead = '', dp = 2 }) {
   const [ref, W] = useRsWidth();
   const pl = 34, pr = 58, pt = 10, pb = 24, iw = Math.max(40, W - pl - pr), ih = h - pt - pb;
   const n = Math.max(2, ...series.map(s => s.v.length));
@@ -331,10 +360,13 @@ function RsLineChart({ series, yMax, yTicks, xLabels, refLine, h = 150, label })
         })}
         {xLabels.map(([i, t], k) => <text key={k} x={X(i)} y={h - 4} textAnchor={k === 0 ? 'start' : k === xLabels.length - 1 ? 'end' : 'middle'} className="rs-ct">{t}</text>)}
       </svg>
+      <RsDataTable caption={label} head={[rowHead, ...series.map(s => s.name || s.end || '')]}
+        rows={Array.from({ length: n }, (_, i) => [rowLabel ? rowLabel(i) : String(i + 1), ...series.map(s => s.v[i] == null ? '' : fmt(s.v[i], dp))])
+          .filter(r => r.slice(1).some(Boolean))} />
     </div>
   );
 }
-function RsBarChart({ v, hi, h = 130, label, xLabels, unitFmt = x => x }) {
+function RsBarChart({ v, hi, h = 130, label, xLabels, unitFmt = x => x, rowLabel, rowHead = '', valueHead = '' }) {
   const [ref, W] = useRsWidth();
   const pl = 38, pr = 6, pt = 8, pb = 22, iw = Math.max(40, W - pl - pr), ih = h - pt - pb;
   const mx = Math.max(1, ...v), bw = iw / Math.max(1, v.length), B = Math.max(2, Math.min(18, bw - 2));
@@ -352,6 +384,7 @@ function RsBarChart({ v, hi, h = 130, label, xLabels, unitFmt = x => x }) {
         })}
         {(xLabels || []).map(([i, t], k, a) => <text key={k} x={pl + i * bw + bw / 2} y={h - 4} textAnchor={k === 0 ? 'start' : k === a.length - 1 ? 'end' : 'middle'} className="rs-ct">{t}</text>)}
       </svg>
+      <RsDataTable caption={label} head={[rowHead, valueHead]} rows={v.map((q, i) => q ? [rowLabel ? rowLabel(i) : String(i + 1), unitFmt(q)] : null).filter(Boolean)} />
     </div>
   );
 }
@@ -385,6 +418,10 @@ function RsSeasonChart({ series, units, lang, wxStatus }) {
       <div ref={ref} className="rs-chartwrap season">
         <svg className="rs-chart rs-schart" width={W} height={H + 10} viewBox={`0 -10 ${W} ${H + 10}`} role="img"
           onPointerMove={pick} onPointerDown={pick} onPointerLeave={() => setSel(null)}
+          tabIndex={0} onBlur={() => setSel(null)} aria-describedby="rs-sread"
+          onKeyDown={e => { const k = { ArrowLeft: -1, ArrowRight: 1 }[e.key], cur = sel == null ? ti : sel;
+            if (k) { e.preventDefault(); setSel(Math.max(0, Math.min(D - 1, cur + k))); }
+            else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); setSel(e.key === 'Home' ? 0 : D - 1); } }}
           aria-label={rt(lang,'chartAria', { n: series.days.filter(d => d.sap > 0).length, peak: fmt(series.peak.sap, 0), u })}>
           <defs><pattern id="rs-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" className="rs-hatchl" strokeWidth="2" /></pattern></defs>
           {fcEnd > fcStart && <><rect x={x(fcStart)} y={top - 6} width={x(fcEnd) - x(fcStart)} height={bh + 6} fill="url(#rs-hatch)" opacity=".6" />
@@ -409,7 +446,9 @@ function RsSeasonChart({ series, units, lang, wxStatus }) {
           <rect x="0" y="0" width={W} height={H} fill="transparent" />
         </svg>
       </div>
-      <div className="rs-sread tn" aria-live="polite">{read(sel == null ? ti : sel)}</div>
+      <RsDataTable caption={rt(lang,'chartAria', { n: series.days.filter(d => d.sap > 0).length, peak: fmt(series.peak.sap, 0), u })} head={[rt(lang,'date'), rt(lang,'sapWordC', { u })]}
+        rows={series.days.filter(d => d.sap > 0).map(d => [srDayLabel(d.iso, lang), fmt(d.sap, 0)])} />
+      <div className="rs-sread tn" id="rs-sread" aria-live="polite">{read(sel == null ? ti : sel)}</div>
       <div className="rs-legend">
         <span><i className="lg" style={{ background:T.bar }} />{rt(lang,'lgSap')}</span>
         {wxStatus === 'ok' && <><span><i className="lg" style={{ background:T.run }} />{rt(lang,'lgRun')}</span><span><i className="lg ol" />{rt(lang,'lgNoRun')}</span></>}
@@ -422,16 +461,18 @@ function RsSeasonChart({ series, units, lang, wxStatus }) {
 
 // ── Boil atmosphere ──────────────────────────────────────────────────────────
 function RsEvap({ on, lang }) {
+  const ref = React.useRef(null); useRsPauseOffscreen(ref);
   const steam = on ? [0,1,2,3,4,5,6,7,8] : [];
   const bubbles = on ? [0,1,2,3,4,5,6,7,8,9,10] : [];
   return (
-    <svg className="rs-evap" viewBox="0 0 340 204" width="100%" role="img" aria-label={rt(lang, on ? 'evapOn' : 'evapOff')}>
+    <svg ref={ref} className="rs-evap" viewBox="0 0 340 204" width="100%" role="img" aria-label={rt(lang, on ? 'evapOn' : 'evapOff')}>
       <defs>
         <linearGradient id="rs-fireg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style={{ stopColor:'var(--rs-fire-a)' }} /><stop offset="1" style={{ stopColor:'var(--rs-fire-b)' }} /></linearGradient>
         <linearGradient id="rs-sapg" x1="0" x2="1"><stop offset="0" style={{ stopColor:'var(--rs-sap-lt)' }} /><stop offset=".7" style={{ stopColor:'var(--rs-syrup-lt)' }} /><stop offset="1" style={{ stopColor:'var(--rs-syrup)' }} /></linearGradient>
-        <filter id="rs-soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.5" /></filter>
+        {/* Soft-edged puff drawn by the gradient itself: an SVG blur filter here was re-rasterized every frame */}
+        <radialGradient id="rs-steamg"><stop offset=".35" style={{ stopColor:'var(--rs-steam)', stopOpacity:1 }} /><stop offset="1" style={{ stopColor:'var(--rs-steam)', stopOpacity:0 }} /></radialGradient>
       </defs>
-      {steam.map(k => <ellipse key={k} className="rs-steam" style={{ animationDelay:`${(k * .42).toFixed(2)}s` }} cx={58 + k * 27 + (k % 2 ? 7 : -3)} cy="86" rx={15 + (k % 3) * 5} ry={11 + (k % 2) * 4} filter="url(#rs-soft)" />)}
+      {steam.map(k => <ellipse key={k} className="rs-steam" style={{ animationDelay:`${(k * .42).toFixed(2)}s` }} cx={58 + k * 27 + (k % 2 ? 7 : -3)} cy="86" rx={19 + (k % 3) * 5} ry={15 + (k % 2) * 4} fill="url(#rs-steamg)" />)}
       <rect x="296" y="4" width="20" height="92" rx="3" className="rs-ev-stack" strokeWidth="2" />
       <path d="M36 92 H244 V112 H36 Z" className="rs-ev-pan" /><path d="M246 94 H316 V112 H246 Z" className="rs-ev-pan" />
       <rect x="40" y="94" width="200" height="10" rx="2" fill="url(#rs-sapg)" />
@@ -469,8 +510,9 @@ function RsJugs({ gal, label }) {
 const SR_STEAM_PUFFS = [[8,0,1.1,14],[26,1.6,1.4,36],[44,.8,1.2,26],[62,2.4,1.5,44],[80,1.2,1.1,50],[16,3.4,1.3,14],[54,4.2,1.6,36],[72,5.2,1.2,26],[36,6,1.4,44],[88,3,1,50]];
 function RsBoilHero({ on, mode }) {
   const steamOnly = mode === 'steam';
+  const ref = React.useRef(null); useRsPauseOffscreen(ref);
   return (
-    <div className={`rs-hero rs-boilhero${steamOnly ? ' solo' : ''}${on ? ' live' : ''}`} aria-hidden="true">
+    <div ref={ref} className={`rs-hero rs-boilhero${steamOnly ? ' solo' : ''}${on ? ' live' : ''}`} aria-hidden="true">
       {!steamOnly && <><img src="/app/photos/evaporator-steam.webp" alt="" loading="lazy" decoding="async" /><div className="rs-hshade" /></>}
       {(on || steamOnly) && <div className={`rs-bsteam${steamOnly ? ' solo' : ''}${on ? '' : ' still'}`}>
         {SR_STEAM_PUFFS.map(([l, d, sc, b], i) => <i key={i} style={{ left:l + '%', animationDelay:d + 's', '--sc':sc, '--b':b + '%' }} />)}

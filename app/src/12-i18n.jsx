@@ -2,7 +2,7 @@
 const fmt  = (n, d = 1) => isNaN(n) || !isFinite(n) ? '—' : Number(n).toLocaleString('en-US', { minimumFractionDigits:d, maximumFractionDigits:d });
 const DAY  = { en:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], fr:['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'] };
 const MON  = { en:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-               fr:['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'] };
+               fr:['janv.','févr.','mars','avr.','mai','juin','juill.','août','sept.','oct.','nov.','déc.'] };   // fr-CA, as Intl writes them (srDateShort)
 
 // ─── Translations ─────────────────────────────────────────────────────────────
 const TR = {
@@ -498,7 +498,7 @@ const TR = {
     ftLegend:'✓ Idéal : max ≥ 40°F et min ≤ 28°F · Gel/Dégel : croise 32°F',
     taskOf:'sur', taskDone:'complété',
     gradeGolden:'Doré délicat', gradeAmber:'Ambré riche',
-    gradeDark:'Foncé robuste', gradeVeryDark:'Très foncé fort',
+    gradeDark:'Foncé robuste', gradeVeryDark:'Très foncé prononcé',
     equipNamePh:'Nom (p. ex. Évaporateur, machine O/I…)',
     equipBrandPh:'Marque / Modèle', equipQtyPh:'Qté',
     equipYearPh:'Année d\'achat', equipQtyLabel:'Qté :',

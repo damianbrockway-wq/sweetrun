@@ -134,10 +134,10 @@ function RsWatch({ c, sub }) {
       ) : oneLine ? <RsWatchOne c={c} model={model} V={V} l={oneLine} demo={demo} />
       : (
         <div className="rs-wbody">
-          <section className="rs-wmapc" aria-label={rt(L, 'wMapAria')}>
+          <section className="rs-wmapc">
             <RsWatchMap c={c} model={model} V={V} onLine={id => setPanel(id)} />
             {demo && <div className="rs-wdemotag" aria-hidden="true">{rt(L, 'wDemoPill')}</div>}
-            <div className="rs-wlegend" role="note" aria-label={rt(L, 'wLegendAria')}><span>{rt(L, 'lyVacuum')}</span>{[0, 1, 2, 3, 4].map(i => <i key={i} className={'v' + i} />)}<span className="tn">16 → 26 in</span><i className="leak" /><span>{rt(L, 'leakSuspectW')}</span>{!panel && <span className="rs-wlhint">{rt(L, 'wTapLine')}</span>}</div>
+            <div className="rs-wlegend" role="note" aria-label={rt(L, 'wLegendAria')}><span>{rt(L, 'lyVacuum')}</span>{[0, 1, 2, 3, 4].map(i => <i key={i} className={'v' + i} />)}<span className="tn">16 → 26 {srUnitL('in', L)}</span><i className="leak" /><span>{rt(L, 'leakSuspectW')}</span>{!panel && <span className="rs-wlhint">{rt(L, 'wTapLine')}</span>}</div>
           </section>
           <aside className="rs-wrail">
             {panelLine ? <RsWatchPanel c={c} model={model} l={panelLine} demo={demo} onClose={() => setPanel(null)} /> : <>
@@ -235,7 +235,8 @@ function RsWatchMap({ c, model, V, onLine, one }) {
     srApplyBase(LL, map, 'sat');
     const dm = { ...model, lines: V.lines, pumps: V.pumps, tanks: model.tanksRaw, tankLevels: Object.fromEntries(V.tanks.map(t => [t.id, t])) };
     srDrawBush(LL, map, G, dm, { ...SR_BUSH_LAYERS, trees: false, brix: false }, {
-      watch: true, one, stale: V.stale, showHouse: !one,   // one-line view frames the line only; a house marker would land clipped at its edge noReading: rt(L, 'noReadingW'),
+      // one-line view frames the line only; a house marker would land clipped at its edge
+      watch: true, one, stale: V.stale, showHouse: !one, noReading: rt(L, 'noReadingW'), unitIn: srUnitL('in', L),
       lineAria: l => rt(L, 'lineAria', { n: l.label, v: l.latest ? fmt(l.latest.v, 1) : rt(L, 'noReadingW') }),
       onLine: id => onLine && onLine(id),
     });
@@ -246,19 +247,27 @@ function RsWatchMap({ c, model, V, onLine, one }) {
       else if (pts.length === 1) map.setView(pts[0], 17); else map.setView([45.5, -72.0], 14);
     }
   }, [lf, sig, one, L]);
-  return <div ref={divRef} className="rs-map rs-wmap base-sat" role="img" aria-label={rt(L, 'wMapAria')} />;
+  // A labelled region, not an image: the line plates inside are buttons (Tab, Enter).
+  return <div ref={divRef} className="rs-map rs-wmap base-sat" role="region" aria-label={rt(L, 'wMapAria')} />;
 }
 function RsWatchPanel({ c, model, l, demo, onClose }) {
   const L = c.lang;
   const lk = l.leak;
   const hist = l.hist.slice(-24);
+  const ref = React.useRef(null);
+  // Opened from a plate (or an alert): focus moves to the panel so it is announced;
+  // Escape or Close returns focus to that line's plate on the map.
+  const close = () => { onClose(); setTimeout(() => { const p = document.querySelector(`.rs-wmap .rs-plate[data-line="${l.id}"]`); try { p && p.focus({ preventScroll: true }); } catch {} }, 30); };
+  useEffect(() => { try { ref.current && ref.current.focus({ preventScroll: true }); } catch {}
+    const k = e => { if (e.key === 'Escape' && !document.documentElement.classList.contains('rs-sheet-open')) { e.stopPropagation(); close(); } };
+    document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k); }, [l.id]);
   return (
-    <div className="rs-wpanel">
+    <section className="rs-wpanel" ref={ref} tabIndex={-1} aria-labelledby="rs-wpanel-h">
       <div className="rs-split" style={{ alignItems: 'center' }}>
-        <div className="rs-wlh"><RsLinePlate l={l} size={56} /><div><div className="rs-wk">{l.label}</div><div className="rs-wsub tn">{rt(L, 'treesTaps', { t: l.trees.length, n: l.taps })}{l.lengthFt ? ` · ${fmt(l.lengthFt, 0)} ft` : ''}</div></div></div>
-        <button type="button" className="rs-xbtn" aria-label={rt(L, 'close')} onClick={onClose}><RsIcon name="x" size={26} /></button>
+        <div className="rs-wlh"><RsLinePlate l={l} size={56} /><div><h2 className="rs-wk" id="rs-wpanel-h">{l.label}</h2><div className="rs-wsub tn">{rt(L, 'treesTaps', { t: l.trees.length, n: l.taps })}{l.lengthFt ? ` · ${fmt(l.lengthFt, 0)} ${srUnitL('ft', L)}` : ''}</div></div></div>
+        <button type="button" className="rs-xbtn" aria-label={rt(L, 'close')} onClick={close}><RsIcon name="x" size={26} /></button>
       </div>
-      <div className={`rs-wbig tn${lk.status === 'suspect' ? ' bad' : ''}${l.tier === 'old' ? ' old' : ''}`}>{l.latest ? fmt(l.latest.v, 1) : '·'}<small> in</small></div>
+      <div className={`rs-wbig tn${lk.status === 'suspect' ? ' bad' : ''}${l.tier === 'old' ? ' old' : ''}`}>{l.latest ? fmt(l.latest.v, 1) : '·'}<small> {srUnitL('in', L)}</small></div>
       <div className="rs-wsub">{l.latest ? (demo ? rt(L, 'wDemoTag') : rt(L, 'readAgo', { a: srAgo(l.latest.ms, model.now, L), t: srClock(l.latest.ms, L) })) : rt(L, 'noReadingYet')}</div>
       <p className={`rs-wverdict ${lk.status === 'suspect' ? 'bad' : lk.status === 'ok' ? 'ok' : ''}`}>{srLeakVerdict(L, lk, model.prefs)[1]}</p>
       <RsLeakChain c={c} l={l} now={model.now} P={model.prefs} demo={demo} big />
@@ -271,7 +280,7 @@ function RsWatchPanel({ c, model, l, demo, onClose }) {
       </dl>
       <RsBtn icon="watch" href={rsHref('watch/line/' + l.id)} id="rs-watch-one">{rt(L, 'watchLine')}</RsBtn>
       <div style={{ marginTop: 10 }}><RsBtn kind="secondary" icon="map" href={rsHref('bush/line/' + l.id)}>{rt(L, 'openOnBush')}</RsBtn></div>
-    </div>
+    </section>
   );
 }
 function RsWatchOne({ c, model, V, l, demo }) {
@@ -283,8 +292,8 @@ function RsWatchOne({ c, model, V, l, demo }) {
     <div className="rs-wone">
       <section className="rs-wcard rs-wonel">
         <div className="rs-wlh"><RsLinePlate l={l} size={72} /><div><div className="rs-wk big">{l.label}</div>
-          <div className="rs-wsub tn">{rt(L, 'treesTaps', { t: l.trees.length, n: l.taps })}{l.lengthFt ? ` · ${fmt(l.lengthFt, 0)} ft` : ''}</div></div></div>
-        <div className={`rs-wgiant tn${lk.status === 'suspect' ? ' bad' : ''}${l.tier === 'old' ? ' old' : ''}`}>{l.latest ? fmt(l.latest.v, 1) : '·'}<small>in</small></div>
+          <div className="rs-wsub tn">{rt(L, 'treesTaps', { t: l.trees.length, n: l.taps })}{l.lengthFt ? ` · ${fmt(l.lengthFt, 0)} ${srUnitL('ft', L)}` : ''}</div></div></div>
+        <div className={`rs-wgiant tn${lk.status === 'suspect' ? ' bad' : ''}${l.tier === 'old' ? ' old' : ''}`}>{l.latest ? fmt(l.latest.v, 1) : '·'}<small>{srUnitL('in', L)}</small></div>
         <div className="rs-wsub">{l.latest ? (demo ? rt(L, 'wDemoTag') : rt(L, 'readAgo', { a: srAgo(l.latest.ms, model.now, L), t: srClock(l.latest.ms, L) })) : rt(L, 'noReadingYet')}</div>
         <p className={`rs-wverdict big ${lk.status === 'suspect' ? 'bad' : lk.status === 'ok' ? 'ok' : ''}`}>{srLeakVerdict(L, lk, model.prefs)[1]}</p>
         <RsLeakChain c={c} l={l} now={model.now} P={model.prefs} demo={demo} big />

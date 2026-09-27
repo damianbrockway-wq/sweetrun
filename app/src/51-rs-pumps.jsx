@@ -38,7 +38,7 @@ const SR_KIND_ICON = { vacuum: 'gauge', transfer: 'pump', ro: 'ro', generator: '
 // The big number on a pump's readout row, per kind.
 function srPumpValue(p, c) {
   const L = c.lang, u = srU(c.units);
-  if (p.kind === 'vacuum') return p.vac ? [fmt(p.vac.v, 1), 'in'] : [rt(L, 'noReadingShort'), ''];
+  if (p.kind === 'vacuum') return p.vac ? [fmt(p.vac.v, 1), srUnitL('in', L)] : [rt(L, 'noReadingShort'), ''];
   if (p.kind === 'generator') return p.fuel ? [fmt(fromGal(p.fuel.levelGal, c.units), 1), u] : [rt(L, 'noFuelShort'), ''];
   return [fmt(p.todayH, 1), rt(L, 'hToday')];
 }
@@ -85,7 +85,7 @@ function RsPumpCenter({ c, addPin, addTankPin }) {
         <RsReadoutRow key={l.id} onClick={() => setLine(l.id)} lead={<RsLinePlate l={l} size={40} />} title={rt(L, 'lineEnd', { n: l.label })}
           status={<RsSt kind={l.leak.status === 'suspect' ? 'check' : l.latest ? (l.tier === 'old' ? 'idle' : 'ok') : 'idle'}>
             {l.leak.status === 'suspect' ? rt(L, 'leakSuspectD', { d: fmt(l.leak.drop, 1) }) : l.latest ? rt(L, 'readAgoShort', { a: srAgo(l.latest.ms, now, L) }) : rt(L, 'noReadingYet')}</RsSt>}
-          value={l.latest ? fmt(l.latest.v, 1) : '·'} unit={l.latest ? 'in' : ''} tone={l.leak.status === 'suspect' ? 'bad' : ''} />))}
+          value={l.latest ? fmt(l.latest.v, 1) : '·'} unit={l.latest ? srUnitL('in', L) : ''} tone={l.leak.status === 'suspect' ? 'bad' : ''} />))}
       {model.tanks.map(t => (
         <RsReadoutRow key={t.id} href={rsHref('pumps/tank/' + t.id)} lead={<RsTile icon="tank" family="collect" />} title={t.name}
           status={<RsSt kind={t.levelGal != null ? 'ok' : 'idle'}>{t.levelGal != null ? rt(L, 'tankPctRead', { p: t.capGal > 0 ? Math.round(t.levelGal / t.capGal * 100) : 0, a: srAgo(t.readMs, now, L) }) : rt(L, 'noLevelYet')}</RsSt>}
@@ -200,6 +200,8 @@ function RsTimeChart({ series, from, to, yMin, yMax, yTicks, h = 160, label, lan
         {lbl.map((ms, k) => <text key={k} x={X(ms)} y={h - 4} textAnchor={k === 0 ? 'start' : k === lbl.length - 1 ? 'end' : 'middle'} className="rs-ct">
           {k === lbl.length - 1 ? rt(lang, 'nowW') : srDayLabel(srIsoOf(new Date(ms)), lang)}</text>)}
       </svg>
+      <RsDataTable caption={label} head={[rt(lang,'mainlineWord'), rt(lang,'readWhen'), srUnitL('in', lang)]}
+        rows={series.flatMap(s => s.pts.map(p => [s.id, srClock(p.ms, lang), fmt(p.v, 1)]))} />
     </div>
   );
 }
@@ -217,7 +219,7 @@ function RsReadingSheet({ c, title, unit, dp, steps, min, max, base, sensor, onS
     if (!srFin(n)) { const el = document.getElementById('rs-read-v'); if (el) el.focus(); return; }
     const t = Date.now() - ago * 60000;
     if (!srLogReading(c.season, sensor, toStore ? toStore(n) : n, t)) { setFail(SR_WRITE_FAIL || 'locked'); return; }
-    onSaved && onSaved(n, t); srToast(rt(L, 'readingSaved', { v: fmt(n, dp), u: unit })); onClose();
+    onSaved && onSaved(n, t); srToast(rt(L, 'readingSaved', { v: fmt(n, dp), u: srUnitL(unit, L) })); onClose();
   };
   return (
     <RsSheet title={title} onClose={onClose} id="rs-reading">
@@ -230,7 +232,7 @@ function RsReadingSheet({ c, title, unit, dp, steps, min, max, base, sensor, onS
           <span className="rs-bt"><b>{rt(L, 'bNotSavedT')}</b><span>{rt(L, fail === 'quota' ? 'bQuotaP' : 'bLockedP')}</span></span>
           {fail !== 'quota' && <button type="button" className="rs-bbtn" onClick={() => { onClose(); c.setShowLicense(true); }}>{rt(L, 'bEnterKey')}</button>}
         </div>}
-        <RsBtn onClick={save} id="rs-read-save">{v !== '' && srFin(parseFloat(v)) ? rt(L, 'saveReadingV', { v: fmt(parseFloat(v), dp), u: unit }) : rt(L, 'saveReading')}</RsBtn>
+        <RsBtn onClick={save} id="rs-read-save">{v !== '' && srFin(parseFloat(v)) ? rt(L, 'saveReadingV', { v: fmt(parseFloat(v), dp), u: srUnitL(unit, L) }) : rt(L, 'saveReading')}</RsBtn>
       </div>
     </RsSheet>
   );
@@ -387,7 +389,7 @@ function RsPumpScreen({ c, id }) {
               <h2 className="rs-sec">{rt(L, 'releaserVac')}</h2>
               <div className="rs-card">
                 <div className="rs-split" style={{ alignItems: 'baseline' }}>
-                  <div className="rs-big tn">{p.vac ? fmt(p.vac.v, 1) : '·'}<small>{p.vac ? 'in' : ''}</small></div>
+                  <div className="rs-big tn">{p.vac ? fmt(p.vac.v, 1) : '·'}<small>{p.vac ? srUnitL('in', L) : ''}</small></div>
                   <span className="rs-fresh">{p.vac ? rt(L, 'readAgoShort', { a: srAgo(p.vac.ms, now, L) }) : rt(L, 'noReadingYet')}</span></div>
                 <div style={{ marginTop: 12 }}><RsBtn kind="secondary" icon="gauge" onClick={() => setSheet('read')}>{rt(L, 'logReleaser')}</RsBtn></div>
               </div>
@@ -567,7 +569,7 @@ function RsVacuumScreen({ c }) {
             {vacPumps.length > 0 && <><h2 className="rs-sec">{rt(L, 'releaserVac')}</h2>
               <div className="rs-list">{vacPumps.map(p => <a key={p.id} className="rs-row" href={rsHref('pumps/' + p.id)}><RsPumpTile p={p} />
                 <span className="rs-rt"><b>{p.name}</b><RsPumpStatus p={p} L={L} now={model.now} /></span>
-                <span className="rs-rv tn">{p.vac ? <>{fmt(p.vac.v, 1)}<small> in</small></> : rt(L, 'noReadingW')}</span></a>)}</div></>}
+                <span className="rs-rv tn">{p.vac ? <>{fmt(p.vac.v, 1)}<small> {srUnitL('in', L)}</small></> : rt(L, 'noReadingW')}</span></a>)}</div></>}
             <h3 className="rs-subsec">{rt(L, 'lookFor')}</h3>
             <div className="rs-list">{['look1', 'look2', 'look3', 'look4'].map(k => <div key={k} className="rs-row" style={{ minHeight: 56 }}><span className="rs-rt"><b>{rt(L, k)}</b></span></div>)}</div>
           </div>

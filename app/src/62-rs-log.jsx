@@ -10,14 +10,14 @@
 const srKindWord = K => /^[A-Z]{2,}$/.test(K.l) ? K.l : K.l.toLowerCase();
 function srKinds(lang, units) {
   const u = srU(units);
-  const fuelU = (FUELS.find(f => f.label === ls.get('sg_fuel', 'Firewood (cord)')) || FUELS[0]).unit;
+  const fuelF = FUELS.find(f => f.label === ls.get('sg_fuel', 'Firewood (cord)')) || FUELS[0], fuelU = lang === 'fr' ? fuelF.unitFr : fuelF.unit;
   return [
     { k:'sapCollected', l:rt(lang,'kSap'),   unit:u,     dp:0, steps:[-100,-10,10,100], icon:'pail' },
     { k:'syrupMade',    l:rt(lang,'kSyrup'), unit:u,     dp:1, steps:[-1,-0.1,0.1,1],   icon:'jug', grade:true },
     { k:'sapRO',        l:rt(lang,'kRO'),    unit:u,     dp:0, steps:[-100,-10,10,100], icon:'ro' },
     { k:'sapEvap',      l:rt(lang,'kEvap'),  unit:u,     dp:0, steps:[-100,-10,10,100], icon:'flame' },
     { k:'fuelUsed',     l:rt(lang,'kFuel'),  unit:fuelU, dp:1, steps:[-1,-0.1,0.1,1],   icon:'fuel' },
-    { k:'boilHours',    l:rt(lang,'kHours'), unit:'hr',  dp:1, steps:[-1,-0.5,0.5,1],   icon:'clock' },
+    { k:'boilHours',    l:rt(lang,'kHours'), unit:srUnitL('hr', lang),  dp:1, steps:[-1,-0.5,0.5,1],   icon:'clock' },
   ];
 }
 const SR_GRADES = ['Golden Delicate','Amber Rich','Dark Robust','Very Dark Strong'];

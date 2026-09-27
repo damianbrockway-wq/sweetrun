@@ -47,7 +47,7 @@ function RsRecapStage({ c }) {
                 <div><div className="rs-meta">{rt(L,'nSyrupSoFar')}</div><div className="rs-huge tn">{fmt(T_.syT, 1)}<small>{u}</small></div></div>
                 {pct != null && <RsRing pct={pct} size={104} label={rt(L,'goalAria', { p: Math.round(pct), g: srVol(m.goalGal, c.units), u })} />}
               </div>
-              {pct != null && <div className="rs-meta">{rt(L,'goalLine', { g: srVol(m.goalGal, c.units), u, t: fmt(m.taps, 0), m: m.model.label })}</div>}
+              {pct != null && <div className="rs-meta">{rt(L,'goalLine', { g: srVol(m.goalGal, c.units), u, t: fmt(m.taps, 0), m: srModelName(m.model.label, L) })}</div>}
               <div className="rs-grid2 rs-recapnums">
                 <div><div className="rs-meta">{rt(L,'perTapW')}</div><div className="rs-mid tn">{m.taps > 0 ? fmt(T_.syT / m.taps, 2) : '0'}<small>{u}</small></div></div>
                 <div><div className="rs-meta">{rt(L,'sapCollected')}</div><div className="rs-mid tn">{fmt(T_.sapT, 0)}<small>{u}</small></div></div>
@@ -92,7 +92,7 @@ function RsRecapStage({ c }) {
               <RsSyrupVsLast c={c} slog={s} prev={m.d.prevSlog} dayOfRun={m.series.dayOfRun || nDays} />
               {sapDays.length > 0 && <RsStat title={rt(L,'sapADay')} value={fmt(sapDays[sapDays.length - 1], 0)} unit={rt(L,'uLast', { u })}
                 delta={<>{rt(L,'peakV', { v: fmt(sapDays[peakI], 0) })}<br /><span>{srDayLabel(srIsoAdd(first, peakI), L)}</span></>}>
-                <RsBarChart v={sapDays} hi={sapDays.length - 1} unitFmt={x => fmt(x, 0)} label={rt(L,'sapDayAria', { n: nDays })}
+                <RsBarChart v={sapDays} hi={sapDays.length - 1} unitFmt={x => fmt(x, 0)} label={rt(L,'sapDayAria', { n: nDays })} rowLabel={i => srDayLabel(srIsoAdd(first, i), L)} rowHead={rt(L,'date')} valueHead={rt(L,'sapWordC', { u })}
                   xLabels={[[0, srDayLabel(first, L)], [sapDays.length - 1, srDayLabel(srIsoAdd(first, sapDays.length - 1), L)]]} />
               </RsStat>}
               {perTap.length > 1 && (() => {
@@ -102,14 +102,14 @@ function RsRecapStage({ c }) {
                 const tk = +(top / 2).toFixed(2), topR = +top.toFixed(2);
                 return <RsStat title={rt(L,'perTapTitle')} value={fmt(last, 3)} unit={rt(L,'uPerTap', { u })}
                   delta={<span>{rt(L,'usAvg', { v: fmt(nass, 2) })}</span>} note={rt(L,'nassNote')}>
-                  <RsLineChart yMax={topR} yTicks={[0, tk, topR]} refLine={{ v: nass, l: rt(L,'usWord') }} series={[{ v: pt, c:T.tx, area:true, end: fmt(last, 2) }]}
+                  <RsLineChart yMax={topR} yTicks={[0, tk, topR]} refLine={{ v: nass, l: rt(L,'usWord') }} series={[{ v: pt, c:T.tx, area:true, end: fmt(last, 2), name: rt(L,'uPerTap', { u }) }]} rowLabel={i => rt(L,'dayN', { n: i + 1 })} dp={3}
                     xLabels={[[0, rt(L,'dayN', { n:1 })], [pt.length - 1, rt(L,'dayN', { n: pt.length })]]} label={rt(L,'perTapAria')} />
                 </RsStat>; })()}
               {bl.length >= 2 && <RsStat title={rt(L,'sugarInSap')} value={fmt(parseFloat(bl[bl.length - 1].brix), 1)} unit={rt(L,'pctLast')}
                 delta={<span>{rt(L,'fromFirst', { v: fmt(parseFloat(bl[0].brix), 1) })}</span>} note={rt(L,'brixDrift')}>
                 <RsLineChart yMax={Math.ceil(Math.max(...bl.map(e => parseFloat(e.brix))) + 0.5)} yTicks={[0, Math.ceil(Math.max(...bl.map(e => parseFloat(e.brix))) + 0.5)]}
-                  series={[{ v: bl.map(e => parseFloat(e.brix)), c:T.sap, area:true, end: fmt(parseFloat(bl[bl.length - 1].brix), 1) + '%' }]}
-                  xLabels={[[0, srDateShort(bl[0].date, L)], [bl.length - 1, srDateShort(bl[bl.length - 1].date, L)]]} label={rt(L,'brixTrendAria', { n: bl.length })} />
+                  series={[{ v: bl.map(e => parseFloat(e.brix)), c:T.sap, area:true, name:'Brix', end: fmt(parseFloat(bl[bl.length - 1].brix), 1) + '%' }]}
+                  xLabels={[[0, srDateShort(bl[0].date, L)], [bl.length - 1, srDateShort(bl[bl.length - 1].date, L)]]} label={rt(L,'brixTrendAria', { n: bl.length })} rowLabel={i => srDateShort(bl[i].date, L)} rowHead={rt(L,'date')} dp={1} />
               </RsStat>}
             </div>
             </div>

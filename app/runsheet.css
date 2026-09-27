@@ -69,7 +69,7 @@ body {
 .rs-brandmark { width: 30px; height: 30px; border-radius: 8px; display: block; flex: none; }
 .rs-greet { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
 .rs-greet .rs-brandmark { display: none; }
-.rs-gname { font: 800 23px/1.1 var(--rs-f); color: var(--rs-tx); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.rs-gname { font: 800 23px/1.1 var(--rs-f); color: var(--rs-tx); min-width: 0; overflow-wrap: anywhere; text-wrap: balance; }   /* wraps, never an ellipsis (a name is the point) */
 .rs-when { color: var(--rs-tx); font-size: 15px; display: inline-flex; gap: 6px; align-items: center; align-self: flex-start;
   background: color-mix(in srgb, var(--rs-bg) 78%, transparent); padding: 0 10px; line-height: 26px; border-radius: 999px; margin: 2px 0 8px; }
 .rs-whenrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 8px; }
@@ -131,7 +131,7 @@ a.rs-row { text-decoration: none; }
   box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .2); }
 .rs-field { width: 100%; min-height: 52px; background: var(--rs-s2); border: 1px solid var(--rs-line2); border-radius: var(--rs-r-ctl);
   padding: 0 14px; font: 600 17px var(--rs-f); color: var(--rs-tx); box-shadow: none; }
-.rs-field:focus { outline: none; border-color: var(--rs-acc); box-shadow: none; }
+.rs-field:focus { outline: none; border-color: var(--rs-acc); box-shadow: 0 0 0 1px var(--rs-acc); }   /* 2 px amber ring (was a 1 px border colour change) */
 .rs-field::placeholder { color: var(--rs-mute); }
 label.rs-fl { display: block; font: 700 13px var(--rs-fc); letter-spacing: .12em; text-transform: uppercase; color: var(--rs-dim); margin: 0 0 8px; }
 .rs-note { font-size: 14px; color: var(--rs-mute); margin-top: 10px; }
@@ -223,10 +223,11 @@ label.rs-fl { display: block; font: 700 13px var(--rs-fc); letter-spacing: .12em
 .rs-stack > * + * { margin-top: 12px; }
 .rs-card + .rs-card { margin-top: 12px; }
 .rs-cardt { display: block; font: 800 20px/1.2 var(--rs-f); }
-.rs-big { font: 800 64px/1 var(--rs-f); letter-spacing: -.03em; white-space: nowrap; }
+.rs-big { font: 800 64px/1 var(--rs-f); letter-spacing: -.03em; }
 .rs-mid { font: 800 30px/1.1 var(--rs-f); letter-spacing: -.01em; }
-.rs-huge { font: 800 72px/.98 var(--rs-f); letter-spacing: -.04em; white-space: nowrap; }
+.rs-huge { font: 800 72px/.98 var(--rs-f); letter-spacing: -.04em; }
 :is(.rs-big, .rs-mid, .rs-huge, .rs-bign) small { font: 600 18px var(--rs-f); color: var(--rs-dim); margin-left: 6px; letter-spacing: 0; }
+:is(.rs-big, .rs-huge) small { display: inline-block; }   /* a long unit ("entailles", "tasses de terre diatomée") wraps under the number, never past the card */
 .rs-huge small { font-size: 22px; }
 .rs-bign { font: 800 26px/1.1 var(--rs-f); }
 .rs-bign small { font-size: 14px; }
@@ -266,7 +267,7 @@ label.rs-fl { display: block; font: 700 13px var(--rs-fc); letter-spacing: .12em
 /* Next card and alerts */
 .rs-next { background: var(--rs-s2); border: 1.5px solid var(--rs-acc); border-radius: var(--rs-r-card); padding: 20px; }
 .rs-next .rs-k { color: var(--rs-acc); font: 700 13px var(--rs-fc); letter-spacing: .16em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
-.rs-next h3 { font: 800 32px/1.05 var(--rs-f); letter-spacing: -.01em; margin: 6px 0 8px; text-wrap: balance; }
+.rs-next h2 { font: 800 32px/1.05 var(--rs-f); letter-spacing: -.01em; margin: 6px 0 8px; text-wrap: balance; }
 .rs-next p { color: var(--rs-dim); font-size: 17px; text-wrap: pretty; margin: 0; }
 .rs-next .rs-btn { margin-top: 16px; }
 .rs-al { display: flex; gap: 12px; align-items: center; border-radius: 16px; padding: 12px 8px 12px 14px; margin-top: 10px; width: 100%;
@@ -283,7 +284,8 @@ label.rs-fl { display: block; font: 700 13px var(--rs-fc); letter-spacing: .12em
 .rs-num { background: var(--rs-s1); border-radius: 16px; padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 4px;
   min-height: 110px; color: var(--rs-tx); text-decoration: none; min-width: 0; }
 a.rs-num:active { background: var(--rs-s2); }
-.rs-nl { color: var(--rs-dim); font: 700 12px var(--rs-fc); letter-spacing: .12em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+.rs-nl { color: var(--rs-dim); font: 700 12px var(--rs-fc); letter-spacing: .12em; text-transform: uppercase; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 2px 6px; }
+.rs-nl > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .rs-nv { font: 800 40px/1.05 var(--rs-f); letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rs-nv small { font: 600 16px var(--rs-f); color: var(--rs-dim); margin-left: 4px; letter-spacing: 0; }
 .rs-nd { color: var(--rs-dim); font-size: 15px; line-height: 1.3; }
@@ -341,7 +343,7 @@ a.rs-num:active { background: var(--rs-s2); }
 .rs-stepv { display: flex; align-items: baseline; gap: 8px; justify-content: center; margin: 14px 0 14px; cursor: text; }
 .rs-stepv input { flex: none; width: 4.6ch; background: transparent; border: 0; border-bottom: 2px solid var(--rs-line2); border-radius: 0;
   text-align: center; font: 800 72px/1 var(--rs-f); letter-spacing: -.03em; color: var(--rs-tx); padding: 0; min-height: 80px; box-shadow: none; }
-.rs-stepv input:focus { outline: none; border-bottom-color: var(--rs-acc); }
+.rs-stepv input:focus { outline: none; border-bottom-color: var(--rs-acc); box-shadow: 0 2px 0 var(--rs-acc); }   /* 4 px amber underline */
 .rs-stepv input::placeholder { color: var(--rs-mute); opacity: 1; }
 .rs-stepv small { font: 600 22px var(--rs-f); color: var(--rs-dim); }
 .rs-stepv.sm { justify-content: flex-start; margin: 2px 0 8px; }
@@ -379,8 +381,13 @@ html.rs-sheet-open, html.rs-sheet-open body { overflow: hidden; }
 .rs-err { border: 1px solid color-mix(in srgb, var(--rs-bad) 40%, transparent); background: var(--rs-bad-soft); border-radius: var(--rs-r-card); padding: 18px; }
 .rs-err b { display: block; font: 800 20px var(--rs-f); margin-bottom: 4px; }
 .rs-err p { color: var(--rs-dim); margin: 0 0 12px; }
-.rs-sk { background: linear-gradient(90deg, var(--rs-s2), var(--rs-s3), var(--rs-s2)); background-size: 200% 100%; animation: rs-sk 1.2s linear infinite; border-radius: 10px; }
-@keyframes rs-sk { to { background-position: -200% 0; } }
+.rs-sk { position: relative; overflow: hidden; background: var(--rs-s2); border-radius: 10px; }
+/* The shimmer moves by transform (compositor only); it used to repaint via background-position. */
+.rs-sk::after, .rs-mapskel::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--rs-s3), transparent); animation: rs-sk 1.2s linear infinite; }
+@keyframes rs-sk { to { transform: translateX(100%); } }
+/* Looping animations stand still while scrolled out of view (useRsPauseOffscreen). */
+.rs-offscreen, .rs-offscreen * { animation-play-state: paused !important; }
 .rs-empty .rs-btn, .rs-empty .rs-btn2 { margin-top: 0; }
 .rs-select { width: auto; min-height: 48px; padding: 0 12px; }
 .rs-filebtn { position: relative; cursor: pointer; }
@@ -486,7 +493,22 @@ a.rs-tankcard:active { background: var(--rs-s2); }
 .rs-boilcard .rs-ct { fill: var(--rs-dim); }
 .rs-boilcard .rs-fresh, .rs-boilcard .rs-note { color: var(--rs-dim); }
 .rs-evap { display: block; margin: 6px 0 0; }
-.rs-steam { fill: var(--rs-steam); opacity: 0; transform-box: fill-box; transform-origin: center bottom; animation: rs-steam 3.8s ease-out infinite; }
+/* Live Boil on a phone: the evaporator is capped at 150 px so the numbers stay high on the
+   screen; its two diagram labels (the SVG's aria-label names it) and their empty band go.
+   iPad and desktop keep it full width with labels. */
+@media (max-width: 759px) {
+  .rs-blevap .rs-evap { height: 150px; margin-bottom: -14px; }
+  .rs-blevap .rs-ct { display: none; }
+}
+/* iPad and desktop: the evaporator sits on the same translucent card as the stat cards, and
+   its two labels take the card's text colour. Over bright steam at 820 they measured 2.6:1
+   (pixels, 10 frames) without it. */
+@media (min-width: 760px) {
+  .rs-blevap { background: color-mix(in srgb, var(--rs-s1) 74%, transparent); border: 1px solid color-mix(in srgb, var(--rs-tx) 12%, transparent);
+    -webkit-backdrop-filter: blur(10px) saturate(1.1); backdrop-filter: blur(10px) saturate(1.1); border-radius: 16px; padding: 4px 12px 8px; margin-bottom: 8px; }
+  .rs-blevap .rs-ct { fill: var(--rs-tx); }
+}
+.rs-steam { opacity: 0; transform-box: fill-box; transform-origin: center bottom; animation: rs-steam 3.8s ease-out infinite; }
 @keyframes rs-steam { 0% { opacity: 0; transform: translateY(0) scale(.5); } 25% { opacity: .6; } 100% { opacity: 0; transform: translateY(-70px) scale(2); } }
 .rs-bub { fill: var(--rs-bubble); animation: rs-bub 1.4s ease-in infinite; opacity: 0; transform-box: fill-box; transform-origin: center; }
 @keyframes rs-bub { 0% { opacity: 0; transform: translateY(0) scale(.4); } 40% { opacity: .9; } 100% { opacity: 0; transform: translateY(-8px) scale(1.2); } }
@@ -533,7 +555,7 @@ a.rs-tankcard:active { background: var(--rs-s2); }
 .rs-boillive > .rs-note { color: var(--rs-dim); }
 .rs-blchart { margin-top: 10px; padding: 8px 10px 4px 12px; }
 .rs-blchead { align-items: center; gap: 10px; }
-.rs-blchead h3 { font: 800 18px var(--rs-f); color: var(--rs-tx); }
+.rs-blchead h2 { font: 800 18px var(--rs-f); color: var(--rs-tx); margin: 1em 0; }   /* was an h3 at the UA 1em; same box */
 .rs-blchead .rs-seg { flex: none; min-width: 244px; }
 .rs-blc .rs-ct { font-size: 14px; fill: var(--rs-dim); }
 .rs-blc .rs-ct.strong { fill: var(--rs-tx); }
@@ -611,8 +633,29 @@ a.rs-tankcard:active { background: var(--rs-s2); }
   .rs-home .hb-now > .rs-sec:first-child { margin-top: 12px; }
   .rs-home .rs-phead h1 { font-size: 52px; }
   .rs-sheet { max-width: 560px; }
-  .rs-cols > div > .rs-sec:first-child { margin-top: 0; }
+  .rs-cols > div > .rs-sec:first-child, .rs-cols > div > .rs-group:first-child > .rs-sec:first-child { margin-top: 0; }
   .rs-cols { gap: 24px; }
+}
+/* iPad portrait (760 to 1099): two balanced columns. A fixed left/right split left one
+   column up to 2,700 px longer than the other (measured at 820 x 1180). Multi-column keeps
+   DOM order, so reading order is unchanged; it breaks only between whole sections (a
+   heading stays with its card, a card or list is never split), and the browser balances
+   the two ends. 1100 and up keep their designed grids. */
+@media (min-width: 760px) and (max-width: 1099px) {
+  .rs-cols { display: block; column-count: 2; column-gap: 24px; }
+  .rs-cols > div { display: contents; }
+  .rs-cols > div > * { break-inside: avoid; }
+  .rs-cols > div > :is(.rs-stack, .rc-charts), .rs-cols .rc-charts > .rs-stack { break-inside: auto; }   /* a stack of cards may break between cards, never inside one */
+  .rs-cols .rs-stack > * { break-inside: avoid; }
+  .rs-cols .rc-charts > .rs-sec { break-after: avoid; }
+  /* A section travels whole: what introduces it (heading, label, search, chips, segments,
+     an intro line) holds to what follows; a note or a loose button row holds to what precedes. */
+  .rs-cols > div > :is(.rs-sec, h2, h3, label, .rs-fl, .rs-chips, .rs-seg, .rs-inline, input, .rs-field, p.rs-meta, .rs-split) { break-after: avoid; }
+  .rs-cols > div > :is(.rs-note, div:not([class]), .rs-btn, .rs-btn2, .rs-btnrow) { break-before: avoid; }
+  /* The first heading of the second group sits mid-column now; only the page's first loses its margin. */
+  .rs-cols > div:not(:first-child) > .rs-sec:first-child { margin-top: 26px; }
+  .rs-cols > div:not(:first-child) > .rs-group:first-child > .rs-sec:first-child { margin-top: 26px; }
+  .rs-cols .rs-group.span { column-span: all; }   /* a long list (Plan & tap trees) runs full width under the balanced pair */
 }
 @media (min-width: 1100px) {
   .rs-sheet { left: calc(50% + var(--rs-navw) / 2); }
@@ -628,7 +671,7 @@ a.rs-tankcard:active { background: var(--rs-s2); }
   .rs-nv { font-size: 32px; }
   .rs-tc .rs-v { font-size: 40px; }
   .rs-sday { font-size: 32px; }
-  .rs-next h3 { font-size: 28px; }
+  .rs-next h2 { font-size: 28px; }
   .rs-stepv input { font-size: 60px; }
   .rs-wxd { grid-template-columns: 44px minmax(0, 1fr) 104px; }
 }
@@ -737,7 +780,9 @@ html.rs-sheet-open .rs-toast.show { transform: translate(-50%, 0); }
 .rs-row.rs-candy .rs-rv span { display: block; font: 600 13px var(--rs-f); color: var(--rs-dim); }
 /* Diagnose counts */
 .rs-dxcount .rs-num { min-height: 0; }
-.rs-dxcount .rs-nl { letter-spacing: .08em; }   /* "Keep an eye on" fits a 390 card (was 148 px in 146) */
+.rs-dxcount .rs-nl { letter-spacing: .08em; }
+.rs-dxcount .rs-st { white-space: normal; align-items: flex-start; line-height: 1.2; }
+.rs-dxcount .rs-st::before { margin-top: 3px; }   /* "Keep an eye on" fits a 390 card (was 148 px in 146) */
 /* Replay */
 .rs-rpbars { display: flex; align-items: flex-end; gap: 2px; height: 140px; margin-top: 6px; }
 .rs-rpbars i { flex: 1; min-width: 2px; background: var(--rs-s4); border-radius: 2px 2px 0 0; transform-origin: bottom; transform: scaleY(.15); transition: transform .35s cubic-bezier(.2,.8,.2,1), background .2s; }
@@ -754,6 +799,7 @@ html.rs-sheet-open .rs-toast.show { transform: translate(-50%, 0); }
 .rs-opt { min-height: 64px; padding: 10px 12px; border-radius: var(--rs-r-ctl); background: var(--rs-s2); box-shadow: inset 0 0 0 1px var(--rs-line2); }
 .rs-opt b { display: block; font: 700 17px var(--rs-f); }
 .rs-opt span { display: block; font-size: 14px; color: var(--rs-dim); line-height: 1.3; margin-top: 2px; }
+.rs-opt :is(b, span) { hyphens: auto; }   /* never a forced mid-word break ("mesur / e") */
 .rs-opt.on { background: var(--rs-s4); box-shadow: inset 0 0 0 2px var(--rs-acc); }
 .rs-wzbar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 10px 0 16px; }
 .rs-wzbar i { height: 4px; border-radius: 2px; background: var(--rs-s4); }
@@ -824,7 +870,8 @@ html.rs-sheet-open .rs-toast.show { transform: translate(-50%, 0); }
 .rs-app .rs-map .leaflet-control-attribution { background: color-mix(in srgb, var(--rs-bg) 80%, transparent); color: var(--rs-mute); font: 500 11px var(--rs-f); padding: 2px 8px; border-radius: 8px 0 0 0; }
 .rs-app .rs-map .leaflet-control-attribution a { color: var(--rs-dim); }
 .rs-app .rs-bushroute .rs-map .leaflet-bottom.leaflet-right { bottom: 0; }
-.rs-mapskel { position: absolute; inset: 0; background: linear-gradient(90deg, var(--rs-map-g), var(--rs-map-c), var(--rs-map-g)); background-size: 200% 100%; animation: rs-sk 1.4s linear infinite; }
+.rs-mapskel { position: absolute; inset: 0; overflow: hidden; background: var(--rs-map-g); }
+.rs-mapskel::after { background: linear-gradient(90deg, transparent, var(--rs-map-c), transparent); animation-duration: 1.4s; }
 .rs-mapstate { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; z-index: 500; }
 .rs-mapstate .rs-empty { max-width: 380px; }
 /* chrome plates */
@@ -1029,7 +1076,9 @@ html.rs-sheet-open .rs-toast.show { transform: translate(-50%, 0); }
 .rs-wmaphint { position: absolute; z-index: 700; right: 12px; bottom: 24px; background: color-mix(in srgb, var(--rs-bg) 90%, transparent); padding: 8px 12px; border-radius: 12px; font: 700 15px var(--rs-f); color: var(--rs-dim); }
 .rs-wrail { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .rs-wcard { background: var(--rs-s1); border-radius: 18px; padding: 16px; color: var(--rs-tx); text-decoration: none; }
-.rs-wk { font: 800 30px/1.1 var(--rs-f); } .rs-wk.big { font-size: 40px; }
+.rs-wk { font: 800 30px/1.1 var(--rs-f); margin: 0; }
+.rs-wk.big { font-size: 40px; }
+.rs-wpanel:focus { outline: none; }   /* receives focus on open so it is announced; its controls keep their rings */
 .rs-wk2 { font: 700 14px var(--rs-fc); letter-spacing: .14em; text-transform: uppercase; color: var(--rs-dim); margin-bottom: 8px; }
 .rs-wsub { color: var(--rs-dim); font-size: 18px; line-height: 1.35; }
 .rs-wsrc { color: var(--rs-mute); font: 600 16px var(--rs-f); margin-top: 6px; }
@@ -1081,7 +1130,7 @@ html.rs-sheet-open .rs-toast.show { transform: translate(-50%, 0); }
 @media (min-width: 1400px) { .rs-wbody { grid-template-columns: minmax(0, 1fr) 460px; } .rs-wone { grid-template-columns: 520px minmax(0, 1fr); } }
 @media (max-width: 759px) { .rs-wmaphint { display: none; } .rs-wgiant { font-size: 88px; } .rs-wtitle { display: none; } .rs-wgrid { grid-template-columns: minmax(0, 1fr); } }
 @media (prefers-reduced-motion: reduce) {
-  .rs-spin, .rs-hum, .rs-app .rs-ml-flow, .rs-leakring, .rs-mapskel { animation: none !important; }
+  .rs-spin, .rs-hum, .rs-app .rs-ml-flow, .rs-leakring, .rs-mapskel, .rs-mapskel::after { animation: none !important; }
 }
 
 /* ── Wide layouts (Phases 7-8): designed for iPad landscape and desktop ──── */
@@ -1179,8 +1228,8 @@ button.rs-wwake.on { color: var(--rs-tx); border-color: var(--rs-ok); }
 .rs-chain.bad { box-shadow: inset 0 0 0 1.5px var(--rs-bad); }
 .rs-chg { display: flex; flex-direction: column; min-width: 0; }
 .rs-chg:last-of-type { text-align: right; }
-.rs-chk { font: 700 12px var(--rs-f); letter-spacing: .08em; text-transform: uppercase; color: var(--rs-dim); }
-.rs-chg b { font: 800 26px/1.1 var(--rs-f); } .rs-chg b small { font: 600 14px var(--rs-f); color: var(--rs-dim); }
+.rs-chlbl { font: 700 12px var(--rs-f); letter-spacing: .08em; text-transform: uppercase; color: var(--rs-dim); }   /* was .rs-chk, which is also the checklist row: every checklist rendered in caps */
+.rs-chg b { font: 800 26px/1.1 var(--rs-f); white-space: nowrap; }   /* "24.5 po" stays whole */ .rs-chg b small { font: 600 14px var(--rs-f); color: var(--rs-dim); }
 .rs-chg b.bad { color: var(--rs-bad); }
 .rs-chw { color: var(--rs-mute); font-size: 13px; }
 .rs-cha { display: flex; flex-direction: column; align-items: center; gap: 3px; font: 700 13px var(--rs-f); color: var(--rs-dim); }
@@ -1188,7 +1237,7 @@ button.rs-wwake.on { color: var(--rs-tx); border-color: var(--rs-ok); }
 .rs-cha i::after { content: ''; position: absolute; right: -1px; top: -4px; border: 5px solid transparent; border-left: 7px solid var(--rs-line2); border-right: 0; }
 .rs-chain.bad .rs-cha span:first-child { color: var(--rs-bad); }
 .rs-chlog { grid-column: 1 / -1; width: 100%; min-height: 48px; display: inline-flex; gap: 8px; justify-content: center; align-items: center; }
-.rs-chain.big .rs-chg b { font-size: 36px; } .rs-chain.big .rs-chk { font-size: 14px; } .rs-chain.big .rs-chw { font-size: 15px; } .rs-chain.big .rs-cha { font-size: 16px; }
+.rs-chain.big .rs-chg b { font-size: 36px; } .rs-chain.big .rs-chlbl { font-size: 14px; } .rs-chain.big .rs-chw { font-size: 15px; } .rs-chain.big .rs-cha { font-size: 16px; }
 /* Imported lines */
 .rs-implrow { gap: 12px; }
 .rs-sel { width: auto; max-width: 52%; min-height: 48px; }
@@ -1246,3 +1295,18 @@ button.rs-wwake.on { color: var(--rs-tx); border-color: var(--rs-ok); }
 .rs-crash p { margin: 14px 0 20px; color: var(--rs-dim); }
 .rs-crash pre { margin-top: 24px; white-space: pre-wrap; font: 500 13px/1.45 ui-monospace, Menlo, monospace; color: var(--rs-mute);
   background: var(--rs-s1); border: 1px solid var(--rs-line); border-radius: 12px; padding: 14px; overflow-wrap: anywhere; }
+
+/* ── 320 to 360 px (small phones). Last in the file on purpose: these override rules
+   defined further up at equal specificity (.rs-opts.five, .rs-scorebars). ─────────── */
+@media (max-width: 360px) {
+  .rs-spills { gap: 0; margin-left: -18px; margin-right: -18px; }   /* six stage buttons, each 44 px or more (was 41) */
+  .rs-opts.three .rs-opt { padding: 10px 8px; }
+  .rs-scorebars { margin-left: -18px; margin-right: -18px; gap: 0; }
+  .rs-sbd { font-size: 11px; letter-spacing: .02em; }
+  .rs-whenrow { flex-wrap: wrap; row-gap: 8px; }
+  .rs-when { white-space: nowrap; }   /* the date pill never breaks inside itself ("4:20 / pm") */
+}
+/* A value with its own spaces ("30 h 30 min") breaks between whole parts, evenly. */
+.rs-mid { text-wrap: balance; }
+/* Pan sizes: three across on phones (five across left 48 px per label at 390; "Sur mesure" broke mid-word). */
+@media (max-width: 459px) { .rs-opts.five { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

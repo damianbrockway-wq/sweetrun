@@ -53,7 +53,7 @@ function RsWeatherStage({ c }) {
         {days.map(d => (
           <div key={d.iso} className="rs-wxd">
             <div className="rs-dname">{d.i === 0 ? rt(L,'today') : srWeekday(d.iso, L)}</div>
-            <div className="rs-wxbar" aria-label={rt(L,'wxAria', { lo:d.lo, hi:d.hi })}><span className="fz" style={{ left: x(32) + '%' }} /><i style={{ left: x(d.lo) + '%', width: Math.max(2, x(d.hi) - x(d.lo)) + '%' }} /></div>
+            <div className="rs-wxbar" role="img" aria-label={rt(L,'wxAria', { lo:d.lo, hi:d.hi })}><span className="fz" style={{ left: x(32) + '%' }} /><i style={{ left: x(d.lo) + '%', width: Math.max(2, x(d.hi) - x(d.lo)) + '%' }} /></div>
             <div className="rs-res"><RsSt kind={clsKind(d.cls)}>{clsWord(d.cls)}</RsSt><div className="rs-mute tn">{d.lo}° / {d.hi}°</div></div>
           </div>
         ))}
@@ -213,6 +213,7 @@ function RsTapStage({ c }) {
             <p className="rs-note">{rt(L,'dbhNote')}</p>
           </div>
           <div>
+            <section className="rs-group span" aria-label={rt(L,'treesWord')}>
             <h2 className="rs-sec">{rt(L,'treesWord')}</h2>
             {trees.length === 0 ? (
               <div className="rs-empty"><div className="rs-mk"><M.tree size={52} /></div>
@@ -231,12 +232,13 @@ function RsTapStage({ c }) {
               ) : <>
                 <div className="rs-list" style={{ marginTop:12 }}>
                   {shown.map(p => <RsRow key={p.id} title={p.tagged || p.label || rt(L,'treeWord')}
-                    sub={[p.dbh ? `${p.dbh} in` : null, rt(L, tapsOf(p) === 1 ? 'nTap1' : 'nTaps', { n: tapsOf(p) }), p.mainline ? lineName(p.mainline) : null, look(p) ? rt(L,'needsLook') : null].filter(Boolean).join(' · ')}
+                    sub={[p.dbh ? `${p.dbh} ${srUnitL('in', L)}` : null, rt(L, tapsOf(p) === 1 ? 'nTap1' : 'nTaps', { n: tapsOf(p) }), p.mainline ? lineName(p.mainline) : null, look(p) ? rt(L,'needsLook') : null].filter(Boolean).join(' · ')}
                     onClick={() => setTree(p)} />)}
                 </div>
                 {list.length > 25 && !all && <div style={{ marginTop:10 }}><RsBtn kind="secondary" onClick={() => setAll(true)}>{rt(L,'showAllN', { n: list.length })}</RsBtn></div>}
               </>}
             </>}
+            </section>
             <h2 className="rs-sec">{rt(L,'tapDetail')}</h2>
             <RsDetailRows c={c} paths={['stage/tap/guide']} />
             <div style={{ marginTop:16 }}><RsBtn icon="map" onClick={() => rsGo('bush')}>{rt(L,'addTreesBush')}</RsBtn></div>
@@ -247,7 +249,7 @@ function RsTapStage({ c }) {
         <RsKv rows={[
           tree.label && tree.tagged ? [rt(L,'nameWord'), tree.label] : null,
           tree.species ? [rt(L,'species'), String(tree.species).replace(/_/g, ' ')] : null,
-          tree.dbh ? [rt(L,'diameter'), `${tree.dbh} in`] : null,
+          tree.dbh ? [rt(L,'diameter'), `${tree.dbh} ${srUnitL('in', L)}`] : null,
           [rt(L,'tapsWordC'), String(tapsOf(tree))],
           tree.mainline ? [rt(L,'mainlineWord'), lineName(tree.mainline)] : null,
           tree.health ? [rt(L,'health'), String(tree.health)] : null,

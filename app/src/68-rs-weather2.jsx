@@ -72,7 +72,7 @@ function RsForecast({ c }) {
         {days.map((d, i) => (
           <button key={d.date} type="button" className={`rs-sbar${i === sel ? ' on' : ''}${d.score >= 44 ? ' run' : ''}`} aria-pressed={i === sel}
             aria-label={rt(L,'fcDayAria', { d: dayName(d), s: d.score, q: rt(L, SR_QUAL_KEY[d.quality] || 'qNoFlow') })} onClick={() => setSel(i)}>
-            <span className="rs-sbd">{dayName(d)}</span>
+            <span className="rs-sbd">{d.i === 0 ? rt(L,'todayShort') : dayName(d)}</span>
             <span className="rs-sbtrack"><i style={{ height: Math.max(d.score > 0 ? 6 : 0, d.score) + '%' }} /></span>
             <b className="tn">{d.score > 0 ? d.score : '0'}</b>
             <span className="rs-sbt tn"><span>{d.hiF}°</span><span>{d.loF}°</span></span>
@@ -125,7 +125,7 @@ function srFactorRows(d, L) {
     [n('fDay'),   `${d.hiF}°F · ${n(d.hiF >= 40 && d.hiF < 46 ? 'fIdeal' : d.hiF >= 50 ? 'fBuddy' : d.hiF >= 33 ? 'fMarginal' : 'fNoThaw')}`],
     [n('fSwing'), `${sw}°F · ${n(sw >= 25 ? 'fExcellent' : sw >= 18 ? 'fGood' : 'fLimited')}`],
     [n('fWind'),  `${d.windMph} mph · ${n(d.windMph <= 10 ? 'fCalm' : d.windMph <= 20 ? 'fLightWind' : 'fCutsFlow')}`],
-    [n('fRain'),  `${d.precipIn} in · ${n(d.precipIn < 0.05 ? 'fDry' : d.precipIn < 0.2 ? 'fLightRain' : 'fHeavyRain')}`],
+    [n('fRain'),  `${d.precipIn} ${srUnitL('in', L)} · ${n(d.precipIn < 0.05 ? 'fDry' : d.precipIn < 0.2 ? 'fLightRain' : 'fHeavyRain')}`],
     [n('fSun'),   `${sunH.toFixed(1)} h · ${n(sunH >= 7 ? 'fSunny' : sunH >= 4 ? 'fPartSun' : 'fOvercast')}`],
   ];
 }
@@ -147,8 +147,10 @@ function RsRibbon({ days, lang, dayName }) {
         <path d={path('hiF')} fill="none" style={{ stroke:T.acc }} strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
         <path d={path('loF')} fill="none" style={{ stroke:T.ice }} strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
         {days.map((d, i) => <g key={'p' + i}><circle cx={X(i)} cy={Y(d.hiF)} r="3" style={{ fill:T.acc }} /><circle cx={X(i)} cy={Y(d.loF)} r="3" style={{ fill:T.ice }} /></g>)}
-        {days.map((d, i) => <text key={'t' + i} x={X(i)} y={H - 4} textAnchor="middle" className="rs-ct">{d.i === 0 ? dayName(d) : dayName(d).slice(0, 3)}</text>)}
+        {days.map((d, i) => <text key={'t' + i} x={X(i)} y={H - 4} textAnchor="middle" className="rs-ct">{d.i === 0 ? rt(lang,'todayShort') : dayName(d).slice(0, 3)}</text>)}
       </svg>
+      <RsDataTable caption={rt(lang,'ribbonAria', { n: days.filter(d => d.hiF >= 40 && d.loF <= 28).length })} head={['', rt(lang,'lgHigh'), rt(lang,'lgLow')]}
+        rows={days.map(d => [dayName(d), fmt(d.hiF, 0) + '°F', fmt(d.loF, 0) + '°F'])} />
       <div className="rs-legend"><span><i className="lg" style={{ background:T.acc }} />{rt(lang,'lgHigh')}</span><span><i className="lg" style={{ background:T.ice }} />{rt(lang,'lgLow')}</span>
         <span><i className="lg" style={{ background:T.accSoft, outline:`1px solid ${T.acc}` }} />{rt(lang,'lgRunDay')}</span></div>
     </div>
@@ -247,8 +249,8 @@ function RsDegreeDays({ c }) {
             <span className="rs-bt"><b>{rt(L,'buddyDropT')}</b><span>{rt(L,'buddyDropP', { l: fmt(tr.last, 1), p: fmt(tr.peak, 1) })}</span></span></div>}
           {log.length === 0 ? <div className="rs-empty"><b>{rt(L,'brixNoneT')}</b><p>{rt(L,'brixNoneP')}</p></div> :
             <RsStat title={rt(L,'latestReading')} value={fmt(tr.last, 1)} unit="%" delta={log.length >= 2 ? <span>{rt(L,'peakBrixV', { v: fmt(tr.peak, 1) })}</span> : null}>
-              {log.length >= 2 && <RsLineChart yMax={bmax} yTicks={[0, bmax]} series={[{ v: log.map(e => parseFloat(e.brix) || 0), c:T.sap, area:true, end: fmt(tr.last, 1) + '%' }]}
-                xLabels={[[0, srDateShort(log[0].date, L)], [log.length - 1, srDateShort(log[log.length - 1].date, L)]]} label={rt(L,'brixTrendAria', { n: log.length })} />}
+              {log.length >= 2 && <RsLineChart yMax={bmax} yTicks={[0, bmax]} series={[{ v: log.map(e => parseFloat(e.brix) || 0), c:T.sap, area:true, name:'Brix', end: fmt(tr.last, 1) + '%' }]}
+                xLabels={[[0, srDateShort(log[0].date, L)], [log.length - 1, srDateShort(log[log.length - 1].date, L)]]} label={rt(L,'brixTrendAria', { n: log.length })} rowLabel={i => srDateShort(log[i].date, L)} rowHead={rt(L,'date')} dp={1} />}
             </RsStat>}
           <div style={{ marginTop:12 }}><RsBtn icon="drop" onClick={() => setBrixSheet(true)}>{rt(L,'logBrix')}</RsBtn></div>
           {log.length > 0 && <div className="rs-list" style={{ marginTop:12 }}>

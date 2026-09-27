@@ -1,5 +1,15 @@
 # SweetRun changelog
 
+## 2026-09-27: Fix pass (French, accessibility, layout, speed)
+
+What a sugarmaker sees:
+- **All of it in French.** Every screen now has French, in the words Quebec producers use: eau d'érable, entaille, chalumeau, érablière, tubulure, maître-ligne, osmose, casseroles, soutirer, Cabane à sucre. Inches and feet read po and pi in French, and the default checklist jobs, spout names and fuel choices are translated too.
+- **Keyboard and screen readers.** Watch's line plates are announced as buttons; pressing Enter opens the line and Escape returns to the plate. Every chart has a data table a screen reader can read, the Season chart reads out day by day with the arrow keys, and text fields show a clear amber ring when they have focus. The page tells the phone it is in French when it is, so it is read in a French voice.
+- **Layout.** The greeting wraps instead of cutting off a name on small phones; on iPad portrait both columns now end close together; on a phone the Boil screen's evaporator is shorter so the numbers sit higher; checklists no longer show in capital letters.
+- **Faster first open.** The offline copy downloads after the app has opened, not while it opens, and a first visit is no longer reloaded once the offline copy is ready.
+
+Under the hood: service worker `sweetrun-v38`; looping animations pause when scrolled out of view, the evaporator steam no longer re-blurs every frame, loading shimmer moves by transform; axe-core finds no serious or critical issue on any screen; tests fail if any French string is missing or drops a placeholder. app.js 801 KB (241 KB gzipped; the French strings are 96 KB before compression).
+
 ## 2026-09-26: Run Sheet is the app (cutover)
 
 What a sugarmaker sees:

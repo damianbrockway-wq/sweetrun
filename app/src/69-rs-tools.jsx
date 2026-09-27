@@ -47,21 +47,21 @@ function RsTapGuide({ c }) {
               <div><div className="rs-meta">{rt(L,'tgSap')}</div><div className="rs-mid tn">{srVol(est.sapGal, c.units)}<small>{u}</small></div></div>
               <div><div className="rs-meta">{rt(L,'tgSyrup')}</div><div className="rs-mid tn">{srVol(est.syrupGal, c.units, 1)}<small>{u}</small></div></div>
             </div>
-            <p className="rs-note">{rt(L,'tgEstNote', { r: fmt(rule86(c.sapBrix), 0), m: yieldModelSaved().label })}</p>
+            <p className="rs-note">{rt(L,'tgEstNote', { r: fmt(rule86(c.sapBrix), 0), m: srModelName(yieldModelSaved().label, L) })}</p>
           </div>
           <h2 className="rs-sec">{rt(L,'tgSizeT')}</h2>
-          <div className="rs-list">{sizes.map(([s, n, k]) => <RsRow key={s} chev={false} title={srPlain(t(L, s))} sub={t(L, n)} value={rt(L, k === '1' ? 'nTap1' : 'nTaps', { n:k })} />)}</div>
+          <div className="rs-list">{sizes.map(([s, n, k]) => <RsRow key={s} chev={false} title={srPlain(t(L, s), L)} sub={t(L, n)} value={rt(L, k === '1' ? 'nTap1' : 'nTaps', { n:k })} />)}</div>
           <h2 className="rs-sec">{rt(L,'tgSpoutT')}</h2>
           <div className="rs-card">
             <div className="rs-opts three" role="group" aria-label={rt(L,'tgSpoutT')}>{SPOUTS.map((sp_, i) => <button key={i} type="button" className={`rs-opt${(parseInt(spout) || 0) === i ? ' on' : ''}`}
-              aria-pressed={(parseInt(spout) || 0) === i} onClick={() => setSpout(i)}><b>{sp_.bit}</b><span>{sp_.label.replace(/^.*\((.*)\)$/, '$1')}</span></button>)}</div>
-            <RsKv rows={[[rt(L,'tgBit'), sp.bit], [rt(L,'tgDepth'), srPlain(sp.depth)]]} />
-            <p className="rs-note">{sp.note}</p>
+              aria-pressed={(parseInt(spout) || 0) === i} onClick={() => setSpout(i)}><b>{sp_.bit}</b><span>{rt(L, 'spoutS' + i)}</span></button>)}</div>
+            <RsKv rows={[[rt(L,'tgBit'), sp.bit], [rt(L,'tgDepth'), srPlain(sp.depth, L).replace(/ in$/, ' ' + srUnitL('in', L))]]} />
+            <p className="rs-note">{rt(L, 'spoutN' + (SPOUTS.indexOf(sp)))}</p>
           </div>
         </div>
         <div>
           <h2 className="rs-sec">{rt(L,'tgDrillT')}</h2>
-          <ol className="rs-steps rs-card">{[1,2,3,4,5,6].map(i => <li key={i}><b>{srPlain(t(L, 'drillTip' + i))}</b></li>)}</ol>
+          <ol className="rs-steps rs-card">{[1,2,3,4,5,6].map(i => <li key={i}><b>{srPlain(t(L, 'drillTip' + i), L)}</b></li>)}</ol>
           <h2 className="rs-sec">{rt(L,'tgNotesT')}<span className="rs-meta tn">{notes.length}</span></h2>
           {notes.length === 0 ? <div className="rs-empty"><b>{rt(L,'tgNotesNoneT')}</b><p>{rt(L,'tgNotesNoneP')}</p></div> :
             <div className="rs-list">{notes.slice().reverse().map(n => <div key={n.id} className="rs-row rs-equip">
@@ -163,7 +163,7 @@ function RsTubing({ c }) {
             <div className="rs-card">
               <RsKv rows={[[rt(L,'tuTarget'), `${fmt(r.targetVac, 1)} in Hg`], [rt(L,'tuLoss'), `${fmt(r.vacLoss, 1)} in Hg`], [rt(L,'tuAssist'), `${fmt(r.vacGain, 1)} in Hg`]]} />
               <div className="rs-hr" />
-              <div className="rs-split" style={{ alignItems:'flex-end' }}><div><div className="rs-meta">{rt(L,'tuPumpVac')}</div><div className="rs-big tn">{fmt(r.vacPump, 1)}<small>in Hg</small></div></div>
+              <div className="rs-split" style={{ alignItems:'flex-end' }}><div><div className="rs-meta">{rt(L,'tuPumpVac')}</div><div className="rs-big tn">{fmt(r.vacPump, 1)}<small>{srUnitL('in Hg', L)}</small></div></div>
                 <RsSt kind={r.vacPump > 28 ? 'fault' : r.vacPump > 24 ? 'check' : 'ok'}>{rt(L, r.vacPump > 28 ? 'tuHard' : r.vacPump > 24 ? 'tuHigh' : 'tuEasy')}</RsSt></div>
               {r.pumpHigh && <p className="rs-errline">{rt(L,'tuPumpHighP')}</p>}
               {r.gradeHelps && <p className="rs-okline">{rt(L,'tuGradeP', { ft: fmt(r.elevDrop, 0) })}</p>}
@@ -215,7 +215,7 @@ function RsEvaporator({ c }) {
   const sapGal = toGal(parseFloat(sap) || 0, c.units);
   const k = srEvapCosts({ fuelType:c.fuelType, sapGal, brix:c.sapBrix, rate:er.rate, fuelCost:c.fuelCost, laborHrs, laborRate,
     supplies:[spoutC, bottleC, filterC, otherC], margin, cpgOverride: cpgU === '' ? '' : srPerGal(parseFloat(cpgU) || 0, c.units) });
-  const fl = f => f.unit === 'ccf' ? rt(L,'fuelGas') : fuelLabel(f, L).replace(/ \(.*\)/, '');
+  const fl = f => f.unit === 'ccf' ? rt(L,'fuelGas') : f.unit === 'cord' ? rt(L,'fuelWood') : fuelLabel(f, L).replace(/ \(.*\)/, '');
   const fu = L === 'fr' ? (k.fuel.unitFr || k.fuel.unit) : k.fuel.unit;
   const bottleName = { '250ml':'250 mL', '500ml':'500 mL', '1l':'1 L', '1qt':'1 qt', '1gal':'1 gal' };
   return (
@@ -312,6 +312,7 @@ function RsFinishing({ c }) {
   const bp = c.waterBP, fin = finTemp(bp), toC = f => (f - 32) * 5 / 9;
   const grades = [['gradeGolden', '>75%', '66.0 to 66.5', 1, 'fgNote1'], ['gradeAmber', '25 to 75%', '66.5 to 67.5', 2, 'fgNote2'],
     ['gradeDark', '<25%', '67.0 to 68.9', 3, 'fgNote3'], ['gradeVeryDark', '<10%', '67.0 to 68.9', 4, 'fgNote4']];
+  const R = s => s.replace(/^(.+?) to (.+)$/, (_, a, b) => rt(L, 'rangeTo', { a, b }));   // "66.0 to 66.5" in the reader's language
   return (
     <div className="rs-inner">
       <RsSubHead c={c} back="stage/boil" backLabel={rt(L,'st_boil')} eyebrow={rt(L,'stageOf', { n:5 })} title={rt(L,'sc_finish')} lede={rt(L,'fiLede')} />
@@ -326,13 +327,13 @@ function RsFinishing({ c }) {
           <h2 className="rs-sec">{rt(L,'fiGradesT')}</h2>
           <div className="rs-list">{grades.map(([g, light, brix, n, note]) => <div key={g} className="rs-row rs-grade">
             <span className="rs-swatch big" style={{ background:`var(--rs-grade-${n})` }} aria-hidden="true" />
-            <span className="rs-rt"><b>{t(L, g)}</b><span>{rt(L,'fiLight', { l: light })} · {rt(L, note)}</span></span>
-            <span className="rs-rv tn">{brix}</span></div>)}</div>
+            <span className="rs-rt"><b>{t(L, g)}</b><span>{rt(L,'fiLight', { l: R(light) })} · {rt(L, note)}</span></span>
+            <span className="rs-rv tn">{R(brix)}</span></div>)}</div>
           <RsKv rows={[[rt(L,'fiLegal'), rt(L,'fiLegalV')], [rt(L,'fiWeight'), rt(L,'fiWeightV')]]} />
           <h2 className="rs-sec">{rt(L,'fiCanT')}</h2>
           <div className="rs-card">
             <div className="rs-meta">{rt(L,'fiCanBetween')}</div>
-            <div className="rs-huge tn">180 to 190<small>°F</small></div>
+            <div className="rs-huge tn">{rt(L,'rangeTo', { a: 180, b: 190 })}<small>°F</small></div>
             <p className="rs-meta tn">{rt(L,'fiCanC')}</p>
             <p className="rs-body" style={{ marginTop:12 }}>{rt(L,'fiWhyRange')}</p>
           </div>

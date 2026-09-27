@@ -283,7 +283,7 @@ function RsSyrupVsLast({ c, slog, prev, dayOfRun, big }) {
           ...(last.length ? [{ v:last, c:T.mute, dash:'5 5', end:String(c.season - 1) }] : []),
           ...(cur.length ? [{ v:cur, c:T.tx, area:true, end:String(c.season) }] : []),
         ]}
-        xLabels={[[0, rt(L,'dayN', { n:1 })], [n - 1, rt(L,'dayN', { n })]]}
+        xLabels={[[0, rt(L,'dayN', { n:1 })], [n - 1, rt(L,'dayN', { n })]]} rowLabel={i => rt(L,'dayN', { n: i + 1 })} dp={1}
         label={rt(L,'svlAria', { v: fmt(now, 1), u, n, l: then != null ? fmt(then, 1) : '0' })} />
     </RsStat>
   );

@@ -28,6 +28,11 @@ eq('runsheet.css has no data-look scope', rcss.includes('data-look'), false);
 eq('runsheet.css has no classic mount rules', rcss.includes('rs-classic'), false);
 eq('sw has no look.js', sw.includes('look.js'), false);
 eq('sw cache bumped past v35', +(/sweetrun-v(\d+)/.exec(sw) || [0, 0])[1] > 35, true);
+// Fix pass: the worker registers after load (its precache never competes with first paint),
+// and a first visit (no controller when the page opened) is never reloaded by clients.claim().
+eq('sw cache bumped past v37 (fix pass)', +(/sweetrun-v(\d+)/.exec(sw) || [0, 0])[1] >= 38, true);
+eq('sw registers after load', /addEventListener\('load', register/.test(idx) && !/^\s*navigator\.serviceWorker\.register\(/m.test(idx), true);
+eq('first visit is not reloaded on controllerchange', /const hadController = !!navigator\.serviceWorker\.controller/.test(idx) && /if \(!hadController \|\| refreshing\) return;/.test(idx), true);
 // Every icon the head and the manifest name exists, is precached, and is the size it claims (PNG IHDR).
 const pngSize = f => { const b = readFileSync(join(ROOT, f.replace(/^\//, ''))); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
 const iconRefs = [...idx.matchAll(/href="(\/app\/icons\/[^"]+)"/g)].map(m => m[1]).concat(mf.icons.map(i => i.src));
@@ -366,6 +371,7 @@ eq('insights', E2.srInsights(1200, 25, 600, 0.5, 100, 2, 90, E2.FUELS[0]).map(i 
 eq('plain ranges', E2.srPlain('10–15 gal, 20–24°F nights, $35–$70/gal'), '10 to 15 gal, 20 to 24°F nights, $35 to $70/gal');
 eq('plain pauses', E2.srPlain('Stop the boil — do not stir'), 'Stop the boil, do not stir');
 eq('plain no dash left', /[–—]/.test(E2.srPlain('a — b – c 1–2')), false);
+eq('plain ranges in French', E2.srPlain('25–30 cm, 1.5–2 in', 'fr'), '25 à 30 cm, 1.5 à 2 in');
 
 // ── Phases 7-8: leak rule, runtime, fuel, readings, freeze/thaw, lines, pump jobs ──
 const E3 = new Function('ls', src.slice(a, b) +
@@ -584,6 +590,58 @@ eq('insight low under the band', Y.srInsights(0, 15, 0, 0, 100, 2, null, Y.FUELS
     for (const [l, b] of blocks) if (l === lang) for (const k of keysOf(b)) { if (seen.has(k) && k !== 'en' && k !== 'fr') dup.push(k); seen.add(k); }
     eq(`no ${lang} string key defined twice`, dup, []);
     eq(`${lang} strings parsed`, seen.size > (lang === 'en' ? 1500 : 200), true); } }
+
+// ── French: every English key has a French value, with the same {placeholders} ──
+// Evaluates the real tables (the RS_TR literal and every Object.assign block) in a
+// sandbox, so a key added in English alone, or a French string that drops or renames
+// a {placeholder}, fails here instead of showing English or a raw {v} on a French screen.
+{ const vm = await import('node:vm');
+  const a = src.indexOf('const RS_TR = {'), b = src.indexOf('function rt(', a);
+  let code = src.slice(a, b).replace('const RS_TR', 'var RS_TR');
+  const re = /Object\.assign\(RS_TR\.(?:en|fr),\s*\{/g; let mm;
+  const close = i => { let d = 0; for (let j = i; j < src.length; j++) { const ch = src[j];
+      if (ch === "'" || ch === '"' || ch === '`') { const q = ch; j++; while (j < src.length && src[j] !== q) { if (src[j] === '\\') j++; j++; } continue; }
+      if (ch === '{') d++; else if (ch === '}' && !--d) return j; } return -1; };
+  while ((mm = re.exec(src))) { const e = close(mm.index + mm[0].length - 1); code += '\n' + src.slice(mm.index, e + 1) + ');'; }
+  const ctx = {}; vm.createContext(ctx); vm.runInContext(code, ctx);
+  const { en, fr } = ctx.RS_TR;
+  const ph = s => (String(s).match(/\{[A-Za-z_]\w*\}/g) || []).sort().join(',');
+  eq('every English string key has French', Object.keys(en).filter(k => typeof fr[k] !== 'string' || !fr[k].trim()), []);
+  eq('no French key without English', Object.keys(fr).filter(k => !(k in en)), []);
+  eq('French placeholders match English', Object.keys(en).filter(k => k in fr && ph(en[k]) !== ph(fr[k])), []);
+  eq('no em or en dash in French strings', Object.keys(fr).filter(k => /[–—]/.test(fr[k])), []);
+  eq('French tables parsed', Object.keys(en).length > 2000, true);
+  // Looping animations pause off-screen; the SVG steam carries no per-frame blur filter.
+  // (hook at the component's top level, two-space indent: once it landed inside a useEffect and crashed the tank)
+  eq('evaporator, tank and boil hero pause off-screen', ['function RsEvap(', 'function RsTankViz(', 'function RsBoilHero('].map(n => { const i = src.indexOf(n); return /\n  const ref = React\.useRef\(null\); useRsPauseOffscreen\(ref\);\n/.test(src.slice(i, src.indexOf('\n}\n', i))); }), [true, true, true]);
+  eq('no SVG blur filter on the animated steam', /feGaussianBlur/.test(src.slice(src.indexOf('function RsEvap('), src.indexOf('function RsJugs('))), false);
+  // Accessibility (fix pass)
+  eq('Next card title is an h2 (an h3 under the page h1 skipped a level)', /<h2 id="rs-next-t">/.test(src) && !/<h3 id="rs-next-t">/.test(src), true);
+  eq('Watch map is a labelled region, not an image around buttons', /className="rs-map rs-wmap base-sat" role="region"/.test(src), true);
+  eq('Watch line panel: heading, focus on open, Escape back to its plate', ['id="rs-wpanel-h"', "aria-labelledby=\"rs-wpanel-h\"", 'rs-plate[data-line=', "e.key === 'Escape'"].every(k => src.slice(src.indexOf('function RsWatchPanel(')).includes(k)), true);
+  eq('every data chart carries its table', ['function RsLineChart(', 'function RsBarChart(', 'function RsSeasonChart(', 'function RsBoilChart(', 'function RsTimeChart(', 'function RsRibbon('].map(n => { const i = src.indexOf(n); return src.slice(i, src.indexOf('\n}\n', i)).includes('<RsDataTable'); }), [true, true, true, true, true, true]);
+  eq('the season chart reads out by arrow keys too', /tabIndex=\{0\} onBlur=\{\(\) => setSel\(null\)\}/.test(src) && /ArrowLeft: -1, ArrowRight: 1/.test(src), true);
+  eq('html lang follows the language', /document\.documentElement\.lang = lang === 'fr' \? 'fr-CA' : 'en'/.test(src), true);
+  eq('Watch passes its no-reading word (it was inside a comment)', /showHouse: !one, noReading: rt\(L, 'noReadingW'\)/.test(src), true);
+  // French: ranges and units are never joined with English in code (L3 and L5 found both)
+  eq('no range joined with a literal " to "', /\$\{[^}]*\} to \$\{/.test(src.slice(src.indexOf('function RsStepper('))), false);
+  eq('no bare English unit after a number in a <small>', (src.match(/<small>\s?(in|ft|hr|in Hg)<\/small>/g) || []).length, 0);
+  eq('the leak chain label no longer shares the checklist class', /className="rs-chk">/.test(src), false);
+  eq('tank label comes from the tables', /aria-label=\{rt\(ls\.get\('sg_lang', 'en'\), empty \? 'noLevelYet' : 'tankPct'/.test(src), true);
+  // Default checklist jobs are shown through the tables; ticks stay keyed by index, so the
+  // English strings must equal the constants they replace, one for one.
+  const arr = name => vm.runInNewContext(src.slice(src.indexOf('[', src.indexOf('const ' + name + ' = [')), src.indexOf('];', src.indexOf('const ' + name + ' = [')) + 1));
+  eq('pre-season jobs match PRE_TASKS', arr('PRE_TASKS').map((x, i) => en['taskPre' + i] === x), arr('PRE_TASKS').map(() => true));
+  eq('post-season jobs match POST_TASKS', arr('POST_TASKS').map((x, i) => en['taskPost' + i] === x), arr('POST_TASKS').map(() => true));
+  // Diagnose fix cost and time: English identical to SR_FIXES, French for each.
+  { const fx = vm.runInNewContext('(' + src.slice(src.indexOf('{', src.indexOf('const SR_FIXES = {')), src.indexOf('};', src.indexOf('const SR_FIXES = {')) + 1) + ')');
+    eq('fix cost and time strings match SR_FIXES', Object.keys(fx).filter(k => en['fixC_' + k] !== fx[k].cost || en['fixT_' + k] !== fx[k].time || !fr['fixC_' + k] || !fr['fixT_' + k]), []); }
+  eq('a yield method name for every model', ['buckets', 'gravity', 'natural', 'vacuum'].filter(k => !en['ym_' + k] || !fr['ym_' + k]), []);
+  // The same rule for the older table in 12-i18n (t()), used by the PDF report and batch labels.
+  const tA = src.indexOf('const TR = {'), tB = src.indexOf('const t = (lang', tA);
+  const c2 = {}; vm.createContext(c2); vm.runInContext(src.slice(tA, tB).replace('const TR', 'var TR'), c2);
+  eq('every t() key has French', Object.keys(c2.TR.en).filter(k => !(k in c2.TR.fr)), []);
+  eq('t() placeholders match', Object.keys(c2.TR.en).filter(k => k in c2.TR.fr && ph(c2.TR.en[k]) !== ph(c2.TR.fr[k])), []); }
 
 // ── Token law: no hex colour literals in Run Sheet code (tokens.css is the only home) ──
 const { readdirSync } = await import('node:fs');

@@ -157,12 +157,12 @@ Object.assign(RS_TR.en, {
 });
 Object.assign(RS_TR.fr, {
   bushMap:'Érablière', bushLayers:'Couches', addToMap:'Ajouter à l’érablière', watchBush:'Surveiller l’érablière', mapTools:'Outils de l’érablière',
-  lyTrees:'Arbres', lyLaterals:'Latéraux', lyLines:'Lignes', lyVacuum:'Vide', lyBrix:'Brix', lyPumps:'Pompes', lyTanks:'Réservoirs',
+  lyTrees:'Arbres', lyLaterals:'Latéraux', lyLines:'Lignes', lyVacuum:'Vacuum', lyBrix:'Brix', lyPumps:'Pompes', lyTanks:'Réservoirs',
   zoomIn:'Zoom avant', zoomOut:'Zoom arrière', doneW:'Terminé', cancelW:'Annuler', undoW:'Annuler le point', saveLine:'Enregistrer la ligne',
   readouts:'Lectures', addPump:'Ajouter une pompe', addTank:'Ajouter un réservoir', stRunning:'En marche', stStopped:'Arrêtée',
-  markRunning:'Marquer en marche', markStopped:'Marquer arrêtée', reportFault:'Signaler une panne', logFuel:'Noter le carburant', logService:'Noter un entretien',
-  vacAndLeaks:'Vide et fuites', freezePrep:'Préparation au gel', leakFinder:'Détecteur de fuites', logVacuum:'Noter une lecture de vide',
-  kind_vacuum:'Vide', kind_transfer:'Transfert', kind_ro:'OI', kind_generator:'Génératrice',
+  markRunning:'Marquer en marche', markStopped:'Marquer arrêtée', reportFault:'Signaler une panne', logFuel:'Noter le combustible', logService:'Noter un entretien',
+  vacAndLeaks:'Vacuum et fuites', freezePrep:'Préparation au gel', leakFinder:'Détecteur de fuites', logVacuum:'Noter une lecture de vacuum',
+  kind_vacuum:'Vacuum', kind_transfer:'Transfert', kind_ro:'Osmose', kind_generator:'Génératrice',
   wTitle:'Moniteur d’érablière', wExit:'Quitter', wAllLines:'Toutes les lignes', wManualPill:'Vos lectures', wDemoPill:'Lectures de démo, pas réelles',
   wOutside:'Dehors', wAlerts:'Alertes', sapRunning:'Ça coule!', sapNotRunning:'Ça ne coule pas', lastChecked:'Dernière vérification', watchLine:'Surveiller cette ligne',
   demoTitle:'Lectures de démo', secOps:'Pompes et alertes', trend_falling:'En baisse', trend_rising:'En hausse', trend_steady:'Stable',

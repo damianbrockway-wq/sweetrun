@@ -58,9 +58,9 @@ function RsCollectStage({ c, openLog }) {
               </div>
               {bl.length >= 2 && <RsLineChart h={120} yMax={Math.ceil(Math.max(...bl.map(e => parseFloat(e.brix))) + 0.5)}
                 yTicks={[0, Math.ceil(Math.max(...bl.map(e => parseFloat(e.brix))) + 0.5)]}
-                series={[{ v: bl.map(e => parseFloat(e.brix)), c:T.sap, area:true, end: fmt(parseFloat(bl[bl.length - 1].brix), 1) + '%' }]}
+                series={[{ v: bl.map(e => parseFloat(e.brix)), c:T.sap, area:true, name:'Brix', end: fmt(parseFloat(bl[bl.length - 1].brix), 1) + '%' }]}
                 xLabels={[[0, srDateShort(bl[0].date, L)], [bl.length - 1, srDateShort(bl[bl.length - 1].date, L)]]}
-                label={rt(L,'brixTrendAria', { n: bl.length })} />}
+                label={rt(L,'brixTrendAria', { n: bl.length })} rowLabel={i => srDateShort(bl[i].date, L)} rowHead={rt(L,'date')} dp={1} />}
               <p className="rs-note">{rt(L,'brixNote')}</p>
               <div style={{ marginTop:12 }}><RsBtn kind="secondary" icon="drop" onClick={() => setBrixSheet(true)}>{rt(L,'logBrix')}</RsBtn></div>
             </div>
@@ -264,7 +264,7 @@ function RsBoilStage({ c }) {
   const est = rate * hrs;
   const drawn = active ? (sess.syrup || 0) : 0;
   const seasonSy = m.totals.syT + drawn;
-  const panLbl = m.d.panIdx === CUSTOM_PAN_IDX ? rt(L,'customPan') : (PAN_SIZES[m.d.panIdx] || PAN_SIZES[0]).label.replace(/ \(.*\)/, '');
+  const panLbl = m.d.panIdx === CUSTOM_PAN_IDX ? rt(L,'customPan') : (PAN_SIZES[m.d.panIdx] || PAN_SIZES[0]).label.replace(/ \(.*\)/, '').replace(/ ft$/, ' ' + srUnitL('ft', L));
   const start = () => persist({ start: Date.now(), sap: 0, syrup: 0, tempF: r1(c.waterBP) });
   const bumpT = dDisp => { const d = srTempD(sess.tempF, c.units) + dDisp; const f = c.units === 'L' ? d * 9 / 5 + 32 : d; persist({ ...sess, tempF: Math.round(f * 100) / 100 }); };
   const add = (k, n) => persist({ ...sess, [k]: r1((sess[k] || 0) + n) });
@@ -397,7 +397,7 @@ function RsBoilLive({ c, sess, now, est, rate, state, stateWord, finT, onRead, o
           <span className="rs-bls tn">{rate > 0 ? rt(L,'perHour', { v: srVol(rate, c.units, 1), u }) : rt(L,'setPanFirst')}</span></div>
       </div>
       <div className="rs-blchart">
-        <div className="rs-split rs-blchead"><h3>{rt(L,'readingsT')}</h3>
+        <div className="rs-split rs-blchead"><h2>{rt(L,'readingsT')}</h2>
           <RsSeg label={rt(L,'readingsT')} value={ser} onChange={setSer} options={[['temp', rt(L,'segTemp')], ['brix', rt(L,'segBrix')]]} /></div>
         {ser === 'temp'
           ? <RsBoilChart pts={S.temp.map(p => ({ ms: p.ms, v: srTempD(p.v, c.units) }))} from={sess.start} to={Math.max(now, ...S.temp.map(p => p.ms))} dp={1}
@@ -458,6 +458,7 @@ function RsBoilChart({ pts, from, to, refV, refL, band, bandL, dp = 1, unit, lan
         <text x={pl} y={h - 5} className="rs-ct">{srClock(from, lang)}</text>
         <text x={W - pr} y={h - 5} textAnchor="end" className="rs-ct">{rt(lang,'nowW')}</text>
       </svg>
+      <RsDataTable caption={label} head={[rt(lang,'blReadAt', { t: '' }).trim(), unit]} rows={pts.map(p => [srClock(p.ms, lang), fmt(p.v, dp)])} />
     </div>
   );
 }
@@ -633,7 +634,7 @@ function RsDrawOff({ c }) {
             <RsStepper id="rs-alt" value={alt} onChange={useAlt} steps={[-100, 100]} dp={0} unit="ft" label={rt(L,'altitudeFt')} min={0} max={15000} big={false} />
           </div>
           <div className="rs-list" style={{ marginTop:12 }}>
-            {ALT_REF.map(r => <RsRow key={r.alt} chev={false} title={r.alt} value={rt(L,'altRow', { bp: fmt(r.bp, 1), fin: fmt(r.fin, 1) })} />)}
+            {ALT_REF.map(r => <RsRow key={r.alt} chev={false} title={r.alt.replace(/ ft$/, ' ' + srUnitL('ft', L))} value={rt(L,'altRow', { bp: fmt(r.bp, 1), fin: fmt(r.fin, 1) })} />)}
           </div>
         </div>
         <div>
@@ -696,7 +697,7 @@ function RsDE({ c }) {
               <label className="rs-fl" htmlFor="rs-de-p">{rt(L,'dePlates')}</label>
               <RsStepper id="rs-de-p" value={plates} onChange={setPlates} steps={[-1, 1]} dp={0} unit="" label={rt(L,'dePlates')} min={1} max={50} big={false} />
               <label className="rs-fl">{rt(L,'dePlateSize')}</label>
-              <RsSeg label={rt(L,'dePlateSize')} value={ps} onChange={setPs} options={Object.keys(PLATE_CUPS).map(k => [k, k.replace(' plates', ' in')])} />
+              <RsSeg label={rt(L,'dePlateSize')} value={ps} onChange={setPs} options={Object.keys(PLATE_CUPS).map(k => [k, k.replace(' plates', ' ' + srUnitL('in', L))])} />
             </>}
           </div>
         </div>

@@ -160,7 +160,7 @@ function RsChecklists({ c }) {
       <div className="rs-list" style={{ marginTop:12 }}>
         {all.map((task, i) => <div key={i} className={`rs-chk${chk[i] ? ' on' : ''}`}>
           <button type="button" className="rs-chkbtn" role="checkbox" aria-checked={!!chk[i]} onClick={() => toggle(i)}>
-            <span className="rs-box" aria-hidden="true">{chk[i] && <RsIcon name="check" size={20} sw={3} />}</span><span className="rs-rt"><b>{task}</b></span>
+            <span className="rs-box" aria-hidden="true">{chk[i] && <RsIcon name="check" size={20} sw={3} />}</span><span className="rs-rt"><b>{i < base.length ? rt(L, (phase === 'pre' ? 'taskPre' : 'taskPost') + i) : task}</b></span>
           </button>
           {i >= base.length && <button type="button" className="rs-iconbtn" aria-label={rt(L,'removeTask')} onClick={() => remT(i - base.length)}><RsIcon name="x" size={18} /></button>}
         </div>)}

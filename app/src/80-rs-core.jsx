@@ -72,7 +72,7 @@ function useSrCore() {
   useEffect(()=>{ ls.set('sg_bp',waterBP);        },[waterBP]);
   useEffect(()=>{ ls.set('sg_fuel',fuelType);     },[fuelType]);
   useEffect(()=>{ ls.set('sg_fuelcost',fuelCost); },[fuelCost]);
-  useEffect(()=>{ ls.set('sg_lang',lang);       },[lang]);
+  useEffect(()=>{ ls.set('sg_lang',lang); try { document.documentElement.lang = lang === 'fr' ? 'fr-CA' : 'en'; } catch {} },[lang]);
 
   // ── Run condition check on app load (once per day), as in App ──
   useEffect(() => {
