@@ -3,19 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Maple Syrup Draw-Off Temperature Calculator — Free, By Elevation | SweetRun</title>
-  <meta name="description" content="Free draw-off temperature calculator for maple syrup. Enter your elevation or barometric pressure — or use your location — and get your exact finishing temperature (boiling point + 7.1°F). No account needed." />
+  <title>Maple Syrup Draw-Off Temperature Calculator: Free, By Elevation | SweetRun</title>
+  <meta name="description" content="Free draw-off temperature calculator for maple syrup. Enter your elevation or barometric pressure, or use your location, and get your exact finishing temperature (boiling point + 7.1°F). No account needed." />
   <link rel="canonical" href="https://sweetrun.app/draw-off-calculator" />
   <meta property="og:title" content="Maple Syrup Draw-Off Temperature Calculator" />
   <meta property="og:description" content="Your exact syrup finishing temperature from your elevation or barometric pressure. Free, no account." />
   <meta property="og:url" content="https://sweetrun.app/draw-off-calculator" />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="https://sweetrun.app/og-image.png" />
+  <meta property="og:image" content="https://sweetrun.app/og-image.png?v=ember" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="icon" href="/favicon.ico" sizes="48x48" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="stylesheet" href="/calc-shared.css" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -39,112 +35,178 @@
     ]
   }
   </script>
+  <!-- chrome:head -->
+<meta name="theme-color" content="#0C0B0A" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/app/icons/favicon-e-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/app/icons/favicon-e-16.png" />
+  <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon-e-180.png" />
+  <link rel="preload" href="/app/fonts/barlow-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/app/fonts/barlow-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/app/tokens.css" />
+  <link rel="stylesheet" href="/calc-shared.css?v=ember" />
+<!-- /chrome:head -->
 </head>
 <body>
 
-<nav>
-  <a class="nav-logo" href="/"><span>🍁</span> SweetRun</a>
-  <div class="nav-links">
-    <a href="/calculators">All Calculators</a>
-    <a href="/#features">Features</a>
-    <a href="/#pricing">Pricing</a>
+<!-- chrome:header -->
+<header class="site-head">
+  <div class="wrap site-head-in">
+    <a class="brand" href="/"><img src="/app/icons/icon-e-192.png" width="32" height="32" alt="" /><span>SweetRun</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="/#season">Season</a>
+      <a href="/#bush">Bush</a>
+      <a href="/#boil">Boil</a>
+      <a href="/calculators" aria-current="page">Calculators</a>
+      <a href="/#pricing">Pricing</a>
+    </nav>
+    <a class="btn btn-sm" href="/#pricing">Try it free</a>
   </div>
-  <a class="nav-cta" href="/#pricing">Try Free — 14 Days</a>
-</nav>
-
-<header class="calc-hero">
-  <span class="free-pill">Free · No account</span>
-  <h1>Draw-Off Temperature <em>Calculator</em></h1>
-  <p>Your exact maple syrup finishing temperature, from your elevation or today's barometric pressure.</p>
 </header>
+<!-- /chrome:header -->
 
 <main>
+<div class="calc-hero">
+  <img src="/app/photos/evaporator-steam.webp" alt="" width="1200" height="670" fetchpriority="high" />
+  <div class="wrap">
+    <span class="eyebrow">Draw-off temperature calculator</span>
+    <h1>When to draw off</h1>
+    <p>Your exact maple syrup finishing temperature, from your elevation or today&rsquo;s barometric pressure.</p>
+    <span class="hero-stage"><span class="tile tile-boil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a6 6 0 0 0 6-6c0-3.8-3-6-4-10-2.2 1.6-3.5 4-3.2 6.3-1-.4-1.8-1.3-2.2-2.4A7.5 7.5 0 0 0 6 15a6 6 0 0 0 6 6z"/></svg></span>In the app, on the Boil stage</span>
+  </div>
+</div>
+<div class="wrap calc-main">
   <div class="calc-card">
-    <label class="field-label">How do you want to find it?</label>
-    <div class="seg" role="tablist">
-      <button type="button" class="on" id="mode-alt" onclick="setMode('alt')">Elevation</button>
-      <button type="button" id="mode-pres" onclick="setMode('pres')">Barometric pressure</button>
-    </div>
+    <div class="calc-in">
+      <p class="field-label" id="how-l">How do you want to find it?</p>
+      <div class="seg" role="group" aria-labelledby="how-l">
+        <button type="button" class="on" id="mode-alt" onclick="setMode('alt')">Elevation</button>
+        <button type="button" id="mode-pres" onclick="setMode('pres')">Barometric pressure</button>
+      </div>
 
-    <div id="pane-alt">
-      <label class="field-label" for="alt-in">Your elevation (feet)</label>
-      <input type="number" id="alt-in" value="0" min="0" max="10000" step="50" inputmode="numeric" oninput="calc()" />
-      <div style="margin-top:12px;">
-        <button type="button" class="btn-loc" id="loc-btn" onclick="useLocation()">📍 Use my location</button>
-        <div class="loc-note" id="loc-note">Looks up your elevation — nothing is stored or sent to SweetRun.</div>
+      <div id="pane-alt" class="field">
+        <label class="field-label" for="alt-in">Your elevation (feet)</label>
+        <input type="number" id="alt-in" value="0" min="0" max="10000" step="50" inputmode="numeric" oninput="calc()" />
+        <div style="margin-top:12px;">
+          <button type="button" class="btn-loc" id="loc-btn" onclick="useLocation()">Use my location</button>
+          <div class="loc-note" id="loc-note">Looks up your elevation. Nothing is stored or sent to SweetRun.</div>
+        </div>
+      </div>
+
+      <div id="pane-pres" class="field" style="display:none;">
+        <label class="field-label" for="pres-in">Barometric pressure (inHg)</label>
+        <input type="number" id="pres-in" value="29.92" min="27" max="32" step="0.01" inputmode="decimal" oninput="calc()" />
+        <div class="loc-note">From your barometer or local weather report. Standard is 29.92 inHg.</div>
       </div>
     </div>
 
-    <div id="pane-pres" style="display:none;">
-      <label class="field-label" for="pres-in">Barometric pressure (inHg)</label>
-      <input type="number" id="pres-in" value="29.92" min="27" max="32" step="0.01" inputmode="decimal" oninput="calc()" />
-      <div class="loc-note">From your barometer or local weather report. Standard is 29.92 inHg.</div>
-    </div>
-
-    <div class="result-box">
-      <div class="result-label">Draw off your syrup at</div>
-      <div class="result-value" id="fin-f">219.1°F</div>
-      <div class="result-sub" id="fin-c">104.0°C</div>
-    </div>
-    <div class="result-grid">
-      <div class="mini-result">
-        <div class="mr-label">Water boils at</div>
-        <div class="mr-value" id="bp-f">212.0°F</div>
-        <div class="mr-sub" id="bp-c">100.0°C</div>
+    <div class="calc-out" aria-live="polite">
+      <div class="result-box">
+        <div class="result-label">Draw off your syrup at</div>
+        <div class="result-value" id="fin-f">219.1&deg;F</div>
+        <div class="result-sub" id="fin-c">104.0&deg;C</div>
       </div>
-      <div class="mini-result">
-        <div class="mr-label">The rule</div>
-        <div class="mr-value">BP + 7.1°F</div>
-        <div class="mr-sub">syrup finishes 7.1°F above water</div>
+      <div class="result-grid">
+        <div class="mini-result">
+          <div class="mr-label">Water boils at</div>
+          <div class="mr-value" id="bp-f">212.0&deg;F</div>
+          <div class="mr-sub" id="bp-c">100.0&deg;C</div>
+        </div>
+        <div class="mini-result">
+          <div class="mr-label">The rule</div>
+          <div class="mr-value">BP + 7.1&deg;F</div>
+          <div class="mr-sub">syrup finishes 7.1&deg;F above water</div>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="prose">
-    <h2>Altitude quick reference</h2>
+    <h2>Draw-off by elevation</h2>
+    <div class="table-scroll">
     <table class="ref-table" id="alt-table">
-      <thead><tr><th>Elevation</th><th>Water boils</th><th>Draw off at</th></tr></thead>
+      <thead><tr><th scope="col">Elevation</th><th scope="col">Water boils</th><th scope="col">Draw off at</th></tr></thead>
       <tbody>
-        <tr data-alt="0"><td>Sea level</td><td>212.0°F</td><td>219.1°F</td></tr>
-        <tr data-alt="500"><td>500 ft</td><td>211.1°F</td><td>218.2°F</td></tr>
-        <tr data-alt="1000"><td>1,000 ft</td><td>210.2°F</td><td>217.3°F</td></tr>
-        <tr data-alt="1500"><td>1,500 ft</td><td>209.3°F</td><td>216.4°F</td></tr>
-        <tr data-alt="2000"><td>2,000 ft</td><td>208.4°F</td><td>215.5°F</td></tr>
-        <tr data-alt="2500"><td>2,500 ft</td><td>207.5°F</td><td>214.6°F</td></tr>
-        <tr data-alt="3000"><td>3,000 ft</td><td>206.6°F</td><td>213.7°F</td></tr>
+        <tr data-alt="0"><td>Sea level</td><td>212.0&deg;F</td><td>219.1&deg;F</td></tr>
+        <tr data-alt="500"><td>500 ft</td><td>211.1&deg;F</td><td>218.2&deg;F</td></tr>
+        <tr data-alt="1000"><td>1,000 ft</td><td>210.2&deg;F</td><td>217.3&deg;F</td></tr>
+        <tr data-alt="1500"><td>1,500 ft</td><td>209.3&deg;F</td><td>216.4&deg;F</td></tr>
+        <tr data-alt="2000"><td>2,000 ft</td><td>208.4&deg;F</td><td>215.5&deg;F</td></tr>
+        <tr data-alt="2500"><td>2,500 ft</td><td>207.5&deg;F</td><td>214.6&deg;F</td></tr>
+        <tr data-alt="3000"><td>3,000 ft</td><td>206.6&deg;F</td><td>213.7&deg;F</td></tr>
       </tbody>
     </table>
+    </div>
 
-    <h2>Why 7.1°F above boiling?</h2>
-    <p>Finished maple syrup is a sugar solution of 66–68.9°Brix, and a solution at that density boils 7.1°F hotter than pure water. That offset holds anywhere — what changes is the boiling point of water itself. It drops about 1.8°F for every 1,000 feet you climb, and it moves day to day with barometric pressure. A cold front rolling through can shift your draw-off point by a full degree while your pan is running.</p>
-    <p>That's why experienced sugarmakers don't memorize "219." They find water's boiling point at their sugarhouse — with this calculator, or by boiling a pot of water — and finish 7.1°F above it. Drawing too early gives thin syrup that can ferment; drawing late gives syrup that's over-density and can crystallize in the jar.</p>
+    <h2>Why 7.1&deg;F above boiling?</h2>
+    <p>Finished maple syrup is a sugar solution of 66 to 68.9&deg;Brix, and a solution at that density boils 7.1&deg;F hotter than pure water. That offset holds anywhere. What changes is the boiling point of water itself. It drops about 1.8&deg;F for every 1,000 feet you climb, and it moves day to day with barometric pressure. A cold front rolling through can shift your draw-off point by a full degree while your pan is running.</p>
+    <p>That's why experienced sugarmakers don't memorize "219." They find water's boiling point at their sugarhouse, with this calculator or by boiling a pot of water, and finish 7.1&deg;F above it. Drawing too early gives thin syrup that can ferment; drawing late gives syrup that's over-density and can crystallize in the jar.</p>
     <h3>Verify with a hydrometer</h3>
-    <p>Temperature gets you to the draw; a hydrometer or refractometer confirms density (66–68.9°Brix, legal minimum 66.0 in most jurisdictions). Use both — the thermometer to run the pan, the hydrometer to check the barrel.</p>
+    <p>Temperature gets you to the draw; a hydrometer or refractometer confirms density (66 to 68.9&deg;Brix, legal minimum 66.0 in most jurisdictions). Use both: the thermometer to run the pan, the hydrometer to check the barrel.</p>
     <p class="cite">Method sourced from UVM Proctor Maple Research Center and the North American Maple Syrup Producers Manual.</p>
   </div>
 
-  <div class="cta-band">
-    <h2>This is one screen of <em>SweetRun</em>.</h2>
-    <p>The full app finds your boiling point by GPS, tracks every batch and Brix reading, scores your sap-run forecast, and works completely offline in the sugarbush. No account. Your data stays on your phone.</p>
-    <a class="btn-primary" href="/#pricing">Try SweetRun Free — 14 Days</a>
-    <div class="cta-free-note">This calculator stays free, forever. No signup needed.</div>
-  </div>
-
-  <div class="more-calcs">
-    <h2>More free maple calculators</h2>
-    <div class="calc-links">
-      <a class="calc-link" href="/sap-to-syrup-calculator"><div class="cl-icon">🥞</div><div class="cl-name">Sap to Syrup Ratio</div><div class="cl-desc">Rule of 86 — how much syrup your sap will make</div></a>
-      <a class="calc-link" href="/tap-calculator"><div class="cl-icon">🌳</div><div class="cl-name">Tap Calculator</div><div class="cl-desc">How many taps your trees support</div></a>
-      <a class="calc-link" href="/de-filter-calculator"><div class="cl-icon">🧪</div><div class="cl-name">DE Filter Press</div><div class="cl-desc">Exactly how much DE to use</div></a>
+  <section class="cta-band cta-shot" aria-labelledby="cta-h">
+    <div class="cta-copy">
+      <span class="eyebrow">In the app</span>
+      <h2 id="cta-h">This is one screen of SweetRun.</h2>
+      <p>The full app finds your boiling point by GPS, tracks every batch and Brix reading, scores your sap-run forecast, and works offline in the sugarbush. No account. Your data stays on your phone.</p>
+      <a class="btn" href="/#pricing">Try SweetRun free for 14 days</a>
+      <p class="cta-free-note">This calculator stays free, forever. No signup needed.</p>
     </div>
-  </div>
+    <figure class="phone cta-phone"><img src="/assets/screens/phone-boil.webp" alt="The SweetRun Boil screen on a phone: a boil in progress for 1 hour 42 minutes, pan at 218.9&deg;F, 1.5 gallons drawn." width="780" height="1688" loading="lazy" /></figure>
+  </section>
+
+  <section class="more-calcs" aria-labelledby="more-h">
+    <h2 id="more-h">More free maple calculators</h2>
+    <div class="calc-links">
+      <a class="calc-link" href="/sap-to-syrup-calculator"><span class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5c3.2 4.3 5.5 7.6 5.5 10.6a5.5 5.5 0 0 1-11 0c0-3 2.3-6.3 5.5-10.6z"/></svg></span><span><span class="cl-name">Sap to syrup ratio</span><br /><span class="cl-desc">Rule of 86: the syrup your sap will make</span></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>
+      <a class="calc-link" href="/tap-calculator"><span class="tile tile-tap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-7"/><path d="M12 14c-1.2 1.2-2.6 1.6-4 1"/><path d="M8.2 15.3A3.6 3.6 0 0 1 5 11.6a3.4 3.4 0 0 1 2-3.1 4 4 0 0 1 3.4-4.8A3.3 3.3 0 0 1 13.6 3a4 4 0 0 1 3.7 3 3.5 3.5 0 0 1 2.5 3.4 3.6 3.6 0 0 1 .2 4.8 3.6 3.6 0 0 1-3.9 1.3"/><path d="M12 14c1.2 1.2 2.6 1.6 4.1 1.3"/></svg></span><span><span class="cl-name">Tap calculator</span><br /><span class="cl-desc">How many taps your trees support</span></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>
+      <a class="calc-link" href="/de-filter-calculator"><span class="tile tile-boil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16l-6 8v6l-4 2v-8z"/></svg></span><span><span class="cl-name">DE filter press</span><br /><span class="cl-desc">Exactly how much DE to use</span></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>
+    </div>
+  </section>
+</div>
 </main>
 
-<footer>
-  <p style="margin-bottom:8px;"><strong style="color:#fff;">SweetRun</strong> — The Maple Production Platform</p>
-  <p><a href="/">sweetrun.app</a> · <a href="/calculators">Free calculators</a> · <a href="mailto:hello@sweetrun.app">hello@sweetrun.app</a></p>
-  <p style="margin-top:12px;font-size:11px;">© 2026 SweetRun · Knowledge sourced from UVM Proctor Maple Research Center, Cornell Maple Program, USDA Forest Service, and IMSI</p>
+<!-- chrome:footer -->
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="brand" href="/"><img src="/app/icons/icon-e-192.png" width="32" height="32" alt="" /><span>SweetRun</span></a>
+        <p>Maple production, one season at a time. What to do next, and a log of every gallon.</p>
+      </div>
+      <div class="foot-col">
+        <h2>The app</h2>
+        <ul>
+          <li><a href="/#season">Season stages</a></li>
+          <li><a href="/#bush">Bush map</a></li>
+          <li><a href="/#watch">Pumps and Watch</a></li>
+          <li><a href="/#boil">Boil</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h2>Free calculators</h2>
+        <ul>
+          <li><a href="/draw-off-calculator">Draw-off temperature</a></li>
+          <li><a href="/sap-to-syrup-calculator">Sap to syrup</a></li>
+          <li><a href="/tap-calculator">Tap calculator</a></li>
+          <li><a href="/de-filter-calculator">DE filter press</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h2>Talk to us</h2>
+        <ul>
+          <li><a href="mailto:hello@sweetrun.app">hello@sweetrun.app</a></li>
+          <li><a href="/feedback.html">Send feedback</a></li>
+          <li><a href="/calculators">All calculators</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="foot-fine">&copy; 2026 SweetRun. Knowledge sourced from UVM Proctor Maple Research Center, Cornell Maple Program, USDA Forest Service and IMSI.</p>
+  </div>
 </footer>
+<!-- /chrome:footer -->
 
 <script>
   // Same formulas as the SweetRun app (app.jsx)
@@ -191,7 +253,7 @@
   function useLocation() {
     const btn = document.getElementById('loc-btn');
     const note = document.getElementById('loc-note');
-    if (!navigator.geolocation) { note.textContent = 'Location not available in this browser — enter elevation manually.'; return; }
+    if (!navigator.geolocation) { note.textContent = 'Location is not available in this browser. Enter your elevation instead.'; return; }
     btn.textContent = 'Finding elevation…'; btn.disabled = true;
     navigator.geolocation.getCurrentPosition(async pos => {
       try {
@@ -204,16 +266,23 @@
         note.textContent = `Your elevation: ${ft.toLocaleString()} ft`;
         calc();
       } catch (_) {
-        note.textContent = 'Could not look up elevation — enter it manually.';
+        note.textContent = 'Could not look up your elevation. Enter it by hand.';
       }
-      btn.textContent = '📍 Use my location'; btn.disabled = false;
+      btn.textContent = 'Use my location'; btn.disabled = false;
     }, () => {
-      note.textContent = 'Location permission denied — enter elevation manually.';
-      btn.textContent = '📍 Use my location'; btn.disabled = false;
+      note.textContent = 'Location permission was denied. Enter your elevation instead.';
+      btn.textContent = 'Use my location'; btn.disabled = false;
     }, { timeout: 10000 });
   }
 
   calc();
+</script>
+<script>
+  // Mirror the calculators' "on" class into aria-pressed for screen readers. Presentation only.
+  document.querySelectorAll('.seg').forEach(function (seg) {
+    var sync = function () { seg.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b.classList.contains('on') ? 'true' : 'false'); }); };
+    sync(); new MutationObserver(sync).observe(seg, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  });
 </script>
 </body>
 </html>

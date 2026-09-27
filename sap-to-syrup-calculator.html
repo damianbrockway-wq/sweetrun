@@ -3,19 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sap to Syrup Ratio Calculator — Rule of 86 | Free | SweetRun</title>
+  <title>Sap to Syrup Ratio Calculator: Rule of 86 | Free | SweetRun</title>
   <meta name="description" content="Free Rule of 86 calculator: enter your sap's °Brix and gallons collected to see your sap-to-syrup ratio and expected syrup yield. Includes the Jones Rule of 87 and a quick Brix reference chart." />
   <link rel="canonical" href="https://sweetrun.app/sap-to-syrup-calculator" />
   <meta property="og:title" content="Sap to Syrup Ratio Calculator (Rule of 86)" />
   <meta property="og:description" content="How much syrup will your sap make? Rule of 86 + Jones Rule, free, no account." />
   <meta property="og:url" content="https://sweetrun.app/sap-to-syrup-calculator" />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="https://sweetrun.app/og-image.png" />
+  <meta property="og:image" content="https://sweetrun.app/og-image.png?v=ember" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="icon" href="/favicon.ico" sizes="48x48" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="stylesheet" href="/calc-shared.css" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -29,111 +25,177 @@
       {
         "@type": "Question",
         "name": "What is the Jones Rule of 87?",
-        "acceptedAnswer": { "@type": "Answer", "text": "A modern refinement of the Rule of 86. Research at UVM found today's higher-density syrup standard (66.9°Brix) makes 87 a slightly more accurate divisor, so the Jones Rule uses 87 ÷ °Brix. The difference is small — about 2% more sap per gallon of syrup." }
+        "acceptedAnswer": { "@type": "Answer", "text": "A modern refinement of the Rule of 86. Research at UVM found today's higher-density syrup standard (66.9°Brix) makes 87 a slightly more accurate divisor, so the Jones Rule uses 87 ÷ °Brix. The difference is small: about 2% more sap per gallon of syrup." }
       },
       {
         "@type": "Question",
         "name": "How much syrup does one maple tree make?",
-        "acceptedAnswer": { "@type": "Answer", "text": "A typical tap yields 10–20 gallons of sap per season. At 2.0°Brix that's roughly a quarter to a half gallon of syrup per tap, depending on your collection system — buckets run 0.20–0.30 gal/tap, and high-vacuum tubing can reach 0.45–0.70 gal/tap." }
+        "acceptedAnswer": { "@type": "Answer", "text": "A typical tap yields 10–20 gallons of sap per season. At 2.0°Brix that's roughly a quarter to a half gallon of syrup per tap, depending on your collection system. Buckets run 0.20–0.30 gal/tap, and high-vacuum tubing can reach 0.45–0.70 gal/tap." }
       }
     ]
   }
   </script>
+  <!-- chrome:head -->
+<meta name="theme-color" content="#0C0B0A" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/app/icons/favicon-e-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/app/icons/favicon-e-16.png" />
+  <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon-e-180.png" />
+  <link rel="preload" href="/app/fonts/barlow-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/app/fonts/barlow-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/app/tokens.css" />
+  <link rel="stylesheet" href="/calc-shared.css?v=ember" />
+<!-- /chrome:head -->
 </head>
 <body>
 
-<nav>
-  <a class="nav-logo" href="/"><span>🍁</span> SweetRun</a>
-  <div class="nav-links">
-    <a href="/calculators">All Calculators</a>
-    <a href="/#features">Features</a>
-    <a href="/#pricing">Pricing</a>
+<!-- chrome:header -->
+<header class="site-head">
+  <div class="wrap site-head-in">
+    <a class="brand" href="/"><img src="/app/icons/icon-e-192.png" width="32" height="32" alt="" /><span>SweetRun</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="/#season">Season</a>
+      <a href="/#bush">Bush</a>
+      <a href="/#boil">Boil</a>
+      <a href="/calculators" aria-current="page">Calculators</a>
+      <a href="/#pricing">Pricing</a>
+    </nav>
+    <a class="btn btn-sm" href="/#pricing">Try it free</a>
   </div>
-  <a class="nav-cta" href="/#pricing">Try Free — 14 Days</a>
-</nav>
-
-<header class="calc-hero">
-  <span class="free-pill">Free · No account</span>
-  <h1>Sap to Syrup <em>Calculator</em></h1>
-  <p>The Rule of 86: how many gallons of sap it takes to make a gallon of syrup, and what your collection will yield.</p>
 </header>
+<!-- /chrome:header -->
 
 <main>
+<div class="calc-hero">
+  <img src="/app/photos/sap-tank.webp" alt="" width="1200" height="670" fetchpriority="high" />
+  <div class="wrap">
+    <span class="eyebrow">Sap to syrup calculator</span>
+    <h1>The Rule of 86</h1>
+    <p>The Rule of 86: how many gallons of sap it takes to make a gallon of syrup, and what your collection will yield.</p>
+    <span class="hero-stage"><span class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg></span>In the app, on the Shack tab</span>
+  </div>
+</div>
+<div class="wrap calc-main">
   <div class="calc-card">
-    <div class="row2">
-      <div>
-        <label class="field-label" for="brix-in">Sap sugar content (°Brix)</label>
-        <input type="number" id="brix-in" value="2.0" min="0.5" max="8" step="0.1" inputmode="decimal" oninput="calc()" />
+    <div class="calc-in">
+      <div class="row2">
+        <div>
+          <label class="field-label" for="brix-in">Sap sugar content (&deg;Brix)</label>
+          <input type="number" id="brix-in" value="2.0" min="0.5" max="8" step="0.1" inputmode="decimal" oninput="calc()" />
+        </div>
+        <div>
+          <label class="field-label" for="sap-in">Sap collected (gallons)</label>
+          <input type="number" id="sap-in" value="100" min="0" step="5" inputmode="decimal" oninput="calc()" />
+        </div>
       </div>
-      <div>
-        <label class="field-label" for="sap-in">Sap collected (gallons)</label>
-        <input type="number" id="sap-in" value="100" min="0" step="5" inputmode="decimal" oninput="calc()" />
-      </div>
+      <label class="field-label" for="taps-in">Number of taps <span class="opt">(optional)</span></label>
+      <input type="number" id="taps-in" value="" min="0" step="1" inputmode="numeric" placeholder="e.g. 50" oninput="calc()" />
     </div>
-    <label class="field-label" for="taps-in">Number of taps <span style="color:var(--gray-text);font-weight:600;text-transform:none;letter-spacing:0;">(optional)</span></label>
-    <input type="number" id="taps-in" value="" min="0" step="1" inputmode="numeric" placeholder="e.g. 50" oninput="calc()" />
 
-    <div class="result-box">
-      <div class="result-label">Your sap-to-syrup ratio</div>
-      <div class="result-value" id="ratio-out">43.2:1</div>
-      <div class="result-sub" id="jones-out">Jones Rule of 87: 43.5:1</div>
-    </div>
-    <div class="result-grid">
-      <div class="mini-result">
-        <div class="mr-label">Expected syrup</div>
-        <div class="mr-value" id="syrup-out">2.33 gal</div>
-        <div class="mr-sub" id="syrup-sub">from 100 gal of sap</div>
+    <div class="calc-out" aria-live="polite">
+      <div class="result-box">
+        <div class="result-label">Your sap-to-syrup ratio</div>
+        <div class="result-value" id="ratio-out">43.2:1</div>
+        <div class="result-sub" id="jones-out">Jones Rule of 87: 43.5:1</div>
       </div>
-      <div class="mini-result">
-        <div class="mr-label">Per tap</div>
-        <div class="mr-value" id="pertap-out">—</div>
-        <div class="mr-sub" id="pertap-sub">enter your tap count</div>
+      <div class="result-grid">
+        <div class="mini-result">
+          <div class="mr-label">Expected syrup</div>
+          <div class="mr-value" id="syrup-out">2.33 gal</div>
+          <div class="mr-sub" id="syrup-sub">from 100 gal of sap</div>
+        </div>
+        <div class="mini-result">
+          <div class="mr-label">Per tap</div>
+          <div class="mr-value" id="pertap-out">&mdash;</div>
+          <div class="mr-sub" id="pertap-sub">enter your tap count</div>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="prose">
     <h2>Quick Brix reference</h2>
+    <div class="table-scroll">
     <table class="ref-table" id="brix-table">
-      <thead><tr><th>Sap °Brix</th><th>Ratio (Rule of 86)</th><th>Sap for 1 gal syrup</th></tr></thead>
+      <thead><tr><th scope="col">Sap &deg;Brix</th><th scope="col">Ratio (Rule of 86)</th><th scope="col">Sap for 1 gal syrup</th></tr></thead>
       <tbody>
-        <tr data-b="1.5"><td>1.5°</td><td>57.6:1</td><td>57.6 gallons</td></tr>
-        <tr data-b="2.0"><td>2.0°</td><td>43.2:1</td><td>43.2 gallons</td></tr>
-        <tr data-b="2.5"><td>2.5°</td><td>34.6:1</td><td>34.6 gallons</td></tr>
-        <tr data-b="3.0"><td>3.0°</td><td>28.8:1</td><td>28.8 gallons</td></tr>
+        <tr data-b="1.5"><td>1.5&deg;</td><td>57.6:1</td><td>57.6 gallons</td></tr>
+        <tr data-b="2.0"><td>2.0&deg;</td><td>43.2:1</td><td>43.2 gallons</td></tr>
+        <tr data-b="2.5"><td>2.5&deg;</td><td>34.6:1</td><td>34.6 gallons</td></tr>
+        <tr data-b="3.0"><td>3.0&deg;</td><td>28.8:1</td><td>28.8 gallons</td></tr>
       </tbody>
     </table>
+    </div>
 
     <h2>How the Rule of 86 works</h2>
-    <p>Maple sap is mostly water with a little sugar — usually around 2% (2°Brix). Finished syrup is about 66.9% sugar. The Rule of 86 is the shortcut sugarmakers have used for a century to bridge those two numbers: divide 86.4 by your sap's °Brix and you get the gallons of sap needed per gallon of syrup. Sweet sap from healthy, open-grown trees can run 3° and cut your boiling nearly in half; late-season or stressed trees can drop below 1.5° and double it.</p>
-    <p>The Jones Rule of 87 is the modern correction. When C.H. Jones worked out the original rule in the 1940s, syrup was finished at a slightly lower density than today's 66.9°Brix standard. UVM researchers revisited the math and found 87 fits the modern standard better. The difference is small, but if you sell in bulk, it's the honest number.</p>
+    <p>Maple sap is mostly water with a little sugar, usually around 2% (2&deg;Brix). Finished syrup is about 66.9% sugar. The Rule of 86 is the shortcut sugarmakers have used for a century to bridge those two numbers: divide 86.4 by your sap's &deg;Brix and you get the gallons of sap needed per gallon of syrup. Sweet sap from healthy, open-grown trees can run 3&deg; and cut your boiling nearly in half; late-season or stressed trees can drop below 1.5&deg; and double it.</p>
+    <p>The Jones Rule of 87 is the modern correction. When C.H. Jones worked out the original rule in the 1940s, syrup was finished at a slightly lower density than today's 66.9&deg;Brix standard. UVM researchers revisited the math and found 87 fits the modern standard better. The difference is small, but if you sell in bulk, it's the honest number.</p>
     <h3>Measure your sap, don't guess</h3>
-    <p>A $30 sap hydrometer or refractometer pays for itself the first week. Producers who assume "2 percent" often discover their bush runs 1.6° — which means 54 gallons per gallon of syrup, not 43, and every fuel and revenue estimate built on the guess is off by 25%.</p>
+    <p>A $30 sap hydrometer or refractometer pays for itself the first week. Producers who assume "2 percent" often discover their bush runs 1.6&deg;. That means 54 gallons per gallon of syrup, not 43, and every fuel and revenue estimate built on the guess is off by 25%.</p>
     <p class="cite">Sources: UVM Proctor Maple Research Center; North American Maple Syrup Producers Manual.</p>
   </div>
 
-  <div class="cta-band">
-    <h2>Stop calculating. Start <em>tracking</em>.</h2>
-    <p>SweetRun logs every collection with its Brix, computes your real season ratio, spots buddy-sap risk from your Brix trend, and shows your yield per tap against research benchmarks — all offline, no account.</p>
-    <a class="btn-primary" href="/#pricing">Try SweetRun Free — 14 Days</a>
-    <div class="cta-free-note">This calculator stays free, forever. No signup needed.</div>
-  </div>
-
-  <div class="more-calcs">
-    <h2>More free maple calculators</h2>
-    <div class="calc-links">
-      <a class="calc-link" href="/draw-off-calculator"><div class="cl-icon">🌡️</div><div class="cl-name">Draw-Off Temperature</div><div class="cl-desc">Your finishing temp by elevation</div></a>
-      <a class="calc-link" href="/tap-calculator"><div class="cl-icon">🌳</div><div class="cl-name">Tap Calculator</div><div class="cl-desc">How many taps your trees support</div></a>
-      <a class="calc-link" href="/de-filter-calculator"><div class="cl-icon">🧪</div><div class="cl-name">DE Filter Press</div><div class="cl-desc">Exactly how much DE to use</div></a>
+  <section class="cta-band cta-shot" aria-labelledby="cta-h">
+    <div class="cta-copy">
+      <span class="eyebrow">In the app</span>
+      <h2 id="cta-h">Stop calculating. Start tracking.</h2>
+      <p>SweetRun logs every collection with its Brix, computes your real season ratio, spots buddy-sap risk from your Brix trend, and shows your yield per tap against research benchmarks. All offline, no account.</p>
+      <a class="btn" href="/#pricing">Try SweetRun free for 14 days</a>
+      <p class="cta-free-note">This calculator stays free, forever. No signup needed.</p>
     </div>
-  </div>
+    <figure class="phone cta-phone"><img src="/assets/screens/phone-season.webp" alt="The SweetRun Season screen on a phone: 1,012 gallons of sap in today, Tank 1 at 780 gallons, and syrup against the season goal." width="780" height="1688" loading="lazy" /></figure>
+  </section>
+
+  <section class="more-calcs" aria-labelledby="more-h">
+    <h2 id="more-h">More free maple calculators</h2>
+    <div class="calc-links">
+      <a class="calc-link" href="/draw-off-calculator"><span class="tile tile-boil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg></span><span><span class="cl-name">Draw-off temperature</span><br /><span class="cl-desc">Your finishing temp by elevation</span></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>
+      <a class="calc-link" href="/tap-calculator"><span class="tile tile-tap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-7"/><path d="M12 14c-1.2 1.2-2.6 1.6-4 1"/><path d="M8.2 15.3A3.6 3.6 0 0 1 5 11.6a3.4 3.4 0 0 1 2-3.1 4 4 0 0 1 3.4-4.8A3.3 3.3 0 0 1 13.6 3a4 4 0 0 1 3.7 3 3.5 3.5 0 0 1 2.5 3.4 3.6 3.6 0 0 1 .2 4.8 3.6 3.6 0 0 1-3.9 1.3"/><path d="M12 14c1.2 1.2 2.6 1.6 4.1 1.3"/></svg></span><span><span class="cl-name">Tap calculator</span><br /><span class="cl-desc">How many taps your trees support</span></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>
+      <a class="calc-link" href="/de-filter-calculator"><span class="tile tile-boil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16l-6 8v6l-4 2v-8z"/></svg></span><span><span class="cl-name">DE filter press</span><br /><span class="cl-desc">Exactly how much DE to use</span></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>
+    </div>
+  </section>
+</div>
 </main>
 
-<footer>
-  <p style="margin-bottom:8px;"><strong style="color:#fff;">SweetRun</strong> — The Maple Production Platform</p>
-  <p><a href="/">sweetrun.app</a> · <a href="/calculators">Free calculators</a> · <a href="mailto:hello@sweetrun.app">hello@sweetrun.app</a></p>
-  <p style="margin-top:12px;font-size:11px;">© 2026 SweetRun · Knowledge sourced from UVM Proctor Maple Research Center, Cornell Maple Program, USDA Forest Service, and IMSI</p>
+<!-- chrome:footer -->
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="brand" href="/"><img src="/app/icons/icon-e-192.png" width="32" height="32" alt="" /><span>SweetRun</span></a>
+        <p>Maple production, one season at a time. What to do next, and a log of every gallon.</p>
+      </div>
+      <div class="foot-col">
+        <h2>The app</h2>
+        <ul>
+          <li><a href="/#season">Season stages</a></li>
+          <li><a href="/#bush">Bush map</a></li>
+          <li><a href="/#watch">Pumps and Watch</a></li>
+          <li><a href="/#boil">Boil</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h2>Free calculators</h2>
+        <ul>
+          <li><a href="/draw-off-calculator">Draw-off temperature</a></li>
+          <li><a href="/sap-to-syrup-calculator">Sap to syrup</a></li>
+          <li><a href="/tap-calculator">Tap calculator</a></li>
+          <li><a href="/de-filter-calculator">DE filter press</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h2>Talk to us</h2>
+        <ul>
+          <li><a href="mailto:hello@sweetrun.app">hello@sweetrun.app</a></li>
+          <li><a href="/feedback.html">Send feedback</a></li>
+          <li><a href="/calculators">All calculators</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="foot-fine">&copy; 2026 SweetRun. Knowledge sourced from UVM Proctor Maple Research Center, Cornell Maple Program, USDA Forest Service and IMSI.</p>
+  </div>
 </footer>
+<!-- /chrome:footer -->
 
 <script>
   // Same formulas as the SweetRun app (app.jsx)
@@ -168,6 +230,13 @@
     });
   }
   calc();
+</script>
+<script>
+  // Mirror the calculators' "on" class into aria-pressed for screen readers. Presentation only.
+  document.querySelectorAll('.seg').forEach(function (seg) {
+    var sync = function () { seg.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b.classList.contains('on') ? 'true' : 'false'); }); };
+    sync(); new MutationObserver(sync).observe(seg, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  });
 </script>
 </body>
 </html>

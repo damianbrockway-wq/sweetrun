@@ -3,178 +3,164 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>SweetRun — Share Your Feedback</title>
+<title>Share your feedback: SweetRun</title>
 <meta name="description" content="Help shape SweetRun. Tell Damian what to build next."/>
+<!-- chrome:head -->
+<meta name="theme-color" content="#0C0B0A" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/app/icons/favicon-e-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/app/icons/favicon-e-16.png" />
+  <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon-e-180.png" />
+  <link rel="preload" href="/app/fonts/barlow-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/app/fonts/barlow-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/app/tokens.css" />
+  <link rel="stylesheet" href="/calc-shared.css?v=ember" />
+<!-- /chrome:head -->
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth}
-  body{
-    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-    background:#07090f;color:#c9d1d9;
-    min-height:100vh;display:flex;flex-direction:column;align-items:center;
-    padding:0 0 60px;
-  }
-
-  /* ── HEADER ── */
-  .hero{
-    width:100%;background:linear-gradient(150deg,#1e4a34 0%,#0d2016 60%,#07090f 100%);
-    padding:28px 24px 24px;text-align:center;position:relative;overflow:hidden;
-  }
-  .hero::before{
-    content:'';position:absolute;inset:0;
-    background:radial-gradient(ellipse at 80% 10%,rgba(212,131,26,0.2) 0%,transparent 55%),
-               radial-gradient(ellipse at 10% 90%,rgba(45,212,167,0.07) 0%,transparent 50%);
-  }
-  .hero-inner{position:relative;max-width:480px;margin:0 auto;}
-  .brand{display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;}
-  .brand-leaf{font-size:24px;}
-  .brand-name{font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.5px;}
-  .hero-title{font-size:26px;font-weight:900;color:#fff;letter-spacing:-0.6px;line-height:1.15;margin-bottom:8px;}
-  .hero-title em{color:#2dd4a7;font-style:normal;}
-  .hero-sub{font-size:14px;color:rgba(255,255,255,0.6);line-height:1.6;max-width:360px;margin:0 auto;}
-  .hero-sub strong{color:rgba(255,255,255,0.85);}
-
-  /* ── CARD ── */
-  .card{
-    width:100%;max-width:480px;
-    background:#0d1521;border-radius:18px;
-    margin:20px 16px 0;
-    box-shadow:0 12px 48px rgba(0,0,0,0.5);
-    overflow:hidden;
-  }
-
-  /* ── FORM ── */
-  .form{padding:24px;}
-  .field{margin-bottom:20px;}
-  .field-label{
-    font-size:11px;font-weight:800;letter-spacing:0.14em;
-    text-transform:uppercase;color:#3d5068;margin-bottom:7px;display:block;
-  }
-  .field-label span{color:#2dd4a7;}
-  input[type=text],input[type=email],input[type=number],textarea,select{
-    width:100%;background:#07090f;border:1px solid #1e2e3e;
-    border-radius:10px;padding:11px 14px;
-    font-size:15px;color:#c9d1d9;font-family:inherit;
-    outline:none;resize:vertical;transition:border-color 0.2s;
-    -webkit-appearance:none;
-  }
-  input:focus,textarea:focus,select:focus{border-color:#2dd4a7;}
-  textarea{min-height:80px;line-height:1.5;}
-  ::placeholder{color:#2a3a4a;}
-
-  /* tap-size radio pills */
-  .taps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-  .tap-opt{position:relative;}
-  .tap-opt input{position:absolute;opacity:0;width:0;height:0;}
-  .tap-opt label{
-    display:block;text-align:center;padding:8px 4px;
-    background:#07090f;border:1px solid #1e2e3e;border-radius:9px;
-    font-size:13px;font-weight:600;color:#5a6a7a;cursor:pointer;
-    transition:all 0.15s;
-  }
-  .tap-opt input:checked + label{
-    background:rgba(45,212,167,0.12);border-color:#2dd4a7;color:#2dd4a7;
-  }
-
-  /* submit */
-  .btn-submit{
-    width:100%;background:linear-gradient(135deg,#2d6a4f,#1a3d2b);
-    color:#fff;border:none;border-radius:11px;
-    padding:15px;font-size:16px;font-weight:800;
-    cursor:pointer;font-family:inherit;letter-spacing:0.01em;
-    transition:opacity 0.2s;margin-top:4px;
-  }
-  .btn-submit:hover{opacity:0.9;}
-  .btn-submit:disabled{opacity:0.5;cursor:not-allowed;}
-
-  /* ── THANK YOU ── */
-  .thankyou{
-    display:none;padding:40px 28px;text-align:center;
-  }
-  .thankyou-icon{font-size:48px;margin-bottom:14px;}
-  .thankyou-title{font-size:22px;font-weight:900;color:#fff;margin-bottom:8px;}
-  .thankyou-sub{font-size:14px;color:rgba(255,255,255,0.55);line-height:1.6;margin-bottom:20px;}
-  .btn-back{
-    display:inline-block;background:rgba(45,212,167,0.1);
-    border:1px solid rgba(45,212,167,0.3);border-radius:9px;
-    padding:10px 22px;font-size:14px;font-weight:700;color:#2dd4a7;
-    text-decoration:none;
-  }
-
-  /* ── FOOTER ── */
-  .page-footer{
-    max-width:480px;width:100%;padding:20px 16px 0;
-    text-align:center;font-size:11px;color:#2a3a4a;line-height:1.7;
-  }
-  .page-footer a{color:#2dd4a7;text-decoration:none;font-weight:700;}
+  .f-hero { position: relative; isolation: isolate; overflow: hidden; padding: var(--s-7) 0 var(--s-6); }
+  .f-hero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+  .f-hero::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(12,11,10,.6) 0%, rgba(12,11,10,.82) 55%, var(--rs-bg) 100%); }
+  .hero-title { font-weight: 800; font-size: clamp(var(--t-2xl), 6vw + 8px, var(--t-3xl)); line-height: 1; letter-spacing: -0.03em; margin: 16px 0; }
+  .hero-sub { font-size: var(--t-md); line-height: 1.5; max-width: 46ch; }
+  .card { margin-top: var(--s-5); }
+  .field { margin-bottom: 28px; border: 0; }
+  .field legend { padding: 0; }
+  .field-label span { font: 500 var(--t-sm)/1 var(--rs-f); letter-spacing: 0; text-transform: none; color: var(--rs-mute); }
+  .taps-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  @media (min-width: 480px) { .taps-grid { grid-template-columns: repeat(4, 1fr); } }
+  .tap-opt { position: relative; }
+  .tap-opt input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .tap-opt label { display: grid; place-items: center; min-height: 52px; padding: 8px; text-align: center;
+    background: var(--rs-bg); border: 1px solid var(--field-edge); border-radius: 12px;
+    font: 600 var(--t-sm)/1.2 var(--rs-f); color: var(--rs-dim); cursor: pointer; transition: color .15s, background-color .15s, border-color .15s; }
+  .tap-opt label:hover { color: var(--rs-tx); border-color: var(--rs-dim); }
+  .tap-opt input:checked + label { background: var(--rs-acc-soft); border-color: var(--rs-acc); color: var(--rs-tx); }
+  .tap-opt input:focus-visible + label { outline: 2px solid var(--rs-acc); outline-offset: 3px; }
+  .btn-submit { margin-top: 4px; }
+  .thankyou { display: none; padding: 8px 0; }
+  .thankyou-icon { width: 64px; height: 64px; border-radius: 18px; margin-bottom: 20px; }
+  .thankyou-title { font-weight: 800; font-size: var(--t-xl); letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 10px; }
+  .thankyou-sub { color: var(--rs-dim); margin-bottom: 24px; }
 </style>
 </head>
 <body>
 
-<div class="hero">
-  <div class="hero-inner">
-    <div class="brand">
-      <span class="brand-leaf">🍁</span>
-      <span class="brand-name">SweetRun</span>
-    </div>
-    <div class="hero-title">You help build<br/><em>what comes next.</em></div>
-    <div class="hero-sub">
-      SweetRun is a one-person project. <strong>Every feature in the app came from a real conversation with a producer.</strong> Tell me what your season looks like and what would make this worth $49.99 a year to you — I read every reply.
-    </div>
+<!-- chrome:header -->
+<header class="site-head">
+  <div class="wrap site-head-in">
+    <a class="brand" href="/"><img src="/app/icons/icon-e-192.png" width="32" height="32" alt="" /><span>SweetRun</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="/#season">Season</a>
+      <a href="/#bush">Bush</a>
+      <a href="/#boil">Boil</a>
+      <a href="/calculators">Calculators</a>
+      <a href="/#pricing">Pricing</a>
+    </nav>
+    <a class="btn btn-sm" href="/#pricing">Try it free</a>
+  </div>
+</header>
+<!-- /chrome:header -->
+
+<main>
+<div class="f-hero">
+  <img src="/app/photos/frost-morning.webp" alt="" width="1200" height="670" />
+  <div class="narrow">
+    <span class="eyebrow">Feedback</span>
+    <h1 class="hero-title">You help build what comes next.</h1>
+    <p class="hero-sub">SweetRun is a one-person project. <strong>Every feature in the app came from a real conversation with a producer.</strong> Tell me what your season looks like and what would make this worth $49.99 a year to you. I read every reply.</p>
   </div>
 </div>
 
-<div class="card">
+<div class="narrow">
+<div class="card panel">
   <form class="form" id="feedbackForm" onsubmit="submitForm(event)">
     <input type="hidden" name="access_key" value="d91810ec-94aa-49ed-9731-6ba2cd42e106" />
 
-    <div class="field">
-      <label class="field-label" for="taps">How many taps do you run? <span>(pick one)</span></label>
+    <fieldset class="field">
+      <legend class="field-label">How many taps do you run? <span>(pick one)</span></legend>
       <div class="taps-grid">
         <div class="tap-opt"><input type="radio" name="taps" id="t1" value="Under 100"/><label for="t1">Under 100</label></div>
-        <div class="tap-opt"><input type="radio" name="taps" id="t2" value="100–300"/><label for="t2">100–300</label></div>
-        <div class="tap-opt"><input type="radio" name="taps" id="t3" value="300–1,000"/><label for="t3">300–1k</label></div>
+        <div class="tap-opt"><input type="radio" name="taps" id="t2" value="100–300"/><label for="t2">100&ndash;300</label></div>
+        <div class="tap-opt"><input type="radio" name="taps" id="t3" value="300–1,000"/><label for="t3">300&ndash;1k</label></div>
         <div class="tap-opt"><input type="radio" name="taps" id="t4" value="1,000+"/><label for="t4">1,000+</label></div>
       </div>
-    </div>
+    </fieldset>
 
     <div class="field">
-      <label class="field-label" for="headache">What's your biggest production headache right now?</label>
-      <textarea id="headache" name="headache" placeholder="e.g. never know when to stop, fuel costs killing margins, hard to track batches…"></textarea>
+      <label class="field-label" for="headache">What&rsquo;s your biggest production headache right now?</label>
+      <textarea id="headache" name="headache" placeholder="e.g. never know when to stop, fuel costs eating margins, hard to track batches"></textarea>
     </div>
 
     <div class="field">
       <label class="field-label" for="feature">What should we build next?</label>
-      <textarea id="feature" name="feature" placeholder="Any feature, fix, or idea — nothing too small or too wild…"></textarea>
+      <textarea id="feature" name="feature" placeholder="Any feature, fix or idea. Nothing is too small or too wild."></textarea>
     </div>
 
     <div class="field">
-      <label class="field-label" for="name">Your name <span>(optional — only if you want a reply)</span></label>
-      <input type="text" id="name" name="name" placeholder="e.g. John, Ferme Leblanc…"/>
+      <label class="field-label" for="name">Your name <span>(optional, only if you want a reply)</span></label>
+      <input type="text" id="name" name="name" autocomplete="name" placeholder="e.g. John, Ferme Leblanc"/>
     </div>
 
-    <div class="field" style="margin-bottom:22px;">
+    <div class="field">
       <label class="field-label" for="email">Email <span>(optional)</span></label>
-      <input type="email" id="email" name="email" placeholder="you@example.com"/>
+      <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com"/>
     </div>
 
     <!-- honeypot -->
-    <input type="text" name="_honey" style="display:none"/>
+    <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off"/>
 
-    <button class="btn-submit" type="submit" id="submitBtn">Send feedback →</button>
+    <button class="btn btn-block btn-submit" type="submit" id="submitBtn">Send feedback →</button>
   </form>
 
-  <div class="thankyou" id="thankyou">
-    <div class="thankyou-icon">🍁</div>
-    <div class="thankyou-title">Thank you — seriously.</div>
-    <div class="thankyou-sub">I read every reply and it shapes what gets built next. If you left your email I'll follow up before next season.</div>
-    <a href="https://sweetrun.app" class="btn-back">Back to sweetrun.app →</a>
+  <div class="thankyou" id="thankyou" role="status">
+    <img class="thankyou-icon" src="/app/icons/icon-e-192.png" width="64" height="64" alt="" />
+    <div class="thankyou-title">Thank you. Seriously.</div>
+    <div class="thankyou-sub">I read every reply and it shapes what gets built next. If you left your email, I&rsquo;ll follow up before next season.</div>
+    <a href="https://sweetrun.app" class="btn btn-ghost">Back to sweetrun.app</a>
   </div>
 </div>
-
-<div class="page-footer">
-  <a href="https://sweetrun.app">sweetrun.app</a> &nbsp;·&nbsp; $49.99/year &nbsp;·&nbsp; No account needed. Works offline.
 </div>
+</main>
+
+<!-- chrome:footer -->
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="brand" href="/"><img src="/app/icons/icon-e-192.png" width="32" height="32" alt="" /><span>SweetRun</span></a>
+        <p>Maple production, one season at a time. What to do next, and a log of every gallon.</p>
+      </div>
+      <div class="foot-col">
+        <h2>The app</h2>
+        <ul>
+          <li><a href="/#season">Season stages</a></li>
+          <li><a href="/#bush">Bush map</a></li>
+          <li><a href="/#watch">Pumps and Watch</a></li>
+          <li><a href="/#boil">Boil</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h2>Free calculators</h2>
+        <ul>
+          <li><a href="/draw-off-calculator">Draw-off temperature</a></li>
+          <li><a href="/sap-to-syrup-calculator">Sap to syrup</a></li>
+          <li><a href="/tap-calculator">Tap calculator</a></li>
+          <li><a href="/de-filter-calculator">DE filter press</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h2>Talk to us</h2>
+        <ul>
+          <li><a href="mailto:hello@sweetrun.app">hello@sweetrun.app</a></li>
+          <li><a href="/feedback.html">Send feedback</a></li>
+          <li><a href="/calculators">All calculators</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="foot-fine">&copy; 2026 SweetRun. Knowledge sourced from UVM Proctor Maple Research Center, Cornell Maple Program, USDA Forest Service and IMSI.</p>
+  </div>
+</footer>
+<!-- /chrome:footer -->
 
 <script>
 async function submitForm(e) {
