@@ -1,8 +1,40 @@
 # SweetRun — Architecture Ledger
 **Kept by Plumb. Read before structural work; update after.**
-**STATUS: first full read complete — 2026-09-19. Every line of app/src/app.jsx (10,339 lines) was read, not scanned. Companion detail: audits/PLUMB-REPORT.md.**
+**STATUS: section 0 is current as of the Run Sheet cutover, 2026-09-26. First full read complete — 2026-09-19. Every line of app/src/app.jsx (10,339 lines) was read, not scanned. Companion detail: audits/PLUMB-REPORT.md.**
 
 ---
+
+## 0. Current state (2026-09-26, Run Sheet cutover). Read this first; section 1 is the pre-redesign map, kept for history.
+
+**One UI.** The Run Sheet design is the only UI at `/app/`, on every host. The classic shell (`App`, 90-shell-classic), its 30 screen parts, the look flag (`app/look.js`, `?look=`, hostname gate) and the "Classic look" switch are deleted. `sg_look` stays in `SR_PREF_KEYS` so old backups that carry it restore without a false "not saved"; nothing reads it.
+
+**Source.** `app/src/*.jsx`, 42 parts joined in `parts.json` order into one scope inside one `try { } catch` (INIT CRASH panel), compiled by `scripts/build.mjs` (`@babel/core`, `minified: true`, names kept). Bands:
+| Parts | What |
+|---|---|
+| 00, 10, 11 | boot, `ls` storage (trial lock, `SR_PREF_KEYS`), license and trial |
+| 12, 13 | `fmt`, `TR`/`t()` (classic strings some formulas still use), the maple leaf `I.mapleLeaf` and brand marks `M.*` |
+| **20 to 23** | **The formula band** (tested by `npm test`): formulas, yield models and the one yield verdict `srYieldClass`, Run Sheet engine (jobs, RO plan, boil readings), lifted calculators, operations engine (leaks, pumps, freeze, tiles) |
+| 25, 26 | selectors (the only `sg_*` readers for screens), operations data writers |
+| 30 to 32 | `srParseNum`, token mirror `T`/`tok()`, `RsIcon` and the shell kit |
+| 40-04, 40-17, 40-19, 40-20, 40-21 | shared pieces kept from the old UI: batch labels, PDF report, crash screen (restyled), sap-run score, the guide's knowledge base |
+| 50 to 52 | Bush (Leaflet), Pumps, Watch |
+| 60 to 72 | kit, Season, Log, stages, Recap, Sugar Shack, tools, guide, sheets |
+| 80 to 85 | core state (`useSrCore`), routes (`RS_SCREENS`), strings `RS_TR` (en and fr complete since the 2026-09-27 fix pass; 85 is the French table) |
+| 91, 99 | shell (`RunSheetApp`: tabs, side nav, banners) and mount |
+
+**Styles.** `app/tokens.css` (the only home for colours, type, radii; Ember palette) and `app/runsheet.css` (unscoped since cutover; rules on Leaflet-owned elements are anchored under `.rs-app` so they outrank `leaflet.css`, which loads later). No inline stylesheet in `app/index.html`. Token law (no hex literals in Run Sheet parts or `runsheet.css`) is a test.
+
+**Shell and offline.** `app/index.html` carries static head tags: theme `#0C0B0A`, `app/manifest.webmanifest`, icons option E (`app/icons/*-e-*`, rendered by `scripts/render-icon-e.py`, including the in-app brand mark `mark-e-30@1x..3x` that `RsBrandMark` draws; alternates B and D in `brand/icon-options/`). SW `sweetrun-v36` precaches app, CSS, manifest, fonts, icons, the 9 header photos and the pinned CDN libraries; activate deletes every other cache except `sweetrun-tiles-v1`.
+
+**Sizes (2026-09-26).** `app.js` 702,762 bytes (208,956 gzipped); with `index.html`, `tokens.css` and `runsheet.css` the shell is 232,362 bytes gzipped, against 307,227 for the original main build (752,777-byte `app.js` plus a 181,258-byte `index.html` holding the classic CSS and a data-URI manifest).
+
+**Tests.** `npm test`: 134 formula assertions and 405 Run Sheet assertions (539), including cutover guards (and the in-app brand mark) (head tags, manifest icons and their pixel sizes, precache list, no classic shell in the bundle), the yield verdict, boil readings, and no string key defined twice.
+
+**Data.** No key or field changed shape at cutover. One optional field was added: `sg_boil_session.readings` `[{ t, tempF, brix?, draw? }]` (draw in the display unit like the session's sap and syrup). A session without it reads as empty.
+
+**Fix passes (2026-09-27).** French is complete, numbers included: `fmt` formats in `SR_NUM_LOC` ('en-US', or 'fr-CA' while the shell renders in French: "1 000", "2,5", money "0,88 $" via `srMoney`), steppers show "2,5" (`srNumIn`), and `srParseNum` reads a comma as the decimal in French; the PDF report stays en-US. One new data key, `sg_line_gauges` `{ [lineId]: [{ id, name, at, pinId }] }` (mid-line vacuum gauges in walking order; readings are ordinary `sg_readings` rows under `line:<id>:g:<gaugeId>`), with `srGaugeLocate` in the formula band. Screens read `sg_logs2` once per data change (`useSrLogs` or a memo on the data version) and score through `srSeasonScore` (a memo on `seasonScore`'s inputs). Sheets keep a stack: only the top one answers Escape and Tab, and focus goes back to the opener, to a redrawn map control by its `data-fk`, or to the screen's h1. SW `sweetrun-v39`. `app.js` 823,008 bytes (247,450 gzipped); shell 274,708 gzipped. Tests 619 (134 formula, 485 Run Sheet).
+
+**Terrain layers (2026-09-27).** Parts `24-rs-terrain` (formula band: units, tile boxes, rendering rules, request URLs, sample parsing, legend scales, line profile; tested) and `53-rs-terrain-ui` (Leaflet layers built from those URLs, legend, layers sheet, tap reading, a line's fall). Preference key `sg_bush_terrain` `{ overlay, opacity, hillshade, water, trails, range }`. Sources: USGS 3DEP ImageServer (exportImage, getSamples), USGSHydroCached tiles, the National Map transportation MapServer layer 37 (trails). Heights sampled for display are never stored. The tile cache also holds `elevation.nationalmap.gov` and `carto.nationalmap.gov`. SW `sweetrun-v40`; 674 tests.
 
 ## 1. The map (full read, 2026-09-19)
 
@@ -96,6 +128,16 @@ One single-file React 18 app, compiled by Babel (JSX transform only — no bundl
 ---
 
 ## 5. Decision log
+
+**2026-09-27 — Terrain as tiles from exportImage, coloured by our own rules.** Leaflet has no ImageServer layer and adding esri-leaflet would add a library outside the CDN allowlist, so a small `L.TileLayer` subclass asks `exportImage` for each 256 px tile in 3857. The URLs are deterministic, so the existing tile cache and offline save hold them. Colour is set by `renderingRule` chains (Stretch then Colormap for elevation scaled to his bush's own range; Slope with SlopeType 2 and a 1/cos(latitude) z factor, remapped to the percent classes; Aspect remapped to compass sectors), because the published "Slope Map" and "Aspect Map" have no published class breaks to write a legend from. If a chain is refused, the layer falls back to the published function and says so. The chains were built from Esri's raster function reference and not exercised against the live service from the sandbox.
+
+
+**2026-09-27 — Mid-line gauges get their own key.** The prototype's gauge chain needs each gauge's place on a line. `sg_line_meta[id].gaugeIds` (the PORT-PLAN sketch) would add a field to an existing shape, so positions live in a new data key, `sg_line_gauges`, and readings reuse `sg_readings` and `sg_sensors` unchanged. Whether a line leaks stays `srLeakFind` (pump against far end); `srGaugeLocate` only says where, and says "spread" rather than guess when no stretch carries half the loss.
+
+**2026-09-27 — One parse per screen, not one shared parse.** A single frozen `sg_logs2` object shared by every reader was the first plan. The bundle is not strict mode, so a stray write to a frozen object would be dropped silently instead of throwing. Each screen memoizes its own parse on the data version instead: same count for the user (one parse per data change), nothing shared to corrupt.
+
+**2026-09-27 — The number locale is a module variable the shell sets while rendering.** `fmt` has 250-odd callers with no language argument. The shell assigns `SR_NUM_LOC` before its children render, and the two places that must not follow the reader (the English PDF, input parsing's US grouping in English) are explicit. English output is byte-identical (tests).
+
 
 **2026-09-21 — License verify: decode before the try, narrow the fallback.**
 `verifyLicense` decoded the signature *inside* the try that wrapped Ed25519
@@ -197,3 +239,35 @@ to explain itself rather than silently disappearing.
 - **2026-09-20 — Pass 6 executed (Boil Day, the sugarhouse instrument).** New screen `boilday` registered in the Numbers destination's tabs (bottom nav, sub-tab strip and desktop sidebar all read the one `DESTS` table — no shell changes needed) plus a Today shortcut chip that goes live (`● Ça bouille — h:mm`) while a session runs. The dial's state machine lives in the FORMULA BAND (`srBoilState`: warming → near at finTemp−2°F → draw at finTemp±0.3°F → over; `srGaugeFrac` for arc position; finTemp rounded to 0.1 so band edges compare cleanly against 0.1-stepped pan temps) — tests 59 → 69. `waterBP` is the same `sg_bp` state Boil Pt writes (passed as a prop; not forked); expected GPH reads EvapTab's own `sg_panIdx/panW/panH`; theory ratio is `RULE_DIVISOR/brix` (invariant 4 throughout). Session storage: **`sg_boil_session` { start: epoch-ms, sap, syrup, tempF }** — epoch per invariant 6, values in the display unit per the litre-semantics decision, inside the backup sweep, written only via `ls.set` (a locked trial can't bank a session, same as any new data). Temperature displays °C when units = L (Québec boils in Celsius), °F otherwise; stored °F at 0.01 so °C steps (±0.18°F) don't drift. "Log this boil" appends sapEvap + syrupMade + boilHours entries to `sg_logs2` in exactly LogTab's entry shape (incl. locale date — a deliberate match: a mixed-format store is worse than the pending debt-#6 wholesale migration) through one `ls.set`; a false return (locked/quota) keeps the session. Wake Lock is progressive enhancement (try/catch, re-acquired on visibilitychange, released on end/unmount); `navigator.vibrate` fires once on entering the band. The steam wisps + band pulse + needle transition are the screen's only motion, all transform/opacity, all dead under prefers-reduced-motion (JS also skips rendering wisps). Verification added: `/tmp/sr-check/boilsmoke.mjs` walk-renders the component in 6 configurations (idle/near/draw/over × EN-gal/FR-L°C + Today with live session) — the walker was negative-controlled (a planted ReferenceError was caught, then reverted). 27 TR keys EN+FR. SW cache → sweetrun-v22. Not visually verified in-sandbox — eyes-on list in audits/PASS6-BOIL-REPORT.md.
 - **2026-09-20 — Pass 7 executed (season replay + share card).** Two producer-facing showpieces on Recap, source + CSS only. **Replay:** `srReplaySteps`/`srReplayMoments`/`srReplayStepMs` live in the FORMULA BAND (tests 69 → 88) — one step per logged DAY, sap entries prepared with byte-for-byte SapChart's map/filter/sort (its string-date comparator inherited deliberately, debt #6 unchanged), running totals as cumulative sums of the same parseFloat vals `seasonTotals` sums, moments derived only from data Recap already renders (max bar, first syrupMade day, max sg_brixlog value on a replay day). `ReplayStage` (module-scope) is a centered glass overlay: rAF advances the step index on the srReplayStepMs cadence (~10s sweep, 400–1600ms clamp); ALL inter-step motion is CSS transform/opacity (bars scaleY, timeline scaleX, captions opacity); totals tween prev→next via `RpNum` (300ms rAF, tabular mono). Reduced motion = no autoplay, Prev/Next step-through, transitions dead in CSS AND JS. Gate: ≥3 dated sap/syrup entries; zero storage writes; Esc/scrim close; scrim excluded from print. **Share card:** `M.tree`'s d strings hoisted to `M_TREE_CROWN_D`/`M_TREE_GROUND_D` (JSX component now references them — one geometry, two renderers) and `srDrawShareCard` draws the 1200×630 canvas fully programmatically: #0B1F14→#1E4A34 gradient, Path2D-stroked outline tree at ~400px amber (outline grammar; Amber Glass stays reserved), operation name (sg_operator else "My sugarbush"/«Mon érablière»), tracked season line, four stats passed as the SAME formatted strings Recap's Big-4 render, muted-amber sweetrun.app wordmark, radial vignette; NO location/map imagery. Export is canvas.toBlob → navigator.share files when canShare (AbortError = silent), else `<a download>` sweetrun-season-YYYY.png; local only, invariant 2 intact. Verification: `/tmp/sr-check/sharecard.mjs` (recording ctx stub + SVG-grammar-lexing Path2D stub, 11 assertions, negative-controlled ×2) and `/tmp/sr-check/replaysmoke.mjs` (walk-renders Recap+ReplayStage in 6 configs incl. reduced-motion FR and empty season, negative-controlled). 23 TR keys EN+FR. SW cache → sweetrun-v23. Pixel truth not verifiable in-sandbox — eyes-on list in audits/PASS7-REPLAY-REPORT.md.
 - **2026-09-20 — Stale-precache field bug fixed.** Live verification caught /app/app.js being served from browser HTTP cache (651KB stale vs 668KB fresh) and the SW's `cache.addAll` precaching that stale copy into a brand-new cache version — meaning a SW bump could silently ship old code. Fix: `_headers` now must-revalidates /app/app.js, and the SW precaches same-origin shell files with `cache:'reload'`. SW → v20. The eyes-on-live rule paid for itself.
+
+**2026-09-26 — Run Sheet cutover: one UI, classic deleted, not flagged.**
+Damian asked for the new design to replace the app everywhere. PORT-PLAN had a
+"Classic look" switch for one season (D4); that is superseded by his call, so
+rollback is a git revert of the cutover commit, not a runtime switch. Classic
+code was removed by reachability, not by hand: a scope-aware Babel pass
+(top-level bindings resolved through scopes, so local `t`, `M`, `I` do not count)
+kept 146,585 bytes of declarations the new UI still reaches and dropped
+598,760. Kept: PDF export, the guide's knowledge base and search, batch
+labels, the sap-run score, the crash screen (restyled). The pre-cutover UI was
+captured on 36 routes at 4 sizes and compared pixel for pixel with the cutover
+build: 110 of 144 identical; every difference was intended or a classic leak
+removed (Leaflet's attribution plate had been painted navy by a classic
+`!important` rule). Data continuity was proven on one origin: data created
+through the original production UI with its v28 service worker, then the
+cutover build deployed over it; all 37 keys byte-identical except the
+session counter, v36 installed and v28 deleted.
+
+**2026-09-26 — One yield verdict.** Four screens graded yield per tap against
+three benchmarks; the same 0.31 gal a tap read "Low" on Recap and "Strong" on
+Diagnose. `srYieldClass` grades against the band in maple-constants.md section 4
+(0.20 to 0.45 gal of syrup a tap normal, both ends included; USDA NASS state
+yields run 0.219 to 0.384), and every low/normal/strong word comes from it;
+sap per tap is graded as its syrup equivalent at the sap's Brix. The
+per-system `YIELD_MODELS` stay as "what your system can reach": season goal,
+yield gap gallons and the yield score are unchanged arithmetic. Confirmed by Damian, 2026-09-26.
+
+**2026-09-26 — Strings: a later `Object.assign` silently wins.** Three live
+screens were showing another screen's string (Collect's "Brix at the tree"
+heading read "At tree {n}"; Weather's place row read "your place"; two GPS
+errors lost their instruction). Each now has its own key, and a test fails on
+any key defined twice in `RS_TR.en` or `RS_TR.fr`.

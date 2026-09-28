@@ -3,19 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DE Filter Press Calculator for Maple Syrup — How Much DE? | Free | SweetRun</title>
-  <meta name="description" content="Free diatomaceous earth (DE) calculator for maple syrup filter presses. Enter your batch size, season, and plate setup to get exactly how many cups of DE to use — straight mix or precharge method." />
+  <title>DE Filter Press Calculator for Maple Syrup: How Much DE? | Free | SweetRun</title>
+  <meta name="description" content="Free diatomaceous earth (DE) calculator for maple syrup filter presses. Enter your batch size, season, and plate setup to get exactly how many cups of DE to use, straight mix or precharge method." />
   <link rel="canonical" href="https://sweetrun.app/de-filter-calculator" />
   <meta property="og:title" content="DE Filter Press Calculator for Maple Syrup" />
-  <meta property="og:description" content="Exactly how much DE for your filter press — straight mix or precharge. Free, no account." />
+  <meta property="og:description" content="Exactly how much DE for your filter press, straight mix or precharge. Free, no account." />
   <meta property="og:url" content="https://sweetrun.app/de-filter-calculator" />
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="https://sweetrun.app/og-image.png" />
+  <meta property="og:image" content="https://sweetrun.app/og-image.png?v=ember" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="icon" href="/favicon.ico" sizes="48x48" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-  <link rel="stylesheet" href="/calc-shared.css" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -24,128 +20,192 @@
       {
         "@type": "Question",
         "name": "How much DE do I use in a maple syrup filter press?",
-        "acceptedAnswer": { "@type": "Answer", "text": "For straight mix, use about 0.5 cups of food-grade DE per gallon of syrup early season, and 0.75 cups per gallon late season when niter is heavier. For the precharge method, coat the plates first (about 3.25 cups per 7-inch plate) and cross-check against 0.2 cups per gallon early or 0.5 late — use whichever is larger." }
+        "acceptedAnswer": { "@type": "Answer", "text": "For straight mix, use about 0.5 cups of food-grade DE per gallon of syrup early season, and 0.75 cups per gallon late season when niter is heavier. For the precharge method, coat the plates first (about 3.25 cups per 7-inch plate) and cross-check against 0.2 cups per gallon early or 0.5 late, and use whichever is larger." }
       },
       {
         "@type": "Question",
-        "name": "Straight mix or precharge — which DE method should I use?",
+        "name": "Straight mix or precharge: which DE method should I use?",
         "acceptedAnswer": { "@type": "Answer", "text": "Under 10 gallons, straight mix is simpler and works perfectly: stir DE into hot syrup and press. From 10–25 gallons either works. Over 25 gallons, precharging the plates first gives a cleaner first pour and longer press runs." }
       },
       {
         "@type": "Question",
         "name": "Why does late-season syrup need more DE?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Late-season sap carries more minerals, so the syrup throws more niter (sugar sand). More suspended solids clog the filter cake faster, so you compensate with a heavier DE dose — roughly 50% more than early season." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Late-season sap carries more minerals, so the syrup throws more niter (sugar sand). More suspended solids clog the filter cake faster, so you compensate with a heavier DE dose, roughly 50% more than early season." }
       }
     ]
   }
   </script>
+  <!-- chrome:head -->
+<meta name="theme-color" content="#0C0B0A" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/app/icons/favicon-e-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/app/icons/favicon-e-16.png" />
+  <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon-e-180.png" />
+  <link rel="preload" href="/app/fonts/barlow-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/app/fonts/barlow-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/app/tokens.css" />
+  <link rel="stylesheet" href="/calc-shared.css?v=ember" />
+<!-- /chrome:head -->
 </head>
 <body>
 
-<nav>
-  <a class="nav-logo" href="/"><span>🍁</span> SweetRun</a>
-  <div class="nav-links">
-    <a href="/calculators">All Calculators</a>
-    <a href="/#features">Features</a>
-    <a href="/#pricing">Pricing</a>
+<!-- chrome:header -->
+<header class="site-head">
+  <div class="wrap site-head-in">
+    <a class="brand" href="/"><img src="/app/icons/icon-e-192.png" width="32" height="32" alt="" /><span>SweetRun</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="/#season">Season</a>
+      <a href="/#bush">Bush</a>
+      <a href="/#boil">Boil</a>
+      <a href="/calculators" aria-current="page">Calculators</a>
+      <a href="/#pricing">Pricing</a>
+    </nav>
+    <a class="btn btn-sm" href="/#pricing">Try it free</a>
   </div>
-  <a class="nav-cta" href="/#pricing">Try Free — 14 Days</a>
-</nav>
-
-<header class="calc-hero">
-  <span class="free-pill">Free · No account</span>
-  <h1>DE Filter Press <em>Calculator</em></h1>
-  <p>Exactly how much diatomaceous earth your batch needs — no more guessing, no more clogged plates.</p>
 </header>
+<!-- /chrome:header -->
 
 <main>
+<div class="calc-hero">
+  <img src="/app/photos/syrup-bottles.webp" alt="" width="1200" height="670" fetchpriority="high" />
+  <div class="wrap">
+    <span class="eyebrow">DE filter press calculator</span>
+    <h1>How much DE?</h1>
+    <p>Exactly how much diatomaceous earth your batch needs. No more guessing, no more clogged plates.</p>
+    <span class="hero-stage"><span class="tile tile-boil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a6 6 0 0 0 6-6c0-3.8-3-6-4-10-2.2 1.6-3.5 4-3.2 6.3-1-.4-1.8-1.3-2.2-2.4A7.5 7.5 0 0 0 6 15a6 6 0 0 0 6 6z"/></svg></span>In the app, on the Boil stage</span>
+  </div>
+</div>
+<div class="wrap calc-main">
   <div class="calc-card">
-    <label class="field-label" for="gal-in">Syrup to filter (gallons)</label>
-    <input type="number" id="gal-in" value="10" min="0.5" step="0.5" inputmode="decimal" oninput="calc()" />
-    <div class="loc-note" id="rec-note"></div>
+    <div class="calc-in">
+      <label class="field-label" for="gal-in">Syrup to filter (gallons)</label>
+      <input type="number" id="gal-in" value="10" min="0.5" step="0.5" inputmode="decimal" oninput="calc()" />
+      <div class="loc-note" id="rec-note"></div>
 
-    <label class="field-label">Time of season</label>
-    <div class="seg" id="szn-seg">
-      <button type="button" data-v="early" class="on" onclick="pick('szn',this)">Early (Golden/Amber)</button>
-      <button type="button" data-v="late" onclick="pick('szn',this)">Late (Dark) — more niter</button>
-    </div>
+      <p class="field-label" id="szn-l">Time of season</p>
+      <div class="seg" id="szn-seg" role="group" aria-labelledby="szn-l">
+        <button type="button" data-v="early" class="on" onclick="pick('szn',this)">Early (Golden/Amber)</button>
+        <button type="button" data-v="late" onclick="pick('szn',this)">Late (Dark), more niter</button>
+      </div>
 
-    <label class="field-label">Method</label>
-    <div class="seg" id="mode-seg">
-      <button type="button" data-v="straight" class="on" onclick="pick('mode',this)">Straight Mix</button>
-      <button type="button" data-v="precoat" onclick="pick('mode',this)">Precharge First</button>
-    </div>
+      <p class="field-label" id="mode-l">Method</p>
+      <div class="seg" id="mode-seg" role="group" aria-labelledby="mode-l">
+        <button type="button" data-v="straight" class="on" onclick="pick('mode',this)">Straight mix</button>
+        <button type="button" data-v="precoat" onclick="pick('mode',this)">Precharge first</button>
+      </div>
 
-    <div id="press-fields" style="display:none;">
-      <div class="row2">
-        <div>
-          <label class="field-label" for="plates-in">Number of plates</label>
-          <input type="number" id="plates-in" value="9" min="1" max="30" step="1" inputmode="numeric" oninput="calc()" />
-        </div>
-        <div>
-          <label class="field-label" for="psize-in">Plate size</label>
-          <select id="psize-in" onchange="calc()">
-            <option value="3.25" selected>7" plates</option>
-            <option value="6.6">10" plates</option>
-            <option value="9.5">12" plates</option>
-          </select>
+      <div id="press-fields" style="display:none;">
+        <div class="row2 field">
+          <div>
+            <label class="field-label" for="plates-in">Number of plates</label>
+            <input type="number" id="plates-in" value="9" min="1" max="30" step="1" inputmode="numeric" oninput="calc()" />
+          </div>
+          <div>
+            <label class="field-label" for="psize-in">Plate size</label>
+            <select id="psize-in" onchange="calc()">
+              <option value="3.25" selected>7" plates</option>
+              <option value="6.6">10" plates</option>
+              <option value="9.5">12" plates</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="result-box">
-      <div class="result-label">You need</div>
-      <div class="result-value" id="cups-out">5.0 cups</div>
-      <div class="result-sub" id="alt-units">≈ 0.5 lbs · 8 oz of food-grade DE</div>
-    </div>
-    <div class="result-grid">
-      <div class="mini-result">
-        <div class="mr-label">Rate used</div>
-        <div class="mr-value" id="rate-out">0.5 c/gal</div>
-        <div class="mr-sub" id="rate-sub">straight mix, early season</div>
+    <div class="calc-out" aria-live="polite">
+      <div class="result-box">
+        <div class="result-label">You need</div>
+        <div class="result-value" id="cups-out">5.0 cups</div>
+        <div class="result-sub" id="alt-units">&asymp; 0.5 lbs &middot; 8 oz of food-grade DE</div>
       </div>
-      <div class="mini-result">
-        <div class="mr-label">Method</div>
-        <div class="mr-value" id="method-out" style="font-size:18px;line-height:1.3;padding-top:6px;">Straight Mix</div>
-        <div class="mr-sub" id="method-sub">stir into hot syrup, then press</div>
+      <div class="result-grid">
+        <div class="mini-result">
+          <div class="mr-label">Rate used</div>
+          <div class="mr-value" id="rate-out">0.5 c/gal</div>
+          <div class="mr-sub" id="rate-sub">straight mix, early season</div>
+        </div>
+        <div class="mini-result">
+          <div class="mr-label">Method</div>
+          <div class="mr-value mr-word" id="method-out">Straight Mix</div>
+          <div class="mr-sub" id="method-sub">stir into hot syrup, then press</div>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="prose">
     <h2>How to do it</h2>
-    <h3 id="howto-straight-h">Straight mix (easiest — best under 25 gal)</h3>
-    <p>Bring your syrup to filtering temperature (180–190°F). Stir the full DE amount directly into the hot syrup until no dry clumps remain. Pump through the press; recirculate the first quart or two back into the batch until the output runs bright and clear — the cloudy first pass is just the filter cake forming. Then run to your finishing tank. Stop when the pressure gauge reaches 40 PSI: the plates are full.</p>
-    <h3 id="howto-precoat-h">Precharge method (cleaner first pour — best over 25 gal)</h3>
-    <p>Heat a few gallons of water, stir the precharge DE into it, and pump the DE-water through the press to coat the plates. Drain the water without disturbing the cake. Now run your hot syrup through — it hits a ready-made filter bed, so the first pour comes out clear. Keep a light ongoing dose in the syrup for long runs, and re-charge whenever pressure hits 40 PSI.</p>
+    <h3 id="howto-straight-h">Straight mix (easiest, best under 25 gal)</h3>
+    <p>Bring your syrup to filtering temperature (180 to 190&deg;F). Stir the full DE amount directly into the hot syrup until no dry clumps remain. Pump through the press; recirculate the first quart or two back into the batch until the output runs bright and clear. The cloudy first pass is just the filter cake forming. Then run to your finishing tank. Stop when the pressure gauge reaches 40 PSI: the plates are full.</p>
+    <h3 id="howto-precoat-h">Precharge method (cleaner first pour, best over 25 gal)</h3>
+    <p>Heat a few gallons of water, stir the precharge DE into it, and pump the DE-water through the press to coat the plates. Drain the water without disturbing the cake. Now run your hot syrup through. It hits a ready-made filter bed, so the first pour comes out clear. Keep a light ongoing dose in the syrup for long runs, and re-charge whenever pressure hits 40 PSI.</p>
 
     <h2>If something goes wrong</h2>
-    <p><strong>Pressure spikes immediately:</strong> too much niter for the cake — add more DE to the batch, or switch to the late-season rate. <strong>Syrup stays cloudy:</strong> cake hasn't formed yet; keep recirculating, and check that plate papers are seated. <strong>Press "fills" after a gallon or two:</strong> late-season niter load — use 0.75 cups/gal and consider precharging even for small batches. <strong>Flow slows to a trickle below 40 PSI:</strong> syrup has cooled — filtering below ~180°F thickens syrup and blinds the cake fast.</p>
+    <p><strong>Pressure spikes immediately:</strong> too much niter for the cake. Add more DE to the batch, or switch to the late-season rate. <strong>Syrup stays cloudy:</strong> the cake hasn't formed yet; keep recirculating, and check that plate papers are seated. <strong>Press "fills" after a gallon or two:</strong> late-season niter load. Use 0.75 cups/gal and consider precharging even for small batches. <strong>Flow slows to a trickle below 40 PSI:</strong> the syrup has cooled. Filtering below ~180&deg;F thickens syrup and blinds the cake fast.</p>
     <p class="cite">Rates scaled from the Smoky Lake filter-press baseline (3.25 cups per 7" plate, area-proportional for larger plates); food-grade DE only.</p>
   </div>
 
-  <div class="cta-band">
-    <h2>The full walkthrough lives in <em>SweetRun</em>.</h2>
-    <p>Step-by-step press instructions, density check, finishing temps, canning guide, grade reference — plus your whole season's logs and economics. Offline, no account, your data stays yours.</p>
-    <a class="btn-primary" href="/#pricing">Try SweetRun Free — 14 Days</a>
-    <div class="cta-free-note">This calculator stays free, forever. No signup needed.</div>
-  </div>
-
-  <div class="more-calcs">
-    <h2>More free maple calculators</h2>
-    <div class="calc-links">
-      <a class="calc-link" href="/draw-off-calculator"><div class="cl-icon">🌡️</div><div class="cl-name">Draw-Off Temperature</div><div class="cl-desc">Your finishing temp by elevation</div></a>
-      <a class="calc-link" href="/sap-to-syrup-calculator"><div class="cl-icon">🥞</div><div class="cl-name">Sap to Syrup Ratio</div><div class="cl-desc">Rule of 86 — how much syrup your sap will make</div></a>
-      <a class="calc-link" href="/tap-calculator"><div class="cl-icon">🌳</div><div class="cl-name">Tap Calculator</div><div class="cl-desc">How many taps your trees support</div></a>
+  <section class="cta-band cta-shot" aria-labelledby="cta-h">
+    <div class="cta-copy">
+      <span class="eyebrow">In the app</span>
+      <h2 id="cta-h">The full walkthrough lives in SweetRun.</h2>
+      <p>Step-by-step press instructions, density check, finishing temps, canning guide and grade reference, plus your whole season&rsquo;s logs and economics. Offline, no account, and your data stays yours.</p>
+      <a class="btn" href="/#pricing">Try SweetRun free for 14 days</a>
+      <p class="cta-free-note">This calculator stays free, forever. No signup needed.</p>
     </div>
-  </div>
+    <figure class="phone cta-phone"><img src="/assets/screens/phone-boil.webp" alt="The SweetRun Boil screen on a phone: pan temperature 218.9&deg;F past the mark, last Brix 66.5, and a temperature chart against the draw-off line." width="780" height="1688" loading="lazy" /></figure>
+  </section>
+
+  <section class="more-calcs" aria-labelledby="more-h">
+    <h2 id="more-h">More free maple calculators</h2>
+    <div class="calc-links">
+      <a class="calc-link" href="/draw-off-calculator"><span class="tile tile-boil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg></span><span><span class="cl-name">Draw-off temperature</span><br /><span class="cl-desc">Your finishing temp by elevation</span></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>
+      <a class="calc-link" href="/sap-to-syrup-calculator"><span class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5c3.2 4.3 5.5 7.6 5.5 10.6a5.5 5.5 0 0 1-11 0c0-3 2.3-6.3 5.5-10.6z"/></svg></span><span><span class="cl-name">Sap to syrup ratio</span><br /><span class="cl-desc">Rule of 86: the syrup your sap will make</span></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>
+      <a class="calc-link" href="/tap-calculator"><span class="tile tile-tap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-7"/><path d="M12 14c-1.2 1.2-2.6 1.6-4 1"/><path d="M8.2 15.3A3.6 3.6 0 0 1 5 11.6a3.4 3.4 0 0 1 2-3.1 4 4 0 0 1 3.4-4.8A3.3 3.3 0 0 1 13.6 3a4 4 0 0 1 3.7 3 3.5 3.5 0 0 1 2.5 3.4 3.6 3.6 0 0 1 .2 4.8 3.6 3.6 0 0 1-3.9 1.3"/><path d="M12 14c1.2 1.2 2.6 1.6 4.1 1.3"/></svg></span><span><span class="cl-name">Tap calculator</span><br /><span class="cl-desc">How many taps your trees support</span></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></a>
+    </div>
+  </section>
+</div>
 </main>
 
-<footer>
-  <p style="margin-bottom:8px;"><strong style="color:#fff;">SweetRun</strong> — The Maple Production Platform</p>
-  <p><a href="/">sweetrun.app</a> · <a href="/calculators">Free calculators</a> · <a href="mailto:hello@sweetrun.app">hello@sweetrun.app</a></p>
-  <p style="margin-top:12px;font-size:11px;">© 2026 SweetRun · Knowledge sourced from UVM Proctor Maple Research Center, Cornell Maple Program, USDA Forest Service, and IMSI</p>
+<!-- chrome:footer -->
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="brand" href="/"><img src="/app/icons/icon-e-192.png" width="32" height="32" alt="" /><span>SweetRun</span></a>
+        <p>Maple production, one season at a time. What to do next, and a log of every gallon.</p>
+      </div>
+      <div class="foot-col">
+        <h2>The app</h2>
+        <ul>
+          <li><a href="/#season">Season stages</a></li>
+          <li><a href="/#bush">Bush map</a></li>
+          <li><a href="/#watch">Pumps and Watch</a></li>
+          <li><a href="/#boil">Boil</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h2>Free calculators</h2>
+        <ul>
+          <li><a href="/draw-off-calculator">Draw-off temperature</a></li>
+          <li><a href="/sap-to-syrup-calculator">Sap to syrup</a></li>
+          <li><a href="/tap-calculator">Tap calculator</a></li>
+          <li><a href="/de-filter-calculator">DE filter press</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h2>Talk to us</h2>
+        <ul>
+          <li><a href="mailto:hello@sweetrun.app">hello@sweetrun.app</a></li>
+          <li><a href="/feedback.html">Send feedback</a></li>
+          <li><a href="/calculators">All calculators</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="foot-fine">&copy; 2026 SweetRun. Knowledge sourced from UVM Proctor Maple Research Center, Cornell Maple Program, USDA Forest Service and IMSI.</p>
+  </div>
 </footer>
+<!-- /chrome:footer -->
 
 <script>
   // Same logic as the SweetRun app (app.jsx DE calculator)
@@ -193,6 +253,13 @@
       : 'coat plates with DE-water first' + (cups === cupsPerPlate && cups > cupsPerGal ? ' · plate minimum governs' : '');
   }
   calc();
+</script>
+<script>
+  // Mirror the calculators' "on" class into aria-pressed for screen readers. Presentation only.
+  document.querySelectorAll('.seg').forEach(function (seg) {
+    var sync = function () { seg.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b.classList.contains('on') ? 'true' : 'false'); }); };
+    sync(); new MutationObserver(sync).observe(seg, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  });
 </script>
 </body>
 </html>

@@ -3,1231 +3,666 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SweetRun — The Maple Production Platform Built for Serious Sugarmakers</title>
-  <meta name="description" content="Map your sugarbush, forecast sap runs, track every gallon, and get expert answers offline. SweetRun is the complete maple production platform for serious sugarmakers." />
-  <meta property="og:title" content="SweetRun — Maple Production Platform" />
-  <meta property="og:description" content="Map your sugarbush. Score your sap runs. Know your numbers. Built for producers who treat sugarmaking like a business." />
-  <meta property="og:image" content="https://sweetrun.app/og-image.png" />
+  <title>SweetRun: the maple production app for sugarmakers</title>
+  <meta name="description" content="SweetRun knows where you are in the sugaring season and puts the next job at the top of the screen. Map your sugarbush, log vacuum on every mainline, run the boil, and keep a log of every gallon. Works offline. 14 days free." />
+  <meta property="og:title" content="SweetRun: more maple days" />
+  <meta property="og:description" content="Maple production, one season at a time. What to do next, and a log of every gallon. Works with no cell service." />
+  <meta property="og:image" content="https://sweetrun.app/og-image.png?v=ember" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta property="og:url" content="https://sweetrun.app/" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="SweetRun — Maple Production Platform" />
-  <meta name="twitter:description" content="Map your sugarbush. Score your sap runs. Know your numbers. Built for producers who treat sugarmaking like a business." />
-  <meta name="twitter:image" content="https://sweetrun.app/og-image.png" />
+  <meta name="twitter:title" content="SweetRun: more maple days" />
+  <meta name="twitter:description" content="Maple production, one season at a time. What to do next, and a log of every gallon. Works with no cell service." />
+  <meta name="twitter:image" content="https://sweetrun.app/og-image.png?v=ember" />
   <link rel="canonical" href="https://sweetrun.app/" />
-  <link rel="icon" href="/favicon.ico" sizes="48x48" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="icon" type="image/png" href="/favicon.png" />
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <!-- chrome:head -->
+<meta name="theme-color" content="#0C0B0A" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/app/icons/favicon-e-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/app/icons/favicon-e-16.png" />
+  <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon-e-180.png" />
+  <link rel="preload" href="/app/fonts/barlow-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/app/fonts/barlow-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/app/tokens.css" />
+  <link rel="stylesheet" href="/calc-shared.css?v=ember" />
+<!-- /chrome:head -->
+  <link rel="preload" href="/app/photos/sugarhouse-dawn.webp" as="image" type="image/webp" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Landing-only layout. Tokens, type, buttons, frames, header and footer live in /calc-shared.css. */
+    section { position: relative; }
+    .sec { padding: var(--s-7) 0; }
+    @media (min-width: 760px) { .sec { padding: var(--s-8) 0; } }
+    .sec-tight { padding: var(--s-7) 0; }
+    .h2 { font-size: clamp(var(--t-xl), 3.4vw + 12px, var(--t-3xl)); font-weight: 800; line-height: 1.02; letter-spacing: -0.03em; margin: 16px 0 20px; max-width: 18ch; }
+    .lede { font-size: var(--t-md); line-height: 1.5; color: var(--rs-tx); max-width: 54ch; }
+    .dim { color: var(--rs-dim); }
+    .sec-head .h2 { max-width: 22ch; }
+    .sec-head.stack { display: block; }
+    .sec-head.stack .h2 { max-width: 24ch; margin-bottom: 20px; }
 
-    :root {
-      --green-dark:  #1a3d2b;
-      --green-mid:   #2d6a4f;
-      --green-light: #52b788;
-      --amber:       #d4831a;
-      --amber-light: #f4a44a;
-      --teal:        #2dd4a7;
-      --cream:       #fdf8f0;
-      --white:       #ffffff;
-      --gray-1:      #f4f4f0;
-      --gray-2:      #e8e4dc;
-      --gray-text:   #6b6b5e;
-      --dark:        #111810;
-      --app-bg:      #07090f;
+    /* Photo header: the app's stage header, turned outward. Photo, scrim into the ground,
+       stage pill, heavy title. Used where a section is one part of the app. */
+    .sec-ph { padding-top: 0; }
+    .ph { position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: flex-end;
+      min-height: clamp(260px, 30vw, 420px); padding: var(--s-7) 0 24px; margin-bottom: 32px; }
+    .sec-ph .split { align-items: start; }
+    .sec-ph .split > div:first-child > .lede:first-child { margin-top: 0; }
+    .ph-tall { min-height: clamp(320px, 40vw, 560px); }
+    .ph > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+    .ph::after { content: ""; position: absolute; inset: 0; z-index: -1;
+      background: linear-gradient(180deg, var(--rs-bg) 0%, rgba(12,11,10,.2) 20%, rgba(12,11,10,.42) 52%, rgba(12,11,10,.9) 84%, var(--rs-bg) 100%),
+                  linear-gradient(90deg, rgba(12,11,10,.55) 0%, rgba(12,11,10,0) 70%); }
+    .ph .wrap { width: 100%; }
+    .ph .h2 { margin: 18px 0 0; max-width: 16ch; }
+    .pill { display: inline-flex; align-items: center; gap: 12px; padding: 9px 16px 9px 14px; border-radius: 999px;
+      background: rgba(12,11,10,.8); font-family: var(--rs-fc); font-weight: 700; font-size: var(--t-xs);
+      letter-spacing: .14em; text-transform: uppercase; color: var(--rs-acc); }
+    .pill::before { content: ""; width: 24px; height: 3px; border-radius: 2px; background: var(--rs-acc); flex: none; }
+    @media (min-width: 1000px) {
+      .sec-head { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--s-6); align-items: end; }
+      .sec-head .h2 { margin-bottom: 0; }
+      .sec-head .lede { margin-bottom: 4px; }
     }
 
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--cream);
-      color: var(--dark);
-      line-height: 1.6;
-    }
-
-    /* ── NAV ── */
-    nav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      background: rgba(26,61,43,0.97);
-      backdrop-filter: blur(8px);
-      padding: 0 24px;
-      height: 60px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .nav-logo {
-      display: flex; align-items: center; gap: 10px;
-      color: #fff; font-weight: 700; font-size: 18px; text-decoration: none;
-    }
-    .nav-logo span { font-size: 22px; }
-    .nav-links { display: flex; align-items: center; gap: 24px; }
-    .nav-links a {
-      color: rgba(255,255,255,0.7); font-size: 14px; text-decoration: none;
-      transition: color 0.2s;
-    }
-    .nav-links a:hover { color: #fff; }
-    .nav-cta {
-      background: var(--amber); color: #fff;
-      padding: 8px 20px; border-radius: 8px;
-      font-weight: 700; font-size: 14px;
-      text-decoration: none; transition: background 0.2s;
-    }
-    .nav-cta:hover { background: var(--amber-light); }
-    @media (max-width: 640px) { .nav-links { display: none; } }
-
-    /* ── NOTIFY BAR ── */
-    #notify-bar {
-      position: fixed; top: 60px; left: 0; right: 0; z-index: 99;
-      background: linear-gradient(90deg, #1a3d2b, #2d6a4f);
-      border-bottom: 1px solid rgba(45,212,167,0.3);
-      padding: 10px 16px;
-      display: flex; align-items: center; justify-content: center;
-      gap: 12px; flex-wrap: wrap;
-    }
+    /* Notify strip */
+    #notify-bar { background: var(--rs-s1); border-bottom: 1px solid var(--rs-line); }
     #notify-bar.hidden { display: none; }
-    .nbar-text {
-      font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9);
-      white-space: nowrap;
+    .nbar-in { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; min-height: 60px; padding-top: 8px; padding-bottom: 8px; }
+    .nbar-text { font-weight: 600; font-size: var(--t-sm); }
+    .nbar-text em { font-style: normal; color: var(--rs-acc); }
+    .nbar-form { display: flex; gap: 8px; flex: 1 1 280px; max-width: 420px; }
+    .nbar-form input[type=email] { min-height: 44px; font-size: var(--t-base); padding: 8px 14px; }
+    .nbar-btn { min-height: 44px; font-size: var(--t-sm); padding: 0 16px; }
+    .nbar-ok { display: none; font-weight: 700; font-size: var(--t-sm); color: var(--rs-ok); }
+    .nbar-dismiss { margin-left: auto; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: 0; background: transparent; color: var(--rs-dim); cursor: pointer; }
+    .nbar-dismiss:hover { background: var(--rs-s2); color: var(--rs-tx); }
+    .nbar-dismiss svg { width: 20px; height: 20px; }
+
+    /* Hero */
+    .hero { isolation: isolate; overflow: hidden; padding: var(--s-7) 0 0; }
+    .hero-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 30% 40%; z-index: -2; }
+    .hero::after { content: ""; position: absolute; inset: 0; z-index: -1;
+      background: linear-gradient(180deg, rgba(12,11,10,.35) 0%, rgba(12,11,10,.55) 40%, rgba(12,11,10,.94) 78%, var(--rs-bg) 100%),
+                  linear-gradient(90deg, rgba(12,11,10,.82) 0%, rgba(12,11,10,.35) 60%, rgba(12,11,10,.1) 100%); }
+    .hero-grid { display: grid; gap: var(--s-6); }
+    .hero-icon { width: 76px; height: 76px; border-radius: 21px; margin-bottom: 28px; box-shadow: 0 16px 40px -12px rgba(220,130,52,.55); }
+    .hero .pill { margin-bottom: 4px; }
+    .hero h1 { font-weight: 800; font-size: clamp(56px, 6.2vw + 12px, 88px); line-height: .96; letter-spacing: -0.035em; margin: 18px 0 22px; }
+    .hero-sub { font-size: var(--t-md); line-height: 1.5; max-width: 40ch; color: var(--rs-tx); }
+    .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+    .hero-note { margin-top: 14px; font-size: var(--t-sm); color: var(--rs-dim); }
+    .hero-devices { position: relative; display: grid; grid-template-columns: 1fr; justify-items: center; padding-bottom: var(--s-6); }
+    .hero-tablet { display: none; }
+    .hero-phone { max-width: 272px; }
+    .hero-devices figure { animation: rise .7s var(--ease-out) backwards; }
+    .hero-devices .hero-phone { animation-delay: .12s; }
+    @keyframes rise { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+    @media (min-width: 760px) {
+      .hero-devices { grid-template-columns: 1fr; justify-items: stretch; min-height: 520px; }
+      .hero-tablet { display: block; width: 88%; }
+      .hero-phone { position: absolute; right: 0; bottom: var(--s-6); width: 34%; max-width: 250px; }
     }
-    .nbar-text em { color: #2dd4a7; font-style: normal; }
-    .nbar-form {
-      display: flex; gap: 6px; align-items: center;
-    }
-    .nbar-input {
-      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 7px; padding: 6px 12px;
-      font-size: 13px; color: #fff; font-family: inherit; outline: none;
-      width: 190px; transition: border-color 0.2s;
-    }
-    .nbar-input::placeholder { color: rgba(255,255,255,0.4); }
-    .nbar-input:focus { border-color: #2dd4a7; }
-    .nbar-btn {
-      background: #2dd4a7; color: #0d1521;
-      border: none; border-radius: 7px;
-      padding: 6px 14px; font-size: 13px; font-weight: 800;
-      cursor: pointer; font-family: inherit; white-space: nowrap;
-      transition: opacity 0.2s;
-    }
-    .nbar-btn:hover { opacity: 0.85; }
-    .nbar-ok { font-size: 13px; font-weight: 700; color: #2dd4a7; display: none; }
-    .nbar-dismiss {
-      background: none; border: none; color: rgba(255,255,255,0.4);
-      font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1;
-      transition: color 0.2s; flex-shrink: 0;
-    }
-    .nbar-dismiss:hover { color: #fff; }
-    @media (max-width: 520px) {
-      .nbar-text { font-size: 12px; }
-      .nbar-input { width: 140px; }
+    @media (min-width: 1100px) {
+      .hero { padding-top: var(--s-8); }
+      .hero-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: end; gap: var(--s-5); }
+      .hero-copy { padding-bottom: var(--s-8); }
+      .hero-devices { min-height: 0; padding-bottom: var(--s-7); }
+      .hero-tablet { width: 92%; margin-left: 8%; }
+      .hero-phone { left: 0; right: auto; bottom: var(--s-5); width: 30%; }
     }
 
-    /* ── HERO ── */
-    .hero {
-      min-height: 100vh;
-      background: linear-gradient(160deg, var(--green-dark) 0%, #0f2318 60%, #1a3020 100%);
-      display: flex; align-items: center; justify-content: center;
-      text-align: center; padding: 140px 24px 80px;
-      position: relative; overflow: hidden;
-    }
-    .hero::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse at 50% 0%, rgba(212,131,26,0.15) 0%, transparent 70%);
-      pointer-events: none;
-    }
-    .hero-leaf { font-size: 72px; margin-bottom: 24px; animation: sway 4s ease-in-out infinite; }
-    @keyframes sway {
-      0%,100% { transform: rotate(-3deg); }
-      50%      { transform: rotate(3deg); }
-    }
-    .hero h1 {
-      font-size: clamp(36px, 6vw, 72px); font-weight: 800;
-      color: #fff; line-height: 1.1; letter-spacing: -1.5px; margin-bottom: 20px;
-    }
-    .hero h1 em { font-style: normal; color: var(--amber-light); }
-    .hero-sub {
-      font-size: clamp(16px, 2.5vw, 22px); color: rgba(255,255,255,0.75);
-      max-width: 640px; margin: 0 auto 40px; line-height: 1.6;
-    }
-    .hero-cta-group {
-      display: flex; flex-wrap: wrap; gap: 14px;
-      justify-content: center; align-items: center;
-    }
-    .btn-primary {
-      background: var(--amber); color: #fff;
-      padding: 16px 36px; border-radius: 12px;
-      font-size: 18px; font-weight: 700;
-      text-decoration: none; transition: transform 0.15s, background 0.2s;
-      box-shadow: 0 4px 20px rgba(212,131,26,0.4);
-    }
-    .btn-primary:hover { background: var(--amber-light); transform: translateY(-2px); }
-    .btn-secondary {
-      color: rgba(255,255,255,0.8); font-size: 15px;
-      text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.3);
-      padding-bottom: 2px; transition: color 0.2s;
-    }
-    .btn-secondary:hover { color: #fff; }
-    .hero-proof {
-      margin-top: 60px; display: flex; flex-wrap: wrap; gap: 32px;
-      justify-content: center;
-    }
-    .hero-stat { text-align: center; }
-    .hero-stat-num { font-size: 32px; font-weight: 800; color: var(--amber-light); }
-    .hero-stat-label { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 2px; }
-
-    /* ── SHARED ── */
-    section { padding: 80px 24px; }
-    .container { max-width: 1080px; margin: 0 auto; }
-    .section-label {
-      font-size: 12px; font-weight: 700; letter-spacing: 2px;
-      text-transform: uppercase; color: var(--green-mid); margin-bottom: 12px;
-    }
-    .section-title {
-      font-size: clamp(28px, 4vw, 44px); font-weight: 800;
-      line-height: 1.15; letter-spacing: -0.5px; margin-bottom: 16px;
-    }
-    .section-sub {
-      font-size: 18px; color: var(--gray-text); max-width: 600px; line-height: 1.65;
+    /* Facts strip */
+    .facts { display: grid; grid-template-columns: 1fr; border-top: 1px solid var(--rs-line); border-bottom: 1px solid var(--rs-line); }
+    .fact { padding: 20px 0; display: flex; flex-direction: column; gap: 6px; }
+    .fact + .fact { border-top: 1px solid var(--rs-line); }
+    .fact b { white-space: nowrap; font-weight: 800; font-size: var(--t-2xl); letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+    .fact span { color: var(--rs-dim); max-width: 26ch; }
+    @media (min-width: 760px) {
+      .facts { grid-template-columns: repeat(3, 1fr); }
+      .fact { padding: 32px 24px 32px 0; gap: 10px; }
+      .fact + .fact { border-top: 0; border-left: 1px solid var(--rs-line); padding-left: 24px; }
     }
 
-    /* ── NEW BADGE ── */
-    .new-badge {
-      display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
-      padding: 2px 8px; border-radius: 20px;
-      background: var(--teal); color: #07201a;
-      vertical-align: middle; margin-left: 6px;
-    }
+    /* Problem list */
+    .probs { display: grid; gap: 0; margin-top: var(--s-6); border-top: 1px solid var(--rs-line); }
+    .prob { display: grid; grid-template-columns: 48px 1fr; gap: 4px 16px; padding: 24px 0; border-bottom: 1px solid var(--rs-line); }
+    .prob-n { font: 700 var(--t-sm)/1.6 var(--rs-fc); letter-spacing: .1em; color: var(--rs-acc); }
+    .prob h3 { font-size: var(--t-md); }
+    .prob p { grid-column: 2; color: var(--rs-dim); max-width: 60ch; }
+    @media (min-width: 900px) { .probs { grid-template-columns: 1fr 1fr; column-gap: var(--s-6); } }
 
-    /* ── PROBLEM ── */
-    .problem { background: var(--gray-1); }
-    .problem-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 20px; margin-top: 48px;
-    }
-    .problem-card {
-      background: #fff; border: 1.5px solid var(--gray-2);
-      border-radius: 14px; padding: 24px;
-    }
-    .problem-icon { font-size: 32px; margin-bottom: 12px; }
-    .problem-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
-    .problem-card p { font-size: 14px; color: var(--gray-text); line-height: 1.6; }
+    /* Stages */
+    .split { display: grid; gap: var(--s-6); align-items: center; }
+    @media (min-width: 1000px) { .split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-7); } .split-rev > :first-child { order: 2; } }
+    .stages { list-style: none; margin-top: var(--s-5); display: grid; gap: 0; }
+    .stage { display: grid; grid-template-columns: 44px 1fr; gap: 4px 16px; padding: 14px 0; position: relative; }
+    .stage::before { content: ""; position: absolute; left: 21px; top: 58px; bottom: -14px; width: 2px; background: var(--rs-line2); }
+    .stage:last-child::before { display: none; }
+    .stage .tile { grid-row: span 2; }
+    .stage-name { display: flex; align-items: baseline; gap: 10px; font-weight: 700; font-size: var(--t-md); line-height: 1.2; padding-top: 2px; }
+    .stage-name small { font: 700 12px/1 var(--rs-fc); letter-spacing: .12em; text-transform: uppercase; color: var(--rs-mute); }
+    .stage p { color: var(--rs-dim); font-size: var(--t-base); }
+    .stage-here { background: var(--rs-s1); border-radius: 16px; margin: 0 -14px; padding: 14px; box-shadow: inset 0 0 0 1px var(--rs-acc); }
+    .stage-here::before { left: 35px; }
+    .stage-here .stage-name small { color: var(--rs-acc); }
+    .shot-col { display: grid; justify-items: center; }
+    .shot-col .phone { max-width: 320px; }
 
-    /* ── MAP SPOTLIGHT ── */
-    .map-section {
-      background: var(--app-bg);
-      color: #fff; padding: 80px 24px;
-    }
-    .map-inner {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 64px; align-items: center;
-    }
-    @media (max-width: 800px) { .map-inner { grid-template-columns: 1fr; } }
-    .map-section .section-label { color: var(--teal); }
-    .map-section .section-title { color: #fff; }
-    .map-section .section-sub { color: rgba(255,255,255,0.65); max-width:none; }
-    .map-pins {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 28px;
-    }
-    .map-pin-item {
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 12px; padding: 14px 16px;
-    }
-    .map-pin-item .pin-label { font-size: 13px; font-weight: 700; color: #e6edf3; margin-bottom: 3px; }
-    .map-pin-item .pin-desc { font-size: 12px; color: rgba(255,255,255,0.45); line-height: 1.4; }
-    .map-mockup {
-      background: linear-gradient(135deg, #0d1f14 0%, #0a1810 100%);
-      border: 1px solid rgba(45,212,167,0.2);
-      border-radius: 20px; padding: 28px;
-      font-family: monospace;
-    }
-    .map-mockup-title {
-      font-size: 11px; letter-spacing: 0.1em; color: var(--teal);
-      font-weight: 700; margin-bottom: 18px; font-family: -apple-system, sans-serif;
-    }
-    .mock-pin {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.07);
-      font-family: -apple-system, sans-serif;
-    }
-    .mock-pin:last-child { border-bottom: none; }
-    .mock-dot {
-      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
-    }
-    .mock-pin-name { font-size: 13px; font-weight: 600; color: #e6edf3; }
-    .mock-pin-meta { font-size: 11px; color: rgba(255,255,255,0.4); margin-left: auto; }
+    /* Bush: photo band */
+    .band { isolation: isolate; overflow: hidden; }
+    .band > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+    .band::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(12,11,10,.94) 0%, rgba(12,11,10,.84) 45%, rgba(12,11,10,.45) 100%); }
+    .band-bush::after { background: linear-gradient(180deg, var(--rs-bg) 0%, rgba(12,11,10,.84) 14%, rgba(12,11,10,.88) 100%); }
+    @media (min-width: 1000px) { .band-bush::after { background: linear-gradient(180deg, var(--rs-bg) 0%, rgba(12,11,10,.3) 16%, rgba(12,11,10,.3) 84%, var(--rs-bg) 100%), linear-gradient(90deg, rgba(12,11,10,.93) 0%, rgba(12,11,10,.82) 46%, rgba(12,11,10,.12) 100%); } }
+    .pins { list-style: none; display: grid; gap: 0; margin-top: var(--s-5); max-width: 640px; border-top: 1px solid var(--rs-line2); }
+    .pin { display: grid; grid-template-columns: 14px 1fr; gap: 2px 14px; padding: 14px 0; border-bottom: 1px solid var(--rs-line2); }
+    .pin i { width: 12px; height: 12px; border-radius: 50%; margin-top: 7px; background: var(--rs-acc); }
+    .pin b { font-weight: 700; }
+    .pin span { grid-column: 2; color: var(--rs-dim); font-size: var(--t-sm); }
+    @media (min-width: 760px) { .pins { grid-template-columns: 1fr 1fr; column-gap: 32px; } }
+    .offline-note { margin-top: var(--s-5); display: flex; gap: 14px; align-items: flex-start; max-width: 56ch; }
+    .offline-note svg { width: 24px; height: 24px; flex: none; color: var(--rs-acc); margin-top: 2px; }
 
-    /* ── FEATURES ── */
-    .features { background: var(--white); }
-    .features-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 28px; margin-top: 56px;
-    }
-    .feature-card {
-      background: var(--cream); border: 1.5px solid var(--gray-2);
-      border-radius: 16px; padding: 28px;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .feature-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.08); }
-    .feature-icon {
-      width: 48px; height: 48px; border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; margin-bottom: 16px;
-    }
-    .feature-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-    .feature-card p { font-size: 14px; color: var(--gray-text); line-height: 1.65; }
-    .feature-badge {
-      display: inline-block; margin-top: 12px;
-      font-size: 11px; font-weight: 700;
-      padding: 3px 10px; border-radius: 20px;
-      background: var(--green-mid); color: #fff;
-      letter-spacing: 0.5px;
-    }
-    .feature-badge.new { background: var(--teal); color: #07201a; }
+    /* Watch */
+    .watch-shots { position: relative; }
+    .watch-shots .shot-cap { max-width: 58%; }
+    .watch-shots .phone { position: absolute; right: -8px; bottom: -48px; width: 36%; max-width: 230px; }
+    @media (max-width: 759px) { .watch-shots .phone { position: relative; right: auto; bottom: auto; width: 62%; max-width: 240px; margin: -32px 0 0 auto; } .watch-shots .shot-cap { max-width: none; } }
+    .checks { list-style: none; margin-top: var(--s-5); display: grid; gap: 14px; }
+    .checks li { display: grid; grid-template-columns: 24px 1fr; gap: 12px; }
+    .checks svg { width: 22px; height: 22px; color: var(--rs-acc); margin-top: 2px; }
 
-    /* ── WEATHER SECTION ── */
-    .weather-section { background: var(--gray-1); }
-    .weather-inner {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 60px; align-items: center;
-    }
-    @media (max-width: 800px) { .weather-inner { grid-template-columns: 1fr; } }
-    .score-pills { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
-    .score-pill {
-      border-radius: 10px; padding: 10px 16px; font-size: 13px; font-weight: 600;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .score-pill .score-num { font-size: 20px; font-weight: 800; }
-    .forecast-mock {
-      background: #fff; border-radius: 16px; padding: 20px;
-      border: 1.5px solid var(--gray-2); box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-    }
-    .forecast-mock-title {
-      font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
-      color: var(--green-mid); margin-bottom: 16px;
-    }
-    .forecast-day {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 0; border-bottom: 1px solid var(--gray-2); font-size: 14px;
-    }
-    .forecast-day:last-child { border-bottom: none; }
-    .forecast-day-name { font-weight: 600; width: 64px; }
-    .forecast-temps { color: var(--gray-text); font-size: 13px; }
-    .score-chip {
-      font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 20px;
-    }
+    /* Boil */
+    .boil-stat { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin-top: var(--s-5); padding: 24px; border-radius: var(--rs-r-card); background: var(--rs-s1); border: 1px solid var(--rs-line); }
+    .boil-stat b { font-weight: 800; font-size: var(--t-3xl); line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+    .boil-stat p { flex: 1 1 220px; color: var(--rs-dim); }
 
-    /* ── BUDDY SAP / GRADE SECTION ── */
-    .buddy-section {
-      background: linear-gradient(135deg, #1a0a04 0%, #2b1505 60%, #1a0f08 100%);
-      color: #fff; padding: 80px 24px;
-    }
-    .buddy-inner {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 64px; align-items: center;
-    }
-    @media (max-width: 800px) { .buddy-inner { grid-template-columns: 1fr; } }
-    .buddy-section .section-label { color: #f0883e; }
-    .buddy-section .section-title { color: #fff; }
-    .buddy-section .section-sub { color: rgba(255,255,255,0.65); max-width: none; }
-    .buddy-alert {
-      background: rgba(248,81,73,0.07); border: 1.5px solid rgba(248,81,73,0.35);
-      border-radius: 16px; padding: 24px; font-size: 14px;
-    }
-    .buddy-alert-header {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 18px;
-    }
-    .buddy-alert-icon { font-size: 22px; color: #f85149; }
-    .buddy-alert-title {
-      font-size: 11px; font-weight: 800; letter-spacing: 0.12em;
-      color: #f85149;
-    }
-    .buddy-brix-row {
-      display: flex; gap: 16px; margin-bottom: 16px;
-    }
-    .buddy-brix-item {
-      background: rgba(0,0,0,0.3); border-radius: 10px; padding: 12px 16px; flex: 1; text-align: center;
-    }
-    .buddy-brix-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: rgba(255,255,255,0.4); margin-bottom: 4px; }
-    .buddy-brix-val { font-size: 22px; font-weight: 800; }
-    .buddy-warning-text {
-      font-size: 13px; color: rgba(255,255,255,0.65); line-height: 1.6;
-      margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.08);
-    }
-    .buddy-forecast-row {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 16px; font-size: 12px;
-    }
-    .buddy-forecast-label { color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; }
-    .buddy-forecast-score { color: rgba(255,255,255,0.75); }
-    .buddy-action {
-      background: rgba(248,81,73,0.12); border: 1px solid rgba(248,81,73,0.3);
-      border-radius: 10px; padding: 12px 16px; font-size: 13px;
-      color: #ffa07a; font-weight: 600; line-height: 1.5;
-    }
-    .buddy-points { margin-top: 28px; display: flex; flex-direction: column; gap: 16px; }
-    .buddy-point {
-      display: flex; gap: 14px; align-items: flex-start;
-    }
-    .buddy-point-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
-    .buddy-point-text { font-size: 14px; color: rgba(255,255,255,0.75); line-height: 1.6; }
-    .buddy-grade-row {
-      display: flex; align-items: center; gap: 16px; margin-top: 28px;
-    }
-    .buddy-grade-item {
-      flex: 1; border: 1.5px solid; border-radius: 10px; padding: 12px 14px;
-      background: rgba(0,0,0,0.25);
-    }
-    .buddy-grade-arrow { font-size: 20px; color: rgba(255,255,255,0.3); flex-shrink: 0; }
+    /* Forecast + buddy sap (examples, drawn in HTML) */
+    .pair { display: grid; gap: var(--s-7); }
+    @media (min-width: 1000px) { .pair { grid-template-columns: 1fr 1fr; gap: var(--s-6); } }
+    .pair h3 { font-size: var(--t-xl); font-weight: 800; letter-spacing: -0.02em; margin: 14px 0 12px; }
+    .pair > div > p { color: var(--rs-dim); max-width: 56ch; }
+    .card { margin-top: var(--s-5); background: var(--rs-s1); border: 1px solid var(--rs-line); border-radius: var(--rs-r-card); padding: 20px; }
+    .card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .ex { font: 700 11px/1 var(--rs-fc); letter-spacing: .12em; text-transform: uppercase; color: var(--rs-mute); border: 1px solid var(--rs-line2); border-radius: 999px; padding: 5px 9px; }
+    .fc-row { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid var(--rs-line); font-variant-numeric: tabular-nums; }
+    .fc-row b { font-weight: 700; }
+    .fc-row span { color: var(--rs-dim); }
+    .score { min-width: 48px; text-align: center; padding: 6px 10px; border-radius: 10px; font-weight: 800; }
+    .score-hi { background: rgba(61,214,140,.14); color: var(--rs-ok); }
+    .score-mid { background: var(--rs-acc-soft); color: var(--rs-acc); }
+    .score-lo { background: var(--rs-bad-soft); color: var(--rs-bad); }
+    .fc-key { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; font-size: var(--t-sm); color: var(--rs-dim); }
+    .fc-key b { font-weight: 800; margin-right: 4px; }
+    .buddy { box-shadow: inset 0 0 0 1px rgba(255,91,79,.45); }
+    .buddy-t { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: var(--t-md); }
+    .buddy-t .tile { background: var(--rs-t-bad); width: 40px; height: 40px; }
+    .brix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0; }
+    .brix div { background: var(--rs-s2); border-radius: 12px; padding: 12px; }
+    .brix b { display: block; font-weight: 800; font-size: var(--t-lg); margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .brix .down { color: var(--rs-bad); }
+    .buddy p { color: var(--rs-dim); font-size: var(--t-sm); }
+    .buddy .do { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--rs-line); color: var(--rs-tx); font-weight: 600; }
 
-    /* ── DE SECTION ── */
-    .de-section {
-      background: linear-gradient(135deg, #1a3d2b 0%, #0f2318 100%);
-      color: #fff; padding: 80px 24px;
-    }
-    .de-inner {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 64px; align-items: center;
-    }
-    @media (max-width: 800px) { .de-inner { grid-template-columns: 1fr; } }
-    .de-section .section-label { color: var(--amber-light); }
-    .de-section .section-title { color: #fff; }
-    .de-section .section-sub { color: rgba(255,255,255,0.65); max-width: none; }
-    .de-steps { display: flex; flex-direction: column; gap: 14px; margin-top: 28px; }
-    .de-step {
-      display: flex; gap: 14px; align-items: flex-start;
-      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 12px; padding: 14px 16px;
-    }
-    .de-step-num {
-      width: 26px; height: 26px; border-radius: 50%;
-      background: var(--teal); color: #07201a;
-      font-size: 12px; font-weight: 800;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    .de-step-text { font-size: 13px; color: rgba(255,255,255,0.8); line-height: 1.5; }
-    .de-step-text strong { color: #fff; }
-    .de-methods { display: flex; gap: 12px; margin-top: 24px; }
-    .de-method {
-      flex: 1; border-radius: 12px; padding: 14px;
-      border: 1px solid rgba(255,255,255,0.15);
-      background: rgba(255,255,255,0.06);
-    }
-    .de-method-label { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
-    .de-method-desc { font-size: 11px; color: rgba(255,255,255,0.5); line-height: 1.4; }
+    /* Tools list */
+    .tools { display: grid; margin-top: var(--s-6); border-top: 1px solid var(--rs-line); }
+    .tool { padding: 24px 0; border-bottom: 1px solid var(--rs-line); }
+    .tool h3 { font-size: var(--t-md); margin-bottom: 6px; }
+    .tool p { color: var(--rs-dim); max-width: 60ch; }
+    .tool a { margin-top: 4px; display: inline-flex; align-items: center; min-height: 44px; }
+    .tool-wide { display: grid; gap: 8px 32px; }
+    .tool-wide h3 { font-size: var(--t-lg); font-weight: 800; letter-spacing: -0.01em; }
+    .tool-wide p { color: var(--rs-tx); }
+    .srcs { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .srcs li { font: 700 var(--t-xs)/1 var(--rs-fc); letter-spacing: .1em; text-transform: uppercase; color: var(--rs-dim);
+      border: 1px solid var(--rs-line2); border-radius: 999px; padding: 8px 12px; }
+    @media (min-width: 900px) { .tool-wide { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+    @media (min-width: 900px) { .tools { grid-template-columns: 1fr 1fr; column-gap: var(--s-6); } }
 
-    /* ── SUGARSAGE ── */
-    .sage-section {
-      background: linear-gradient(135deg, #0f2a1a, #0a1f12);
-      color: #fff;
-    }
-    .sage-inner {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 60px; align-items: center;
-    }
-    @media (max-width: 700px) { .sage-inner { grid-template-columns: 1fr; } }
-    .sage-section .section-label { color: var(--amber-light); }
-    .sage-section .section-title { color: #fff; }
-    .sage-section .section-sub { color: rgba(255,255,255,0.7); }
-    .sage-entries { display: flex; flex-direction: column; gap: 14px; margin-top: 32px; }
-    .sage-entry {
-      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 12px; padding: 16px 18px;
-    }
-    .sage-entry-q { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-    .sage-entry-a { font-size: 13px; color: rgba(255,255,255,0.65); line-height: 1.55; }
-    .sage-count {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(255,255,255,0.1); border-radius: 10px;
-      padding: 10px 16px; margin-top: 24px;
-      font-size: 14px; font-weight: 600;
-    }
+    /* SugarSage */
+    .sage { display: grid; gap: 12px; }
+    .sage div { background: var(--rs-s1); border: 1px solid var(--rs-line); border-radius: 16px; padding: 20px; }
+    .sage b { display: block; font-weight: 700; margin-bottom: 6px; }
+    .sage p { color: var(--rs-dim); font-size: var(--t-sm); }
 
-    /* ── ROI ── */
-    .roi { background: var(--gray-1); }
-    .roi-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 24px; margin-top: 48px;
-    }
-    .roi-card {
-      background: #fff; border-radius: 16px; padding: 28px;
-      text-align: center; border: 1.5px solid var(--gray-2);
-    }
-    .roi-num { font-size: 42px; font-weight: 800; color: var(--green-mid); line-height: 1; margin-bottom: 8px; }
-    .roi-label { font-size: 14px; color: var(--gray-text); }
-    .roi-note { font-size: 12px; color: #aaa; margin-top: 6px; }
+    /* Math */
+    .math { display: grid; margin-top: var(--s-6); border-top: 1px solid var(--rs-line); }
+    .m { padding: 28px 0; border-bottom: 1px solid var(--rs-line); display: grid; gap: 8px; align-content: start; }
+    .m b { font-weight: 800; font-size: var(--t-2xl); line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+    .m p { color: var(--rs-tx); }
+    .m small { color: var(--rs-mute); font-size: var(--t-sm); }
+    @media (min-width: 760px) { .math { grid-template-columns: 1fr 1fr; column-gap: var(--s-6); } }
+    @media (min-width: 1100px) { .math { grid-template-columns: repeat(4, 1fr); column-gap: 32px; } .m { border-bottom: 0; } }
 
-    /* ── PRICING ── */
-    .pricing { background: var(--white); text-align: center; }
-    .price-card {
-      max-width: 480px; margin: 48px auto 0;
-      background: var(--cream); border: 2.5px solid var(--green-mid);
-      border-radius: 20px; padding: 40px 36px;
-      box-shadow: 0 8px 40px rgba(45,106,79,0.12);
-    }
-    .price-season { font-size: 13px; font-weight: 700; color: var(--green-mid); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; }
-    .price-amount { font-size: 72px; font-weight: 800; color: var(--dark); line-height: 1; }
-    .price-amount sup { font-size: 32px; vertical-align: top; margin-top: 12px; }
-    .price-period { font-size: 16px; color: var(--gray-text); margin-top: 4px; margin-bottom: 28px; }
-    .price-features { list-style: none; text-align: left; margin-bottom: 32px; }
-    .price-features li {
-      display: flex; align-items: flex-start; gap: 10px;
-      font-size: 15px; padding: 8px 0; border-bottom: 1px solid var(--gray-2);
-    }
-    .price-features li:last-child { border-bottom: none; }
-    .price-features li span:first-child { color: var(--green-mid); font-size: 18px; flex-shrink: 0; }
-    .btn-buy {
-      display: block; width: 100%; background: var(--green-mid); color: #fff;
-      padding: 18px; border-radius: 12px; font-size: 18px; font-weight: 700;
-      text-decoration: none; text-align: center;
-      transition: background 0.2s, transform 0.15s;
-      box-shadow: 0 4px 16px rgba(45,106,79,0.3);
-    }
-    .btn-buy:hover { background: var(--green-dark); transform: translateY(-2px); }
-    .price-guarantee { font-size: 13px; color: var(--gray-text); margin-top: 16px; }
-    .price-badge {
-      display: inline-block; background: var(--amber); color: #fff;
-      font-size: 12px; font-weight: 700;
-      padding: 4px 12px; border-radius: 20px;
-      margin-bottom: 16px; letter-spacing: 0.5px;
-    }
+    /* Pricing */
+    .price { display: grid; gap: var(--s-6); margin-top: var(--s-6); background: var(--rs-s1); border: 1px solid var(--rs-line); border-radius: 28px; padding: 28px 22px; }
+    @media (min-width: 900px) { .price { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); padding: var(--s-6); gap: var(--s-7); } }
+    .price-amount { display: flex; align-items: flex-start; gap: 4px; font-weight: 800; letter-spacing: -0.04em; line-height: .9; margin: 18px 0 8px; font-variant-numeric: tabular-nums; }
+    .price-amount sup { font-size: var(--t-xl); margin-top: 8px; }
+    .price-amount span { font-size: 104px; }
+    .price-period { color: var(--rs-dim); font-size: var(--t-md); }
+    .price .btn { margin-top: 28px; }
+    .price-guarantee { margin-top: 14px; font-size: var(--t-sm); color: var(--rs-dim); }
+    .price-features { list-style: none; display: grid; gap: 12px; align-content: start; }
+    .price-features li { display: grid; grid-template-columns: 22px 1fr; gap: 12px; }
+    .price-features svg { width: 20px; height: 20px; color: var(--rs-ok); margin-top: 3px; }
+    @media (min-width: 1100px) { .price-features { grid-template-columns: 1fr 1fr; column-gap: 32px; } }
 
-    /* ── QR ── */
-    /* ── NOTIFY SECTION ── */
-    .notify-section {
-      background: linear-gradient(160deg, #0f2318 0%, #07090f 100%);
-      padding: 80px 24px; text-align: center;
-    }
-    .notify-inner { max-width: 520px; margin: 0 auto; }
-    .notify-icon { font-size: 40px; margin-bottom: 16px; }
-    .notify-title {
-      font-size: clamp(24px, 3.5vw, 36px); font-weight: 800;
-      color: #fff; letter-spacing: -0.5px; margin-bottom: 12px;
-    }
-    .notify-sub {
-      font-size: 16px; color: rgba(255,255,255,0.6);
-      line-height: 1.6; margin-bottom: 28px;
-    }
-    .notify-form {
-      display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
-    }
-    .notify-input {
-      flex: 1; min-width: 220px; max-width: 300px;
-      background: rgba(255,255,255,0.08); border: 1.5px solid rgba(255,255,255,0.15);
-      border-radius: 10px; padding: 14px 16px;
-      font-size: 15px; color: #fff; font-family: inherit;
-      outline: none; transition: border-color 0.2s;
-    }
-    .notify-input::placeholder { color: rgba(255,255,255,0.35); }
-    .notify-input:focus { border-color: var(--teal); }
-    .notify-btn {
-      background: var(--teal); color: #07201a;
-      border: none; border-radius: 10px;
-      padding: 14px 24px; font-size: 15px; font-weight: 700;
-      cursor: pointer; font-family: inherit; transition: opacity 0.2s;
-      white-space: nowrap;
-    }
-    .notify-btn:hover { opacity: 0.88; }
-    .notify-fine {
-      font-size: 12px; color: rgba(255,255,255,0.3);
-      margin-top: 12px;
-    }
+    /* Install */
+    .install { display: grid; gap: 16px; margin-top: var(--s-6); }
+    @media (min-width: 760px) { .install { grid-template-columns: 1fr 1fr; } }
+    .install-card { background: var(--rs-s1); border: 1px solid var(--rs-line); border-radius: var(--rs-r-card); padding: 24px; }
+    .install-card h3 { font-size: var(--t-lg); font-weight: 800; }
+    .install-card ol { list-style: none; counter-reset: s; margin-top: 18px; display: grid; gap: 14px; }
+    .install-card li { counter-increment: s; display: grid; grid-template-columns: 32px 1fr; gap: 12px; }
+    .install-card li::before { content: counter(s); display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--rs-acc-soft); color: var(--rs-acc); font-weight: 800; font-size: var(--t-sm); }
+    .install-card em { font-style: normal; color: var(--rs-dim); }
+    .kbd { display: inline-grid; place-items: center; vertical-align: -5px; width: 24px; height: 24px; border-radius: 6px; background: var(--rs-s3); }
+    .kbd svg { width: 16px; height: 16px; }
 
-    .qr-section {
-      background: var(--green-dark); color: #fff;
-      text-align: center; padding: 80px 24px;
-    }
-    .qr-box {
-      display: inline-block; background: #fff;
-      border-radius: 20px; padding: 24px; margin: 32px auto;
-    }
-    .qr-box img { width: 200px; height: 200px; display: block; }
-    .qr-label { font-size: 16px; color: rgba(255,255,255,0.75); margin-top: 8px; }
-    .qr-url { font-size: 20px; font-weight: 700; color: var(--amber-light); margin-top: 4px; }
-
-    /* ── INSTALL SECTION ── */
-    .install-section {
-      background: #0d1a14; color: #fff;
-      padding: 80px 24px; text-align: center;
-    }
-    .install-cards {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 24px; max-width: 760px; margin: 0 auto;
-    }
-    .install-card {
-      background: #132010; border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 16px; padding: 28px 24px; text-align: left;
-    }
-    .install-phone-icon { font-size: 28px; margin-bottom: 6px; }
-    .install-platform {
-      font-size: 13px; font-weight: 800; letter-spacing: 0.1em;
-      text-transform: uppercase; color: var(--green-light); margin-bottom: 20px;
-    }
-    .install-steps { list-style: none; display: flex; flex-direction: column; gap: 14px; }
-    .install-steps li { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; color: rgba(255,255,255,0.75); line-height: 1.5; }
-    .install-steps li strong { color: #fff; }
-    .install-steps li em { color: rgba(255,255,255,0.45); font-style: normal; font-size: 12px; }
-    .step-num {
-      flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
-      background: var(--green-mid); color: #fff;
-      font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;
-      margin-top: 1px;
-    }
-    .step-icon { font-size: 16px; }
-    @media (max-width: 600px) {
-      .install-cards { grid-template-columns: 1fr; }
-    }
-
-    /* ── FOOTER ── */
-    footer {
-      background: var(--dark); color: rgba(255,255,255,0.5);
-      padding: 40px 24px; text-align: center; font-size: 13px;
-    }
-    footer a { color: rgba(255,255,255,0.6); text-decoration: none; }
-    footer a:hover { color: #fff; }
-
-    /* ── FADE IN ── */
-    .fade-in { opacity: 0; transform: translateY(24px); transition: opacity 0.6s, transform 0.6s; }
-    .fade-in.visible { opacity: 1; transform: translateY(0); }
-
-    @media (max-width: 600px) {
-      .hero h1 { font-size: 36px; }
-      .btn-primary { padding: 14px 28px; font-size: 16px; }
-      .price-amount { font-size: 56px; }
-      .de-methods { flex-direction: column; }
-    }
+    /* Notify */
+    .notify { padding: var(--s-9) 0; }
+    @media (max-width: 999px) { .notify.band::after { background: linear-gradient(180deg, rgba(12,11,10,.8) 0%, rgba(12,11,10,.9) 100%); } }
+    .notify .notify-fine { color: var(--rs-tx); }
+    .notify .h2 { max-width: 16ch; }
+    .notify-form { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; max-width: 520px; }
+    .notify-form input[type=email] { flex: 1 1 240px; min-height: 60px; }
+    .notify-fine { margin-top: 12px; font-size: var(--t-sm); color: var(--rs-dim); }
+    #notify-success { font-weight: 700; color: var(--rs-ok); }
   </style>
 </head>
 <body>
 
-<!-- NAV -->
-<nav>
-  <a class="nav-logo" href="#">
-    <span>🍁</span> SweetRun
-  </a>
-  <div class="nav-links">
-    <a href="#features">Features</a>
-    <a href="#forecast">Forecast</a>
-    <a href="/calculators">Free Calculators</a>
-    <a href="#pricing">Pricing</a>
+<!-- chrome:header -->
+<header class="site-head">
+  <div class="wrap site-head-in">
+    <a class="brand" href="/"><img src="/app/icons/icon-e-192.png" width="32" height="32" alt="" /><span>SweetRun</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="/#season">Season</a>
+      <a href="/#bush">Bush</a>
+      <a href="/#boil">Boil</a>
+      <a href="/calculators">Calculators</a>
+      <a href="/#pricing">Pricing</a>
+    </nav>
+    <a class="btn btn-sm" href="/#pricing">Try it free</a>
   </div>
-  <a class="nav-cta" href="#pricing">Try Free — 14 Days</a>
-</nav>
+</header>
+<!-- /chrome:header -->
 
 <!-- NOTIFY BAR -->
 <div id="notify-bar">
-  <span class="nbar-text">Season's over — <em>be first in line for 2027.</em></span>
-  <form class="nbar-form" id="nbar-form">
-    <input type="hidden" name="access_key" value="d91810ec-94aa-49ed-9731-6ba2cd42e106" />
-    <input type="hidden" name="subject" value="SweetRun — Season Notify Signup (Bar)" />
-    <input type="hidden" name="from_name" value="SweetRun Notify Bar" />
-    <input class="nbar-input" type="email" name="email" placeholder="your@email.com" required />
-    <button class="nbar-btn" type="submit">Notify Me</button>
-  </form>
-  <span class="nbar-ok" id="nbar-ok">✓ You're on the list!</span>
-  <button class="nbar-dismiss" id="nbar-dismiss" aria-label="Dismiss">×</button>
+  <div class="wrap nbar-in">
+    <span class="nbar-text">Season&rsquo;s over. <em>Be first in line for 2027.</em></span>
+    <form class="nbar-form" id="nbar-form">
+      <input type="hidden" name="access_key" value="d91810ec-94aa-49ed-9731-6ba2cd42e106" />
+      <input type="hidden" name="subject" value="SweetRun — Season Notify Signup (Bar)" />
+      <input type="hidden" name="from_name" value="SweetRun Notify Bar" />
+      <label class="sr-only" for="nbar-email">Email address</label>
+      <input class="nbar-input" id="nbar-email" type="email" name="email" placeholder="you@sugarbush.com" autocomplete="email" required />
+      <button class="btn btn-sm nbar-btn" type="submit">Notify me</button>
+    </form>
+    <span class="nbar-ok" id="nbar-ok" role="status">You&rsquo;re on the list.</span>
+    <button class="nbar-dismiss" id="nbar-dismiss" aria-label="Dismiss"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div>
 </div>
 
+<main>
+
 <!-- HERO -->
-<section class="hero">
-  <div>
-    <div class="hero-leaf">🍁</div>
-    <h1>The <em>complete</em> maple<br/>production platform.</h1>
-    <p class="hero-sub">
-      Map your sugarbush. Score your sap runs. Know when to boil — and when to stop.
-      SweetRun watches your Brix trend and the forecast so you never lose a batch of Golden to buddy sap. The complete maple platform for producers who treat maple like a business.
-    </p>
-    <div class="hero-cta-group">
-      <a class="btn-primary" href="https://buy.stripe.com/dRm3cw9YsdYI7HkbGY14401" target="_blank" rel="noopener">Try SweetRun Free — 14 Days</a>
-      <a class="btn-secondary" href="#features">See what's inside ↓</a>
+<section class="hero" aria-labelledby="hero-h">
+  <img class="hero-bg" src="/app/photos/sugarhouse-dawn.webp" alt="" width="1200" height="670" fetchpriority="high" />
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <img class="hero-icon" src="/app/icons/icon-e-192.png" width="76" height="76" alt="The SweetRun app icon: a white maple leaf outline on an orange tile" />
+      <span class="pill">The maple production app</span>
+      <h1 id="hero-h">More<br /> maple days.</h1>
+      <p class="hero-sub">SweetRun knows where you are in the season and puts the next job at the top of the screen. Map the bush, keep an eye on lines and pumps, run the boil, and log every gallon. It works with no cell service.</p>
+      <div class="hero-cta">
+        <a class="btn" href="https://buy.stripe.com/dRm3cw9YsdYI7HkbGY14401" target="_blank" rel="noopener">Start 14 days free</a>
+        <a class="btn btn-ghost" href="#season">See the app</a>
+      </div>
+      <p class="hero-note">14 days free, then $49.99 a year. Cancel anytime.</p>
     </div>
-    <div class="hero-proof">
-      <div class="hero-stat">
-        <div class="hero-stat-num">12+</div>
-        <div class="hero-stat-label">Integrated tools<br/>in one app</div>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-num">100%</div>
-        <div class="hero-stat-label">Offline — works with<br/>no cell service</div>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-num">14 days</div>
-        <div class="hero-stat-label">Free trial —<br/>every feature unlocked</div>
-      </div>
+    <div class="hero-devices">
+      <figure class="tablet hero-tablet"><img src="/assets/screens/ipad-watch.webp" width="1180" height="820" alt="SweetRun Watch mode on an iPad: four mainlines on the map coloured by vacuum, Mainline C in red as a leak suspect, and a green banner reading Sap&rsquo;s running." /></figure>
+      <figure class="phone hero-phone"><img src="/assets/screens/phone-boil.webp" width="780" height="1688" alt="SweetRun on a phone: the Boil screen during a boil, pan at 218.9&deg;F, past the draw-off mark." /></figure>
     </div>
   </div>
 </section>
+
+<div class="wrap">
+  <div class="facts">
+    <div class="fact"><b>12+</b><span>Integrated tools in one app</span></div>
+    <div class="fact"><b>Offline</b><span>The log, the tools and SugarSage work with no cell service</span></div>
+    <div class="fact"><b>14 days</b><span>Free trial, every feature unlocked</span></div>
+  </div>
+</div>
 
 <!-- PROBLEM -->
-<section class="problem">
-  <div class="container">
-    <div class="fade-in">
-      <div class="section-label">The Problem</div>
-      <h2 class="section-title">You're running a complex operation<br/>with a notebook and a calculator.</h2>
-      <p class="section-sub">Maple production has more variables than most small businesses — and most tools treat it like a hobby.</p>
+<section class="sec" aria-labelledby="prob-h">
+  <div class="wrap">
+    <div class="sec-head stack">
+      <div>
+        <span class="eyebrow">The problem</span>
+        <h2 class="h2" id="prob-h">You run a complex operation with a notebook and a calculator.</h2>
+      </div>
+      <p class="lede dim">Maple production has more variables than most small businesses, and most tools treat it like a hobby.</p>
     </div>
-    <div class="problem-grid fade-in">
-      <div class="problem-card">
-        <div class="problem-icon">🗺️</div>
-        <h3>No map of your bush</h3>
-        <p>You know every tree by feel but when a new worker shows up or a line goes down, there's no reference. Everything is in your head.</p>
+    <div class="probs">
+      <div class="prob"><span class="prob-n">01</span><h3>No map of your bush</h3><p>You know every tree by feel, but when a new worker shows up or a line goes down, there&rsquo;s no reference. Everything is in your head.</p></div>
+      <div class="prob"><span class="prob-n">02</span><h3>No signal in the bush</h3><p>The internet is useless when you&rsquo;re standing next to a tap hole with a problem that needs answering now. Your expert needs to work offline.</p></div>
+      <div class="prob"><span class="prob-n">03</span><h3>No diagnosis</h3><p>You know your yield is down but not why. Vacuum leak? Tree stress? Over-tapped zone? You&rsquo;re troubleshooting blind with no structured tool.</p></div>
+      <div class="prob"><span class="prob-n">04</span><h3>Hidden waste and guesswork</h3><p>Without RO tracking, DE calculations and evaporation data, you don&rsquo;t know your real cost per gallon, or where to cut it.</p></div>
+      <div class="prob"><span class="prob-n">05</span><h3>Boiling buddy sap without knowing it</h3><p>Late-season sap can look perfectly clear in the tank. You don&rsquo;t find out it&rsquo;s gone to buddy sap until the syrup comes out dark and off-flavor, and by then it&rsquo;s too late to pull your taps.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SEASON STAGES -->
+<section class="sec sec-ph" id="season" aria-labelledby="season-h">
+  <div class="ph">
+    <img src="/app/photos/tap-spout.webp" alt="" width="1200" height="670" loading="lazy" />
+    <div class="wrap"><span class="pill">Stages 1 to 6</span><h2 class="h2" id="season-h">Plan. Collect. Boil.</h2></div>
+  </div>
+  <div class="wrap split">
+    <div>
+      <p class="lede">SweetRun splits the sugaring year into six stages and opens on the one you&rsquo;re in. At the top sits one job: run the RO before Tank 1 fills, walk Mainline C, log today&rsquo;s sap.</p>
+      <ol class="stages">
+        <li class="stage"><span class="tile tile-weather"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/></svg></span><span class="stage-name">Weather watch <small>Stage 1</small></span><p>Freeze and thaw, the run outlook, and degree days.</p></li>
+        <li class="stage"><span class="tile tile-tap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-7"/><path d="M12 14c-1.2 1.2-2.6 1.6-4 1"/><path d="M8.2 15.3A3.6 3.6 0 0 1 5 11.6a3.4 3.4 0 0 1 2-3.1 4 4 0 0 1 3.4-4.8A3.3 3.3 0 0 1 13.6 3a4 4 0 0 1 3.7 3 3.5 3.5 0 0 1 2.5 3.4 3.6 3.6 0 0 1 .2 4.8 3.6 3.6 0 0 1-3.9 1.3"/><path d="M12 14c1.2 1.2 2.6 1.6 4.1 1.3"/></svg></span><span class="stage-name">Plan &amp; tap <small>Stage 2</small></span><p>Taps per tree, spouts and vacuum, tree notes and rotation.</p></li>
+        <li class="stage"><span class="tile tile-lines"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6.5v13.5L9 17.5l6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg></span><span class="stage-name">Lines &amp; tanks <small>Stage 3</small></span><p>Mainlines on the Bush tab, tubing and materials.</p></li>
+        <li class="stage"><span class="tile tile-collect"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5c3.2 4.3 5.5 7.6 5.5 10.6a5.5 5.5 0 0 1-11 0c0-3 2.3-6.3 5.5-10.6z"/></svg></span><span class="stage-name">Collect &amp; RO <small>Stage 4</small></span><p>RO timing, sap freshness and the day&rsquo;s log.</p></li>
+        <li class="stage stage-here"><span class="tile tile-boil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a6 6 0 0 0 6-6c0-3.8-3-6-4-10-2.2 1.6-3.5 4-3.2 6.3-1-.4-1.8-1.3-2.2-2.4A7.5 7.5 0 0 0 6 15a6 6 0 0 0 6 6z"/></svg></span><span class="stage-name">Boil <small>Stage 5, shown</small></span><p>Boil day, evaporator rate, draw-off temperature and finishing.</p></li>
+        <li class="stage"><span class="tile tile-recap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V4M4 20h16"/><path d="m7 15 4-4 3 3 5-6"/></svg></span><span class="stage-name">Recap <small>Stage 6</small></span><p>The season in numbers, the score, and why a season ran slow.</p></li>
+      </ol>
+    </div>
+    <div class="shot-col">
+      <figure class="phone"><img src="/assets/screens/phone-season.webp" width="780" height="1688" loading="lazy" alt="The SweetRun Season screen on a phone: day 20 of the season, stage 5 of 6, Boil. The next job reads Run the RO: Tank 1 is at 780 of 1,000 gallons." /></figure>
+      <p class="shot-cap">The Season screen on a phone, sample season.</p>
+    </div>
+  </div>
+</section>
+
+<!-- BUSH MAP -->
+<section class="sec band band-bush" id="bush" aria-labelledby="bush-h">
+  <img src="/app/photos/bush-aerial.webp" alt="" width="1200" height="670" loading="lazy" />
+  <div class="wrap">
+    <span class="eyebrow">The Bush tab</span>
+    <h2 class="h2" id="bush-h">Put your entire bush on a map.</h2>
+    <p class="lede">The Bush tab turns a satellite view into your sugarbush map. Drop a pin for every tap tree, tank, pump, junction and waypoint, mark the sugarhouse, and draw your mainlines. It all saves to your device, with no account.</p>
+    <ul class="pins">
+      <li class="pin"><i style="background:var(--rs-map-tree)"></i><b>Tap trees</b><span>Species, health, tap count and mainline, all on the pin</span></li>
+      <li class="pin"><i style="background:var(--rs-sap)"></i><b>Tanks</b><span>The tank&rsquo;s fill level shows right on its pin</span></li>
+      <li class="pin"><i style="background:var(--rs-acc)"></i><b>Sugarhouse</b><span>Anchor your layout around the evaporator</span></li>
+      <li class="pin"><i style="background:var(--rs-t-lines)"></i><b>Pumps</b><span>Vacuum and transfer pumps, the RO and the generator</span></li>
+      <li class="pin"><i style="background:var(--rs-dim)"></i><b>Junctions</b><span>Mark mainline branch points and lateral connections</span></li>
+      <li class="pin"><i style="background:var(--rs-bad)"></i><b>Waypoints</b><span>Flag problem spots, lease boundaries and trail markers</span></li>
+    </ul>
+    <p class="offline-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6.5v13.5L9 17.5l6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg><span>No signal up the hill? Save the Bush before you go. SweetRun keeps the imagery for what&rsquo;s on screen, one zoom step either side, so the map works in the woods.</span></p>
+  </div>
+</section>
+
+<!-- PUMPS AND WATCH -->
+<section class="sec sec-ph" id="watch" aria-labelledby="watch-h">
+  <div class="ph">
+    <img src="/app/photos/pumphouse.webp" alt="" width="1200" height="670" loading="lazy" style="object-position:50% 45%" />
+    <div class="wrap"><span class="pill">Pumps and Watch mode</span><h2 class="h2" id="watch-h">See a leak before the sap stops.</h2></div>
+  </div>
+  <div class="wrap split split-rev">
+    <div>
+      <p class="lede">Read the gauge at the pump and at the end of each mainline, and log it. SweetRun does the comparing. When a line end reads well under the pump, it says so.</p>
+      <ul class="checks">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg><span><strong>Pump center.</strong> Vacuum, transfer pump, power and freeze jobs in one place.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg><span><strong>Leak suspects.</strong> Mainline C read 17.2 in at the end and 24.5 in at the pump: a 7.3 in drop, flagged in red.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg><span><strong>Watch the bush.</strong> Lines, pumps and tanks on one screen, readable across the room. Prop an iPad in the sugarhouse and keep the screen awake.</span></li>
+      </ul>
+    </div>
+    <div class="watch-shots">
+      <figure class="tablet"><img src="/assets/screens/desk-pumps.webp" width="1204" height="900" loading="lazy" alt="The Pumps screen: vacuum pump running at 24.5 inches, transfer pump, RO and generator status, line-end readings for Mainlines A to C, and the next job, Mainline C may be leaking." /></figure>
+      <figure class="phone"><img src="/assets/screens/phone-line-c.webp" width="780" height="1688" loading="lazy" alt="Mainline C on a phone: 17.2 inches at the line end against 24.5 at the pump, a 7.3 inch drop, marked leak suspect." /></figure>
+      <p class="shot-cap">The Pumps screen and Mainline C on a phone. Sample readings.</p>
+    </div>
+  </div>
+</section>
+
+<!-- BOIL -->
+<section class="sec sec-ph" id="boil" aria-labelledby="boil-h">
+  <div class="ph ph-tall">
+    <img src="/app/photos/evaporator-steam.webp" alt="" width="1200" height="670" loading="lazy" style="object-position:50% 30%" />
+    <div class="wrap"><span class="pill">Stage 5 of 6 &middot; Boil</span><h2 class="h2" id="boil-h">Draw off on the number.</h2></div>
+  </div>
+  <div class="wrap split">
+    <div>
+      <p class="lede">Start a boil and the screen becomes your pan-side log: the clock, pan temperature against your draw-off mark, the last Brix reading, syrup drawn, and a running estimate of syrup made. Add a reading every so often and the chart draws itself.</p>
+      <div class="boil-stat"><b>+7.1&deg;F</b><p>Your draw-off point is water&rsquo;s boiling point plus 7.1&deg;F. SweetRun works it out for your elevation. Check the hydrometer before you jar it.</p></div>
+      <p style="margin-top:20px"><a class="link" href="/draw-off-calculator">Try the free draw-off calculator</a></p>
+    </div>
+    <div>
+      <figure class="tablet"><img src="/assets/screens/ipad-boil.webp" width="1180" height="820" loading="lazy" alt="The Boil screen on an iPad: boil in progress for 1:42:00, pan temperature 218.9&deg;F past the mark, draw off at 218.5&deg;F, with the readings chart and filter press tools." /></figure>
+      <p class="shot-cap">The Boil screen on an iPad, mid-boil. Sample session.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FORECAST + BUDDY SAP -->
+<section class="sec sec-ph" id="forecast" aria-labelledby="fc-h">
+  <div class="ph">
+    <img src="/app/photos/frost-morning.webp" alt="" width="1200" height="670" loading="lazy" style="object-position:50% 60%" />
+    <div class="wrap"><span class="pill">Stage 1 of 6 &middot; Weather watch</span><h2 class="h2" id="fc-h">Know before you fire the evaporator.</h2></div>
+  </div>
+  <div class="wrap pair">
+    <div>
+      <span class="eyebrow">7-day sap run forecast</span>
+      <h3>Every day scored for sap.</h3>
+      <p>SweetRun pulls the 7-day forecast for your exact location and scores each day 0 to 100 for sap run potential. It models freeze and thaw, temperature swing, sunshine hours, wind and precipitation: the same variables veteran sugarmakers read every morning.</p>
+      <div class="card" role="group" aria-label="Example forecast">
+        <div class="card-head"><span class="label">Sap run forecast</span><span class="ex">Example</span></div>
+        <div class="fc-row"><b>Today</b><span>Hi 42&deg; / Lo 26&deg;</span><span class="score score-hi">91</span></div>
+        <div class="fc-row"><b>Tue</b><span>Hi 38&deg; / Lo 24&deg;</span><span class="score score-hi">84</span></div>
+        <div class="fc-row"><b>Wed</b><span>Hi 44&deg; / Lo 30&deg;</span><span class="score score-mid">78</span></div>
+        <div class="fc-row"><b>Thu</b><span>Hi 51&deg; / Lo 38&deg;</span><span class="score score-lo">31</span></div>
+        <div class="fc-row"><b>Fri</b><span>Hi 36&deg; / Lo 22&deg;</span><span class="score score-mid">76</span></div>
+        <div class="fc-key"><span><b style="color:var(--rs-ok)">80+</b>Prime run day, fire it up</span><span><b style="color:var(--rs-acc)">50 to 79</b>Marginal, worth watching</span><span><b style="color:var(--rs-bad)">&lt;50</b>Poor, save your wood</span></div>
       </div>
-      <div class="problem-card">
-        <div class="problem-icon">📵</div>
-        <h3>No signal in the bush</h3>
-        <p>The internet is useless when you're standing next to a tap hole with a problem that needs answering now. Your expert needs to work offline.</p>
-      </div>
-      <div class="problem-card">
-        <div class="problem-icon">🤷</div>
-        <h3>No diagnosis</h3>
-        <p>You know your yield is down but not why. Vacuum leak? Tree stress? Over-tapped zone? You're troubleshooting blind with no structured tool.</p>
-      </div>
-      <div class="problem-card">
-        <div class="problem-icon">💸</div>
-        <h3>Hidden waste and guesswork</h3>
-        <p>Without RO tracking, DE calculations, and evaporation data, you don't know your real cost per gallon — or where to cut it.</p>
-      </div>
-      <div class="problem-card">
-        <div class="problem-icon">📉</div>
-        <h3>Boiling buddy sap without knowing it</h3>
-        <p>Late-season sap can look perfectly clear in the tank. You don't find out it's gone to buddy sap until the syrup comes out dark and off-flavor — and it's already too late to pull your taps.</p>
+    </div>
+    <div id="grade">
+      <span class="eyebrow">Brix trend and buddy sap alert</span>
+      <h3>Don&rsquo;t lose your grade to bad timing.</h3>
+      <p>Buddy sap comes from trees that have begun to bud. It looks like good sap in the tank, and the syrup it makes is darker, cloudier and off-flavor. Log one Brix reading a day and SweetRun plots the trend. A drop of more than 30% from your peak, with no freeze left in the forecast, triggers a warning while you can still act on it.</p>
+      <div class="card buddy" role="group" aria-label="Example buddy sap alert">
+        <div class="card-head"><span class="buddy-t"><span class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20z"/><path d="M12 10v4.5"/><path d="M12 17.5h.01"/></svg></span>Buddy sap detected</span><span class="ex">Example</span></div>
+        <div class="brix"><div><span class="label">Peak Brix</span><b>2.4&deg;</b></div><div><span class="label">Today</span><b>1.6&deg;</b></div><div><span class="label">Drop</span><b class="down">&minus;33%</b></div></div>
+        <p>Tomorrow: Hi 54&deg; / Lo 41&deg;. Score 18, no freeze. Syrup made now will be darker and may carry an off-flavor that drops your grade from Golden Delicate toward Dark Robust.</p>
+        <p class="do">Boil everything in your tanks today. Pull taps when buds start to swell.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- SUGARBUSH MAP SPOTLIGHT -->
-<section class="map-section">
-  <div class="container map-inner">
-    <div class="fade-in">
-      <div class="section-label">Lines — Sugarbush Mapping</div>
-      <h2 class="section-title" style="color:#fff;">Put your entire<br/>bush on a map.</h2>
-      <p class="section-sub">
-        SweetRun's Lines tab turns any satellite view into a live sugarbush map. Drop pins for every tap tree, tank, sugarhouse, pump house, junction, and waypoint — all saved to your device, no account needed.
-      </p>
-      <div class="map-pins">
-        <div class="map-pin-item">
-          <div class="pin-label" style="color:#2dd4a7;">🍁 Tap Trees</div>
-          <div class="pin-desc">Species, health, tap count, mainline zone — all on the pin</div>
-        </div>
-        <div class="map-pin-item">
-          <div class="pin-label" style="color:#3b82f6;">🛢 Tanks</div>
-          <div class="pin-desc">Drop a tank pin and SweetRun suggests the optimal spot</div>
-        </div>
-        <div class="map-pin-item">
-          <div class="pin-label" style="color:#f59e0b;">🏠 Sugarhouse</div>
-          <div class="pin-desc">Anchor your operation layout around the evaporator</div>
-        </div>
-        <div class="map-pin-item">
-          <div class="pin-label" style="color:#f97316;">⚙️ Pump Houses</div>
-          <div class="pin-desc">Track vacuum sources and RO building locations</div>
-        </div>
-        <div class="map-pin-item">
-          <div class="pin-label" style="color:#8b5cf6;">✛ Junctions</div>
-          <div class="pin-desc">Mark mainline branch points and lateral connections</div>
-        </div>
-        <div class="map-pin-item">
-          <div class="pin-label" style="color:#ef4444;">📍 Waypoints</div>
-          <div class="pin-desc">Flag problem spots, lease boundaries, trail markers</div>
-        </div>
-      </div>
-    </div>
-    <div class="map-mockup fade-in">
-      <div class="map-mockup-title">SUGARBUSH — NORTH WOODLOT</div>
-      <div class="mock-pin">
-        <div class="mock-dot" style="background:#2dd4a7;"></div>
-        <div>
-          <div class="mock-pin-name">T-14 · Sugar Maple</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">2 taps · Mainline A · Health: Good</div>
-        </div>
-        <div class="mock-pin-meta">Zone A</div>
-      </div>
-      <div class="mock-pin">
-        <div class="mock-dot" style="background:#2dd4a7;"></div>
-        <div>
-          <div class="mock-pin-name">T-15 · Sugar Maple</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">1 tap · Mainline A · Health: Watch</div>
-        </div>
-        <div class="mock-pin-meta">Zone A</div>
-      </div>
-      <div class="mock-pin">
-        <div class="mock-dot" style="background:#3b82f6;"></div>
-        <div>
-          <div class="mock-pin-name">Tank #1 — 250 gal</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">Collection point · Mainline A terminus</div>
-        </div>
-        <div class="mock-pin-meta">#1 spot</div>
-      </div>
-      <div class="mock-pin">
-        <div class="mock-dot" style="background:#f59e0b;"></div>
-        <div>
-          <div class="mock-pin-name">Sugarhouse</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">2×6 evaporator · RO on-site</div>
-        </div>
-        <div class="mock-pin-meta">Base</div>
-      </div>
-      <div class="mock-pin">
-        <div class="mock-dot" style="background:#8b5cf6;"></div>
-        <div>
-          <div class="mock-pin-name">Junction — Mainline A/B</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;">3" mainline split · Check valve here</div>
-        </div>
-        <div class="mock-pin-meta">J-3</div>
-      </div>
-      <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.1);display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.35);">
-        <span>5 pins · Satellite view</span>
-        <span style="color:#2dd4a7;font-weight:600;">● Live map</span>
-      </div>
+<!-- TOOLS -->
+<section class="sec sec-ph" id="features" aria-labelledby="tools-h">
+  <div class="ph">
+    <img src="/app/photos/syrup-bottles.webp" alt="" width="1200" height="670" loading="lazy" style="object-position:50% 70%; transform:scale(1.18)" />
+    <div class="wrap"><span class="pill">What&rsquo;s inside</span><h2 class="h2" id="tools-h">Each tool sits on the stage you use it in.</h2></div>
+  </div>
+  <div class="wrap">
+    <p class="lede dim">The DE calculator is on the Boil stage. The RO planner is on Collect. The tap guide is on Plan &amp; tap. You don&rsquo;t go looking.</p>
+    <div class="tools">
+      <div class="tool tool-wide"><div><h3>Bring your old logs in.</h3><ul class="srcs" aria-label="Import sources"><li>SugarCalc PDF</li><li>SapSpy CSV</li><li>SapTrac CSV</li><li>Any CSV</li></ul></div><p>Already keeping records? Import a SugarCalc Season Report, a SapSpy or SapTrac export, or any CSV with date, sap and syrup columns, or paste the rows in. Entries already in your log are skipped. When you want the numbers out again, export every entry as a CSV for a spreadsheet.</p></div>
+      <div class="tool"><h3>Filter press DE calculator</h3><p>Enter your gallons and get your DE amount in cups, ounces and pounds, straight mix or precharge, early or late season rate. It recommends straight mix for small batches and precharge over 25 gallons, then walks you through each step, with a troubleshooting section for cloudy syrup, pressure spikes, stopped flow and DE taste.</p><a class="link" href="/de-filter-calculator">Free DE calculator</a></div>
+      <div class="tool"><h3>Complete finishing suite</h3><p>Finishing temp by altitude, density check with temperature correction, a Brix to Baum&eacute; converter, a syrup grade reference with legal Brix ranges, and a canning temperature guide. Everything at the finishing pan in one place.</p></div>
+      <div class="tool"><h3>Season recap and PDF export</h3><p>An end-of-season summary with sap charts, Brix trends, year-over-year comparison, RO savings and collection point breakdown. Print or export to PDF in one tap.</p></div>
+      <div class="tool"><h3>RO planner and savings</h3><p>Plan a run: concentrate, time and fuel saved. At season&rsquo;s end, see the hours and wood your RO saved against straight boiling, with the preheater counted separately.</p></div>
+      <div class="tool"><h3>Diagnose a slow season</h3><p>SweetRun reads your log against normal yields for your sap Brix and against last year, then shows where the season lost syrup and what each fix is worth.</p></div>
+      <div class="tool"><h3>Tap rotation tracker</h3><p>Log which side of each tree was tapped each year, and SweetRun tells you which side is due next season. It protects your trees and keeps yields up year over year.</p></div>
     </div>
   </div>
 </section>
 
-<!-- 7-DAY SAP FORECAST -->
-<section class="weather-section" id="forecast">
-  <div class="container weather-inner">
-    <div class="forecast-mock fade-in">
-      <div class="forecast-mock-title">7-DAY SAP RUN FORECAST</div>
-      <div class="forecast-day">
-        <span class="forecast-day-name">Today</span>
-        <span class="forecast-temps">Hi 42° / Lo 26°</span>
-        <span class="score-chip" style="background:#e8f5ee;color:#2d6a4f;">⭐ 91</span>
-      </div>
-      <div class="forecast-day">
-        <span class="forecast-day-name">Tue</span>
-        <span class="forecast-temps">Hi 38° / Lo 24°</span>
-        <span class="score-chip" style="background:#e8f5ee;color:#2d6a4f;">⭐ 84</span>
-      </div>
-      <div class="forecast-day">
-        <span class="forecast-day-name">Wed</span>
-        <span class="forecast-temps">Hi 44° / Lo 30°</span>
-        <span class="score-chip" style="background:#fff3e0;color:#d4831a;">78</span>
-      </div>
-      <div class="forecast-day">
-        <span class="forecast-day-name">Thu</span>
-        <span class="forecast-temps">Hi 51° / Lo 38°</span>
-        <span class="score-chip" style="background:#fce4ec;color:#c62828;">⚠ 31</span>
-      </div>
-      <div class="forecast-day">
-        <span class="forecast-day-name">Fri</span>
-        <span class="forecast-temps">Hi 36° / Lo 22°</span>
-        <span class="score-chip" style="background:#e8f5ee;color:#2d6a4f;">76</span>
-      </div>
-      <div style="margin-top:14px;font-size:11px;color:#aaa;text-align:center;">
-        Scored 0–99 · Freeze/thaw · ΔT swing · Wind · Sunshine · Precip
-      </div>
+<!-- SUGARSAGE -->
+<section class="sec-tight" aria-labelledby="sage-h">
+  <div class="wrap split">
+    <div>
+      <span class="eyebrow">SugarSage</span>
+      <h2 class="h2" id="sage-h">Maple answers with no signal.</h2>
+      <p class="lede">40+ research-backed entries across 11 categories: sap biology, vacuum, RO, evaporation, grading, tree health and troubleshooting. Sourced from the UVM Proctor Maple Research Center, Cornell Maple Program, USDA Forest Service and IMSI research. No internet required, ever.</p>
     </div>
-    <div class="fade-in">
-      <div class="section-label">7-Day Sap Run Forecast</div>
-      <h2 class="section-title">Know before you<br/>fire the evaporator.</h2>
-      <p class="section-sub">
-        SweetRun pulls the 7-day forecast for your exact location and scores each day 0–99 for sap run potential. It models freeze-thaw cycles, temperature swing, sunshine hours, wind, and precipitation — the same variables veteran sugarmakers read every morning.
-      </p>
-      <div class="score-pills">
-        <div class="score-pill" style="background:#e8f5ee;color:#2d6a4f;">
-          <span class="score-num">80+</span> <span>Prime run day — fire it up</span>
-        </div>
-        <div class="score-pill" style="background:#fff3e0;color:#d4831a;">
-          <span class="score-num">50–79</span> <span>Marginal — worth watching</span>
-        </div>
-        <div class="score-pill" style="background:#fce4ec;color:#c62828;">
-          <span class="score-num">&lt;50</span> <span>Poor — save your wood</span>
-        </div>
-      </div>
+    <div class="sage">
+      <div><b>Why does maple sap flow in spring?</b><p>Driven by freeze-thaw stem pressure. CO&#8322; dissolves at night creating tension, then re-expands by day, building up to 30 psi of outward pressure&hellip;</p></div>
+      <div><b>My vacuum is lower than expected. How do I find the problem?</b><p>Work systematically: isolate mainline sections one at a time, walk lines at dawn, and inspect drop lines first. Freeze cracks and UV brittleness cluster there&hellip;</p></div>
+      <div><b>What concentration should I target with my RO?</b><p>Most operations target 8 to 12&deg;Brix for single-pass. Going above 16&deg;Brix risks sucrose crystallization. UVM sensory studies show minimal flavor impact up to 16&deg;Brix&hellip;</p></div>
     </div>
   </div>
 </section>
 
-<!-- BUDDY SAP / GRADE GUARDIAN -->
-<section class="buddy-section" id="grade">
-  <div class="container buddy-inner">
-    <div class="buddy-alert fade-in">
-      <div class="buddy-alert-header">
-        <span class="buddy-alert-icon">⚠</span>
-        <span class="buddy-alert-title">BUDDY SAP DETECTED</span>
-      </div>
-      <div class="buddy-brix-row">
-        <div class="buddy-brix-item">
-          <div class="buddy-brix-label">PEAK BRIX</div>
-          <div class="buddy-brix-val" style="color:#e0a44a;">2.4°</div>
-        </div>
-        <div class="buddy-brix-item">
-          <div class="buddy-brix-label">TODAY</div>
-          <div class="buddy-brix-val" style="color:#f0883e;">1.6°</div>
-        </div>
-        <div class="buddy-brix-item">
-          <div class="buddy-brix-label">DROP</div>
-          <div class="buddy-brix-val" style="color:#f85149;">−33%</div>
-        </div>
-      </div>
-      <div class="buddy-warning-text">
-        Brix has dropped more than 30% from peak — buddy sap risk is HIGH. Syrup made now will be darker and may carry an off-flavor that drops your grade.
-      </div>
-      <div class="buddy-forecast-row">
-        <div class="buddy-forecast-label">Tomorrow's forecast</div>
-        <div class="buddy-forecast-score">Hi 54° / Lo 41° — <span style="color:#f85149;font-weight:700;">Score 18 — No Freeze</span></div>
-      </div>
-      <div class="buddy-action">
-        🔥 Boil everything in your tanks today. Pull taps when buds start to swell.
-      </div>
-    </div>
-    <div class="fade-in">
-      <div class="section-label">Brix Trend + Buddy Sap Alert</div>
-      <h2 class="section-title">Don't lose your<br/>grade to bad timing.</h2>
-      <p class="section-sub">
-        Late-season sap looks identical to good sap — until you boil it. Buddy sap comes from trees that have begun to bud, and the syrup it makes is darker, cloudier, and carries an off-flavor that costs you your premium grade. You can't see it in the tank.
-      </p>
-      <div class="buddy-points">
-        <div class="buddy-point">
-          <div class="buddy-point-icon">📉</div>
-          <div class="buddy-point-text"><strong style="color:#fff;">SweetRun watches your Brix daily</strong> — log one reading per day and it plots the trend. A drop of more than 30% from your peak triggers a buddy sap warning.</div>
-        </div>
-        <div class="buddy-point">
-          <div class="buddy-point-icon">🌡️</div>
-          <div class="buddy-point-text"><strong style="color:#fff;">It cross-checks the 7-day forecast</strong> — if nights are holding above freezing, the season is over regardless of what the sap looks like in the tank.</div>
-        </div>
-        <div class="buddy-point">
-          <div class="buddy-point-icon">🔔</div>
-          <div class="buddy-point-text"><strong style="color:#fff;">You get the call early</strong> — boil what's in the tank today while you still have a run score worth acting on, and pull taps before buds blow.</div>
-        </div>
-      </div>
-      <div class="buddy-grade-row">
-        <div class="buddy-grade-item" style="border-color:#f5c842;">
-          <div style="color:#f5c842;font-weight:700;font-size:14px;">Golden Delicate</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;">First runs · best price</div>
-        </div>
-        <div class="buddy-grade-arrow">→</div>
-        <div class="buddy-grade-item" style="border-color:rgba(196,122,40,0.4);opacity:0.55;">
-          <div style="color:#c47a28;font-weight:700;font-size:14px;">Dark Robust</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.35);margin-top:4px;">What buddy sap makes</div>
-        </div>
-      </div>
-    </div>
+<!-- THE MATH -->
+<section class="sec sec-ph" aria-labelledby="math-h">
+  <div class="ph">
+    <img src="/app/photos/sap-tank.webp" alt="" width="1200" height="670" loading="lazy" style="object-position:50% 55%" />
+    <div class="wrap"><span class="pill">The math</span><h2 class="h2" id="math-h">One fix can cover the year.</h2></div>
   </div>
-</section>
-
-<!-- FEATURES GRID -->
-<section class="features" id="features">
-  <div class="container">
-    <div class="fade-in">
-      <div class="section-label">What's Inside</div>
-      <h2 class="section-title">Every tool your operation needs.<br/>Nothing it doesn't.</h2>
-    </div>
-    <div class="features-grid fade-in">
-
-      <div class="feature-card">
-        <div class="feature-icon" style="background:#e8f5ee;">🍁</div>
-        <h3>SugarSage Expert System</h3>
-        <p>40+ research-backed knowledge entries covering sap biology, vacuum, RO, evaporation, grading, tree health, and troubleshooting — sourced from UVM Proctor and Cornell Maple Program. Fully offline.</p>
-        <span class="feature-badge">EXCLUSIVE</span>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon" style="background:#e0f7f3;">⚗️</div>
-        <h3>Filter Press DE Calculator <span class="new-badge">REBUILT</span></h3>
-        <p>Enter your gallons and get your exact DE amount — straight mix or precharge method, early or late season rate. Step-by-step instructions with the right cup count baked right into each step. Beginner-friendly, expert-accurate.</p>
-        <span class="feature-badge new">NEW</span>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon" style="background:#e3f2fd;">📊</div>
-        <h3>Season Recap + PDF Export</h3>
-        <p>End-of-season summary with sap charts, Brix trends, year-over-year comparison, RO savings, and collection point breakdown. Print or export to PDF in one tap.</p>
-        <span class="feature-badge">PREMIUM</span>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon" style="background:#fce4ec;">💧</div>
-        <h3>RO Savings Calculator</h3>
-        <p>See exactly how many hours and pounds of wood your RO system saved this season versus straight-boil. Preheater modeled separately. Real numbers, not estimates.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon" style="background:#fff3e0;">🌡️</div>
-        <h3>Complete Finishing Suite</h3>
-        <p>Finishing temp by altitude, density check with temperature correction, Brix↔Baumé converter, syrup grade reference with legal Brix ranges, canning temperature guide. Everything at the finishing pan in one place.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon" style="background:#f3e5f5;">🔧</div>
-        <h3>Diagnose My Operation</h3>
-        <p>Answer 9 questions about your setup and SweetRun ranks your top bottlenecks by ROI. Know exactly where your next investment pays off — vacuum, RO, spout sanitation, or tree selection.</p>
-        <span class="feature-badge">PREMIUM</span>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon" style="background:#e8f5ee;">🔄</div>
-        <h3>Tap Rotation Tracker</h3>
-        <p>Log which side of each tree was tapped each year. SweetRun tells you which side is due next season — protecting your trees and keeping yields high year over year.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon" style="background:#fff8e1;">⚠️</div>
-        <h3>Buddy Sap + Brix Trend Alert <span class="new-badge">KEY</span></h3>
-        <p>Log a daily Brix reading and SweetRun plots the trend. When your Brix drops 30%+ from peak — and the forecast shows no more freeze — you get a buddy sap warning. Boil now, pull taps, protect your grade.</p>
-        <span class="feature-badge new">GRADE SAVER</span>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon" style="background:#e3f2fd;">📥</div>
-        <h3>Import from SugarCalc, SapSpy &amp; SapTrac</h3>
-        <p>Already tracking somewhere else? Drop in a PDF or CSV and SweetRun imports your season data automatically. No re-entry, no lost history.</p>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<!-- DE CALCULATOR SPOTLIGHT -->
-<section class="de-section">
-  <div class="container de-inner">
-    <div class="fade-in">
-      <div class="section-label">Filter Press — DE Calculator</div>
-      <h2 class="section-title">Stop guessing<br/>your DE amount.</h2>
-      <p class="section-sub">
-        The rebuilt DE Calculator walks you through your exact setup — batch size, method, and syrup color — and gives you one clear number. Straight mix or precharge, early season or late, small batch or large. It knows the difference and adjusts for all of it.
-      </p>
-      <div class="de-methods">
-        <div class="de-method">
-          <div class="de-method-label" style="color:#2dd4a7;">Straight Mix</div>
-          <div class="de-method-desc">Mix DE directly into hot syrup. No precharge needed. Recommended for batches under 10 gallons.</div>
-        </div>
-        <div class="de-method">
-          <div class="de-method-label" style="color:#58a6ff;">Precharge First</div>
-          <div class="de-method-desc">Coat the plates with a DE-water charge first. Better for 25+ gallon runs and multi-batch days.</div>
-        </div>
-      </div>
-    </div>
-    <div class="de-steps fade-in">
-      <div class="de-step">
-        <div class="de-step-num">1</div>
-        <div class="de-step-text">Enter your gallons — SweetRun <strong>auto-recommends</strong> straight mix or precharge based on your batch size</div>
-      </div>
-      <div class="de-step">
-        <div class="de-step-num">2</div>
-        <div class="de-step-text">Select <strong>early/mid</strong> or <strong>late season</strong> — dark syrup carries more niter and needs a higher DE rate</div>
-      </div>
-      <div class="de-step">
-        <div class="de-step-num">3</div>
-        <div class="de-step-text">Get your number: <strong>exact cups, ounces, and pounds</strong> — no mental math, no wasted DE</div>
-      </div>
-      <div class="de-step">
-        <div class="de-step-num">4</div>
-        <div class="de-step-text">Follow the <strong>step-by-step instructions</strong> written for your chosen method — including the cloudy first-pour advisory for beginners</div>
-      </div>
-      <div style="margin-top:8px;background:rgba(45,212,167,0.1);border:1px solid rgba(45,212,167,0.25);border-radius:12px;padding:12px 16px;font-size:13px;color:rgba(255,255,255,0.7);line-height:1.5;">
-        Also includes a <strong style="color:#2dd4a7;">Troubleshooting section</strong> — cloudy syrup, pressure spiking, flow stopped, and DE taste — written as "here's what to do right now."
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- SUGARSAGE SPOTLIGHT -->
-<section class="sage-section">
-  <div class="container sage-inner">
-    <div class="fade-in">
-      <div class="section-label">SugarSage</div>
-      <h2 class="section-title">An offline maple expert<br/>in your pocket.</h2>
-      <p class="section-sub">Sourced from University of Vermont Proctor Maple Research Center, Cornell Maple Program, USDA Forest Service, and IMSI research. No internet required — ever.</p>
-      <div class="sage-count">
-        <span>🍁</span> 40+ entries across 11 categories
-      </div>
-    </div>
-    <div class="sage-entries fade-in">
-      <div class="sage-entry">
-        <div class="sage-entry-q">Why does maple sap flow in spring?</div>
-        <div class="sage-entry-a">Driven by freeze-thaw stem pressure — CO₂ dissolves at night creating tension, re-expands at day building up to 30 psi outward pressure...</div>
-      </div>
-      <div class="sage-entry">
-        <div class="sage-entry-q">My vacuum is lower than expected. How do I find the problem?</div>
-        <div class="sage-entry-a">Systematic approach: isolate mainline sections one at a time, walk lines at dawn, inspect drop lines first — freeze-crack and UV brittleness cluster there...</div>
-      </div>
-      <div class="sage-entry">
-        <div class="sage-entry-q">What concentration should I target with my RO?</div>
-        <div class="sage-entry-a">Most operations target 8–12°Brix for single-pass. Going above 16°Brix risks sucrose crystallization. UVM sensory studies show minimal flavor impact up to 16°Brix...</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ROI -->
-<section class="roi">
-  <div class="container">
-    <div class="fade-in" style="text-align:center;">
-      <div class="section-label">The Math</div>
-      <h2 class="section-title">It pays for itself before the first run ends.</h2>
-      <p class="section-sub" style="margin:0 auto;">Identifying even one operational improvement — a vacuum leak, over-tapped zone, or wet wood problem — typically saves far more than the $49.99/year subscription in a single season.</p>
-    </div>
-    <div class="roi-grid fade-in">
-      <div class="roi-card">
-        <div class="roi-num">24hrs</div>
-        <div class="roi-label">Example boiling time saved per season with RO + preheater tracked by SweetRun</div>
-        <div class="roi-note">At $20/hr labor that's $480 saved</div>
-      </div>
-      <div class="roi-card">
-        <div class="roi-num">860lbs</div>
-        <div class="roi-label">Example wood saved per season when RO is optimized using SweetRun data</div>
-        <div class="roi-note">At $80/cord that's ~$55 saved</div>
-      </div>
-      <div class="roi-card">
-        <div class="roi-num">10–20%</div>
-        <div class="roi-label">Sap yield increase from spout sanitation — per UVM Proctor research. SugarSage explains the method.</div>
-        <div class="roi-note">On 500 taps that's 50+ extra gallons of sap</div>
-      </div>
-      <div class="roi-card">
-        <div class="roi-num">$4–8/gal</div>
-        <div class="roi-label">Retail price difference between Golden Delicate and Dark Robust. One missed buddy sap call can drop an entire batch a full grade.</div>
-        <div class="roi-note">On 10 gallons that's $40–80 lost per late call</div>
-      </div>
+  <div class="wrap">
+    <p class="lede dim">A vacuum leak found early, an over-tapped zone, a load of wet wood: one fix like that can be worth more than $49.99 in a single season. Here is the arithmetic on a few examples.</p>
+    <div class="math">
+      <div class="m"><b>24 hrs</b><p>Example boiling time saved per season with RO and preheater tracked by SweetRun</p><small>At $20/hr labor, that&rsquo;s $480 saved</small></div>
+      <div class="m"><b>860 lbs</b><p>Example wood saved per season when RO is optimized using SweetRun data</p><small>At $80/cord, that&rsquo;s about $55 saved</small></div>
+      <div class="m"><b>10 to 20%</b><p>Sap yield increase from spout sanitation, per UVM Proctor research. SugarSage explains the method.</p><small>On 500 taps, that&rsquo;s 50+ extra gallons of sap</small></div>
+      <div class="m"><b>$4 to $8</b><p>Retail price difference per gallon between Golden Delicate and Dark Robust. One missed buddy sap call can drop an entire batch a full grade.</p><small>On 10 gallons, that&rsquo;s $40 to $80 lost per late call</small></div>
     </div>
   </div>
 </section>
 
 <!-- PRICING -->
-<section class="pricing" id="pricing">
-  <div class="container">
-    <div class="fade-in">
-      <div class="section-label">Pricing</div>
-      <h2 class="section-title">Try free. Pay when you're hooked.</h2>
-      <p class="section-sub" style="margin:0 auto;">14 days free, then $49.99/year. Full access to every feature. No data fees. No upsells. Cancel anytime.</p>
-    </div>
-    <div class="price-card fade-in">
-      <div class="price-badge">🍁 FULL ACCESS</div>
-      <div class="price-season">Annual Subscription</div>
-      <div class="price-amount"><sup>$</sup>49<sup>.99</sup></div>
-      <div class="price-period">per year · cancel anytime</div>
+<section class="sec" id="pricing" aria-labelledby="price-h">
+  <div class="wrap">
+    <span class="eyebrow">Pricing</span>
+    <h2 class="h2" id="price-h">One plan, every feature.</h2>
+    <div class="price">
+      <div>
+        <span class="label">Season Pass, every feature</span>
+        <div class="price-amount" role="text" aria-label="$49.99 a year"><sup>$</sup><span>49</span><sup>.99</sup></div>
+        <p class="price-period">a year, after 14 days free</p>
+        <a class="btn btn-block" href="https://buy.stripe.com/dRm3cw9YsdYI7HkbGY14401" id="buy-btn" target="_blank" rel="noopener">Start 14 days free</a>
+        <p class="price-guarantee">No charge for 14 days. Then $49.99 a year. No data fees, no upsells, cancel anytime.</p>
+        <p class="price-guarantee">Works on phone, tablet and computer. No app store needed.</p>
+      </div>
       <ul class="price-features">
-        <li><span>✓</span><span>Sugarbush GPS mapping — tap trees, tanks, sugarhouse, pump houses, junctions</span></li>
-        <li><span>✓</span><span>7-day sap run forecast scored 0–99 for your location</span></li>
-        <li><span>✓</span><span>SugarSage offline expert system (40+ research-backed entries)</span></li>
-        <li><span>✓</span><span>Rebuilt DE Calculator — straight mix or precharge, step-by-step</span></li>
-        <li><span>✓</span><span>Complete finishing suite — density, temp correction, Brix↔Baumé, grade guide</span></li>
-        <li><span>✓</span><span>Diagnose My Operation bottleneck finder</span></li>
-        <li><span>✓</span><span>Season Recap with charts, year-over-year, and PDF export</span></li>
-        <li><span>✓</span><span>RO savings calculator with preheater model</span></li>
-        <li><span>✓</span><span>Buddy sap alert — Brix trend + forecast cross-check to protect your grade</span></li>
-        <li><span>✓</span><span>Tap rotation tracker and degree day counter</span></li>
-        <li><span>✓</span><span>Import from SugarCalc, SapSpy &amp; SapTrac (PDF or CSV)</span></li>
-        <li><span>✓</span><span>100% offline — works without cell service</span></li>
-        <li><span>✓</span><span>Works on phone, tablet, and computer — no app store needed</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg><span>Sugarbush GPS mapping: tap trees, tanks, pumps, junctions, the sugarhouse</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg><span>7-day sap run forecast scored 0 to 100 for your location</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg><span>SugarSage offline expert system, 40+ research-backed entries</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg><span>DE calculator, straight mix or precharge, step by step</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg><span>Finishing suite: density, temperature correction, Brix to Baum&eacute;, grade guide</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg><span>Diagnose a slow season: where the syrup went and what to change</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg><span>Season recap with charts, year-over-year and PDF export</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg><span>RO planner and savings, with the preheater counted</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg><span>Buddy sap alert: Brix trend and forecast cross-check to protect your grade</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg><span>Tap rotation tracker and degree day counter</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg><span>Import SugarCalc, SapSpy, SapTrac or any CSV. Export every entry as CSV.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17 19 7"/></svg><span>The log, the tools and SugarSage work with no cell service</span></li>
       </ul>
-      <a class="btn-buy" href="https://buy.stripe.com/dRm3cw9YsdYI7HkbGY14401" id="buy-btn" target="_blank" rel="noopener">
-        Start Free Trial — 14 Days Free
-      </a>
-      <p class="price-guarantee">🔒 No charge for 14 days · Then $49.99/year · Cancel anytime</p>
     </div>
   </div>
 </section>
 
-<!-- INSTALL SECTION -->
-<section class="install-section" id="install">
-  <div class="container">
-    <div class="fade-in">
-      <div class="section-label" style="color:var(--green-light);">No App Store. No Download.</div>
-      <h2 class="section-title" style="color:#fff;">Add SweetRun to your<br/>home screen in 3 taps.</h2>
-      <p style="color:rgba(255,255,255,0.6);font-size:15px;max-width:440px;margin:0 auto 40px;">
-        SweetRun runs entirely in your browser — no App Store, no account needed. Add it to your home screen and it works exactly like an app, including offline.
-      </p>
+<!-- INSTALL -->
+<section class="sec-tight" id="install" aria-labelledby="install-h">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <span class="eyebrow">No app store, no download</span>
+        <h2 class="h2" id="install-h">Add SweetRun to your home screen.</h2>
+      </div>
+      <p class="lede dim">SweetRun runs in your browser, with no app store and no account. Add it to your home screen and it works like any app, offline included.</p>
     </div>
-
-    <div class="install-cards fade-in">
-
-      <!-- iPhone -->
+    <div class="install">
       <div class="install-card">
-        <div class="install-phone-icon">🍎</div>
-        <div class="install-platform">iPhone / iPad</div>
-        <ol class="install-steps">
-          <li>
-            <span class="step-num">1</span>
-            <span>Open <strong>sweetrun.app</strong> in <strong>Safari</strong> <em>(must be Safari, not Chrome)</em></span>
-          </li>
-          <li>
-            <span class="step-num">2</span>
-            <span>Tap the <strong>Share button</strong> — the box with an arrow pointing up <span class="step-icon">⬆</span> at the bottom of the screen</span>
-          </li>
-          <li>
-            <span class="step-num">3</span>
-            <span>Scroll down and tap <strong>"Add to Home Screen"</strong></span>
-          </li>
-          <li>
-            <span class="step-num">4</span>
-            <span>Tap <strong>"Add"</strong> — SweetRun will appear on your home screen like any app</span>
-          </li>
+        <h3>iPhone and iPad</h3>
+        <ol>
+          <li><span>Open <strong>sweetrun.app</strong> in <strong>Safari</strong>. <em>It has to be Safari, not Chrome.</em></span></li>
+          <li><span>Tap the <strong>Share button</strong> <span class="kbd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></span>, the box with an arrow pointing up, at the bottom of the screen.</span></li>
+          <li><span>Scroll down and tap <strong>Add to Home Screen</strong>.</span></li>
+          <li><span>Tap <strong>Add</strong>. SweetRun appears on your home screen like any app.</span></li>
         </ol>
       </div>
-
-      <!-- Android -->
       <div class="install-card">
-        <div class="install-phone-icon">🤖</div>
-        <div class="install-platform">Android</div>
-        <ol class="install-steps">
-          <li>
-            <span class="step-num">1</span>
-            <span>Open <strong>sweetrun.app</strong> in <strong>Chrome</strong></span>
-          </li>
-          <li>
-            <span class="step-num">2</span>
-            <span>Tap the <strong>three-dot menu</strong> <span class="step-icon">⋮</span> in the top-right corner</span>
-          </li>
-          <li>
-            <span class="step-num">3</span>
-            <span>Tap <strong>"Add to Home screen"</strong></span>
-          </li>
-          <li>
-            <span class="step-num">4</span>
-            <span>Tap <strong>"Add"</strong> — done. SweetRun is now on your home screen.</span>
-          </li>
+        <h3>Android</h3>
+        <ol>
+          <li><span>Open <strong>sweetrun.app</strong> in <strong>Chrome</strong>.</span></li>
+          <li><span>Tap the <strong>three-dot menu</strong> <span class="kbd"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></span> in the top-right corner.</span></li>
+          <li><span>Tap <strong>Add to Home screen</strong>.</span></li>
+          <li><span>Tap <strong>Add</strong>. Done: SweetRun is on your home screen.</span></li>
         </ol>
       </div>
-
     </div>
   </div>
 </section>
 
 <!-- EMAIL CAPTURE -->
-<section class="notify-section">
-  <div class="container">
-    <div class="notify-inner fade-in">
-      <div class="notify-icon">🍁</div>
-      <h2 class="notify-title">Season's over. Be first in line for 2027.</h2>
-      <p class="notify-sub">Drop your email and we'll remind you when the 2027 season opens — before the first run day.</p>
-      <form class="notify-form" id="notify-form">
-        <input type="hidden" name="access_key" value="d91810ec-94aa-49ed-9731-6ba2cd42e106" />
-        <input type="hidden" name="subject" value="SweetRun — Season Notify Signup" />
-        <input type="hidden" name="from_name" value="SweetRun Notify Form" />
-        <input type="email" name="email" placeholder="your@email.com" required class="notify-input" />
-        <button type="submit" class="notify-btn">Remind Me</button>
-      </form>
-      <p class="notify-fine" id="notify-success" style="display:none;color:#2dd4a7;font-weight:600;">✓ You're on the list. We'll be in touch before the 2027 season.</p>
-      <p class="notify-fine">No spam. One email when the season opens.</p>
-    </div>
+<section class="notify band" aria-labelledby="notify-h">
+  <img src="/app/photos/hillside-panorama.webp" alt="" width="1200" height="509" loading="lazy" />
+  <div class="wrap">
+    <span class="eyebrow">2027 season</span>
+    <h2 class="h2" id="notify-h">Season&rsquo;s over. Be first in line for 2027.</h2>
+    <p class="lede">Leave your email and you&rsquo;ll get one reminder when the 2027 season opens, before the first run day.</p>
+    <form class="notify-form" id="notify-form">
+      <input type="hidden" name="access_key" value="d91810ec-94aa-49ed-9731-6ba2cd42e106" />
+      <input type="hidden" name="subject" value="SweetRun — Season Notify Signup" />
+      <input type="hidden" name="from_name" value="SweetRun Notify Form" />
+      <label class="sr-only" for="notify-email">Email address</label>
+      <input type="email" id="notify-email" name="email" placeholder="you@sugarbush.com" autocomplete="email" required class="notify-input" />
+      <button type="submit" class="btn notify-btn">Remind me</button>
+    </form>
+    <p class="notify-fine" id="notify-success" role="status" style="display:none;">You&rsquo;re on the list. Look for one email before the 2027 season.</p>
+    <p class="notify-fine">No spam. One email when the season opens.</p>
   </div>
 </section>
 
-<!-- FOOTER -->
-<footer>
-  <p style="margin-bottom:8px;">
-    <strong style="color:#fff;">SweetRun</strong> — The Maple Production Platform
-  </p>
-  <p>
-    Built for serious sugarmakers ·
-    <a href="/calculators">Free maple calculators</a> ·
-    <a href="mailto:hello@sweetrun.app">hello@sweetrun.app</a>
-  </p>
-  <p style="margin-top:12px;font-size:11px;">
-    © 2026 SweetRun · Knowledge sourced from UVM Proctor Maple Research Center,
-    Cornell Maple Program, USDA Forest Service, and IMSI
-  </p>
+</main>
+
+<!-- chrome:footer -->
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="brand" href="/"><img src="/app/icons/icon-e-192.png" width="32" height="32" alt="" /><span>SweetRun</span></a>
+        <p>Maple production, one season at a time. What to do next, and a log of every gallon.</p>
+      </div>
+      <div class="foot-col">
+        <h2>The app</h2>
+        <ul>
+          <li><a href="/#season">Season stages</a></li>
+          <li><a href="/#bush">Bush map</a></li>
+          <li><a href="/#watch">Pumps and Watch</a></li>
+          <li><a href="/#boil">Boil</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h2>Free calculators</h2>
+        <ul>
+          <li><a href="/draw-off-calculator">Draw-off temperature</a></li>
+          <li><a href="/sap-to-syrup-calculator">Sap to syrup</a></li>
+          <li><a href="/tap-calculator">Tap calculator</a></li>
+          <li><a href="/de-filter-calculator">DE filter press</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h2>Talk to us</h2>
+        <ul>
+          <li><a href="mailto:hello@sweetrun.app">hello@sweetrun.app</a></li>
+          <li><a href="/feedback.html">Send feedback</a></li>
+          <li><a href="/calculators">All calculators</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="foot-fine">&copy; 2026 SweetRun. Knowledge sourced from UVM Proctor Maple Research Center, Cornell Maple Program, USDA Forest Service and IMSI.</p>
+  </div>
 </footer>
+<!-- /chrome:footer -->
 
 <script>
-  // Scroll-triggered fade-in
-  const observer = new IntersectionObserver(
-    entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
-    { threshold: 0.12 }
-  );
-  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
-
-  // Email capture form — Web3Forms
+  // Email capture form (Web3Forms)
   const notifyForm = document.getElementById('notify-form');
   if (notifyForm) {
     notifyForm.addEventListener('submit', async e => {
@@ -1246,15 +681,15 @@
       } catch(_) {
         const ok = document.getElementById('notify-success');
         ok.style.display = 'block';
-        ok.style.color = '#f4a44a';
-        ok.textContent = "Hmm — that didn't go through. Please try again, or email hello@sweetrun.app and I'll add you myself.";
+        ok.style.color = 'var(--rs-acc)';
+        ok.textContent = "That didn't go through. Please try again, or email hello@sweetrun.app and I'll add you myself.";
       }
     });
   }
 
-  // Buy button — live Stripe link, no interception needed
+  // Buy button: live Stripe link, no interception needed
 
-  // Notify bar — dismiss + submit
+  // Notify bar: dismiss + submit
   const nbarDismiss = document.getElementById('nbar-dismiss');
   const nbarForm    = document.getElementById('nbar-form');
   const nbarBar     = document.getElementById('notify-bar');
@@ -1288,7 +723,8 @@
         nbarOk.style.display = 'inline';
         try { localStorage.setItem('nbar_dismissed', '1'); } catch(_) {}
       } catch(_) {
-        nbarOk.textContent = "✗ Didn't go through — try again?";
+        nbarOk.textContent = "That didn't go through. Try again?";
+        nbarOk.style.color = 'var(--rs-bad)';
         nbarOk.style.display = 'inline';
       }
     });

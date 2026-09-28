@@ -1,11 +1,11 @@
 # Deploying the SweetRun License Worker
 
-One-time setup, ~15 minutes, all from `~/Documents/GitHub/SugarCalc/worker`.
+One-time setup, ~15 minutes, all from `~/SugarCalc/worker`.
 
 ## 1. Create the KV namespace
 
 ```bash
-cd ~/Documents/GitHub/SugarCalc/worker
+cd ~/SugarCalc/worker
 npx wrangler kv namespace create DATA
 ```
 
@@ -49,7 +49,7 @@ Two constants are waiting for the URL from step 3:
 Fill both in, then:
 
 ```bash
-cd ~/Documents/GitHub/SugarCalc
+cd ~/SugarCalc
 npm run build
 git add -A && git commit -m "Point app at license Worker" && git push
 ```

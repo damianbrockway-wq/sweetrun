@@ -1,0 +1,16 @@
+{
+  "name": "SweetRun",
+  "short_name": "SweetRun",
+  "description": "Maple production, one season at a time: what to do next, and a log of every gallon.",
+  "id": "/app/",
+  "start_url": "/app/",
+  "scope": "/app/",
+  "display": "standalone",
+  "background_color": "#0C0B0A",
+  "theme_color": "#0C0B0A",
+  "icons": [
+    { "src": "/app/icons/icon-e-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/app/icons/icon-e-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/app/icons/icon-e-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

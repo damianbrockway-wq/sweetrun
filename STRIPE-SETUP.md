@@ -2,7 +2,7 @@
 
 **Why this matters:** the Stripe link is live and will happily charge someone $49.99 today. Nothing downstream exists yet, so they'd get no key, no email, and you wouldn't hear about it except in the Stripe dashboard. About 20 minutes of setup fixes that.
 
-Everything runs from `~/Documents/GitHub/SugarCalc/worker`. Do the steps in order — each one produces a value the next one needs.
+Everything runs from `~/SugarCalc/worker`. Do the steps in order — each one produces a value the next one needs.
 
 **Before you start:** do the whole thing in Stripe **Test mode** first (toggle top-right of the dashboard). Test mode has its own payment links and its own webhook secret, so you can run a fake purchase end to end with card `4242 4242 4242 4242` without touching real money. Then repeat steps 4–6 in Live mode. It's the same clicks twice, and it means the first real customer isn't your test case.
 
@@ -11,7 +11,7 @@ Everything runs from `~/Documents/GitHub/SugarCalc/worker`. Do the steps in orde
 ## Step 1 — Create the KV namespace
 
 ```
-cd ~/Documents/GitHub/SugarCalc/worker
+cd ~/SugarCalc/worker
 npx wrangler kv namespace create DATA
 ```
 
@@ -74,7 +74,7 @@ In the Stripe dashboard (**Test mode first**):
 **4b. Get the signing secret.** On the endpoint you just made, click **Reveal** under "Signing secret". It starts with `whsec_`. Copy it, then:
 
 ```
-cd ~/Documents/GitHub/SugarCalc/worker
+cd ~/SugarCalc/worker
 npx wrangler secret put STRIPE_WEBHOOK_SECRET
 ```
 Paste the real `whsec_...` value. This overwrites the placeholder from step 2.
@@ -99,7 +99,7 @@ Two constants are waiting for the URL from step 3. Tell me the URL and I'll fill
 Put the worker URL inside the quotes in both, with no trailing slash. Then:
 
 ```
-cd ~/Documents/GitHub/SugarCalc
+cd ~/SugarCalc
 npm run build
 git add -A && git commit -m "Point app at license worker" && git push
 ```

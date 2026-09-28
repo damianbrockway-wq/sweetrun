@@ -3,73 +3,100 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>SweetRun — Batch Provenance</title>
-<meta name="description" content="Maple syrup batch provenance — tracked with SweetRun"/>
+<title>Batch provenance: SweetRun</title>
+<meta name="description" content="Maple syrup batch provenance, tracked with SweetRun"/>
 <meta name="robots" content="noindex"/>
+<!-- chrome:head -->
+<meta name="theme-color" content="#0C0B0A" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/app/icons/favicon-e-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/app/icons/favicon-e-16.png" />
+  <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon-e-180.png" />
+  <link rel="preload" href="/app/fonts/barlow-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/app/fonts/barlow-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/app/tokens.css" />
+  <link rel="stylesheet" href="/calc-shared.css?v=ember" />
+<!-- /chrome:head -->
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#07090f;color:#c9d1d9;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px 48px}
-  .card{width:100%;max-width:440px;background:#0d1521;border-radius:20px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,0.6)}
+  body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 24px 16px 48px; }
+  .card { width: 100%; max-width: 440px; background: var(--rs-s1); border: 1px solid var(--rs-line); border-radius: 24px; overflow: hidden; }
 
   /* HEADER */
-  .header{background:linear-gradient(135deg,#1a3d2b,#0f2318);padding:24px 24px 20px;position:relative;overflow:hidden}
-  .header::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 80% 10%,rgba(212,131,26,0.2) 0%,transparent 60%)}
-  .header-inner{position:relative;display:flex;justify-content:space-between;align-items:flex-start}
-  .brand{display:flex;align-items:center;gap:10px}
-  .brand-leaf{font-size:28px;line-height:1}
-  .brand-name{font-size:26px;font-weight:900;color:#fff;letter-spacing:-0.5px;line-height:1}
-  .brand-sub{font-size:9px;font-weight:700;letter-spacing:0.16em;color:rgba(255,255,255,0.45);text-transform:uppercase;margin-top:3px}
-  .batch-pill{background:rgba(45,212,167,0.15);border:1px solid rgba(45,212,167,0.3);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;color:#2dd4a7}
+  .header { position: relative; isolation: isolate; overflow: hidden; padding: 24px; }
+  .header > img.bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+  .header::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(12,11,10,.55), rgba(12,11,10,.85)); }
+  .header-inner { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-leaf { width: 44px; height: 44px; border-radius: 12px; flex: none; }
+  .brand-name { font-weight: 800; font-size: 24px; letter-spacing: -0.02em; line-height: 1; color: var(--rs-tx); }
+  .brand-sub { font: 700 11px/1 var(--rs-fc); letter-spacing: .14em; color: var(--rs-dim); text-transform: uppercase; margin-top: 6px; }
+  .batch-pill { background: var(--rs-acc); color: var(--rs-acc-ink); border-radius: 999px; padding: 7px 12px; font-weight: 800; font-size: 13px; white-space: nowrap; }
 
   /* GRADE BAND */
-  .grade-band{padding:16px 24px;display:flex;align-items:center;gap:14px}
-  .grade-swatch{width:44px;height:44px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 3px rgba(255,255,255,0.1)}
-  .grade-label{font-size:9px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#5a6a7a;margin-bottom:3px}
-  .grade-name{font-size:20px;font-weight:800;line-height:1.1}
+  .grade-band { padding: 18px 24px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--rs-line); }
+  .grade-swatch { width: 48px; height: 48px; border-radius: 14px; flex: none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+  .grade-label { font: 700 11px/1 var(--rs-fc); letter-spacing: .14em; text-transform: uppercase; color: var(--rs-dim); margin-bottom: 6px; }
+  .grade-name { font-size: 22px; font-weight: 800; line-height: 1.1; color: var(--rs-tx); }
 
   /* STATS */
-  .stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#131e2c;border-top:1px solid #131e2c;border-bottom:1px solid #131e2c}
-  .stat{background:#0d1521;padding:14px 16px}
-  .stat-label{font-size:9px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:#3d5068;margin-bottom:4px}
-  .stat-val{font-size:18px;font-weight:800;color:#e6edf3;line-height:1}
-  .stat-unit{font-size:10px;color:#5a6a7a;font-weight:500;margin-top:2px}
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--rs-line); border-bottom: 1px solid var(--rs-line); }
+  .stats:empty { display: none; }
+  .stat { background: var(--rs-s1); padding: 16px 18px; }
+  .stat-label { font: 700 11px/1.2 var(--rs-fc); letter-spacing: .12em; text-transform: uppercase; color: var(--rs-dim); margin-bottom: 6px; }
+  .stat-val { font-size: 26px; font-weight: 800; color: var(--rs-tx); line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat-unit { font-size: 13px; color: var(--rs-dim); margin-top: 4px; }
 
   /* DETAILS */
-  .details{padding:18px 24px;display:flex;flex-direction:column;gap:10px}
-  .detail-row{display:flex;align-items:center;gap:10px}
-  .detail-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-  .detail-text{font-size:13px;color:#8a9ab5;line-height:1.4}
-  .detail-text strong{color:#c9d1d9}
+  .details { padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
+  .detail-row { display: flex; align-items: center; gap: 12px; }
+  .detail-icon { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; flex: none; background: var(--rs-s3); color: var(--rs-acc); }
+  .detail-icon svg { width: 18px; height: 18px; }
+  .detail-text { font-size: 15px; color: var(--rs-dim); line-height: 1.4; }
+  .detail-text strong { color: var(--rs-tx); }
+  .detail-text a { color: var(--rs-tx); text-decoration: underline; text-decoration-color: var(--rs-acc); text-underline-offset: 3px; }
+  .detail-fine { font-size: 13px; }
 
   /* FOOTER */
-  .footer{background:#0a1018;border-top:1px solid #131e2c;padding:18px 24px;display:flex;align-items:center;gap:16px}
-  .footer-qr{width:72px;height:72px;background:#fff;border-radius:8px;padding:4px;flex-shrink:0}
-  .footer-qr img{width:100%;height:100%;display:block}
-  .footer-copy{font-size:11px;color:#3d5068;line-height:1.6}
-  .footer-copy a{color:#2dd4a7;text-decoration:none;font-weight:700}
+  .footer { background: var(--rs-bg); border-top: 1px solid var(--rs-line); padding: 18px 24px; display: flex; align-items: center; gap: 16px; }
+  .footer-qr { width: 76px; height: 76px; background: #fff; border-radius: 10px; padding: 5px; flex: none; }
+  .footer-qr img { width: 100%; height: 100%; display: block; }
+  .footer-copy { font-size: 14px; color: var(--rs-dim); line-height: 1.55; }
+  .footer-copy a { color: var(--rs-tx); font-weight: 700; text-decoration: underline; text-decoration-color: var(--rs-acc); text-underline-offset: 3px; display: inline-block; padding: 12px 0; }
 
   /* MISSING */
-  .missing{text-align:center;padding:60px 24px;color:#3d5068}
-  .missing h2{font-size:20px;margin-bottom:8px;color:#5a6a7a}
-  .missing p{font-size:14px;line-height:1.6}
+  .missing { padding: 48px 28px; }
+  .missing img { width: 56px; height: 56px; border-radius: 16px; margin-bottom: 20px; }
+  .missing h1 { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+  .missing p { color: var(--rs-dim); }
 
   /* WATERMARK */
-  .watermark{margin-top:24px;font-size:11px;color:#2a3a4a;text-align:center}
-  .watermark a{color:#2dd4a7;text-decoration:none;font-weight:700;opacity:0.7}
+  .watermark { margin-top: 20px; font-size: 14px; color: var(--rs-dim); text-align: center; }
+  .watermark a { color: var(--rs-tx); font-weight: 700; text-decoration: underline; text-decoration-color: var(--rs-acc); text-underline-offset: 3px; display: inline-block; padding: 12px 4px; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .card { border-color: #ccc; }
+  }
 </style>
 </head>
 <body>
-<div class="card" id="card">
+<main class="card" id="card">
   <div id="content"></div>
-</div>
+</main>
 <div class="watermark">Tracked with <a href="https://sweetrun.app">sweetrun.app</a></div>
 
 <script>
 const GRADES = {
-  golden: { name:'Golden Delicate', color:'#f5c842', bg:'rgba(245,200,66,0.12)' },
-  amber:  { name:'Amber Rich',      color:'#e0a44a', bg:'rgba(224,164,74,0.12)' },
-  dark:   { name:'Dark Robust',     color:'#c47a28', bg:'rgba(196,122,40,0.12)' },
-  vdark:  { name:'Very Dark Strong',color:'#8b4513', bg:'rgba(139,69,19,0.12)'  },
+  golden: { name:'Golden Delicate', color:'#EDE3C8', bg:'rgba(237,227,200,0.10)' },
+  amber:  { name:'Amber Rich',      color:'#E3B45E', bg:'rgba(227,180,94,0.10)' },
+  dark:   { name:'Dark Robust',     color:'#A8712F', bg:'rgba(168,113,47,0.12)' },
+  vdark:  { name:'Very Dark Strong',color:'#5E3A1C', bg:'rgba(94,58,28,0.18)'  },
+};
+
+const ICON = {
+  date: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  loc:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+  note: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
 };
 
 function esc(s) {
@@ -116,7 +143,8 @@ function render(q) {
   if (!q.batch && !q.date && !q.grade) {
     document.getElementById('content').innerHTML = `
       <div class="missing">
-        <h2>No batch data</h2>
+        <img src="/app/icons/icon-e-192.png" width="56" height="56" alt=""/>
+        <h1>No batch data</h1>
         <p>This link doesn't contain batch information. Generate a label from the SweetRun app to create a valid provenance link.</p>
       </div>`;
     return;
@@ -126,11 +154,12 @@ function render(q) {
 
   document.getElementById('content').innerHTML = `
     <div class="header">
+      <img class="bg" src="/app/photos/syrup-bottles.webp" alt="" width="1200" height="670"/>
       <div class="header-inner">
         <div class="brand">
-          <div class="brand-leaf">🍁</div>
+          <img class="brand-leaf" src="/app/icons/icon-e-192.png" width="44" height="44" alt=""/>
           <div>
-            <div class="brand-name">SweetRun</div>
+            <h1 class="brand-name">SweetRun</h1>
             <div class="brand-sub">Maple Provenance</div>
           </div>
         </div>
@@ -143,7 +172,7 @@ function render(q) {
       <div class="grade-swatch" style="background:${grade.color}"></div>
       <div>
         <div class="grade-label">USDA Grade A</div>
-        <div class="grade-name" style="color:${grade.color}">${grade.name}</div>
+        <div class="grade-name">${grade.name}</div>
       </div>
     </div>` : ''}
 
@@ -172,32 +201,32 @@ function render(q) {
 
     <div class="details">
       ${dateLabel ? `<div class="detail-row">
-        <div class="detail-icon" style="background:rgba(45,212,167,0.1)">📅</div>
+        <div class="detail-icon">${ICON.date}</div>
         <div class="detail-text">Boiled <strong>${esc(dateLabel)}</strong></div>
       </div>` : ''}
       ${q.loc ? `<div class="detail-row">
-        <div class="detail-icon" style="background:rgba(45,212,167,0.1)">📍</div>
+        <div class="detail-icon">${ICON.loc}</div>
         <div class="detail-text">Sugarbush in <strong>${esc(q.loc)}</strong></div>
       </div>` : ''}
       ${q.notes ? `<div class="detail-row">
-        <div class="detail-icon" style="background:rgba(255,255,255,0.05)">📝</div>
+        <div class="detail-icon">${ICON.note}</div>
         <div class="detail-text">${esc(q.notes)}</div>
       </div>` : ''}
       <div class="detail-row">
-        <div class="detail-icon" style="background:rgba(45,212,167,0.08)">🔒</div>
-        <div class="detail-text" style="font-size:11px;color:#3d5068">Batch data encoded right in this QR by the producer — tracked with <a href="https://sweetrun.app" style="color:#2dd4a7;font-weight:700">SweetRun</a>.</div>
+        <div class="detail-icon">${ICON.lock}</div>
+        <div class="detail-text detail-fine">Batch data encoded right in this QR by the producer, tracked with <a href="https://sweetrun.app">SweetRun</a>.</div>
       </div>
     </div>
 
     <div class="footer">
       <div>
         <div class="footer-qr">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent('https://sweetrun.app')}&color=1a3d2b&bgcolor=ffffff" alt="sweetrun.app"/>
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent('https://sweetrun.app')}&color=0C0B0A&bgcolor=ffffff" alt="QR code for sweetrun.app"/>
         </div>
       </div>
       <div class="footer-copy">
         Want to track your own sugarbush?<br/>
-        <a href="https://sweetrun.app">sweetrun.app</a> — 14 days free, then $49.99/year
+        <a href="https://sweetrun.app">sweetrun.app</a>: 14 days free, then $49.99 a year
       </div>
     </div>
   `;

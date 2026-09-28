@@ -54,7 +54,7 @@ A maple syrup production platform for serious sugarmakers. Offline-first PWA (Pr
 ## All Files — Where Everything Lives
 
 ### GitHub Repository
-- **Path on Damian's Mac:** `~/Documents/GitHub/SugarCalc`
+- **Path on Damian's Mac:** `~/SugarCalc`
 - **Branch:** main
 - **Auto-deploys to:** Cloudflare Pages on every push
 
@@ -86,7 +86,7 @@ SugarCalc/
 ### Build Process
 **App changes** (requires compile):
 ```bash
-cd ~/Documents/GitHub/SugarCalc
+cd ~/SugarCalc
 npm run build
 git add app/app.js app/src/app.jsx
 git commit -m "your message"
@@ -95,7 +95,7 @@ git push
 
 **Landing page / feedback changes** (no compile):
 ```bash
-cd ~/Documents/GitHub/SugarCalc
+cd ~/SugarCalc
 git add index.html feedback.html
 git commit -m "your message"
 git push
@@ -103,7 +103,7 @@ git push
 
 **If you get a git lock error:**
 ```bash
-rm ~/Documents/GitHub/SugarCalc/.git/HEAD.lock
+rm ~/SugarCalc/.git/HEAD.lock
 ```
 
 ---
@@ -295,4 +295,4 @@ In order of likely impact:
 
 ## Prompt for Resuming in a New Chat
 
-> I'm working on SweetRun, a maple syrup production app at sweetrun.app. It's a one-person project by me, Damian Brockway (damian.brockway@gmail.com). The full project reference is in ~/Documents/GitHub/SugarCalc/SWEETRUN-HANDOFF.md — please read that file first before we start. The repo is at ~/Documents/GitHub/SugarCalc on my Mac. The site is hosted on Cloudflare Pages and auto-deploys from GitHub main. We use Web3Forms for email notifications (key: d91810ec-94aa-49ed-9731-6ba2cd42e106), Stripe for payments (14-day free trial, $49.99/year subscription link: https://buy.stripe.com/dRm3cw9YsdYI7HkbGY14401). Real human traffic is only ~1.5 visitors/day — traffic growth is the main priority right now. The next steps are: (1) check Google Search Console keyword data, (2) create SEO content pages for maple-specific search terms, (3) outreach to maple producer associations.
+> I'm working on SweetRun, a maple syrup production app at sweetrun.app. It's a one-person project by me, Damian Brockway (damian.brockway@gmail.com). The full project reference is in ~/SugarCalc/SWEETRUN-HANDOFF.md — please read that file first before we start. The repo is at ~/SugarCalc on my Mac. The site is hosted on Cloudflare Pages and auto-deploys from GitHub main. We use Web3Forms for email notifications (key: d91810ec-94aa-49ed-9731-6ba2cd42e106), Stripe for payments (14-day free trial, $49.99/year subscription link: https://buy.stripe.com/dRm3cw9YsdYI7HkbGY14401). Real human traffic is only ~1.5 visitors/day — traffic growth is the main priority right now. The next steps are: (1) check Google Search Console keyword data, (2) create SEO content pages for maple-specific search terms, (3) outreach to maple producer associations.
