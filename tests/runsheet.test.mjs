@@ -378,7 +378,7 @@ eq('plain English decimals unchanged', E2.srPlain('1.5–2 in, 0.25 gal'), '1.5 
 // ── Phases 7-8: leak rule, runtime, fuel, readings, freeze/thaw, lines, pump jobs ──
 const E3 = new Function('ls', src.slice(a, b) +
   '\nreturn { srLeakCheck, srLeakFind, srImportedLines, srRunHours, srHms, srTimeToEmpty, srFuelLeft, srAgeTier, srVacStep, srFreezeThaw, srSapRunning, srLinePath,' +
-  ' srGaugeLocate, srGaugeSid, srNextGaugeName, srMToFt, srFtToM, srDegToPct, srPctToDeg, srElevU, srElevUnit, srTileBBox3857, srSlopeZ, srSlopeRule, srAspectRule, srElevRule, srTerrainRule, srTerrainTileUrl, srTrailsTileUrl, srHydroTileUrl, srSamplesUrl, srParseSamples, srGridPoints, srElevRange, srElevTicks, srAspectWord, srAlongPath, srLineProfile, SR_3DEP, SR_3DEP_PUBLISHED, SR_SLOPE_CLASSES, SR_ASPECT_CLASSES, SR_ELEV_RAMP, SR_MERC, srNearestOnPath, srPathFt, srSensorId, srTileXY, srTileUrls, srManualSource, srSimSource, srPickSource, srFreezeItems, srPumpJobs, srOpsPrefs, srMedian, srJobs, SR_OPS_DEFAULTS };')
+  ' srGaugeLocate, srGaugeSid, srNextGaugeName, srMToFt, srFtToM, srDegToPct, srPctToDeg, srElevU, srElevUnit, srTileBBox3857, srSlopeZ, srSlopeRule, srAspectRule, srElevRule, srTerrainRule, srTerrainTileUrl, srTrailsTileUrl, srHydroTileUrl, srSamplesUrl, srParseSamples, srGridPoints, srElevRange, srElevTicks, srAspectWord, srAlongPath, srLineProfile, SR_3DEP, SR_3DEP_PUBLISHED, SR_SLOPE_CLASSES, SR_ASPECT_CLASSES, SR_ELEV_RAMP, SR_MERC, srNearestOnPath, srPlacePlates, srPathFt, srSensorId, srTileXY, srTileUrls, srManualSource, srSimSource, srPickSource, srFreezeItems, srPumpJobs, srOpsPrefs, srMedian, srJobs, SR_OPS_DEFAULTS };')
   ({ get: (_k, d) => d, set: () => true });
 const HR = 3600000, DAY = 24 * HR, t0 = Date.UTC(2027, 2, 16, 20, 0);
 // Leak rule: latest >= 2.0 in under the median of the 7 days before it
@@ -817,6 +817,75 @@ for (const f of [...rsFiles.map(f => join('app', 'src', f)), join('app', 'runshe
   const live = src.slice(src.indexOf('function RsBoilLive('));
   eq('live Boil: Add a reading before the readings chart', live.indexOf('id="rs-boil-read"') < live.indexOf('className="rs-blchart"'), true);
   eq('Next card is secondary during an expired trial', /id="rs-next-btn" kind=\{SR_LOCKED \? 'secondary' : 'primary'\}/.test(src), true);
+}
+
+// ── UI review: mainline letter plates never stack (srPlacePlates, screen px) ──
+{
+  const PP = E3.srPlacePlates;
+  const bx = (a, w = 48, h = 44, up = 12, down = -12) => ({ l: a.x - w / 2, r: a.x + w / 2, t: a.y - up - h, b: a.y + down });
+  const hit = (a, b) => Math.min(a.r, b.r) > Math.max(a.l, b.l) && Math.min(a.b, b.b) > Math.max(a.t, b.t);
+  const pairsClear = o => { const v = Object.values(o).map(a => bx(a)); for (let i = 0; i < v.length; i++) for (let j = i + 1; j < v.length; j++) if (hit(v[i], v[j])) return false; return true; };
+  // Four lines drawn from the tank outward: every path starts at the same point (the pileup Damian saw).
+  const fan = [124, 96, 64, 30].map((deg, i) => { const a = deg * Math.PI / 180; return { id: 'ABCD'[i], w: 48, h: 44, pts: [0, 1, 2, 3, 4].map(k => [200 + Math.cos(a) * k * 40, 300 - Math.sin(a) * k * 40]) }; });
+  const f = PP(fan, { bounds: { w: 390, h: 700 } });
+  eq('plates: every line gets one', Object.keys(f).sort(), ['A', 'B', 'C', 'D']);
+  eq('plates: tank-first lines no longer stack', pairsClear(f), true);
+  eq('plates: tank-first lines all clear', Object.values(f).every(a => a.clear), true);
+  eq('plates: tank-first lines use the far (free) end', Object.values(f).map(a => a.end), ['last', 'last', 'last', 'last']);
+  eq('plates: the free end is tried first', Object.values(f).map(a => a.at), [0, 0, 0, 0]);
+  // Lines listed far end first (built from trees, ending at the tank): unchanged, first point.
+  const rev = fan.map(l => ({ ...l, pts: l.pts.slice().reverse() }));
+  const r = PP(rev, { bounds: { w: 390, h: 700 } });
+  eq('plates: far-first lines keep the first point', Object.values(r).map(a => [a.end, a.at]), [['first', 0], ['first', 0], ['first', 0], ['first', 0]]);
+  eq('plates: far-first sits on the far end', [r.A.x, r.A.y], [rev[0].pts[0][0], rev[0].pts[0][1]].map(v => Math.round(v * 10) / 10));
+  // One line alone: its first point, as before the review.
+  eq('plates: a lone line sits on its first point', PP([{ id: 'A', pts: [[50, 200], [300, 200]] }], {}).A, { x: 50, y: 200, at: 0, clear: true, end: 'first', off: false });
+  // A button over the free end: the plate walks inward along the line until it clears it.
+  const av = PP([{ id: 'A', pts: [[40, 100], [340, 100]] }], { avoid: [{ l: 0, r: 90, t: 0, b: 140 }] }).A;
+  eq('plates: walks inward past a map button', [av.clear, av.at > 0, av.x - 24 >= 90, av.y], [true, true, true, 100]);
+  // Off the map edge at the free end: moves inward.
+  const ed = PP([{ id: 'A', pts: [[380, 100], [100, 100]] }], { bounds: { w: 390, h: 400 } }).A;
+  eq('plates: stays inside the map', [ed.clear, ed.x + 24 + 3 <= 390], [true, true]);
+  // Two lines sharing both ends on the same segment: the second can't sit on the line, so it hangs beside it.
+  const same = PP([{ id: 'A', pts: [[100, 200], [140, 200]] }, { id: 'B', pts: [[100, 200], [140, 200]] }], { bounds: { w: 390, h: 400 } });
+  eq('plates: overlapping lines, second plate hung off the line', [same.A.off, same.B.off, same.B.clear, pairsClear(same)], [false, true, true, true]);
+  // A leaking or selected line goes first and keeps its end; a fixed plate (leak ring) never leaves the line.
+  const pri = PP([{ id: 'A', pts: [[100, 200], [140, 200]] }, { id: 'C', pri: 2, fixed: true, pts: [[100, 200], [140, 200]] }], { bounds: { w: 390, h: 400 } });
+  eq('plates: the leaking line is placed first, on its line', [pri.C.at, pri.C.off, pri.A.off], [0, false, true]);
+  // Nowhere clear: every line still gets a plate, least overlap, flagged not clear.
+  const jam = PP([{ id: 'A', pts: [[20, 60]] }, { id: 'B', pts: [[20, 60]] }], { bounds: { w: 60, h: 70 } });
+  eq('plates: jammed map still places every plate', [Object.keys(jam).length, jam.B.clear], [2, false]);
+  eq('plates: bad points are skipped, no plate', PP([{ id: 'A', pts: [[NaN, 1], null] }], {}), {});
+  // Nowhere clear near a button at the edge: hanging off the map (hidden) beats covering the button.
+  const edge = PP([{ id: 'A', pts: [[190, 100]] }], { bounds: { w: 200, h: 400 }, avoid: [{ l: 150, r: 200, t: 0, b: 400 }] }).A;
+  eq('plates: off the edge rather than under a button', [edge.clear, edge.off, edge.x > 200], [false, true, true]);
+}
+
+// ── UI review: structure ──
+eq('sw cache bumped for the UI review', +(/sweetrun-v(\d+)/.exec(sw) || [0, 0])[1] >= 43, true);
+eq('plates: the map re-places them after every zoom', /map\._rsPlace = both; map\.on\('zoomend resize', both\)/.test(src), true);
+eq('plates: placement avoids the map chrome', /const SR_MAP_CHROME = '\.rs-mapt,/.test(src) && src.includes('srPlacePlates(items, { avoid'), true);
+eq('counts: no "1 trees" (treesTaps is only a string now)', /rt\(L,\s*'treesTaps'/.test(src), false);
+eq('counts: singular strings in both languages', ["ttTree1:'1\\u00a0tree'", "ttTap1:'1\\u00a0tap'", "ttTree1:'1\\u00a0arbre'", "ttTap1:'1\\u00a0entaille'"].every(k => src.includes(k)), true);
+eq('back: the pinned copy lives in a bar with the title', /className="rs-backbar">\{link\(' rs-backfloat'\)\}/.test(src) && /\.rs-backbar \{ position: fixed; top: 0;/.test(rcss), true);
+eq('back: bar lines up with the content column (16, 32, nav + 40)', /@media \(min-width: 760px\) \{ \.rs-backbar \{ padding-left: 32px;/.test(rcss) && /\.rs-backbar \{ left: var\(--rs-navw\); padding-left: 40px;/.test(rcss), true);
+eq('back: one spot for the pill on photo screens too', rcss.includes('.rs-hashero .rs-phead > .rs-pushbar { margin-bottom: auto; }'), true);
+eq('fields: side-by-side number fields share a row when a label wraps', rcss.includes('.rs-grid2:has(> div > label.rs-fl:first-child) { align-items: end; }'), true);
+eq('rows: a long value no longer squeezes its label (key column fits its content)', /\.rs-kv \{ display: grid; grid-template-columns: fit-content\(56%\) minmax\(0, 1fr\)/.test(rcss) && /\.rs-wkv \{ display: grid; grid-template-columns: fit-content\(50%\) minmax\(0, 1fr\)/.test(rcss), true);
+eq('expired: a screen\'s own primary steps down, Get a Pass stays the one solid button', src.includes("c.lic.status === 'expired' ? ' rs-locked' : ''") && rcss.includes('.rs-locked main .rs-btn:not(.rs-sheet .rs-btn)'), true);
+eq('bush: credits have their own strip on a phone, chips lifted', rcss.includes('.rs-bushwrap:not(.wide) .rs-mapchips { bottom: 26px; }'), true);
+eq('headings: a trailing link does not make its heading taller', rcss.includes('.rs-sec > .rs-more { margin-top: -14px; margin-bottom: -14px; }'), true);
+eq('back: no loose floating pill left', /\.rs-backfloat \{/.test(rcss), false);
+
+// Species keys read as names (the tree detail showed "sugar maple", lower case, in French too).
+{
+  const a = src.indexOf('const SR_SPECIES = '), b = src.indexOf('// The map\'s own chrome a line plate');
+  const SP = new Function(src.slice(a, b) + '\nreturn srSpeciesName;')();
+  eq('species: key in English', SP('sugar_maple', 'en'), 'Sugar maple');
+  eq('species: key in French', SP('sugar_maple', 'fr'), 'Érable à sucre');
+  eq('species: red maple both', [SP('red_maple', 'en'), SP('red_maple', 'fr')], ['Red maple', 'Érable rouge']);
+  eq('species: his own words, capitalised', SP('yellow birch', 'fr'), 'Yellow birch');
+  eq('species: underscores become spaces', SP('striped_maple', 'en'), 'Striped maple');
 }
 
 console.log(`${pass} passed, ${fail} failed`);

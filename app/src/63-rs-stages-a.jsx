@@ -192,7 +192,7 @@ function RsTapStage({ c }) {
               {trees.length > 0 && <>
                 <div className="rs-bar"><i style={{ width: (m.taps > 0 ? Math.min(100, tapSum / m.taps * 100) : 0) + '%' }} /></div>
                 <p className="rs-meta tn" style={{ marginTop:6 }}>{rt(L,'tapsMapped', { t: fmt(tapSum, 0), n: fmt(trees.length, 0) })}</p>
-                <RsKv rows={Object.keys(byLine).sort().map(k => [lineName(k), rt(L,'treesTaps', { t: byLine[k].trees, n: byLine[k].taps })])} />
+                <RsKv rows={Object.keys(byLine).sort().map(k => [lineName(k), rtTreesTaps(L, byLine[k].trees, byLine[k].taps)])} />
               </>}
               <p className="rs-note">{rt(L,'tapsSetting')}</p>
             </div>
@@ -288,7 +288,7 @@ function RsLinesStage({ c }) {
               <div className="rs-list">
                 {ml.map(x => { const tr = per(x.id); return (
                   <RsRow key={x.id} icon={null} title={x.label || rt(L,'mainlineN', { id:x.id })}
-                    sub={tr.length ? rt(L,'treesTaps', { t: tr.length, n: tr.reduce((s, p) => s + tapsOf(p), 0) }) : rt(L,'noTreesOnLine')}
+                    sub={tr.length ? rtTreesTaps(L, tr.length, tr.reduce((s, p) => s + tapsOf(p), 0)) : rt(L,'noTreesOnLine')}
                     value={<svg className="rs-mldash" width="36" height="6" viewBox="0 0 36 6" aria-hidden="true"><line x1="2" y1="3" x2="34" y2="3" strokeDasharray={SR_LINE_DASH[ml.indexOf(x) % SR_LINE_DASH.length] || undefined} /></svg>} href={rsHref('bush/line/' + x.id)} />); })}
               </div>}
             <p className="rs-note">{rt(L,'linesNote')}</p>

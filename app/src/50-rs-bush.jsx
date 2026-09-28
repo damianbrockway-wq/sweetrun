@@ -48,6 +48,16 @@ function useRsWide(q = '(min-width: 1100px)') {
   return w;
 }
 
+// A stored species key ('sugar_maple') read as a name in the screen's language; anything else he typed, capitalised.
+const SR_SPECIES = { sugar_maple: ['Sugar maple', 'Érable à sucre'], red_maple: ['Red maple', 'Érable rouge'], black_maple: ['Black maple', 'Érable noir'],
+  silver_maple: ['Silver maple', 'Érable argenté'], boxelder: ['Box elder', 'Érable à Giguère'], norway_maple: ['Norway maple', 'Érable de Norvège'], birch: ['Birch', 'Bouleau'], walnut: ['Walnut', 'Noyer'] };
+function srSpeciesName(sp, L) {
+  const k = String(sp || '').trim(), m = SR_SPECIES[k.toLowerCase()];
+  if (m) return m[L === 'fr' ? 1 : 0];
+  const t = k.replace(/_/g, ' '); return t.charAt(0).toUpperCase() + t.slice(1);
+}
+// The map's own chrome a line plate must stay clear of (title card, buttons, chips, notes, legends).
+const SR_MAP_CHROME = '.rs-mapt, .rs-maptop .rs-mbtn, .rs-mapfoot .rs-mbtn, .rs-mapchips .rs-chip, .rs-mapnotes > *, .rs-readcard, .rs-mapempty, .rs-wlegend, .rs-wmaphint, .leaflet-control-attribution';
 const SR_BUSH_LAYERS = { base: 'sat', trees: true, laterals: true, mainlines: true, vacuum: true, brix: false, pumps: true, tanks: true, property: true };
 const srEsc = v => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 // Impeller glyph (prototype): a ring and four vanes that turn while the pump runs.
@@ -122,6 +132,7 @@ function srDrawBush(L, map, G, model, ly, o) {
     });
   }
   // Lines: laterals, casing, core, flow, hit area
+  const plates = [];
   model.lines.forEach(l => {
     const pts = l.geo.pts;
     const leak = l.leak.status === 'suspect';
@@ -155,9 +166,11 @@ function srDrawBush(L, map, G, model, ly, o) {
     const mk = L.marker(top, { icon: L.divIcon({ className: 'rs-divicon', html, iconSize: null, iconAnchor: [0, 0] }), keyboard: false, zIndexOffset: 800, bubblingMouseEvents: false });
     mk.on('click', () => opt.onLine && opt.onLine(l.id));
     mk.addTo(G.marks);
+    let ring = null;
     if (vacOn && leak && !watchOne) {
-      L.marker(top, { icon: L.divIcon({ className: 'rs-divicon', html: `<span class="rs-leakring${rm ? '' : ' pulse'}"></span>${watch ? '' : `<span class="rs-leakpill">${srEsc(opt.leakWord || '')}</span>`}`, iconSize: null, iconAnchor: [0, 0] }), interactive: false, keyboard: false }).addTo(G.marks);
+      ring = L.marker(top, { icon: L.divIcon({ className: 'rs-divicon', html: `<span class="rs-leakring${rm ? '' : ' pulse'}"></span>${watch ? '' : `<span class="rs-leakpill">${srEsc(opt.leakWord || '')}</span>`}`, iconSize: null, iconAnchor: [0, 0] }), interactive: false, keyboard: false }).addTo(G.marks);
     }
+    plates.push({ l, mk, ring, pri: (vacOn && leak ? 2 : 0) + (isSel ? 4 : 0) - (watchOne ? 1 : 0) });
   });
   // Trees (and Brix at the tree)
   if (!watch && (ly.trees || ly.brix)) model.pins.filter(p => p.type === 'tree' && srFin(p.lat) && srFin(p.lon)).forEach(t => {
@@ -228,16 +241,45 @@ function srDrawBush(L, map, G, model, ly, o) {
     pumpMks.forEach(mk => {
       const el = mk.getElement && mk.getElement(); if (!el) return;
       const pp = map.latLngToContainerPoint(mk.getLatLng());
-      let dx = 0;
-      tankPts.forEach(t => { const tp = map.latLngToContainerPoint(t); if (Math.abs(tp.y - pp.y) < 44 && Math.abs(tp.x - pp.x) < tankHalf + 20) dx = Math.max(dx, tp.x + tankHalf + 22 - pp.x); });
-      el.style.marginLeft = dx ? Math.round(dx) + 'px' : '';
+      let dx = 0, dxL = 0;
+      tankPts.forEach(t => { const tp = map.latLngToContainerPoint(t); if (Math.abs(tp.y - pp.y) < 44 && Math.abs(tp.x - pp.x) < tankHalf + 20) { dx = Math.max(dx, tp.x + tankHalf + 22 - pp.x); dxL = Math.min(dxL, tp.x - tankHalf - 22 - pp.x); } });
+      // Near the map's right edge the name would run off it: the pump and its name go to the tank's left instead.
+      const lb = el.querySelector('.rs-mlbl.side'), mw = map.getSize().x;
+      const flip = !!lb && pp.x + dx + 22 + lb.offsetWidth > mw - 6 && pp.x + dxL - 22 - lb.offsetWidth > 6;
+      if (lb) lb.classList.toggle('flip', flip);
+      const d = flip ? dxL : dx;
+      el.style.marginLeft = d ? Math.round(d) + 'px' : '';
     });
   };
   if (map._rsNudge) map.off('zoomend moveend', map._rsNudge);
   map._rsNudge = nudge; map.on('zoomend moveend', nudge);
+  // Line plates: placed along each line so none sits on another plate, a pin or the map's
+  // own buttons (srPlacePlates). Redone after every zoom; a pan keeps them where they are.
+  const place = () => {
+    const box = map.getContainer(); if (!box || !plates.length) return;
+    const mr = box.getBoundingClientRect(); if (!mr.width || !mr.height) return;
+    const R = r => ({ l: r.left - mr.left, r: r.right - mr.left, t: r.top - mr.top, b: r.bottom - mr.top });
+    const seen = r => r.r > r.l && r.b > r.t && r.r > 0 && r.b > 0 && r.l < mr.width && r.t < mr.height;
+    const avoid = [];
+    document.querySelectorAll(SR_MAP_CHROME).forEach(e => { if (!e.getClientRects().length) return; const r = R(e.getBoundingClientRect()); if (seen(r)) avoid.push(r); });
+    box.querySelectorAll('.leaflet-marker-pane .rs-center > *, .leaflet-marker-pane .rs-bxdot').forEach(e => { const r = R(e.getBoundingClientRect()); if (seen(r)) avoid.push(r); });
+    const items = plates.map(p => {
+      const el = p.mk.getElement && p.mk.getElement(), pl = el && el.querySelector('.rs-plate');
+      const pr = pl ? pl.getBoundingClientRect() : { width: 48, height: 44 };
+      const pill = p.ring && p.ring.getElement && p.ring.getElement() && p.ring.getElement().querySelector('.rs-leakpill');
+      const pw = pill ? pill.getBoundingClientRect().width : 0;
+      return { id: p.l.id, pri: p.pri, fixed: !!pill, w: Math.max(pr.width, pw), h: pr.height, up: pl && pl.classList.contains('big') ? 16 : 12, down: pill ? 22 + pill.getBoundingClientRect().height : 0,
+        pts: p.l.geo.pts.map(q => { const c = map.latLngToContainerPoint(q); return [c.x, c.y]; }) };
+    });
+    const at = srPlacePlates(items, { avoid, bounds: { w: mr.width, h: mr.height } });
+    plates.forEach(p => { const a = at[p.l.id]; if (!a) return; const ll = map.containerPointToLatLng([a.x, a.y]); p.mk.setLatLng(ll); if (p.ring) p.ring.setLatLng(ll); });
+  };
+  const both = () => { nudge(); place(); };
+  if (map._rsPlace) map.off('zoomend resize', map._rsPlace);
+  map._rsPlace = both; map.on('zoomend resize', both);
   // The first draw can run before the view exists (the fit comes right after it), so run once more on the next frame.
-  try { nudge(); } catch {}
-  requestAnimationFrame(() => { try { nudge(); } catch {} });
+  try { both(); } catch {}
+  requestAnimationFrame(() => { try { both(); } catch {} });
   // Draw-mode path in progress
   if (opt.draft && opt.draft.length) {
     if (opt.draft.length >= 2) L.polyline(opt.draft, { className: 'rs-draft', weight: 4, dashArray: '6 8', interactive: false }).addTo(G.marks);
@@ -392,6 +434,8 @@ function RsBush({ c, sub }) {
       else if (pts.length === 1) map.setView(pts[0], 17);
       else map.setView([45.5, -72.0], 14);
     }
+    // Plates are placed in screen space: once more now the view is set.
+    requestAnimationFrame(() => { try { map._rsPlace && map._rsPlace(); } catch {} });
   }, [lf, model.ver, layers, sel, mode, L_, fresh]);
 
   // Map taps: add a pin, add a draw vertex, or clear the selection.
@@ -620,7 +664,7 @@ function RsBushOverview({ c, model, layers, setLayers, onLine, onTree, onTools, 
       {model.lines.length ? <div className="rs-list">{model.lines.map(l => (
         <button key={l.id} type="button" className="rs-row" onClick={() => onLine(l.id)}>
           <RsLinePlate l={l} />
-          <span className="rs-rt"><b>{l.label}</b><span className="tn">{rt(L, 'treesTaps', { t: l.trees.length, n: l.taps })}{l.latest ? ' · ' + srAgo(l.latest.ms, model.now, L) : ''}</span></span>
+          <span className="rs-rt"><b>{l.label}</b><span className="tn">{rtTreesTaps(L, l.trees.length, l.taps)}{l.latest ? ' · ' + srAgo(l.latest.ms, model.now, L) : ''}</span></span>
           <RsVacValue l={l} L={L} />
         </button>))}</div>
         : <div className="rs-empty"><b>{rt(L, 'noLinesT')}</b><p>{rt(L, 'noLinesBush')}</p></div>}
@@ -831,7 +875,7 @@ function RsTreeDetail({ c, model, tree, onClose }) {
     <div className="rs-detail">
       <RsKv rows={[
         tree.label && tree.tagged ? [rt(L, 'nameWord'), tree.label] : null,
-        tree.species ? [rt(L, 'species'), String(tree.species).replace(/_/g, ' ')] : null,
+        tree.species ? [rt(L, 'species'), srSpeciesName(tree.species, L)] : null,
         tree.dbh ? [rt(L, 'diameter'), `${tree.dbh} ${srUnitL('in', L)}`] : null,
         srFin(parseFloat(tree.elev)) ? [rt(L, 'elevation'), `${fmt(parseFloat(tree.elev), 0)} ft`] : null,
         ev.st !== 'idle' ? [rt(L, 'groundLidar'), ev.st === 'ok' ? (ev.v[0] != null ? srElevText(ev.v[0], c.units, L) : rt(L, 'noLidarShort')) : ev.st === 'loading' ? '·' : rt(L, 'needsSignalShort')] : null,

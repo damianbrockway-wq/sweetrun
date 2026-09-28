@@ -274,6 +274,56 @@ function srNearestOnPath(p, pts) {
   }
   return best;
 }
+// Where each mainline's letter plate goes, in screen pixels (pure; the map calls
+// it after every zoom). Lines drawn from the tank outward all start at the same
+// point, so a plate pinned to the first point stacks on the others. Each plate
+// starts at its line's free end (the end farther from every other line's ends;
+// the first point when both are shared or there is one line) and walks inward
+// along the path until it clears the plates already placed, the boxes to avoid
+// and the map's edge. Leaking and selected lines go first (pri). If no spot is
+// clear, the one with the least overlap wins (covering a plate or a button counts
+// three times what hanging off the edge does), nearest the free end on a tie.
+//   lines: [{ id, pts:[[x,y]...], w, h, up, down, pri, fixed }]  up: anchor to plate bottom (px), down: extent below the anchor
+//   o: { avoid:[{l,r,t,b}], bounds:{w,h}, gap, steps }
+//   -> { [id]: { x, y, at (0..1 from the free end), clear, end:'first'|'last', off (hung beside the line) } }
+function srPlacePlates(lines, o) {
+  const opt = o || {}, gap = opt.gap != null ? opt.gap : 6, steps = Math.max(1, opt.steps || 24), B = opt.bounds || null, avoid = opt.avoid || [];
+  const ok = p => Array.isArray(p) && isFinite(p[0]) && isFinite(p[1]);
+  const L = (lines || []).map((l, i) => ({ l, i, P: (l.pts || []).filter(ok) })).filter(x => x.P.length);
+  const box = (x, y, l) => { const w = l.w || 48, h = l.h || 44, up = l.up != null ? l.up : 12, dn = l.down != null ? l.down : -up;
+    return { l: x - w / 2 - gap / 2, r: x + w / 2 + gap / 2, t: y - up - h - gap / 2, b: y + dn + gap / 2 }; };
+  const ov = (a, b) => Math.max(0, Math.min(a.r, b.r) - Math.max(a.l, b.l)) * Math.max(0, Math.min(a.b, b.b) - Math.max(a.t, b.t));
+  const outside = a => { if (!B) return 0; const inA = ov(a, { l: 0, r: B.w, t: 0, b: B.h }); return (a.r - a.l) * (a.b - a.t) - inA; };
+  const near = (me, q) => { let d = Infinity; L.forEach(x => { if (x === me) return; [x.P[0], x.P[x.P.length - 1]].forEach(e => { d = Math.min(d, Math.hypot(e[0] - q[0], e[1] - q[1])); }); }); return d; };
+  const out = {}, placed = [];
+  L.slice().sort((a, b) => (b.l.pri || 0) - (a.l.pri || 0) || a.i - b.i).forEach(x => {
+    const { l, P } = x;
+    const flip = P.length > 1 && near(x, P[P.length - 1]) > near(x, P[0]) + 1;
+    const Q = flip ? P.slice().reverse() : P;
+    const d = [0]; for (let i = 1; i < Q.length; i++) d.push(d[i - 1] + Math.hypot(Q[i][0] - Q[i - 1][0], Q[i][1] - Q[i - 1][1]));
+    const tot = d[d.length - 1];
+    // Standing on the line first; then, unless the plate carries a marker that must stay on
+    // the line (fixed: the leak ring), hanging below it or beside it.
+    const w = l.w || 48, h = l.h || 44, up = l.up != null ? l.up : 12;
+    const offs = [[0, 0]].concat(l.fixed ? [] : [[0, h + 2 * up], [w / 2 + 10, h / 2 + up], [-(w / 2 + 10), h / 2 + up]]);
+    let best = null;
+    outer: for (let o = 0; o < offs.length; o++) for (let k = 0; k <= steps; k++) {
+      const t = tot * k / steps; let i = 1; while (i < Q.length - 1 && d[i] < t) i++;
+      const f = Q.length > 1 && d[i] > d[i - 1] ? (t - d[i - 1]) / (d[i] - d[i - 1]) : 0;
+      const qx = Q.length > 1 ? Q[i - 1][0] + (Q[i][0] - Q[i - 1][0]) * f : Q[0][0], qy = Q.length > 1 ? Q[i - 1][1] + (Q[i][1] - Q[i - 1][1]) * f : Q[0][1];
+      const px = qx + offs[o][0], py = qy + offs[o][1];
+      const b = box(px, py, l);
+      // A plate off the map's edge only hides; one under a button or another plate hides both, so those weigh more.
+      let hit = outside(b); placed.forEach(q => { hit += 3 * ov(b, q); }); avoid.forEach(q => { hit += 3 * ov(b, q); });
+      if (!best || hit < best.hit) best = { x: px, y: py, at: tot ? k / steps : 0, hit, b, off: o > 0 };
+      if (hit === 0) break outer;
+      if (tot === 0) break;
+    }
+    out[l.id] = { x: Math.round(best.x * 10) / 10, y: Math.round(best.y * 10) / 10, at: Math.round(best.at * 1000) / 1000, clear: best.hit === 0, end: flip ? 'last' : 'first', off: best.off };
+    placed.push(best.b);
+  });
+  return out;
+}
 // Length of a path in feet.
 function srPathFt(pts) { let m = 0; for (let i = 1; i < (pts || []).length; i++) m += srDistM(pts[i - 1], pts[i]); return m * 3.28084; }
 

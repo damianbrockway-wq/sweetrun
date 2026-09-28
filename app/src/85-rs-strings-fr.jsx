@@ -182,7 +182,7 @@ Object.assign(RS_TR.fr, {
   onMapN:'{n} arbres épinglés',
   noneOnMap:'Aucun arbre épinglé',
   tapsMapped:'{t} entailles sur {n} arbres cartographiés',
-  treesTaps:'{t}\u00a0arbres · {n}\u00a0entailles',
+  treesTaps:'{t}\u00a0arbres · {n}\u00a0entailles', ttTree1:'1\u00a0arbre', ttTreeN:'{t}\u00a0arbres', ttTap1:'1\u00a0entaille', ttTapN:'{n}\u00a0entailles',
   tapsSetting:'Entailles cette saison est votre réglage, utilisé pour votre objectif et le rendement par entaille.',
   howManyTaps:'Combien d\'entailles',
   dbhLabel:'Diamètre à hauteur de poitrine',

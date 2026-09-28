@@ -84,6 +84,8 @@ function RsHero({ photo }) {
     </div>
   );
 }
+// "1 tree · 1 tap", "9 trees · 12 taps": each count takes its own singular.
+const rtTreesTaps = (L, t, n) => rt(L, t === 1 ? 'ttTree1' : 'ttTreeN', { t }) + ' · ' + rt(L, n === 1 ? 'ttTap1' : 'ttTapN', { n });
 function RsPushBar({ href, label }) {
   // Prefer the screen the user actually came from; fall back to the parent.
   const prev = (typeof rsNavPrev === 'function') ? rsNavPrev() : null;
@@ -92,12 +94,19 @@ function RsPushBar({ href, label }) {
   const useHist = !!prevT;
   const text = useHist ? prevT : label;
   const onClick = useHist ? (e) => { e.preventDefault(); history.back(); } : undefined;
-  // Once the bar scrolls away, a floating copy stays pinned at the top.
+  // Once the bar scrolls away, a slim bar pinned at the top carries a copy of the
+  // back pill and the screen's title; content scrolls under the bar, never under a
+  // loose pill (a pill floating over a card sat on its fields and buttons).
   const ref = React.useRef(null);
   const [gone, setGone] = useState(false);
+  const [title, setTitle] = useState('');
   useEffect(() => {
     const el = ref.current; if (!el || typeof IntersectionObserver === 'undefined') return;
-    const io = new IntersectionObserver(([e]) => setGone(!e.isIntersecting && e.boundingClientRect.top < 0));
+    const io = new IntersectionObserver(([e]) => {
+      const off = !e.isIntersecting && e.boundingClientRect.top < 0;
+      if (off) { const h = el.closest('header') && el.closest('header').querySelector('h1'); setTitle(h ? h.textContent : ''); }
+      setGone(off);
+    });
     io.observe(el); return () => io.disconnect();
   }, []);
   const link = (extra) => (
@@ -109,7 +118,7 @@ function RsPushBar({ href, label }) {
   return (
     <div className="rs-pushbar" ref={ref}>
       {link('')}
-      {gone && link(' rs-backfloat')}
+      {gone && <div className="rs-backbar">{link(' rs-backfloat')}{title && <b className="rs-backbar-t" aria-hidden="true">{title}</b>}</div>}
     </div>
   );
 }

@@ -153,7 +153,7 @@ function RunSheetApp() {
   else view = <RsNotFound c={c} />;
 
   const hasHero = !seg.length || top === 'season' || !!SV || path === 'pumps' || (top === 'pumps' && seg[1] === 'tank');
-  const cls = `rs-app${hasHero ? ' rs-hashero' : ''}${path === 'stage/boil' ? ' rs-boilroute' : ''}${top === 'bush' ? ' rs-bushroute' : ''}${top === 'watch' ? ' rs-watchroute' : ''}`;
+  const cls = `rs-app${hasHero ? ' rs-hashero' : ''}${path === 'stage/boil' ? ' rs-boilroute' : ''}${top === 'bush' ? ' rs-bushroute' : ''}${top === 'watch' ? ' rs-watchroute' : ''}${c.lic.status === 'expired' ? ' rs-locked' : ''}`;
   return (
     <div className={cls} data-route={path || 'season'}>
       <RsNav side active={active} lang={c.lang} onLog={onLog} />

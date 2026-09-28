@@ -1,5 +1,15 @@
 # SweetRun changelog
 
+## 2026-09-28: UI review (map plates, back bar, expired trial, French fit)
+
+What a sugarmaker sees:
+- **Line letters no longer pile up.** When mainlines are drawn from the tank outward, their A, B, C, D plates used to stack on the tank. Each plate now sits on its own line, at the free end, and moves along the line (or just beside it) to stay clear of the other plates, the map's buttons and the pins. Zoom in or out and they re-settle.
+- **Back button.** Scroll down and a slim bar pins to the top with the back button and the screen's name; it no longer floats over fields and buttons. The back button sits in the same spot on every screen, photo or not.
+- **Expired trial.** Get a Pass is the one orange button; a screen's own button (it would not save) steps down.
+- **Tidier fit and finish.** The imagery credits have their own line under the Bush chips. French stage names fit their pills. Labels beside long values no longer break into three lines. "1 tree · 1 tap". Species read "Sugar maple" (Érable à sucre). The pump's name stays on the Watch map. Side-by-side number fields line up when one label wraps.
+
+Under the hood: `srPlacePlates` (tested) places the plates in screen space after every zoom. No data key, shape or formula changed. Service worker `sweetrun-v43`. 708 tests.
+
 ## 2026-09-27: Terrain from LiDAR on the Bush (elevation, slope, aspect, water, trails)
 
 What a sugarmaker sees:

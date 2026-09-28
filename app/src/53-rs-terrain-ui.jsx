@@ -27,11 +27,11 @@ function srApplyTerrain(L, map, T, o) {
   if (T.overlay && !(T.overlay === 'elev' && !T.range && !opt.fb)) {
     const ro = { range: T.range, lat: opt.lat, fallback: !!opt.fb };
     want.ov = { key: [T.overlay, opt.fb ? 'fb' : '', T.range ? T.range.min + ',' + T.range.max : '', srFin(opt.lat) ? opt.lat.toFixed(2) : ''].join('|'),
-      make: () => srFnTiles(L, (z, x, y) => srTerrainTileUrl(T.overlay, z, x, y, ro), { pane: 'rs-lidar', opacity: T.opacity, maxNativeZoom: 17, maxZoom: 20, attribution: 'LiDAR &copy; USGS 3DEP', kind: T.overlay }) };
+      make: () => srFnTiles(L, (z, x, y) => srTerrainTileUrl(T.overlay, z, x, y, ro), { pane: 'rs-lidar', opacity: T.opacity, maxNativeZoom: 17, maxZoom: 20, attribution: '&copy; USGS 3DEP', kind: T.overlay }) };
   }
-  if (T.hillshade) want.hill = { key: 'hill', make: () => srFnTiles(L, (z, x, y) => srTerrainTileUrl('hillshade', z, x, y), { pane: 'rs-hill', opacity: .6, maxNativeZoom: 17, maxZoom: 20, attribution: 'Hillshade &copy; USGS 3DEP', kind: 'hillshade' }) };
-  if (T.water) want.water = { key: 'water', make: () => srFnTiles(L, srHydroTileUrl, { pane: 'rs-water', maxNativeZoom: 16, maxZoom: 20, attribution: 'Water &copy; USGS NHD', kind: 'water' }) };
-  if (T.trails) want.trails = { key: 'trails', make: () => srFnTiles(L, srTrailsTileUrl, { pane: 'rs-trails', maxNativeZoom: 17, maxZoom: 20, attribution: 'Trails &copy; USGS', kind: 'trails' }) };
+  if (T.hillshade) want.hill = { key: 'hill', make: () => srFnTiles(L, (z, x, y) => srTerrainTileUrl('hillshade', z, x, y), { pane: 'rs-hill', opacity: .6, maxNativeZoom: 17, maxZoom: 20, attribution: '&copy; USGS 3DEP', kind: 'hillshade' }) };
+  if (T.water) want.water = { key: 'water', make: () => srFnTiles(L, srHydroTileUrl, { pane: 'rs-water', maxNativeZoom: 16, maxZoom: 20, attribution: '&copy; USGS NHD', kind: 'water' }) };
+  if (T.trails) want.trails = { key: 'trails', make: () => srFnTiles(L, srTrailsTileUrl, { pane: 'rs-trails', maxNativeZoom: 17, maxZoom: 20, attribution: '&copy; USGS Trails', kind: 'trails' }) };
   ['ov', 'hill', 'water', 'trails'].forEach(k => {
     const cur = map._rsT[k], w = want[k];
     if (cur && (!w || cur.key !== w.key)) { map.removeLayer(cur.layer); delete map._rsT[k]; }

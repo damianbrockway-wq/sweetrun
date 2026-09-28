@@ -98,7 +98,7 @@ Object.assign(RS_TR.en, {
   // plan and tap
   tapLede:'Taps per tree, the trees you have pinned, and what each one needs.',
   tapsPlanned:'Taps this season', tapsWord:'taps', tapsWordC:'Taps', onMapN:'{n} trees pinned', noneOnMap:'No trees pinned',
-  tapsMapped:'{t} taps on {n} mapped trees', treesTaps:'{t}\u00a0trees · {n}\u00a0taps', tapsSetting:'Taps this season is your setting, used for your goal and yield per tap.',
+  tapsMapped:'{t} taps on {n} mapped trees', treesTaps:'{t}\u00a0trees · {n}\u00a0taps', ttTree1:'1\u00a0tree', ttTreeN:'{t}\u00a0trees', ttTap1:'1\u00a0tap', ttTapN:'{n}\u00a0taps', tapsSetting:'Taps this season is your setting, used for your goal and yield per tap.',
   howManyTaps:'How many taps', dbhLabel:'Diameter at chest height', dbhU10:'Under 10 in', dbhU10s:'Leave it for now', dbh10:'10 to 17 in', dbh18:'18 to 24 in', dbh25:'25 in and up',
   dbhNote:'The same rule the tapping guide uses. Vacuum adds sap per tap, not taps per tree.',
   treesWord:'Trees', treeWord:'Tree', noTreesT:'No trees pinned yet', noTreesP:'Drop tree pins on the Bush tab as you tap. Each one gets its tag, size and taps here.',

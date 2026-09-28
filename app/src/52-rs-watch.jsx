@@ -137,7 +137,7 @@ function RsWatch({ c, sub }) {
           <section className="rs-wmapc">
             <RsWatchMap c={c} model={model} V={V} onLine={id => setPanel(id)} />
             {demo && <div className="rs-wdemotag" aria-hidden="true">{rt(L, 'wDemoPill')}</div>}
-            <div className="rs-wlegend" role="note" aria-label={rt(L, 'wLegendAria')}><span>{rt(L, 'lyVacuum')}</span>{[0, 1, 2, 3, 4].map(i => <i key={i} className={'v' + i} />)}<span className="tn">16 → 26 {srUnitL('in', L)}</span><i className="leak" /><span>{rt(L, 'leakSuspectW')}</span>{!panel && <span className="rs-wlhint">{rt(L, 'wTapLine')}</span>}</div>
+            <div className="rs-wlegend" role="note" aria-label={rt(L, 'wLegendAria')}><span>{rt(L, 'lyVacuum')}</span>{[0, 1, 2, 3, 4].map(i => <i key={i} className={'v' + i} />)}<span className="tn">16 → 26 {srUnitL('in', L)}</span><b className="rs-wlk"><i className="leak" /><span>{rt(L, 'leakSuspectW')}</span></b>{!panel && <span className="rs-wlhint">{rt(L, 'wTapLine')}</span>}</div>
           </section>
           <aside className="rs-wrail">
             {panelLine ? <RsWatchPanel c={c} model={model} l={panelLine} demo={demo} onClose={() => setPanel(null)} /> : <>
@@ -246,6 +246,8 @@ function RsWatchMap({ c, model, V, onLine, one }) {
       if (pts.length >= 2) map.fitBounds(LL.latLngBounds(pts), { paddingTopLeft: [70, 96], paddingBottomRight: [70, one ? 60 : 120], maxZoom: 18 });
       else if (pts.length === 1) map.setView(pts[0], 17); else map.setView([45.5, -72.0], 14);
     }
+    // Plates are placed in screen space: once more now the view is set.
+    requestAnimationFrame(() => { try { map._rsPlace && map._rsPlace(); } catch {} });
   }, [lf, sig, one, L]);
   // A labelled region, not an image: the line plates inside are buttons (Tab, Enter).
   return <div ref={divRef} className="rs-map rs-wmap base-sat" role="region" aria-label={rt(L, 'wMapAria')} />;
@@ -264,7 +266,7 @@ function RsWatchPanel({ c, model, l, demo, onClose }) {
   return (
     <section className="rs-wpanel" ref={ref} tabIndex={-1} aria-labelledby="rs-wpanel-h">
       <div className="rs-split" style={{ alignItems: 'center' }}>
-        <div className="rs-wlh"><RsLinePlate l={l} size={56} /><div><h2 className="rs-wk" id="rs-wpanel-h">{l.label}</h2><div className="rs-wsub tn">{rt(L, 'treesTaps', { t: l.trees.length, n: l.taps })}{l.lengthFt ? `\u00a0· ${fmt(l.lengthFt, 0)}\u00a0${srUnitL('ft', L)}` : ''}</div></div></div>
+        <div className="rs-wlh"><RsLinePlate l={l} size={56} /><div><h2 className="rs-wk" id="rs-wpanel-h">{l.label}</h2><div className="rs-wsub tn">{rtTreesTaps(L, l.trees.length, l.taps)}{l.lengthFt ? `\u00a0· ${fmt(l.lengthFt, 0)}\u00a0${srUnitL('ft', L)}` : ''}</div></div></div>
         <button type="button" className="rs-xbtn" aria-label={rt(L, 'close')} onClick={close}><RsIcon name="x" size={26} /></button>
       </div>
       <div className={`rs-wbig tn${lk.status === 'suspect' ? ' bad' : ''}${l.tier === 'old' ? ' old' : ''}`}>{l.latest ? fmt(l.latest.v, 1) : '·'}<small> {srUnitL('in', L)}</small></div>
@@ -292,7 +294,7 @@ function RsWatchOne({ c, model, V, l, demo }) {
     <div className="rs-wone">
       <section className="rs-wcard rs-wonel">
         <div className="rs-wlh"><RsLinePlate l={l} size={72} /><div><div className="rs-wk big">{l.label}</div>
-          <div className="rs-wsub tn">{rt(L, 'treesTaps', { t: l.trees.length, n: l.taps })}{l.lengthFt ? `\u00a0· ${fmt(l.lengthFt, 0)}\u00a0${srUnitL('ft', L)}` : ''}</div></div></div>
+          <div className="rs-wsub tn">{rtTreesTaps(L, l.trees.length, l.taps)}{l.lengthFt ? `\u00a0· ${fmt(l.lengthFt, 0)}\u00a0${srUnitL('ft', L)}` : ''}</div></div></div>
         <div className={`rs-wgiant tn${lk.status === 'suspect' ? ' bad' : ''}${l.tier === 'old' ? ' old' : ''}`}>{l.latest ? fmt(l.latest.v, 1) : '·'}<small>{srUnitL('in', L)}</small></div>
         <div className="rs-wsub">{l.latest ? (demo ? rt(L, 'wDemoTag') : rt(L, 'readAgo', { a: srAgo(l.latest.ms, model.now, L), t: srClock(l.latest.ms, L) })) : rt(L, 'noReadingYet')}</div>
         <p className={`rs-wverdict big ${lk.status === 'suspect' ? 'bad' : lk.status === 'ok' ? 'ok' : ''}`}>{srLeakVerdict(L, lk, model.prefs)[1]}</p>

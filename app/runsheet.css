@@ -32,6 +32,8 @@ body {
 ::selection { background: var(--rs-acc); color: var(--rs-acc-ink); }
 
 .rs-app { min-height: 100vh; min-height: 100dvh; position: relative; }
+/* Focus scrolled into view lands below the pinned back bar, not under it. */
+html { scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 76px); }
 :is(.rs-app, .rs-scrim) :focus-visible { outline: 2px solid var(--rs-acc); outline-offset: 2px; border-radius: 6px; }
 /* Button reset for shell controls. */
 :where(.rs-tabs, .rs-side) button,
@@ -62,6 +64,8 @@ body {
 .rs-hashero .rs-phead { min-height: calc(var(--rs-heroh) - var(--rs-top) - 6px); }
 .rs-hashero .rs-phead h1 { text-shadow: 0 2px 18px rgba(0, 0, 0, .55); }
 .rs-hashero .rs-phead .rs-lede { color: var(--rs-tx); }
+/* The back pill keeps one spot on every push screen (top of the column), photo or not; the title block stays down on the photo. */
+.rs-hashero .rs-phead > .rs-pushbar { margin-bottom: auto; }
 
 /* ── Page heads ──────────────────────────────────────────────────────────── */
 .rs-phead { display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 6px; }
@@ -71,9 +75,9 @@ body {
 .rs-greet .rs-brandmark { display: none; }
 .rs-gname { font: 800 23px/1.1 var(--rs-f); color: var(--rs-tx); min-width: 0; overflow-wrap: anywhere; text-wrap: balance; }   /* wraps, never an ellipsis (a name is the point) */
 .rs-when { color: var(--rs-tx); font-size: 15px; display: inline-flex; gap: 6px; align-items: center; align-self: flex-start;
-  background: color-mix(in srgb, var(--rs-bg) 78%, transparent); padding: 0 10px; line-height: 26px; border-radius: 999px; margin: 2px 0 8px; }
+  background: color-mix(in srgb, var(--rs-bg) 78%, transparent); padding: 0 10px; line-height: 26px; border-radius: 999px; margin: 2px 0 8px -10px; }   /* text on the column's edge, the chip outside it (as eyebrows over photos) */
 .rs-whenrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 8px; }
-.rs-whenrow .rs-when { margin: 0; align-self: center; }
+.rs-whenrow .rs-when { margin: 0 0 0 -10px; align-self: center; }
 .rs-eyebrow { display: flex; align-items: center; gap: 10px; color: var(--rs-acc);
   font: 700 13px var(--rs-fc); letter-spacing: .16em; text-transform: uppercase; }
 .rs-eyebrow::before { content: ""; width: 22px; height: 3px; background: currentColor; border-radius: 2px; }
@@ -83,11 +87,19 @@ body {
 .rs-phead h1.sm { font-size: 34px; margin-bottom: 6px; }
 .rs-lede { color: var(--rs-dim); font-size: 17px; margin: -4px 0 12px; max-width: 40ch; }
 .rs-pushbar { display: flex; align-items: center; min-height: 48px; margin: 0 0 10px; }
-.rs-backfloat { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px); left: max(16px, env(safe-area-inset-left, 0px)); z-index: 60;
-  animation: rsBackIn .18s ease-out; }
-@media (min-width: 1100px) { .rs-backfloat { left: calc(var(--rs-navw) + 24px); } }
+/* Pinned bar once the head scrolls away: the back pill and the title, content scrolls under it.
+   Its left edge matches the content column at every width (16, 32, nav + 40). */
+.rs-backbar { position: fixed; top: 0; left: 0; right: 0; z-index: 60; display: flex; align-items: center; gap: 14px; min-width: 0;
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px));
+  background: color-mix(in srgb, var(--rs-bg) 90%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--rs-line); animation: rsBackIn .18s ease-out; }
+.rs-backbar .rs-back { box-shadow: none; flex: none; }
+.rs-backbar .rs-back span { max-width: 38vw; }
+.rs-backbar-t { font: 800 19px/1.15 var(--rs-f); color: var(--rs-tx); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (min-width: 760px) { .rs-backbar { padding-left: 32px; padding-right: 32px; } .rs-backbar-t { font-size: 21px; } }
+@media (min-width: 1100px) { .rs-backbar { left: var(--rs-navw); padding-left: 40px; padding-right: 40px; } }
 @keyframes rsBackIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .rs-backfloat { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .rs-backbar { animation: none; } }
 .rs-back { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; min-width: 48px;
   padding: 0 18px 0 12px; color: var(--rs-tx); font: 700 17px var(--rs-f); border-radius: 999px;
   background: var(--rs-s3); border: 1px solid var(--rs-line2);
@@ -151,6 +163,8 @@ label.rs-fl { display: block; font: 700 13px var(--rs-fc); letter-spacing: .12em
 .rs-sp { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 72px;
   padding: 6px 0; border-radius: 12px; font: 700 12px var(--rs-fc); letter-spacing: .03em; text-transform: uppercase; color: var(--rs-dim); }
 .rs-sp:active { background: var(--rs-s2); }
+/* French stage names run longer (Tubulure, Bouillir): on a phone they drop the tracking and a size so each stays inside its pill. */
+@media (max-width: 559px) { html:lang(fr) .rs-sp { font-size: 10.5px; letter-spacing: 0; } }
 
 /* Empty states */
 .rs-empty { background: var(--rs-s1); border: 1px dashed var(--rs-line2); border-radius: var(--rs-r-card); padding: 24px 20px; }
@@ -242,12 +256,16 @@ label.rs-fl { display: block; font: 700 13px var(--rs-fc); letter-spacing: .12em
 .rs-bign { font: 800 26px/1.1 var(--rs-f); }
 .rs-bign small { font-size: 14px; }
 .rs-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+/* Two number fields side by side: when one label wraps to two lines, the fields and their steppers still share a row. */
+.rs-grid2:has(> div > label.rs-fl:first-child) { align-items: end; }
 .rs-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .rs-btnrow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
 .rs-inline { display: flex; gap: 8px; align-items: stretch; }
 .rs-inline .rs-field { flex: 1; min-width: 0; }
 .rs-inline .rs-btn2 { width: auto; flex: none; }
 .rs-sec { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+/* A heading's trailing link keeps its 44 px target without making the heading taller, so headings side by side share one line. */
+.rs-sec > .rs-more { margin-top: -14px; margin-bottom: -14px; }
 .rs-more { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; padding-left: 12px; color: var(--rs-dim);
   font: 600 15px var(--rs-f); letter-spacing: 0; text-transform: none; }
 
@@ -260,6 +278,9 @@ label.rs-fl { display: block; font: 700 13px var(--rs-fc); letter-spacing: .12em
   border-radius: var(--rs-r-ctl); background: var(--rs-s3); color: var(--rs-tx); font: 700 18px/1.15 var(--rs-f); border: 1px solid var(--rs-line2);
   text-align: center; transition: transform .08s; }
 .rs-btn2:active { transform: scale(.97); background: var(--rs-s4); }
+/* Expired trial: the banner's Get a Pass is the one solid action on a screen; a screen's own primary
+   (it would not save) drops to the secondary look. Sheets keep theirs. */
+.rs-locked main .rs-btn:not(.rs-sheet .rs-btn) { background: var(--rs-s3); color: var(--rs-tx); border: 1px solid var(--rs-line2); font-weight: 700; font-size: 18px; min-height: 56px; }
 .rs-btn2.bad { color: var(--rs-bad); border-color: color-mix(in srgb, var(--rs-bad) 45%, transparent); }
 .rs-btn2.big { min-height: 72px; font-size: 20px; }
 .rs-btn2.sq { width: 56px; padding: 0; flex: none; }
@@ -302,7 +323,7 @@ a.rs-num:active { background: var(--rs-s2); }
 .rs-live { display: inline-flex; align-items: center; gap: 5px; color: var(--rs-ok); font: 700 12px var(--rs-fc); letter-spacing: .1em; }
 .rs-live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--rs-ok); animation: rs-blink 1.6s ease-in-out infinite; }
 @keyframes rs-blink { 50% { opacity: .25; } }
-.rs-kv { display: grid; grid-template-columns: 1fr auto; gap: 10px 12px; font-size: 16px; margin: 12px 0 0; }
+.rs-kv { display: grid; grid-template-columns: fit-content(56%) minmax(0, 1fr); gap: 10px 12px; font-size: 16px; margin: 12px 0 0; }
 .rs-kv dt { color: var(--rs-dim); display: flex; align-items: center; gap: 8px; min-width: 0; }
 .rs-kv dd { font-weight: 700; text-align: right; margin: 0; }
 .rs-kv.big { font-size: 18px; }
@@ -883,6 +904,11 @@ html.rs-sheet-open .rs-toast.show { transform: translate(-50%, 0); }
 .rs-app .rs-map .leaflet-control-attribution { background: color-mix(in srgb, var(--rs-bg) 80%, transparent); color: var(--rs-mute); font: 500 11px var(--rs-f); padding: 2px 8px; border-radius: 8px 0 0 0; }
 .rs-app .rs-map .leaflet-control-attribution a { color: var(--rs-dim); }
 .rs-app .rs-bushroute .rs-map .leaflet-bottom.leaflet-right { bottom: 0; }
+/* Phone Bush: the credits get their own strip along the bottom edge; the layer chips and the buttons above them
+   move up by its height, so no credit runs over a chip. Credits are kept short enough for one line at 320. */
+.rs-app .rs-bushwrap:not(.wide) .rs-map .leaflet-control-attribution { white-space: nowrap; max-width: calc(100vw - 8px); overflow: hidden; text-overflow: ellipsis; line-height: 16px; }
+.rs-bushwrap:not(.wide) .rs-mapchips { bottom: 26px; }
+.rs-bushwrap:not(.wide) .rs-mapfoot { bottom: 88px; }
 .rs-mapskel { position: absolute; inset: 0; overflow: hidden; background: var(--rs-map-g); }
 .rs-mapskel::after { background: linear-gradient(90deg, transparent, var(--rs-map-c), transparent); animation-duration: 1.4s; }
 .rs-mapstate { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; z-index: 500; }
@@ -989,6 +1015,7 @@ html.rs-sheet-open .rs-toast.show { transform: translate(-50%, 0); }
 .rs-row .rs-rt .rs-st span { color: inherit; font-size: inherit; }
 .rs-chk.tog.on .rs-rt b { color: var(--rs-tx); text-decoration: none; }
 .rs-mlbl.side { left: 20px; top: -9px; transform: none; }
+.rs-mlbl.side.flip { left: auto; right: 20px; }
 .rs-mlbl.dim { color: var(--rs-dim); opacity: 1; }
 .rs-mtank { display: block; }
 .rs-mtk { position: relative; display: block; width: 30px; height: 30px; border-radius: 7px; background: var(--rs-bg); border: 2.2px solid var(--rs-tx); overflow: hidden; }
@@ -1089,6 +1116,8 @@ html.rs-sheet-open .rs-toast.show { transform: translate(-50%, 0); }
 .rs-wlegend i.v0 { background: var(--rs-vac-0); } .rs-wlegend i.v1 { background: var(--rs-vac-1); } .rs-wlegend i.v2 { background: var(--rs-vac-2); }
 .rs-wlegend i.v3 { background: var(--rs-vac-3); } .rs-wlegend i.v4 { background: var(--rs-vac-4); } .rs-wlegend i.leak { background: var(--rs-bad); margin-left: 10px; }
 .rs-wlegend span { margin: 0 6px; }
+/* The leak swatch and its word wrap as one item. */
+.rs-wlegend .rs-wlk { display: inline-flex; align-items: center; font-weight: inherit; white-space: nowrap; }
 .rs-wmaphint { position: absolute; z-index: 700; right: 12px; bottom: 24px; background: color-mix(in srgb, var(--rs-bg) 90%, transparent); padding: 8px 12px; border-radius: 12px; font: 700 15px var(--rs-f); color: var(--rs-dim); }
 .rs-wrail { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .rs-wcard { background: var(--rs-s1); border-radius: 18px; padding: 16px; color: var(--rs-tx); text-decoration: none; }
@@ -1125,7 +1154,7 @@ html.rs-sheet-open .rs-toast.show { transform: translate(-50%, 0); }
 :is(.rs-wbig, .rs-wgiant).bad { color: var(--rs-bad); } :is(.rs-wbig, .rs-wgiant).old { color: var(--rs-mute); }
 .rs-wverdict { font: 800 22px/1.25 var(--rs-f); margin: 8px 0 0; color: var(--rs-dim); }
 .rs-wverdict.big { font-size: 26px; } .rs-wverdict.bad { color: var(--rs-bad); } .rs-wverdict.ok { color: var(--rs-ok); }
-.rs-wkv { display: grid; grid-template-columns: 1fr auto; gap: 10px 12px; margin: 14px 0; font-size: 19px; }
+.rs-wkv { display: grid; grid-template-columns: fit-content(50%) minmax(0, 1fr); gap: 10px 12px; margin: 14px 0; font-size: 19px; }
 .rs-wkv dt { color: var(--rs-dim); } .rs-wkv dd { font-weight: 800; text-align: right; margin: 0; }
 .rs-wkv dd.bad { color: var(--rs-bad); } .rs-wkv dd.ok { color: var(--rs-ok); } .rs-wkv.big { font-size: 24px; }
 .rs-wone { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 14px; }

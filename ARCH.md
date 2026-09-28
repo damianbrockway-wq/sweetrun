@@ -36,6 +36,8 @@
 
 **Terrain layers (2026-09-27).** Parts `24-rs-terrain` (formula band: units, tile boxes, rendering rules, request URLs, sample parsing, legend scales, line profile; tested) and `53-rs-terrain-ui` (Leaflet layers built from those URLs, legend, layers sheet, tap reading, a line's fall). Preference key `sg_bush_terrain` `{ overlay, opacity, hillshade, water, trails, range }`. Sources: USGS 3DEP ImageServer (exportImage, getSamples), USGSHydroCached tiles, the National Map transportation MapServer layer 37 (trails). Heights sampled for display are never stored. The tile cache also holds `elevation.nationalmap.gov` and `carto.nationalmap.gov`. SW `sweetrun-v40`; 674 tests.
 
+**UI review (2026-09-28).** `srPlacePlates` (formula band, tested) places mainline letter plates in screen pixels: from each line's free end inward along the line, clear of other plates, the map chrome listed in `SR_MAP_CHROME`, pins and Brix dots, re-run on `zoomend`/`resize` through `map._rsPlace` (not on pan). The pinned back copy is `.rs-backbar` (pill plus the screen title). `rs-locked` on the shell root while the trial is expired lets CSS step a screen's own primary down. `srSpeciesName` reads stored species keys. No key or shape changed. SW `sweetrun-v43`; 708 tests.
+
 ## 1. The map (full read, 2026-09-19)
 
 ### The shape of the building
