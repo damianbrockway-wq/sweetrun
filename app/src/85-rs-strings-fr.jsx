@@ -1289,6 +1289,8 @@ Object.assign(RS_TR.fr, {
   gpsCanopy:'Sous le couvert, le GPS est souvent décalé de 5 à 15 m. La précision est enregistrée avec l\'épingle.',
   pinAdded:'{n} ajouté',
   pinAddedAcc:'{n} ajouté, ± {a} m',
+  pinAddedTap:'{n} ajouté. Touchez-le pour le modifier.',
+  pinAddedAccTap:'{n} ajouté, ± {a} m. Touchez-le pour le modifier.',
   tapToAdd:'Touchez l\'érablière pour ajouter : {k}',
   drawHint:'Touchez des points le long de {n}, du haut de la ligne jusqu\'au réservoir',
   drawPts:'{n} points',

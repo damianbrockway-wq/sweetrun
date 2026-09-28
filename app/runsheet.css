@@ -943,7 +943,10 @@ html.rs-sheet-open .rs-toast.show { transform: translate(-50%, 0); }
 @keyframes rs-flow { to { stroke-dashoffset: -22; } }
 .rs-app .rs-ml-hit { stroke: var(--rs-tx); stroke-opacity: 0; }
 .rs-app .rs-tree { fill: var(--rs-map-tree); stroke: var(--rs-map-treeline); }
-.rs-app .rs-tree.free { fill: var(--rs-map-t); }
+.rs-app .rs-tree.free { fill: var(--rs-map-tree); stroke: var(--rs-acc); stroke-width: 2; }
+.rs-app .rs-freshring { stroke: var(--rs-acc); fill: none; animation: rsFresh 1.2s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes rsFresh { 0% { opacity: 1; stroke-width: 4; } 100% { opacity: .15; stroke-width: 1; } }
+@media (prefers-reduced-motion: reduce) { .rs-app .rs-freshring { animation: none; } }
 .rs-app .rs-tree.dead { fill: var(--rs-mute); }
 .rs-app .rs-tree.sel { fill: var(--rs-acc); stroke: var(--rs-bg); stroke-width: 3; }
 .rs-app .rs-hitdot { fill: var(--rs-tx); stroke: none; }

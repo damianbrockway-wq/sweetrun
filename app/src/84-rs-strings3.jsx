@@ -19,7 +19,7 @@ Object.assign(RS_TR.en, {
   addTreeHere:'Add a tree where I am', leakSuspectW:'Leak suspect', noReadingW:'no reading', lineAria:'{n}, {v}',
   gpsFinding:'Finding you…', gpsAcc:'GPS ± {a} m', gpsAccShort:'GPS ± {a} m', gpsDeniedS:'Location is turned off for SweetRun.', gpsLost:'Lost the GPS signal. Try in the open.',
   gpsNone:'This device has no GPS.', gpsCanopy:'GPS under canopy is often 5 to 15 m off. The accuracy is saved with the pin.',
-  pinAdded:'{n} added', pinAddedAcc:'{n} added, ± {a} m', tapToAdd:'Tap the Bush to add a {k}', doneW:'Done', undoW:'Undo', cancelW:'Cancel',
+  pinAdded:'{n} added', pinAddedAcc:'{n} added, ± {a} m', pinAddedTap:'{n} added. Tap it to edit.', pinAddedAccTap:'{n} added, ± {a} m. Tap it to edit.', tapToAdd:'Tap the Bush to add a {k}', doneW:'Done', undoW:'Undo', cancelW:'Cancel',
   drawHint:'Tap points along {n}, top of the line first, down to the tank', drawPts:'{n} points', saveLine:'Save line', lineDrawn:'Line saved',
   whatAdd:'What are you adding?', onWhichLine:'On which mainline?', noLineW:'None yet', addAtGps:'Add it where I am', addByTap:'Tap the Bush to place it',
   typeCoords:'Type coordinates', latW:'Latitude', lonW:'Longitude', addAtCoords:'Add at these coordinates', coordsBad:'Use decimal degrees, like 44.5412 and -69.6203.',

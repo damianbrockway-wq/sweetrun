@@ -170,10 +170,13 @@ function srDrawBush(L, map, G, model, ly, o) {
       return;
     }
     if (!ly.trees) return;
-    L.circleMarker([t.lat, t.lon], { radius: isSel ? 7 : 4.2, className: 'rs-tree' + (t.health === 'dead' ? ' dead' : '') + (isSel ? ' sel' : '') + (t.mainline ? '' : ' free'), weight: 1.4, fillOpacity: 1, interactive: false }).addTo(G.trees);
+    L.circleMarker([t.lat, t.lon], { radius: isSel ? 8 : 5.5, className: 'rs-tree' + (t.health === 'dead' ? ' dead' : '') + (isSel ? ' sel' : '') + (t.mainline ? '' : ' free'), weight: 1.4, fillOpacity: 1, interactive: false }).addTo(G.trees);
     L.circleMarker([t.lat, t.lon], { radius: 14, className: 'rs-hitdot', weight: 0, fillOpacity: 0, interactive: true, bubblingMouseEvents: false })
       .on('click', () => opt.onTree && opt.onTree(t.id)).addTo(G.trees);
   });
+  // The pin just added: a pulsing ring so it is easy to spot.
+  if (opt.fresh != null) { const f = model.pins.find(p => p.id === opt.fresh);
+    if (f && srFin(f.lat) && srFin(f.lon)) L.circleMarker([f.lat, f.lon], { radius: 18, className: 'rs-freshring', weight: 3, fillOpacity: 0, interactive: false }).addTo(G.marks); }
   // Tanks, pumps, sugarhouse, other pins
   const tankPts = [], pumpMks = [];
   model.pins.forEach(p => {
@@ -314,6 +317,8 @@ function RsBush({ c, sub }) {
   const [mode, setMode] = useState(() => s0[0] === 'draw' && s0[1] ? { kind: 'draw', id: s0[1], pts: [] } : null);   // {kind:'add', type, line} | {kind:'draw', id, pts}
   const [gps, setGps] = useState({ on: false, acc: null, err: null, pos: null });
   const [msg, setMsg] = useState(null);
+  const [fresh, setFresh] = useState(null);   // the pin just added: ringed on the map for a few seconds
+  useEffect(() => { if (!fresh) return; const t = setTimeout(() => setFresh(null), 6000); return () => clearTimeout(t); }, [fresh]);
   const divRef = React.useRef(null);
   const [mapRef, gRef, tiles] = useSrMap(divRef, lf);
   const fitted = React.useRef(false);
@@ -368,7 +373,7 @@ function RsBush({ c, sub }) {
     const L = window.L;
     srApplyBase(L, map, layers.base);
     srDrawBush(L, map, G, drawModel, layers, {
-      sel, draft: mode && mode.kind === 'draw' ? mode.pts : null, leakWord: rt(L_, 'leakSuspectW'),
+      sel, fresh, draft: mode && mode.kind === 'draw' ? mode.pts : null, leakWord: rt(L_, 'leakSuspectW'),
       unitIn: srUnitL('in', L_),
       lineAria: l => rt(L_, 'lineAria', { n: l.label, v: l.latest ? fmt(l.latest.v, 1) : rt(L_, 'noReadingW') }),
       // The name a screen reader hears is what the map shows ("Vacuum pump", "Tank 1 · 78%"), plus the kind when the label does not say it.
@@ -387,7 +392,7 @@ function RsBush({ c, sub }) {
       else if (pts.length === 1) map.setView(pts[0], 17);
       else map.setView([45.5, -72.0], 14);
     }
-  }, [lf, model.ver, layers, sel, mode, L_]);
+  }, [lf, model.ver, layers, sel, mode, L_, fresh]);
 
   // Map taps: add a pin, add a draw vertex, or clear the selection.
   const modeRef = React.useRef(mode); modeRef.current = mode;
@@ -437,9 +442,13 @@ function RsBush({ c, sub }) {
     const extra = { ...(acc != null ? { accuracy: acc } : {}), ...(M.type === 'tree' && M.line ? { mainline: M.line } : {}) };
     const pin = srMakePin(all, lat, lon, M.type, extra, Date.now());
     if (!srSavePins([...all, pin])) { setMsg({ bad: true, t: rt(L_, 'bNotSavedT') + ' ' + rt(L_, SR_WRITE_FAIL === 'quota' ? 'bQuotaP' : 'bLockedP') }); setMode(null); return; }
-    srToast(acc != null ? rt(L_, 'pinAddedAcc', { n: pin.tagged || pin.label, a: acc }) : rt(L_, 'pinAdded', { n: pin.tagged || pin.label }));
+    const nm = pin.tagged || pin.label;
+    srToast(rt(L_, (acc != null ? 'pinAddedAcc' : 'pinAdded') + (M.keep ? '' : 'Tap'), { n: nm, a: acc }));
     if (!(M.keep)) setMode(null);
-    if (M.type === 'tree') setSel({ type: 'tree', id: pin.id });
+    // Keep the map in view so he sees it land: center on it and ring it. Tapping it opens the details.
+    if (M.type === 'tree' && !layers.trees) setLayers({ trees: true });
+    setFresh(pin.id);
+    const map = mapRef.current; if (map) { try { map.panTo([lat, lon]); } catch {} }
   };
   const addAtGps = M => {
     if (!navigator.geolocation) { setMsg({ bad: true, t: rt(L_, 'gpsNone') }); return; }
