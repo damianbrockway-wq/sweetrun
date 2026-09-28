@@ -178,7 +178,7 @@ function RsTapStage({ c }) {
   const setD = v => { setDbh(v); if (v !== '') ls.set('sg_dbh', v); };
   return (
     <>
-      <RsHero photo="tap-spout" />
+      <RsHero photo="tap-spile" />
       <div className="rs-inner">
         <RsStageHead c={c} id="tap" m={m} lede={rt(L,'tapLede')} />
         <RsBanners c={c} />

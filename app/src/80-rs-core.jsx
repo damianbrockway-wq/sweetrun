@@ -72,7 +72,8 @@ function useSrCore() {
   useEffect(()=>{ ls.set('sg_bp',waterBP);        },[waterBP]);
   useEffect(()=>{ ls.set('sg_fuel',fuelType);     },[fuelType]);
   useEffect(()=>{ ls.set('sg_fuelcost',fuelCost); },[fuelCost]);
-  SR_NUM_LOC = lang === 'fr' ? 'fr-CA' : 'en-US';   // before any child formats a number this render
+  SR_NUM_LOC = lang === 'fr' ? 'fr-CA' : 'en-US';
+  RS_LANG = lang;   // before any child formats a number this render
   useEffect(()=>{ ls.set('sg_lang',lang); try { document.documentElement.lang = lang === 'fr' ? 'fr-CA' : 'en'; } catch {} },[lang]);
 
   // ── Run condition check on app load (once per day), as in App ──

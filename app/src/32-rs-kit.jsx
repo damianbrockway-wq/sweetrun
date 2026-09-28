@@ -85,9 +85,31 @@ function RsHero({ photo }) {
   );
 }
 function RsPushBar({ href, label }) {
+  // Prefer the screen the user actually came from; fall back to the parent.
+  const prev = (typeof rsNavPrev === 'function') ? rsNavPrev() : null;
+  const cur = (typeof rsNavNorm === 'function') ? rsNavNorm(location.hash) : null;
+  const prevT = prev && prev !== cur ? rsNavTitle(prev, RS_LANG) : null;
+  const useHist = !!prevT;
+  const text = useHist ? prevT : label;
+  const onClick = useHist ? (e) => { e.preventDefault(); history.back(); } : undefined;
+  // Once the bar scrolls away, a floating copy stays pinned at the top.
+  const ref = React.useRef(null);
+  const [gone, setGone] = useState(false);
+  useEffect(() => {
+    const el = ref.current; if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([e]) => setGone(!e.isIntersecting && e.boundingClientRect.top < 0));
+    io.observe(el); return () => io.disconnect();
+  }, []);
+  const link = (extra) => (
+    <a className={'rs-back' + extra} href={useHist ? prev : href} onClick={onClick} style={{ textDecoration:'none' }}
+      aria-label={rt(RS_LANG, 'backTo', { s: text })} tabIndex={extra ? -1 : undefined} aria-hidden={extra ? 'true' : undefined}>
+      <RsIcon name="back" size={22} sw={2.6} /><span>{text}</span>
+    </a>
+  );
   return (
-    <div className="rs-pushbar">
-      <a className="rs-back" href={href} style={{ textDecoration:'none' }}><RsIcon name="back" size={24} /> {label}</a>
+    <div className="rs-pushbar" ref={ref}>
+      {link('')}
+      {gone && link(' rs-backfloat')}
     </div>
   );
 }

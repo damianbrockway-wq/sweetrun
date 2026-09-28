@@ -82,10 +82,20 @@ body {
 .rs-phead h1 { font: 800 44px/1 var(--rs-f); letter-spacing: -.02em; margin: 6px 0 12px; text-wrap: balance; }
 .rs-phead h1.sm { font-size: 34px; margin-bottom: 6px; }
 .rs-lede { color: var(--rs-dim); font-size: 17px; margin: -4px 0 12px; max-width: 40ch; }
-.rs-pushbar { display: flex; align-items: center; gap: 4px; min-height: 48px; margin: 0 0 2px -12px; }
-.rs-back { display: flex; align-items: center; gap: 2px; min-height: 48px; min-width: 48px; padding: 0 12px 0 8px;
-  color: var(--rs-dim); font: 600 17px var(--rs-f); border-radius: 12px; }
-.rs-back:active { background: var(--rs-s2); }
+.rs-pushbar { display: flex; align-items: center; min-height: 48px; margin: 0 0 10px; }
+.rs-backfloat { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 10px); left: max(16px, env(safe-area-inset-left, 0px)); z-index: 60;
+  animation: rsBackIn .18s ease-out; }
+@media (min-width: 1100px) { .rs-backfloat { left: calc(var(--rs-navw) + 24px); } }
+@keyframes rsBackIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rs-backfloat { animation: none; } }
+.rs-back { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; min-width: 48px;
+  padding: 0 18px 0 12px; color: var(--rs-tx); font: 700 17px var(--rs-f); border-radius: 999px;
+  background: var(--rs-s3); border: 1px solid var(--rs-line2);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+.rs-back svg { flex: none; }
+.rs-back span { max-width: 60vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rs-back:hover { border-color: var(--rs-dim); }
+.rs-back:active { transform: scale(.98); }
 .rs-sec { font: 700 13px var(--rs-fc); letter-spacing: .14em; text-transform: uppercase; color: var(--rs-dim); margin: 26px 0 10px; }
 
 /* ── License chip (Season topbar) ────────────────────────────────────────── */
@@ -572,7 +582,7 @@ a.rs-tankcard:active { background: var(--rs-s2); }
 .rs-blacts { margin-top: 12px; }
 .rs-blacts .rs-btnrow { margin-top: 10px; }
 .rs-blsap { margin-top: 12px; }
-.rs-blsap .rs-counter { background: color-mix(in srgb, var(--rs-s2) 88%, transparent); }
+.rs-blsap .rs-counter { background: var(--rs-s3); }
 @media (min-width: 760px) { .rs-blstat .rs-nv { font-size: 40px; } }
 @media (min-width: 1100px) { .rs-blstat .rs-nv { font-size: 44px; } }
 .rs-boilnums { margin-top: 4px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; }

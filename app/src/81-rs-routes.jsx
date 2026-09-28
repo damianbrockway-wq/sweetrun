@@ -5,7 +5,7 @@ const RS_TR = {
   en: {
     tabSeason:'Season', tabBush:'Bush', tabLog:'Log', tabPumps:'Pumps', tabShack:'Shack', tabWatch:'Watch',
     logAria:'Log sap, syrup, RO, evaporator, fuel or hours',
-    back:'Back', stageOf:'Stage {n} of 6', seasonN:'Season {y}', today:'Today', stages:'The season, stage by stage',
+    back:'Back', backTo:'Back to {s}', stageOf:'Stage {n} of 6', seasonN:'Season {y}', today:'Today', stages:'The season, stage by stage',
     todayCard:'Right now',
     shackTitle:'Sugar Shack', shackLede:'Calculators, records, settings and your Season Pass.',
     secCalc:'Calculators', secRecords:'Records', secGuide:'Guide', secSettings:'Settings', secPass:'Season Pass',
@@ -60,7 +60,7 @@ const RS_TR = {
   fr: {
     tabSeason:'Saison', tabBush:'Érablière', tabLog:'Noter', tabPumps:'Pompes', tabShack:'Cabane', tabWatch:'Veille',
     logAria:'Noter l\'eau d\'érable, le sirop, l\'osmose, l\'évaporateur, le combustible ou les heures',
-    back:'Retour', stageOf:'Étape {n} sur 6', seasonN:'Saison {y}', today:'Aujourd\'hui', stages:'La saison, étape par étape',
+    back:'Retour', backTo:'Retour à {s}', stageOf:'Étape {n} sur 6', seasonN:'Saison {y}', today:'Aujourd\'hui', stages:'La saison, étape par étape',
     todayCard:'En ce moment',
     shackTitle:'Cabane à sucre', shackLede:'Calculateurs, registres, réglages et votre Passe saison.',
     secCalc:'Calculateurs', secRecords:'Registres', secGuide:'Guide', secSettings:'Réglages', secPass:'Passe saison',
@@ -122,7 +122,7 @@ function rt(lang, key, vars) {
 //   #/shack                     Sugar Shack hub    #/shack/<screen>
 const RS_STAGES = [
   { id:'weather', icon:'therm', family:'weather', photo:'frost-morning' },
-  { id:'tap',     icon:'tree',  family:'tap',     photo:'tap-spout' },
+  { id:'tap',     icon:'tree',  family:'tap',     photo:'tap-spile' },
   { id:'lines',   icon:'map',   family:'lines',   photo:'bush-aerial' },
   { id:'collect', icon:'drop',  family:'collect', photo:'sap-tank' },
   { id:'boil',    icon:'flame', family:'boil',    photo:'evaporator-steam' },
@@ -179,6 +179,32 @@ const RS_STAGE_SCREENS = {
 // Stage screens (Phase 6 replaces the Phase 4 hub lists).
 const RS_STAGE_VIEW = { weather:RsWeatherStage, tap:RsTapStage, lines:RsLinesStage, collect:RsCollectStage, boil:RsBoilStage, recap:RsRecapStage };
 
+// ─── Back navigation: remember where the user came from ────────────────────
+// A small stack of visited hashes. Going back (the new hash is the one before
+// the current) pops; anything else pushes. The push bar uses it to say
+// "Back to Boil" and return to the screen you were actually on.
+let RS_LANG = 'en';
+const RS_HIST = { stack: [] };
+function rsNavNorm(h) { const p = srParseHash(h); return '#/' + (p.length ? p.join('/') : 'season'); }
+(function rsNavInit() {
+  try {
+    RS_HIST.stack = [rsNavNorm(location.hash)];
+    window.addEventListener('hashchange', () => {
+      const h = rsNavNorm(location.hash), st = RS_HIST.stack;
+      if (st[st.length - 1] === h) return;
+      if (st.length > 1 && st[st.length - 2] === h) st.pop(); else { st.push(h); if (st.length > 50) st.shift(); }
+    });
+  } catch {}
+})();
+function rsNavPrev() { const st = RS_HIST.stack; return st.length > 1 ? st[st.length - 2] : null; }
+function rsNavTitle(h, L) {
+  const p = srParseHash(h), path = p.join('/');
+  if (!p.length || p[0] === 'season') return rt(L, 'tabSeason');
+  if (RS_SCREENS[path]) return rt(L, RS_SCREENS[path].title);
+  if (p[0] === 'stage' && p[1]) return rt(L, 'st_' + p[1]);
+  const top = { bush:'tabBush', pumps:'pumpsTitle', watch:'tabWatch', shack:'shackTitle' }[p[0]];
+  return top ? rt(L, top) : null;
+}
 function rsHref(path) { return '#/' + path; }
 function rsGo(path) { const h = rsHref(path); if (location.hash !== h) location.hash = h; }
 function useRsRoute() {

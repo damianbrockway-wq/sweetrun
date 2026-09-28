@@ -2,7 +2,7 @@
 // Cache name: bump this string on every deploy to force all clients to update cleanly.
 // localStorage data is NEVER touched by this file — it is purely cache management.
 
-const CACHE      = 'sweetrun-v40';
+const CACHE      = 'sweetrun-v41';
 const TILE_CACHE = 'sweetrun-tiles-v1';   // kept separately — never auto-purged on app update
 
 // Everything SweetRun needs to run fully offline. v36 is the cutover build: the
@@ -41,7 +41,7 @@ const ASSETS = [
   '/app/photos/sap-tank.webp',
   '/app/photos/sugarhouse-dawn.webp',
   '/app/photos/syrup-bottles.webp',
-  '/app/photos/tap-spout.webp',
+  '/app/photos/tap-spile.webp',
   'https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
