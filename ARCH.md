@@ -38,6 +38,8 @@
 
 **UI review (2026-09-28).** `srPlacePlates` (formula band, tested) places mainline letter plates in screen pixels: from each line's free end inward along the line, clear of other plates, the map chrome listed in `SR_MAP_CHROME`, pins and Brix dots, re-run on `zoomend`/`resize` through `map._rsPlace` (not on pan). The pinned back copy is `.rs-backbar` (pill plus the screen title). `rs-locked` on the shell root while the trial is expired lets CSS step a screen's own primary down. `srSpeciesName` reads stored species keys. No key or shape changed. SW `sweetrun-v43`; 708 tests.
 
+**Units follow-up (2026-09-28).** Log units: sap, syrup, RO and evaporator entries, batches and the boil session carry an optional `u` ('GAL'|'L'). Untagged rows are in `sg_units_legacy`, a data-safe key taken once at start-up (`srSnapshotLegacyUnits`, lock-allowed, restored from backups or taken from the backup's `sg_units`). Readers go through `srReadLogs` / `srLogsInUnit` / `srBatchesInUnit` / `srSessInUnit` (formula band, tested); converted copies carry their new `u`, so a copy written back stays correct. Writers keep read-modify-write on the raw stored value. Gallon settings shown in litres through `useRsGalPref` (stored in gallons). SW `sweetrun-v44`; 756 tests.
+
 ## 1. The map (full read, 2026-09-19)
 
 ### The shape of the building
@@ -133,6 +135,8 @@ One single-file React 18 app, compiled by Babel (JSX transform only — no bundl
 
 **2026-09-27 — Terrain as tiles from exportImage, coloured by our own rules.** Leaflet has no ImageServer layer and adding esri-leaflet would add a library outside the CDN allowlist, so a small `L.TileLayer` subclass asks `exportImage` for each 256 px tile in 3857. The URLs are deterministic, so the existing tile cache and offline save hold them. Colour is set by `renderingRule` chains (Stretch then Colormap for elevation scaled to his bush's own range; Slope with SlopeType 2 and a 1/cos(latitude) z factor, remapped to the percent classes; Aspect remapped to compass sectors), because the published "Slope Map" and "Aspect Map" have no published class breaks to write a legend from. If a chain is refused, the layer falls back to the published function and says so. The chains were built from Esri's raster function reference and not exercised against the live service from the sandbox.
 
+
+**2026-09-28 — Log entries record their unit.** Values were stored in the unit in effect when typed and read in whatever unit was current, so switching relabelled gallons as litres (and graded the same season differently). Tagging new rows and reading every row through one converter fixes it without rewriting stored data; the one new key, `sg_units_legacy`, pins what the untagged rows mean. Rejected: converting stored rows on a unit switch (rewrites history, and a failed or partial write would corrupt it).
 
 **2026-09-27 — Mid-line gauges get their own key.** The prototype's gauge chain needs each gauge's place on a line. `sg_line_meta[id].gaugeIds` (the PORT-PLAN sketch) would add a field to an existing shape, so positions live in a new data key, `sg_line_gauges`, and readings reuse `sg_readings` and `sg_sensors` unchanged. Whether a line leaks stays `srLeakFind` (pump against far end); `srGaugeLocate` only says where, and says "spread" rather than guess when no stretch carries half the loss.
 

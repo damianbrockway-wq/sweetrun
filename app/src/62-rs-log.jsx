@@ -54,13 +54,14 @@ function RsLogSheet({ c, kind: kind0, editing, onClose }) {
     const all = ls.get('sg_logs2', {}) || {};
     if (editing) {
       const slog = all[c.season] || SR_EMPTY_SLOG();
-      const changes = { val: n, note, grade: K.grade ? grade : undefined, brix: SR_KIND_FIELDS[kind].brix && brix !== '' ? parseFloat(brix) : undefined };
+      // The value was shown and typed in the display unit, so it now carries that unit.
+      const changes = { val: n, note, grade: K.grade ? grade : undefined, brix: SR_KIND_FIELDS[kind].brix && brix !== '' ? parseFloat(brix) : undefined, ...(SR_VOL_KINDS.includes(kind) ? { u: c.units === 'L' ? 'L' : 'GAL' } : {}) };
       if (dateISO) changes.date = dateISO;
       const up = { ...all, [c.season]: { ...slog, [kind]: (slog[kind] || []).map(x => x.id === editing.id ? { ...x, ...changes } : x) } };
       if (!writeLogs(up)) return;
       srDataChanged(); srToast(rt(L,'entryChanged')); onClose(); return;
     }
-    const entry = srMakeEntry(kind, { val: n, note, grade, brix: brix === '' ? '' : String(brix), point }, Date.now(), srToday());
+    const entry = srTagUnit(kind, srMakeEntry(kind, { val: n, note, grade, brix: brix === '' ? '' : String(brix), point }, Date.now(), srToday()), c.units);
     if (!writeLogs(srAppendEntry(all, c.season, kind, entry))) return;
     ls.set('sg_log_last_kind', kind);
     if (isSap) {
@@ -135,7 +136,7 @@ function RsLogSheet({ c, kind: kind0, editing, onClose }) {
 function RsLogHistory({ c, openLog }) {
   const L = c.lang, u = srU(c.units);
   const v = useSrDataVersion();
-  const logs = React.useMemo(() => ls.get('sg_logs2', {}) || {}, [v]);
+  const logs = React.useMemo(() => srReadLogs(c.units), [v, c.units]);
   const slog = logs[c.season] || {};
   const kinds = srKinds(L, c.units);
   const [filter, setFilter] = useState('all');

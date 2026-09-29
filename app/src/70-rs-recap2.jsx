@@ -10,7 +10,7 @@
 function useRsRecapData(c) {
   const v = useSrDataVersion();
   return React.useMemo(() => {
-    const logs = ls.get('sg_logs2', {}) || {};
+    const logs = srReadLogs(c.units);
     const slog = logs[c.season] || {}, prev = logs[c.season - 1] || {};
     const brixArr = ls.get('sg_brixlog', []) || [];
     const f = srRecapFacts(slog, prev, brixArr, c.units);
@@ -139,7 +139,7 @@ function RsRecapDetail({ c }) {
               {(bp.unSap > 0 || bp.unSyrup > 0) && <RsRow chev={false} title={rt(L,'rdUnassigned')} value={`${fmt(bp.unSap, 1)} ${u}`} />}
             </div>
           </>}
-          <div style={{ marginTop:16 }}><RsBtn kind="secondary" icon="download" onClick={() => exportSeasonPDF({ season:c.season, trees:c.trees, units:c.units, logs: ls.get('sg_logs2', {}), brixLog: D.brixArr, sapBrix:c.sapBrix })}>{rt(L,'exportPdf', { y:c.season })}</RsBtn></div>
+          <div style={{ marginTop:16 }}><RsBtn kind="secondary" icon="download" onClick={() => exportSeasonPDF({ season:c.season, trees:c.trees, units:c.units, logs: srReadLogs(c.units), brixLog: D.brixArr, sapBrix:c.sapBrix })}>{rt(L,'exportPdf', { y:c.season })}</RsBtn></div>
         </div>
       </div>
       {replay && canReplay && <RsReplay c={c} D={D} onClose={() => setReplay(false)} onShare={share} />}
@@ -158,12 +158,13 @@ function srScoreSub(r, model, L, units) {
 // RO savings against a straight boil. Inputs live in sg_recap_* and sg_dx_robrix.
 function RsRoSavings({ c, f, brix }) {
   const L = c.lang, u = srU(c.units);
-  const [ev, setEv] = useRsPref('sg_recap_evap', 50);
+  const [ev, setEv] = useRsGalPref('sg_recap_evap', 50, c.units);   // gal/h stored, L/h shown in litre mode
+  const evG = parseFloat(ev) > 0 ? srGalStored(parseFloat(ev), c.units) : 50;
   const [burn, setBurn] = useRsPref('sg_recap_burn', 23);
   const [pre, setPreS] = useState(() => !!ls.get('sg_recap_preheat', false));
   const [rb, setRb] = useRsPref('sg_dx_robrix', 8);
   const setPre = x => { setPreS(x); ls.set('sg_recap_preheat', x); };
-  const s = srRoSavings(f.sapGal, f.roGal, parseFloat(ev) || 50, parseFloat(burn) || 23, pre, parseFloat(rb) || 8, brix);
+  const s = srRoSavings(f.sapGal, f.roGal, evG, parseFloat(burn) || 23, pre, parseFloat(rb) || 8, brix);
   if (!s) return null;
   const n1 = x => x >= 10 ? fmt(x, 0) : fmt(x, 1);
   return <>
@@ -182,9 +183,9 @@ function RsRoSavings({ c, f, brix }) {
         <div><div className="rs-meta">{rt(L,'roSavedC')}</div><div className="rs-mid tn">{fmt(s.cords, 2)}</div></div>
       </div>}
       {f.roGal === 0 && <p className="rs-note">{rt(L,'roLogNote')}</p>}
-      <RsDisclose title={rt(L,'roInputs')} sub={rt(L,'roInputsSub', { e: fmt(parseFloat(ev) || 50, 0), b: fmt(parseFloat(burn) || 23, 0), x: fmt(parseFloat(rb) || 8, 1) })}>
+      <RsDisclose title={rt(L,'roInputs')} sub={rt(L,'roInputsSub', { e: fmt(fromGal(evG, c.units), 0), u, b: fmt(parseFloat(burn) || 23, 0), x: fmt(parseFloat(rb) || 8, 1) })}>
         <div className="rs-grid2">
-          <div><label className="rs-fl" htmlFor="rs-ro-e">{rt(L,'roEvapRate')}</label><RsStepper id="rs-ro-e" value={ev} onChange={setEv} steps={[-5, 5]} unit="gal/h" label={rt(L,'roEvapRate')} min={1} max={500} big={false} /></div>
+          <div><label className="rs-fl" htmlFor="rs-ro-e">{rt(L,'roEvapRate')}</label><RsStepper id="rs-ro-e" value={ev} onChange={setEv} steps={srVolSteps([-5, 5], [-20, 20], c.units)} unit={u + '/h'} label={rt(L,'roEvapRate')} min={1} max={c.units === 'L' ? 1900 : 500} big={false} /></div>
           <div><label className="rs-fl" htmlFor="rs-ro-b">{rt(L,'roBurn')}</label><RsStepper id="rs-ro-b" value={burn} onChange={setBurn} steps={[-1, 1]} unit="lb/h" label={rt(L,'roBurn')} min={5} max={100} big={false} /></div>
         </div>
         <label className="rs-fl" htmlFor="rs-ro-x">{rt(L,'roOutBrix')}</label><RsStepper id="rs-ro-x" value={rb} onChange={setRb} steps={[-0.5, 0.5]} dp={1} unit="%" label={rt(L,'roOutBrix')} min={1} max={20} big={false} />
@@ -294,7 +295,7 @@ function RsDiagnose({ c }) {
   const [ro, setRo] = useRsPref('sg_dx_robrix', 0);
   const [vac, setVac] = useRsPref('sg_dx_vac', 'gravity');
   const w = (k, set) => x => { set(x); if (x !== '') ls.set(k, x); };
-  const logs = React.useMemo(() => ls.get('sg_logs2', {}) || {}, [v]);
+  const logs = React.useMemo(() => srReadLogs(c.units), [v, c.units]);
   const slog = logs[c.season] || {};
   const has = (slog.sapCollected || []).length > 0 || (slog.syrupMade || []).length > 0;
   const findings = srDiagnose({ slog, prevSlog: logs[c.season - 1] || {}, brixLog: ls.get('sg_brixlog', []), pins: ls.get('sg_lines_pins', []),

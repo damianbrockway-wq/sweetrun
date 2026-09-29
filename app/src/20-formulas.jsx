@@ -201,6 +201,68 @@ function seasonTotals(slog) {
 const SR_L_PER_GAL = 3.78541;
 const toGal   = (v, units) => units === 'L' ? v / SR_L_PER_GAL : v;   // display unit → canonical
 const fromGal = (v, units) => units === 'L' ? v * SR_L_PER_GAL : v;   // canonical → display unit
+// ── Log units ────────────────────────────────────────────────────────────────
+// Every new sap, syrup, RO and evaporator entry (and each batch and boil session)
+// records the unit it was typed in: u: 'GAL' | 'L'. Entries written before that
+// have no tag. Rule for them: they are in the unit SweetRun was set to the first
+// time a version with tags opened on this device (sg_units_legacy, taken once at
+// start-up, carried by backups; a restore without it takes the backup's own
+// sg_units). Screens read volumes through srLogsInUnit, which converts each entry
+// from its unit to the display unit. So switching gallons and litres converts what
+// is shown and never rewrites what was logged. A converted copy carries its new
+// unit, so a copy written back by mistake is still read correctly.
+const SR_VOL_KINDS = ['sapCollected', 'syrupMade', 'sapRO', 'sapEvap'];
+const srUnitOf = (u, legacy) => (u === 'L' || u === 'GAL') ? u : (legacy === 'L' ? 'L' : 'GAL');
+function srVolIn(v, from, to) {
+  if (from === to) return v;
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  return isFinite(n) ? fromGal(toGal(n, from), to) : v;
+}
+function srSlogInUnit(slog, units, legacy) {
+  if (!slog || typeof slog !== 'object') return slog;
+  const to = srUnitOf(units, 'GAL'); let out = null;
+  SR_VOL_KINDS.forEach(k => {
+    const arr = slog[k]; if (!Array.isArray(arr)) return;
+    let changed = false;
+    const m = arr.map(e => { if (!e || typeof e !== 'object') return e; const from = srUnitOf(e.u, legacy); if (from === to) return e; changed = true; return { ...e, val: srVolIn(e.val, from, to), u: to }; });
+    if (changed) { out = out || { ...slog }; out[k] = m; }
+  });
+  return out || slog;
+}
+function srLogsInUnit(all, units, legacy) {
+  if (!all || typeof all !== 'object') return all || {};
+  let out = null;
+  Object.keys(all).forEach(s => { const v = srSlogInUnit(all[s], units, legacy); if (v !== all[s]) { out = out || { ...all }; out[s] = v; } });
+  return out || all;
+}
+// Batches keep sapIn and syrupOut as typed (strings); converted copies are numbers.
+function srBatchesInUnit(list, units, legacy) {
+  const to = srUnitOf(units, 'GAL');
+  return (Array.isArray(list) ? list : []).map(b => {
+    if (!b || typeof b !== 'object') return b; const from = srUnitOf(b.u, legacy); if (from === to) return b;
+    const cv = x => (x === '' || x == null || !isFinite(parseFloat(x))) ? x : +srVolIn(parseFloat(x), from, to).toFixed(2);
+    return { ...b, sapIn: cv(b.sapIn), syrupOut: cv(b.syrupOut), u: to };
+  });
+}
+// A boil in progress keeps its counters in its own unit (an untagged session, started
+// before log units, in the legacy unit); shown in the display unit, and any write from
+// the Boil screen stores the converted session with its new tag.
+function srSessInUnit(sess, units, legacy) {
+  if (!sess) return sess;
+  const from = sess.u ? srUnitOf(sess.u, 'GAL') : (legacy ? srUnitOf(null, legacy) : null), to = srUnitOf(units, 'GAL');
+  if (!from || from === to) return sess;
+  const cv = x => (typeof x === 'number' && isFinite(x)) ? Math.round(srVolIn(x, from, to) * 100) / 100 : x;
+  return { ...sess, sap: cv(sess.sap), syrup: cv(sess.syrup), u: to,
+    ...(Array.isArray(sess.readings) ? { readings: sess.readings.map(r => r && r.draw != null ? { ...r, draw: cv(r.draw) } : r) } : {}) };
+}
+// A new entry records its unit (volume kinds only; fuel and hours have their own units).
+const srTagUnit = (kind, e, units) => SR_VOL_KINDS.includes(kind) ? { ...e, u: units === 'L' ? 'L' : 'GAL' } : e;
+// A gallon setting as the stepper shows it, and back. In gallons both are the identity,
+// so a gallon user's stored numbers are written exactly as before.
+const srGalShown  = (gal, units, dp = 0) => units === 'L' ? +fromGal(gal, units).toFixed(dp) : gal;
+const srGalStored = (shown, units) => units === 'L' ? toGal(shown, units) : shown;
+// Stepper steps in the user's unit: the gallon steps, or round litre steps of about the same size.
+const srVolSteps = (galSteps, lSteps, units) => units === 'L' ? lSteps : galSteps;
 function seasonTotalsGal(slog, units) {
   const T = seasonTotals(slog);
   return {

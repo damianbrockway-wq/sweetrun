@@ -23,11 +23,12 @@ function useSrDataVersion() {
 // tab's storage event), not on every render. Each screen keeps its own parse, so no
 // screen can see an object another screen changed (the bundle is not strict mode,
 // where a shared frozen copy would drop a stray write silently).
-function useSrLogs() { const v = useSrDataVersion(); return React.useMemo(() => ls.get('sg_logs2', {}) || {}, [v]); }
+// Volumes come in the display unit (srReadLogs), so a unit switch re-reads too.
+function useSrLogs() { const v = useSrDataVersion(), u = ls.get('sg_units', 'GAL'); return React.useMemo(() => srReadLogs(u), [v, u]); }
 
 // Everything the Season screen and the stage screens read, in one pass.
 function selSeason(season) {
-  const logs = ls.get('sg_logs2', {}) || {};
+  const logs = srReadLogs();
   const slog = logs[season] || {};
   const prevSlog = logs[season - 1] || null;
   const pins = ls.get('sg_lines_pins', []) || [];
@@ -48,7 +49,7 @@ function selSeason(season) {
     anyEntries,
     treePins: pins.filter(p => p.type === 'tree'),
     tankPins: pins.filter(p => p.type === 'tank'),
-    batches: ls.get('sg_batches', []) || [],
+    batches: srBatchesInUnit(ls.get('sg_batches', []) || [], ls.get('sg_units', 'GAL'), srLegacyUnits()),
     brixlog: ls.get('sg_brixlog', []) || [],
     boil: ls.get('sg_boil_session', null),
     freshStart: ls.get('sg_fresh_status', 'idle') === 'tracking' ? ls.get('sg_fresh_start', null) : null,

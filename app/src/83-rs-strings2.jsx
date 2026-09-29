@@ -69,7 +69,7 @@ Object.assign(RS_TR.en, {
   // Evaporator
   evLede:'Your pan\'s boiling rate, how long a batch takes, fuel, what a gallon costs you and what to charge.',
   evCustom:'Custom', fuelGas:'Gas', evYourSize:'your size', evWidth:'Pan width', evLength:'Pan length', evOwnRate:'Your own rate, if you know it',
-  evOwnRateNote:'Leave blank to use the pan\'s typical rate. A custom pan boils about 2.5 gal an hour a square foot.',
+  evOwnRateNote:'Leave blank to use the pan\'s typical rate. A custom pan boils about {r} {u} an hour a square foot.',
   evRate:'Boils', evEff:'Per square foot', evBoilT:'Boil time', evBoilTime:'Takes about', evSyrup:'Makes',
   evFuelCost:'Cost a {u}', evFuelNeed:'Fuel', evFuelSpend:'Fuel cost', evForSap:'For {v} {u} of sap.',
   evTrueT:'What a gallon costs you', evLaborH:'Hours this season', evLaborR:'Labor rate', evSpouts:'Spouts and tubing', evBottles:'Bottles', evFilters:'Filters', evOther:'Other',
@@ -151,7 +151,7 @@ Object.assign(RS_TR.en, {
   roSavT:'RO against a straight boil', roSavHours:'Boiling time', roSavWood:'Wood burned', roStraight:'Straight boil', roWith:'With your RO', roWithPre:'With RO and preheater',
   roConcNote:'{r} {u} through the RO became {c} {u} of concentrate', roNoData:'No RO logged yet. The bars show a straight boil.',
   roSavedH:'Hours saved', roSavedW:'Wood saved', roSavedC:'Cords saved', roLogNote:'Log sap through the RO to see what it saves you.',
-  roInputs:'Your evaporator and RO', roInputsSub:'{e} gal/h, {b} lb of wood an hour, RO to {x}%',
+  roInputs:'Your evaporator and RO', roInputsSub:'{e} {u}/h, {b} lb of wood an hour, RO to {x}%',
   roEvapRate:'Evaporator rate', roBurn:'Wood burned', roOutBrix:'RO concentrate', roPreheater:'Preheater',
   rdPoints:'By collection point', rdPointSub:'{n} runs · {r}', rdUnassigned:'Not tagged to a point',
   rpTitleW:'{y} season replay', rpSap:'Sap, {u}', rpSyrup:'Syrup, {u}', rpDay:'Day', rpBest:'best run {v} {u}', rpFirst:'first boil', rpPeak:'peak Brix {v}%',

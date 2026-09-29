@@ -235,7 +235,7 @@ function RsEvaporator({ c }) {
             </div>}
             <label className="rs-fl" htmlFor="rs-ev-r">{rt(L,'evOwnRate')}</label>
             <RsStepper id="rs-ev-r" value={customR} onChange={setCustomR} steps={[-5, 5]} unit={u + '/h'} label={rt(L,'evOwnRate')} min={0} max={2000} big={false} base={Math.round(fromGal(er.isCustomPan ? er.customCalcR : er.panRate, c.units))} ph={String(Math.round(fromGal(er.isCustomPan ? er.customCalcR : er.panRate, c.units)) || 0)} />
-            <p className="rs-note">{rt(L,'evOwnRateNote')}</p>
+            <p className="rs-note">{rt(L,'evOwnRateNote', { r: fmt(fromGal(2.5, c.units), 1), u: srU(c.units) })}</p>
             <div className="rs-hr" />
             <div className="rs-grid2">
               <div><div className="rs-meta">{rt(L,'evRate')}</div><div className="rs-big tn">{srVol(er.rate, c.units)}<small>{u}/h</small></div></div>

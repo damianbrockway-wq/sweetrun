@@ -253,8 +253,9 @@ function RsBoilNum({ c, boil }) {
   if (!on) return <RsNum label={rt(L,'nBoiling')} value={rt(L,'nOff')} sub={rt(L,'nStartBoil')} href={rsHref('stage/boil')} />;
   const rate = srSyrupRate(srPanRate(ls.get('sg_panIdx', 0), ls.get('sg_panW',''), ls.get('sg_panH','')), c.sapBrix);
   const est = rate * Math.max(0, (now - boil.start) / 3600000);
+  const sess = srSessInUnit(boil, c.units, srLegacyUnits()), drawn = sess.syrup || 0;
   return <RsNum label={rt(L,'nBoiling')} live={rt(L,'live')} value={srVol(est, c.units, 2)} unit={u}
-    sub={rt(L,'nEstBoil')} href={rsHref('stage/boil')} />;
+    sub={drawn > 0 ? rt(L,'nEstBoilD', { d: fmt(drawn, 1), u }) : rt(L,'nEstBoil')} href={rsHref('stage/boil')} />;
 }
 
 // Syrup against last season, lined up on days from each season's first sap day.

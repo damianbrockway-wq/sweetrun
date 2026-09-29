@@ -61,6 +61,16 @@ function useRsPref(key, def) {
   const set = x => { setV(x); if (x !== '' && x != null) ls.set(key, x); };
   return [v, set];
 }
+// A volume or flow setting kept in US gallons (the formulas' unit) but shown and typed
+// in the user's unit: litres in litre mode, so a 300 gal tank reads 1136 L and a
+// 28 gpm pump 106 L/min. Stored in gallons either way; nothing about the key changes.
+function useRsGalPref(key, defGal, units, dp = 0) {
+  const show = () => { const x = parseFloat(ls.get(key, defGal)); return srGalShown(isFinite(x) ? x : defGal, units, dp); };
+  const [v, setV] = useState(show);
+  useEffect(() => { setV(show()); }, [units]);
+  const set = x => { setV(x); const n = parseFloat(x); if (x !== '' && x != null && isFinite(n)) ls.set(key, srGalStored(n, units)); };
+  return [v, set];
+}
 // Display helpers for money and litre-aware rates.
 // Small ratios keep a third decimal so a real 0.004 never reads as 0.00.
 const srFine = n => (n == null || !isFinite(n)) ? '' : fmt(n, Math.abs(n) > 0 && Math.abs(n) < 0.1 ? 3 : 2);

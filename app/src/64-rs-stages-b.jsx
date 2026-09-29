@@ -237,8 +237,10 @@ function RsROPlanner({ c }) {
 function RsBoilStage({ c }) {
   const L = c.lang, u = srU(c.units), uT = srTempU(c.units);
   const m = useRsSeasonModel(c);
-  const [sess, setSess] = useState(() => ls.get('sg_boil_session', null));
+  const [sessRaw, setSess] = useState(() => ls.get('sg_boil_session', null));
   useEffect(() => { setSess(ls.get('sg_boil_session', null)); }, [m.d]);
+  // Shown in the display unit; any write from here stores that unit with it.
+  const sess = React.useMemo(() => srSessInUnit(sessRaw, c.units, srLegacyUnits()), [sessRaw, c.units]);
   const active = !!(sess && sess.start);
   const now = useRsTick(active);
   const [showEnd, setShowEnd] = useState(false);
@@ -265,7 +267,7 @@ function RsBoilStage({ c }) {
   const drawn = active ? (sess.syrup || 0) : 0;
   const seasonSy = m.totals.syT + drawn;
   const panLbl = m.d.panIdx === CUSTOM_PAN_IDX ? rt(L,'customPan') : (PAN_SIZES[m.d.panIdx] || PAN_SIZES[0]).label.replace(/ \(.*\)/, '').replace(/ ft$/, ' ' + srUnitL('ft', L));
-  const start = () => persist({ start: Date.now(), sap: 0, syrup: 0, tempF: r1(c.waterBP) });
+  const start = () => persist({ start: Date.now(), sap: 0, syrup: 0, tempF: r1(c.waterBP), u: c.units === 'L' ? 'L' : 'GAL' });
   const bumpT = dDisp => { const d = srTempD(sess.tempF, c.units) + dDisp; const f = c.units === 'L' ? d * 9 / 5 + 32 : d; persist({ ...sess, tempF: Math.round(f * 100) / 100 }); };
   const add = (k, n) => persist({ ...sess, [k]: r1((sess[k] || 0) + n) });
   const logBoil = () => {
@@ -273,10 +275,11 @@ function RsBoilStage({ c }) {
     const slog = { ...(all[c.season] || {}) };
     const date = srToday(), note = L === 'fr' ? 'Bouillée' : 'Boil Day';
     let id = Date.now(); const dur = r1(hrs);
-    if (sess.sap > 0)   slog.sapEvap   = [...(slog.sapEvap   || []), { id: id++, date, val: sess.sap,   note }];
+    const uu = { u: c.units === 'L' ? 'L' : 'GAL' };   // the session is kept in the display unit (srSessInUnit)
+    if (sess.sap > 0)   slog.sapEvap   = [...(slog.sapEvap   || []), { id: id++, date, val: sess.sap,   note, ...uu }];
     // The last hydrometer Brix of the boil rides on the syrup entry (LogTab's optional brix field).
     const lastBx = srBoilSeries(sess).lastBrix;
-    if (sess.syrup > 0) slog.syrupMade = [...(slog.syrupMade || []), { id: id++, date, val: sess.syrup, note, ...(lastBx ? { brix: lastBx } : {}) }];
+    if (sess.syrup > 0) slog.syrupMade = [...(slog.syrupMade || []), { id: id++, date, val: sess.syrup, note, ...uu, ...(lastBx ? { brix: lastBx } : {}) }];
     if (dur >= 0.1)     slog.boilHours = [...(slog.boilHours || []), { id: id++, date, val: dur,        note }];
     if (!ls.set('sg_logs2', { ...all, [c.season]: slog })) { setShowEnd(false); return; }
     srToast(rt(L,'boilLogged', { v: fmt(sess.syrup || 0, 1), u }));
@@ -374,6 +377,9 @@ function RsBoilLive({ c, sess, now, est, rate, state, stateWord, finT, onRead, o
   const S = srBoilSeries(sess);
   const [ser, setSer] = useState('temp');
   const tNow = S.lastTemp != null ? S.lastTemp : sess.tempF;
+  // Expected (pan rate x time since start) and drawn, both in the display unit.
+  const estD = fromGal(est, c.units), drawn = sess.syrup || 0;
+  const pace = srBoilPace(estD, drawn, c.units === 'L' ? 0.4 : 0.1);
   return (
     <section className="rs-boillive" aria-label={rt(L,'boilCard')}>
       <div className="rs-blstatus">
@@ -417,8 +423,9 @@ function RsBoilLive({ c, sess, now, est, rate, state, stateWord, finT, onRead, o
               h={136} empty={rt(L,'chartEmptyB')} label={rt(L,'chartBrixAria', { n: S.brix.length })} />}
       </div>
       <div className="rs-counters rs-blsap"><RsCounter label={rt(L,'sapIn')} value={fmt(sess.sap || 0, 0)} unit={u} steps={[1, 5, 10]} onAdd={onSap} /></div>
-      <RsJugs gal={fromGal(est, c.units)} label={rt(L,'jugsAria', { v: srVol(est, c.units, 1), u })} />
-      <p className="rs-note rs-blest">{rt(L,'estNote', { b: fmt(parseFloat(c.sapBrix) || 2, 1) })}</p>
+      {/* The jugs are the syrup actually drawn; the sentence says how that sits against the pan's pace. */}
+      <RsJugs gal={drawn} label={rt(L,'jugsAria', { v: fmt(drawn, 1), u })} />
+      <p className="rs-note rs-blest">{rate > 0 ? rt(L, pace.kind === 'none' ? 'bpNone' : pace.kind === 'on' ? 'bpOn' : pace.kind === 'ahead' ? 'bpAhead' : 'bpBehind', { e: fmt(estD, 1), d: fmt(pace.d, 1), u }) + ' ' : ''}{rt(L,'estNote', { b: fmt(parseFloat(c.sapBrix) || 2, 1) })}</p>
 
     </section>
   );
@@ -527,7 +534,7 @@ function RsBatchSheet({ c, onClose }) {
   const save = () => {
     if (!f.syrupOut && !f.sapIn) { const el = document.getElementById('rs-b-syr'); if (el) el.focus(); return; }
     const all = ls.get('sg_batches', []) || [];
-    if (!ls.set('sg_batches', [...all, srMakeBatch(f, Date.now())])) { setFail(true); return; }
+    if (!ls.set('sg_batches', [...all, { ...srMakeBatch(f, Date.now()), u: c.units === 'L' ? 'L' : 'GAL' }])) { setFail(true); return; }
     srDataChanged(); srToast(rt(L,'batchSaved', { n: all.length + 1 })); onClose();
   };
   return (
@@ -553,11 +560,12 @@ function RsBatchSheet({ c, onClose }) {
 function RsBatches({ c }) {
   const L = c.lang;
   const v = useSrDataVersion();
-  const batches = React.useMemo(() => ls.get('sg_batches', []) || [], [v]);
+  const raw = React.useMemo(() => ls.get('sg_batches', []) || [], [v]);
+  const batches = React.useMemo(() => srBatchesInUnit(raw, c.units, srLegacyUnits()), [raw, c.units]);
   const [sheet, setSheet] = useState(false);
   const [armed, setArmed] = useState(null);
   useEffect(() => { if (armed == null) return; const tm = setTimeout(() => setArmed(null), 3000); return () => clearTimeout(tm); }, [armed]);
-  const del = i => { if (armed !== i) { setArmed(i); srToast(rt(L,'tapAgainDelete')); return; } if (ls.set('sg_batches', batches.filter((_, j) => j !== i))) { setArmed(null); srDataChanged(); } };
+  const del = i => { if (armed !== i) { setArmed(i); srToast(rt(L,'tapAgainDelete')); return; } if (ls.set('sg_batches', raw.filter((_, j) => j !== i))) { setArmed(null); srDataChanged(); } };   // deletes from what is stored, never the converted view
   return (
     <div className="rs-inner">
       <header className="rs-phead"><RsPushBar href={rsHref('shack')} label={rt(L,'shackTitle')} /><h1 className="sm">{rt(L,'batchesTitle')}</h1>

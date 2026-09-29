@@ -172,7 +172,11 @@ Object.assign(RS_TR.en, {
   // Boil in progress (cutover)
   boilLive:'Boil in progress', boilStartedAt:'Started at {t}', boilClockAria:'Boiling for {d}, hours minutes seconds',
   lastBrix:'Last Brix', brixU:'°Bx', dashNone:'None', noBrixYet:'No hydrometer reading yet', blReadAt:'Read at {t}',
-  drawsOne:'1 draw', drawsN:'{n} draws', syrupMadeEst:'Syrup made, estimate',
+  drawsOne:'1 draw', drawsN:'{n} draws', syrupMadeEst:'Expected so far', nEstBoilD:'expected so far, {d} {u} drawn',
+  bpNone:'Nothing drawn yet. By now the pan should have made about {e} {u}.',
+  bpBehind:'About {d} {u} less drawn than the pan should have made by now: still in the pan, or the pan boils slower than its size suggests.',
+  bpOn:'Drawn is on pace with what the pan should make by now.',
+  bpAhead:'Drawn is {d} {u} ahead of what the pan makes in this time. Syrup left sweet in the pan from the last boil comes out in the first draws.',
   readingsT:'Readings', segTemp:'Temperature', segBrix:'Brix', drawAtL:'Draw off {v}', syrupBandL:'Syrup 66 to 67',
   chartEmptyT:'Add a reading every so often and the line draws itself against your draw-off temperature.',
   chartEmptyB:'Brix shows here when you add a hydrometer reading to a reading or a draw.',
@@ -186,6 +190,10 @@ Object.assign(RS_TR.en, {
 });
 Object.assign(RS_TR.fr, {
   boilLive:'Bouillage en cours', boilStartedAt:'Commencé à {t}', lastBrix:'Dernier Brix',
-  noBrixYet:'Pas encore de lecture', syrupMadeEst:'Sirop fait, estimé', readingsT:'Lectures', segTemp:'Température',
+  noBrixYet:'Pas encore de lecture', syrupMadeEst:'Attendu jusqu\'ici', nEstBoilD:'attendu jusqu\'ici, {d} {u} soutirés',
+  bpNone:'Rien de soutiré encore. À ce stade, la casserole devrait avoir fait environ {e} {u}.',
+  bpBehind:'Environ {d} {u} de moins soutiré que ce que la casserole devrait avoir fait à ce stade : encore dans la casserole, ou elle évapore moins vite que sa taille le laisse croire.',
+  bpOn:'Le sirop soutiré suit ce que la casserole devrait faire à ce stade.',
+  bpAhead:'Le sirop soutiré dépasse de {d} {u} ce que la casserole fait en ce temps. Le sirop resté sucré dans la casserole depuis le dernier bouillage sort aux premiers soutirages.', readingsT:'Lectures', segTemp:'Température',
   addReading:'Ajouter une lecture', drawOffBtn:'Soutirer', saveReading:'Enregistrer la lecture', saveDraw:'Enregistrer le soutirage',
 });

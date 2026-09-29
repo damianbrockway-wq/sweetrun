@@ -58,7 +58,7 @@ function RsShack({ c }) {
             <div className="rs-note">{rt(L,'firstNameHint')}</div>
             <label className="rs-fl">{rt(L,'unitsWord')}</label>
             <RsSeg label={rt(L,'unitsWord')} value={c.units} onChange={c.setUnits} options={[['GAL', rt(L,'gallons')], ['L', rt(L,'litres')]]} />
-            <div className="rs-note">{rt(L,'unitsNote')}</div>
+            <div className="rs-note">{rt(L,'unitsNote', { u: rt(L, srLegacyUnits() === 'L' ? 'litres' : 'gallons').toLowerCase() })}</div>
             <label className="rs-fl">{rt(L,'langWord')}</label>
             <RsSeg label={rt(L,'langWord')} value={c.lang} onChange={c.setLang} options={[['en', 'English'], ['fr', 'Français']]} />
             <label className="rs-fl">{rt(L,'seasonYear')}</label>
@@ -183,14 +183,16 @@ function RsEquipment({ c }) {
   const [armed, setArmed] = useState(null);
   useEffect(() => { if (armed == null) return; const tm = setTimeout(() => setArmed(null), 3000); return () => clearTimeout(tm); }, [armed]);
   const P = (k, d) => { const x = ls.get(k, d); return x === '' || x == null ? d : x; };
-  const [gpm, setGpm] = useState(() => P('sg_pump_gpm', 28));
-  const [tank, setTank] = useState(() => P('sg_pump_tank', 300));
+  // Pump rate and tank size are kept in gallons and shown in the user's unit (L/min and L in litre mode).
+  const [gpm, setGpm] = useRsGalPref('sg_pump_gpm', 28, c.units);
+  const [tank, setTank] = useRsGalPref('sg_pump_tank', 300, c.units);
+  const gpmG = parseFloat(gpm) > 0 ? srGalStored(parseFloat(gpm), c.units) : 28, tankG = parseFloat(tank) > 0 ? srGalStored(parseFloat(tank), c.units) : 300;
   const [line, setLine] = useState(() => P('sg_pump_line', 0));
   const [lift, setLift] = useState(() => P('sg_pump_lift', 0));
   const [setup, setSetup] = useState(() => P('sg_pump_setup', 4));
   const sv = (k, set, d) => x => { set(x); ls.set(k, x === '' ? d : x); };
-  const sapT = React.useMemo(() => seasonTotals((ls.get('sg_logs2', {}) || {})[c.season] || {}).sapT, [v, c.season]);
-  const tt = srTransferTime(parseFloat(gpm) || 28, parseFloat(tank) || 300, parseFloat(line) || 0, parseFloat(lift) || 0, parseFloat(setup) || 0, toGal(sapT, c.units));
+  const sapT = React.useMemo(() => seasonTotals(srReadLogs(c.units)[c.season] || {}).sapT, [v, c.season, c.units]);
+  const tt = srTransferTime(gpmG, tankG, parseFloat(line) || 0, parseFloat(lift) || 0, parseFloat(setup) || 0, toGal(sapT, c.units));
   const del = i => { if (armed !== i) { setArmed(i); srToast(rt(L,'tapAgainDelete')); return; } if (ls.set('sg_equip2', items.filter((_, j) => j !== i))) { setArmed(null); srDataChanged(); } };
   const cond = x => x === 'Good' ? 'ok' : x === 'Poor' ? 'fault' : 'check';
   const condW = x => t(L, x === 'Good' ? 'condGood' : x === 'Fair' ? 'condFair' : 'condPoor');
@@ -214,8 +216,8 @@ function RsEquipment({ c }) {
           <h2 className="rs-sec">{rt(L,'transferTime')}</h2>
           <div className="rs-card">
             <div className="rs-grid2">
-              <div><label className="rs-fl" htmlFor="rs-t-gpm">{rt(L,'pumpGpm')}</label><RsStepper id="rs-t-gpm" value={gpm} onChange={sv('sg_pump_gpm', setGpm, 28)} steps={[-1, 1]} dp={0} unit="gpm" label={rt(L,'pumpGpm')} min={1} max={500} big={false} /></div>
-              <div><label className="rs-fl" htmlFor="rs-t-tank">{rt(L,'tankGal')}</label><RsStepper id="rs-t-tank" value={tank} onChange={sv('sg_pump_tank', setTank, 300)} steps={[-50, 50]} dp={0} unit="gal" label={rt(L,'tankGal')} min={10} max={20000} big={false} /></div>
+              <div><label className="rs-fl" htmlFor="rs-t-gpm">{rt(L,'pumpGpm')}</label><RsStepper id="rs-t-gpm" value={gpm} onChange={setGpm} steps={srVolSteps([-1, 1], [-5, 5], c.units)} dp={0} unit={c.units === 'L' ? 'L/min' : 'gpm'} label={rt(L,'pumpGpm')} min={1} max={c.units === 'L' ? 1900 : 500} big={false} /></div>
+              <div><label className="rs-fl" htmlFor="rs-t-tank">{rt(L,'tankGal')}</label><RsStepper id="rs-t-tank" value={tank} onChange={setTank} steps={srVolSteps([-50, 50], [-200, 200], c.units)} dp={0} unit={u} label={rt(L,'tankGal')} min={c.units === 'L' ? 40 : 10} max={c.units === 'L' ? 75000 : 20000} big={false} /></div>
               <div><label className="rs-fl" htmlFor="rs-t-line">{rt(L,'lineFt')}</label><RsStepper id="rs-t-line" value={line} onChange={sv('sg_pump_line', setLine, 0)} steps={[-100, 100]} dp={0} unit="ft" label={rt(L,'lineFt')} min={0} max={10000} big={false} /></div>
               <div><label className="rs-fl" htmlFor="rs-t-lift">{rt(L,'liftFt')}</label><RsStepper id="rs-t-lift" value={lift} onChange={sv('sg_pump_lift', setLift, 0)} steps={[-1, 1]} dp={0} unit="ft" label={rt(L,'liftFt')} min={0} max={200} big={false} /></div>
             </div>
@@ -225,10 +227,10 @@ function RsEquipment({ c }) {
               <div><div className="rs-meta">{rt(L,'realistic')}</div><div className="rs-big tn">{fmt(tt.realisticTotal, 0)}<small>min</small></div></div>
               <div style={{ textAlign:'right' }}><div className="rs-meta">{rt(L,'theoretical')}</div><div className="rs-mid tn">{fmt(tt.baseTotal, 0)}<small>min</small></div></div>
             </div>
-            <p className="rs-meta tn">{rt(L,'fillSetup', { f: fmt(tt.realFillMin, 0), s: fmt(parseFloat(setup) || 0, 0) })}{tt.effectiveGPM < (parseFloat(gpm) || 28) ? ' · ' + rt(L,'flowDrop', { g: fmt(tt.effectiveGPM, 0) }) : ''}</p>
+            <p className="rs-meta tn">{rt(L,'fillSetup', { f: fmt(tt.realFillMin, 0), s: fmt(parseFloat(setup) || 0, 0) })}{tt.effectiveGPM < gpmG ? ' · ' + rt(L,'flowDrop', { g: fmt(fromGal(tt.effectiveGPM, c.units), 0), u: c.units === 'L' ? 'L/min' : 'gpm' }) : ''}</p>
             {tt.numHauls ? <RsKv rows={[[rt(L,'haulsSeason', { y:c.season }), String(tt.numHauls)], [rt(L,'haulTime'), `${fmt(tt.totalHaulHrs, 1)} h`], [rt(L,'avgHaul'), `${fmt(sapT / tt.numHauls, 0)} ${u}`]]} />
               : <p className="rs-note">{rt(L,'haulNoSap')}</p>}
-            <p className="rs-note">{rt(L,'haulNote', { g: fmt((parseFloat(tank) || 300) * 0.9, 0) })}</p>
+            <p className="rs-note">{rt(L,'haulNote', { g: fmt(fromGal(tankG * 0.9, c.units), 0), u })}</p>
           </div>
         </div>
       </div>
@@ -301,7 +303,13 @@ function RsBackupSheet({ c, onClose }) {
     };
     reader.readAsText(file);
   };
-  const restore = () => { pending.entries.forEach(([k, v]) => { try { localStorage.setItem(k, v); } catch {} }); window.location.reload(); };
+  const restore = () => {
+    pending.entries.forEach(([k, v]) => { try { localStorage.setItem(k, v); } catch {} });
+    // Untagged entries in the backup were logged in its own unit: a backup made before log
+    // units carries no sg_units_legacy, so its sg_units stands in (see srSlogInUnit).
+    if (!pending.entries.some(([k]) => k === 'sg_units_legacy')) { const bu = pending.entries.find(([k]) => k === 'sg_units'); let x = 'GAL'; try { x = bu && JSON.parse(bu[1]) === 'L' ? 'L' : 'GAL'; } catch {} try { localStorage.setItem('sg_units_legacy', JSON.stringify(x)); } catch {} }
+    window.location.reload();
+  };
   return (
     <RsSheet title={rt(L,'set_backup')} onClose={onClose} id="rs-backup-sheet">
       <p className="rs-meta">{rt(L,'backupLede', { n: keyCount })}</p>

@@ -172,7 +172,9 @@ function RsImportSheet({ c, onClose }) {
   const dd = pv ? dedupeImport(((ls.get('sg_logs2', {}) || {})[target]) || {}, adds) : null;
   const doImport = () => {
     const existing = ls.get('sg_logs2', {}) || {};
-    const { added } = dedupeImport(existing[target] || {}, adds);
+    const { added: a0 } = dedupeImport(existing[target] || {}, adds);
+    // Imported numbers are taken in the display unit, as they always were; now they say so.
+    const added = Object.fromEntries(Object.entries(a0).map(([k, arr]) => [k, (arr || []).map(e => srTagUnit(k, e, c.units))]));
     if (!ls.set('sg_logs2', srMergeImport(existing, target, added))) { setFail(true); return; }
     srDataChanged(); srToast(rt(L,'impDone', { n: dd.addedCount })); onClose();
   };

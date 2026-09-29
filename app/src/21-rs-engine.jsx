@@ -69,8 +69,9 @@ function srAutoCopy(logs, season, entry, autoCopy, id) {
   const prev = all[season] || SR_EMPTY_SLOG();
   const up = { ...prev };
   const note = '← auto from sap collected';
-  if (autoCopy.ro)   up.sapRO   = [...(prev.sapRO   || []), { id,     date:entry.date, val:entry.val, note }];
-  if (autoCopy.evap) up.sapEvap = [...(prev.sapEvap || []), { id:id+1, date:entry.date, val:entry.val, note }];
+  const uu = entry.u ? { u: entry.u } : {};   // the copy is in the sap entry's unit
+  if (autoCopy.ro)   up.sapRO   = [...(prev.sapRO   || []), { id,     date:entry.date, val:entry.val, note, ...uu }];
+  if (autoCopy.evap) up.sapEvap = [...(prev.sapEvap || []), { id:id+1, date:entry.date, val:entry.val, note, ...uu }];
   return { ...all, [season]: up };
 }
 // EvapTab's batch shape: {date, sapIn, syrupOut, grade, loc, notes, id}.
@@ -177,6 +178,17 @@ function srRoPlan(o) {
 // ── Boil: syrup an hour from the evaporator rate ─────────────────────────────
 // The inverse of boilTime(): boiling sap of Brix b at r gal/h of water off
 // makes r / (rule86(b) - 1) gal of syrup an hour. No new constant.
+// A boil's drawn syrup against what the pan should have made since the boil started
+// (srSyrupRate x hours). They measure different things: drawn is real and can run ahead
+// early (syrup left sweet in the pan from the last boil comes out first) or behind (syrup
+// still in the pan). Both in one unit; on pace means within 20 % or tol, whichever is larger.
+//   -> { kind: 'none' | 'behind' | 'on' | 'ahead', d: |drawn - expected| }
+function srBoilPace(expected, drawn, tol = 0.1) {
+  const e = Math.max(0, +expected || 0), dr = Math.max(0, +drawn || 0);
+  if (!(dr > 0)) return { kind: 'none', d: e };
+  const band = Math.max(tol, e * 0.2), diff = dr - e;
+  return { kind: Math.abs(diff) <= band ? 'on' : diff > 0 ? 'ahead' : 'behind', d: Math.abs(diff) };
+}
 function srSyrupRate(evapGph, brix) {
   const R = rule86(brix);
   return evapGph > 0 && R > 1 ? evapGph / (R - 1) : 0;

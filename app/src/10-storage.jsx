@@ -1,6 +1,6 @@
 // ─── localStorage helpers ────────────────────────────────────────────────────
 let SR_LOCKED = false; // set true when trial expired & unlicensed — soft edit-lock
-const SR_LOCK_ALLOW = ['sg_license','sg_trial_start','sg_trial_pinged','sg_email_prompted','sg_sessions','sg_lang','sg_units'];
+const SR_LOCK_ALLOW = ['sg_license','sg_trial_start','sg_trial_pinged','sg_email_prompted','sg_sessions','sg_lang','sg_units','sg_units_legacy'];
 // Preference / UI-state keys keep persisting quietly even when the trial lock
 // is on. The lock exists to stop NEW season data (logs, batches, pins, brix
 // readings…) — remembering which tab was open or a calculator assumption is
@@ -53,4 +53,10 @@ const ls = {
     catch { return _srFail('quota'); }
   }
 };
-
+// The unit untagged log entries were written in (see srSlogInUnit). Taken once, at
+// start-up, before anything can switch units; if it could not be stored, untagged
+// entries follow the current setting, which is how every version before read them.
+const srLegacyUnits = () => { const x = ls.get('sg_units_legacy', null); return x === 'L' || x === 'GAL' ? x : (ls.get('sg_units', 'GAL') === 'L' ? 'L' : 'GAL'); };
+function srSnapshotLegacyUnits() { if (ls.get('sg_units_legacy', null) == null) ls.set('sg_units_legacy', ls.get('sg_units', 'GAL') === 'L' ? 'L' : 'GAL'); }
+// sg_logs2 with every volume in the display unit (default: the current setting).
+function srReadLogs(units) { return srLogsInUnit(ls.get('sg_logs2', {}) || {}, units || ls.get('sg_units', 'GAL'), srLegacyUnits()); }

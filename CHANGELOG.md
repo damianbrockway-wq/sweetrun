@@ -1,5 +1,14 @@
 # SweetRun changelog
 
+## 2026-09-28: Units follow-up (boil numbers, litres everywhere, log units)
+
+What a sugarmaker sees:
+- **Boil numbers that agree.** While boiling, "Syrup drawn" is what you drew and counted. The number beside it is now "Expected so far": what your pan should have made since you started, from its size and your sap Brix. A sentence under the jugs says how they compare ("Drawn is 0.9 gal ahead of what the pan makes in this time. Syrup left sweet in the pan from the last boil comes out in the first draws."). The jugs show the syrup drawn. The Season card says both.
+- **Litres everywhere they belong.** Equipment's pump rate and tank size, the haul note, the RO what-if's evaporator rate and the custom pan note read in L and L/min in litre mode. They are still saved in gallons.
+- **Switching units converts what you logged.** Every new sap, syrup, RO and evaporator entry, batch and boil remembers its unit. Switch between gallons and litres and every screen shows the right number in the new unit instead of relabelling it. Entries from before this update count as the unit SweetRun was set to when this update first opened (Settings says which).
+
+Under the hood: entries gain an optional `u` ('GAL' or 'L'); one new key, `sg_units_legacy`, is taken once at start-up and carried by backups (a restore without it takes the backup's own `sg_units`). Nothing already stored is rewritten; screens read through `srReadLogs`/`srLogsInUnit`. The expected-syrup formula is unchanged (it was right; it measures something different from drawn). Diagnose still works in US gallons, as it says. Service worker `sweetrun-v44`. 756 tests.
+
 ## 2026-09-28: UI review (map plates, back bar, expired trial, French fit)
 
 What a sugarmaker sees:

@@ -186,7 +186,7 @@ function RsDegreeDays({ c }) {
   useEffect(() => { if (armed == null) return; const tm = setTimeout(() => setArmed(null), 3000); return () => clearTimeout(tm); }, [armed]);
   const setStart = s => { setStartS(s); ls.set('sg_ddstart', s); };
   const setPlace = (la, lo, name) => { ls.set('sg_ddlat', la); ls.set('sg_ddlon', lo); ls.set('sg_ddloc', name); };
-  const slog = React.useMemo(() => ((ls.get('sg_logs2', {}) || {})[c.season]) || {}, [v, c.season]);
+  const slog = React.useMemo(() => (srReadLogs(c.units)[c.season]) || {}, [v, c.season, c.units]);
   const firstSap = srFirstIso(slog.sapCollected);
   useEffect(() => {
     if (!place || !start) { setSt({ status:'idle', d:null, err:'' }); return; }

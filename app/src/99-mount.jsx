@@ -1,4 +1,5 @@
   // One shell: Run Sheet. The classic UI and its look flag were removed at cutover.
+  srSnapshotLegacyUnits();   // before any screen reads a log (log units, see srSlogInUnit)
   ReactDOM.createRoot(document.getElementById('root')).render(<AppErrorBoundary><RunSheetApp /></AppErrorBoundary>);
 } catch(_e) {
   document.getElementById('root').innerHTML =

@@ -789,7 +789,7 @@ for (const f of [...rsFiles.map(f => join('app', 'src', f)), join('app', 'runshe
   eq('score memo, other inputs', JSON.stringify(E2m.srSeasonScore({ ...args, taps: 0, fuelT: 0 })), JSON.stringify(E2m.seasonScore({ ...args, taps: 0, fuelT: 0 })));
   eq('no screen calls seasonScore directly', (src.match(/[^.\w]seasonScore\(\{/g) || []).length, 1);   // only srSeasonScore's own call
   eq('sg_logs2 read through a memo on the screens that re-rendered per keystroke', [
-    /const slog = React\.useMemo\(\(\) => \(\(ls\.get\('sg_logs2'/.test(src.slice(src.indexOf('function RsDegreeDays('))),
+    /const slog = React\.useMemo\(\(\) => \(srReadLogs\(c\.units\)/.test(src.slice(src.indexOf('function RsDegreeDays('))),
     /const logs = useSrLogs\(\);/.test(src.slice(src.indexOf('function RsGuide('))),
     /const sapT = React\.useMemo\(\(\) => seasonTotals/.test(src.slice(src.indexOf('function RsEquipment(')))], [true, true, true]);
   // Gauge chain: a new data key (locked in an expired trial, backed up), sg_line_meta untouched.
@@ -887,6 +887,87 @@ eq('back: no loose floating pill left', /\.rs-backfloat \{/.test(rcss), false);
   eq('species: his own words, capitalised', SP('yellow birch', 'fr'), 'Yellow birch');
   eq('species: underscores become spaces', SP('striped_maple', 'en'), 'Striped maple');
 }
+
+// ── Units follow-up (2026-09-28): log units, gallon settings in litres, the boil pace ──
+{
+  const U = new Function('ls', src.slice(a, b) + '\nreturn { srSlogInUnit, srLogsInUnit, srBatchesInUnit, srSessInUnit, srTagUnit, srUnitOf, srVolIn, srGalShown, srGalStored, srVolSteps, srBoilPace, srAutoCopy, srSyrupRate, SR_VOL_KINDS, SR_L_PER_GAL };')({ get: (_k, d) => d, set: () => true });
+  const r4 = x => Math.round(x * 1e4) / 1e4;
+  const sl = { sapCollected:[{ id:1, val:100 }, { id:2, val:'50' }], syrupMade:[{ id:3, val:2.5, brix:66.9 }], sapRO:[], sapEvap:[{ id:4, val:10, u:'L' }], fuelUsed:[{ id:5, val:0.7 }], boilHours:[{ id:6, val:5 }] };
+  // Untagged entries are in the legacy unit; gallons shown in gallons is the same object (nothing rewritten).
+  eq('log units: gallons shown in gallons is untouched (same object) when nothing is tagged otherwise', U.srSlogInUnit({ sapCollected:[{ val:1 }] }, 'GAL', 'GAL') === undefined, false);
+  const same = { sapCollected:[{ val:1 }] }; eq('log units: nothing to convert returns the very same object', U.srSlogInUnit(same, 'GAL', 'GAL') === same, true);
+  const inL = U.srSlogInUnit(sl, 'L', 'GAL');
+  eq('log units: untagged gallons shown in litres', [r4(inL.sapCollected[0].val), inL.sapCollected[0].u, r4(inL.syrupMade[0].val)], [378.541, 'L', 9.4635]);
+  eq('log units: a string value converts too', r4(inL.sapCollected[1].val), 189.2705);
+  eq('log units: an entry already in litres stays as it is', inL.sapEvap[0], { id:4, val:10, u:'L' });
+  eq('log units: fuel and hours are never converted', [inL.fuelUsed === sl.fuelUsed, inL.boilHours === sl.boilHours], [true, true]);
+  eq('log units: other fields ride along', [inL.syrupMade[0].brix, inL.syrupMade[0].id], [66.9, 3]);
+  eq('log units: the stored object is not changed', [sl.sapCollected[0].val, sl.sapCollected[0].u], [100, undefined]);
+  const inG = U.srSlogInUnit(sl, 'GAL', 'GAL');
+  eq('log units: a litre entry shown in gallons', r4(inG.sapEvap[0].val), r4(10 / 3.78541));
+  eq('log units: switch there and back gives the same numbers', r4(U.srSlogInUnit(U.srSlogInUnit(sl, 'L', 'GAL'), 'GAL', 'GAL').sapCollected[0].val), 100);
+  eq('log units: untagged entries follow a litre legacy', U.srSlogInUnit({ syrupMade:[{ val:10 }] }, 'L', 'L').syrupMade[0].val, 10);
+  eq('log units: untagged litre-legacy entries shown in gallons', r4(U.srSlogInUnit({ syrupMade:[{ val:37.8541 }] }, 'GAL', 'L').syrupMade[0].val), 10);
+  eq('log units: a bad value is left alone', U.srSlogInUnit({ sapCollected:[{ val:'x' }] }, 'L', 'GAL').sapCollected[0].val, 'x');
+  const all = { 2026: { sapCollected:[{ val:1, u:'GAL' }] }, 2027: { sapCollected:[{ val:2, u:'L' }] } };
+  const allL = U.srLogsInUnit(all, 'L', 'GAL');
+  eq('log units: every season, only what needs it', [r4(allL[2026].sapCollected[0].val), allL[2027] === all[2027]], [3.7854, true]);
+  eq('log units: empty logs', U.srLogsInUnit(null, 'L', 'GAL'), {});
+  eq('log units: new volume entries are tagged, fuel is not', [U.srTagUnit('syrupMade', { val:1 }, 'L').u, U.srTagUnit('sapRO', { val:1 }, 'GAL').u, 'u' in U.srTagUnit('fuelUsed', { val:1 }, 'L')], ['L', 'GAL', false]);
+  const ac = U.srAutoCopy({}, 2027, { date:'2027-03-16', val:900, u:'L' }, { ro:true, evap:true }, 7);
+  eq('log units: the auto-copy keeps the sap entry\'s unit', [ac[2027].sapRO[0].u, ac[2027].sapEvap[0].u], ['L', 'L']);
+  eq('log units: an untagged sap entry copies untagged (as before)', 'u' in U.srAutoCopy({}, 2027, { date:'d', val:1 }, { ro:true }, 7)[2027].sapRO[0], false);
+  const bt = U.srBatchesInUnit([{ id:1, sapIn:'1240', syrupOut:'31.5' }, { id:2, sapIn:'100', syrupOut:'', u:'L' }], 'L', 'GAL');
+  eq('batches: shown in litres', [bt[0].sapIn, bt[0].syrupOut, bt[0].u, bt[1].sapIn], [4693.91, 119.24, 'L', '100']);
+  eq('batches: nothing stored is a list', U.srBatchesInUnit(null, 'L', 'GAL'), []);
+  const ss = { start:1, sap:180, syrup:1.5, u:'GAL', readings:[{ t:2, tempF:218, draw:0.8 }, { t:3, tempF:219 }] };
+  const sL = U.srSessInUnit(ss, 'L');
+  eq('boil session: converted once when the unit changes mid-boil', [sL.sap, sL.syrup, sL.readings[0].draw, sL.readings[1].draw, sL.u], [681.37, 5.68, 3.03, undefined, 'L']);
+  eq('boil session: same unit, or untagged with no legacy given, is untouched', [U.srSessInUnit(ss, 'GAL') === ss, U.srSessInUnit({ start:1, sap:5 }, 'L').sap], [true, 5]);
+  eq('boil session: an untagged session follows the legacy unit', [U.srSessInUnit({ start:1, sap:180, syrup:1.5 }, 'L', 'GAL').syrup, U.srSessInUnit({ start:1, sap:5 }, 'L', 'L').sap], [5.68, 5]);
+  // Gallon settings (tank, pump rate, evaporator rate) shown in the user's unit, stored in gallons.
+  eq('gallon settings: a 300 gal tank reads 1136 L, a 28 gpm pump 106 L/min', [U.srGalShown(300, 'L'), U.srGalShown(28, 'L')], [1136, 106]);
+  eq('gallon settings: stored back in gallons', r4(U.srGalStored(1136, 'L')), r4(1136 / 3.78541));
+  eq('gallon settings: gallons are the identity both ways', [U.srGalShown(300, 'GAL'), U.srGalStored(300, 'GAL')], [300, 300]);
+  eq('gallon settings: litre steps', [U.srVolSteps([-50, 50], [-200, 200], 'L'), U.srVolSteps([-50, 50], [-200, 200], 'GAL')], [[-200, 200], [-50, 50]]);
+  // The boil pair: drawn is real; expected is the pan's rate since the start. Damian's session:
+  // 1 h 42 min on a 2x4 (16 gal/h) at 2.0 Brix, two draws of 0.8 and 0.7.
+  const expd = U.srSyrupRate(16, 2) * 1.7;
+  eq('boil pace: the expected number is the pan rate times the time (0.64 gal)', Math.round(expd * 100) / 100, 0.64);
+  const P = U.srBoilPace(expd, 1.5);
+  eq('boil pace: 1.5 drawn against 0.64 expected reads ahead by 0.86', [P.kind, Math.round(P.d * 100) / 100], ['ahead', 0.86]);
+  eq('boil pace: nothing drawn', U.srBoilPace(0.64, 0).kind, 'none');
+  eq('boil pace: within a fifth is on pace', [U.srBoilPace(1, 0.85).kind, U.srBoilPace(1, 1.19).kind, U.srBoilPace(0.2, 0.28).kind], ['on', 'on', 'on']);
+  eq('boil pace: behind', [U.srBoilPace(2, 1).kind, U.srBoilPace(2, 1).d], ['behind', 1]);
+  eq('boil pace: tolerance in litres', U.srBoilPace(1, 1.35, 0.4).kind, 'on');
+}
+{ // Storage side: the legacy unit is taken once and read back; a failed write falls back to the setting.
+  const s0 = src.indexOf('// The unit untagged log entries were written in'), st0 = src.slice(s0, src.indexOf('\n', src.indexOf('function srReadLogs', s0)) + 1);
+  const mkLs = init => { const m = { ...init }; return { m, get: (k, d) => k in m ? m[k] : d, set: (k, v) => { m[k] = v; return true; } }; };
+  const run = (store, units) => new Function('ls', src.slice(a, b) + st0 + '\nsrSnapshotLegacyUnits(); return { legacy: srLegacyUnits(), logs: srReadLogs(' + (units ? `'${units}'` : '') + ') };')(store);
+  const g = mkLs({ sg_units:'GAL', sg_logs2:{ 2027:{ syrupMade:[{ val:10 }] } } });
+  const r1 = run(g, 'L');
+  eq('legacy unit: taken from the setting the first time', [g.m.sg_units_legacy, r1.legacy], ['GAL', 'GAL']);
+  eq('legacy unit: untagged gallons read in litres after the switch', Math.round(r1.logs[2027].syrupMade[0].val * 100) / 100, 37.85);
+  g.m.sg_units = 'L'; run(g);
+  eq('legacy unit: never overwritten by a later switch', g.m.sg_units_legacy, 'GAL');
+  const f = { get: (k, d) => k === 'sg_units' ? 'L' : d, set: () => false };
+  eq('legacy unit: if it cannot be stored, untagged entries follow the setting (as before)', run(f).legacy, 'L');
+}
+eq('units: Equipment pump rate and tank size in the user\'s unit, stored in gallons', /useRsGalPref\('sg_pump_gpm', 28, c\.units\)/.test(src) && /useRsGalPref\('sg_pump_tank', 300, c\.units\)/.test(src) && src.includes("unit={c.units === 'L' ? 'L/min' : 'gpm'}"), true);
+eq('units: Recap RO evaporator rate in the user\'s unit', /useRsGalPref\('sg_recap_evap', 50, c\.units\)/.test(src) && src.includes("unit={u + '/h'} label={rt(L,'roEvapRate')}"), true);
+eq('units: no hard gal left in the Equipment and RO notes', ["haulNote:'Hauling at 90% of the tank, {g} {u}.'", "flowDrop:'line and lift cut flow to {g} {u}'", "roInputsSub:'{e} {u}/h,", 'boils about {r} {u} an hour a square foot'].every(k => src.includes(k)), true);
+eq('log units: every writer tags (log sheet, edit, boil, batch, import), the legacy unit is taken before mount', [
+  src.includes("srTagUnit(kind, srMakeEntry(kind,"), /SR_VOL_KINDS\.includes\(kind\) \? \{ u: c\.units === 'L' \? 'L' : 'GAL' \} : \{\}/.test(src),
+  src.includes("val: sess.syrup, note, ...uu,"), src.includes("{ ...srMakeBatch(f, Date.now()), u: c.units === 'L' ? 'L' : 'GAL' }"), src.includes('srTagUnit(k, e, c.units)'),
+  /srSnapshotLegacyUnits\(\);[^\n]*\n\s*ReactDOM\.createRoot/.test(src)], [true, true, true, true, true, true]);
+eq('log units: every reader converts (no screen reads sg_logs2 raw for volumes)', (src.slice(src.indexOf('// ─── Shared UI')).match(/ls\.get\('sg_logs2'/g) || []).length, 7);   // the 7 left are writers' read-modify-writes, the import dedupe and a date-only count
+eq('log units: a restore without the legacy unit takes the backup\'s own', src.includes("if (!pending.entries.some(([k]) => k === 'sg_units_legacy'))"), true);
+eq('log units: the legacy key saves during an expired trial', /SR_LOCK_ALLOW = \[[^\]]*'sg_units_legacy'/.test(src), true);
+eq('log units: batch delete writes the stored list, not the converted view', src.includes("ls.set('sg_batches', raw.filter((_, j) => j !== i))"), true);
+eq('boil: jugs are the syrup drawn; the pace sentence sits under them', src.includes("<RsJugs gal={drawn} label={rt(L,'jugsAria', { v: fmt(drawn, 1), u })} />") && src.includes("pace.kind === 'none' ? 'bpNone'"), true);
+eq('boil: Season card says drawn beside expected', src.includes("rt(L,'nEstBoilD', { d: fmt(drawn, 1), u })"), true);
+eq('sw cache bumped for the units follow-up', +(/sweetrun-v(\d+)/.exec(sw) || [0, 0])[1] >= 44, true);
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
