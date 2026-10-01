@@ -43,8 +43,9 @@ function selSeason(season) {
     return { done: all.filter((_, i) => c[i]).length, total: all.length };
   };
   const anyEntries = Object.keys(logs).some(y => SR_LOG_KINDS.some(k => ((logs[y] || {})[k] || []).length));
+  const anyThisSeason = SR_LOG_KINDS.some(k => (slog[k] || []).length > 0);
   return {
-    logs, slog, prevSlog, pins, mainlines, wizard,
+    logs, slog, prevSlog, pins, mainlines, wizard, anyThisSeason,
     wizardDone: !!ls.get('sg_wizard_done', false) || !!ls.get('sg_onboarded', false),
     anyEntries,
     treePins: pins.filter(p => p.type === 'tree'),
@@ -57,11 +58,52 @@ function selSeason(season) {
     cpoints: ls.get('sg_cpoints', []) || [],
     autoCopy: ls.get('sg_autocopy', { ro:false, evap:false }) || { ro:false, evap:false },
     loc: selLocation(),
-    panRate: srPanRate(ls.get('sg_panIdx', 0), ls.get('sg_panW', ''), ls.get('sg_panH', '')),
-    panIdx: ls.get('sg_panIdx', 0),
+    panRate: selEvap().rate,
+    panIdx: selEvap().panIdx,
     tanks: selTanks(season),
+    tapsInfo: srTaps({ wizard, pins, trees: ls.get('sg_trees', 50) }),
+    closed: !!selClosed()[season],
   };
 }
+
+// ── Fix pass 1: one reader per shared fact (27-rs-truth.jsx does the math) ───
+// Taps for the season (srTaps): setup plan, else mapped tree taps, else trees.
+function selTaps(trees) {
+  return srTaps({ wizard: ls.get('sg_wizard_data', {}) || {}, pins: ls.get('sg_lines_pins', []) || [], trees: trees != null ? trees : ls.get('sg_trees', 50) });
+}
+// The evaporator rate (srEvapRateOf). sg_panIdx was written as 0 on every start by the
+// old app, so a stored 0 counts as "picked" only once sg_pan_set says he picked it
+// (the Evaporator screen and the setup write both); before that the setup's pan wins.
+function selEvap() {
+  const w = ls.get('sg_wizard_data', {}) || {};
+  const raw = ls.get('sg_panIdx', null), set = !!ls.get('sg_pan_set', false);
+  const picked = raw != null && (set || parseInt(raw, 10) !== 0 || srPanIdxOf(w.panSize) == null);
+  return srEvapRateOf({ customRate: ls.get('sg_pan_rate', ''), panIdx: picked ? raw : null, panW: ls.get('sg_panW', ''), panH: ls.get('sg_panH', ''),
+    wizardPan: w.hasEvap === false ? null : w.panSize });
+}
+// His fuel and its price (srFuelCostOf).
+function selFuel() {
+  const label = ls.get('sg_fuel', 'Firewood (cord)');
+  const def = FUELS.find(f => f.label === label) || FUELS[0];
+  return { label: def.label, def, cost: srFuelCostOf(def.label, ls.get('sg_fuelcost', null)) };
+}
+// The season's Brix (srBrixSource): sap-entry Brix weighted by volume, plus tree readings.
+function selBrix(season, slog, setting) {
+  return srBrixSource({ slog: slog || (srReadLogs()[season] || {}), brixlog: ls.get('sg_brixlog', []) || [], season, setting: setting != null ? setting : ls.get('sg_brix', 2) });
+}
+// Seasons he closed: { [season]: 'YYYY-MM-DD' } (sg_season_closed, a data key).
+function selClosed() { const x = ls.get('sg_season_closed', {}); return x && typeof x === 'object' && !Array.isArray(x) ? x : {}; }
+// Whether he runs an RO this season: RO sap logged, or an RO pump set up.
+function selUsesRo(slog) {
+  const roT = ((slog || {}).sapRO || []).reduce((s, e) => s + (parseFloat(e.val) || 0), 0);
+  return roT > 0 || (ls.get('sg_pumps', []) || []).some(p => p && p.kind === 'ro');
+}
+// Ids for new records: Date.now(), but never the same id twice in one session, so
+// three quick taps can never make three entries that share an id.
+let _srLastId = 0;
+function srNewId() { const t = Date.now(); _srLastId = t > _srLastId ? t : _srLastId + 1; return _srLastId; }
+// The hourly temperatures srTankFull reads, from useSrHourly (26-rs-ops): [{ ts, temp }] and now.
+const srHourlyRows = h => h && h.data ? { rows: (h.data.hourly || []).map(x => ({ ts: x.ms, temp: x.f })), cur: h.data.cur } : { rows: [], cur: null };
 // Forecast location: the Weather tab's place first, then the degree-day place
 // (the same fallback SapFreshnessTracker uses).
 function selLocation() {
@@ -109,7 +151,7 @@ function selToday(slog) {
   }));
   return out;
 }
-// Latest sap Brix: the newest sg_brixlog reading, else the shared sg_brix setting.
+// Latest sap Brix (kept for callers that only pass the tree readings): see selBrix.
 function selSapBrix(brixlog, fallback) {
   const r = (brixlog || []).filter(e => isFinite(parseFloat(e.brix)))
     .sort((a, b) => (srDateMs(b.date) - srDateMs(a.date)) || ((b.id || 0) - (a.id || 0)))[0];

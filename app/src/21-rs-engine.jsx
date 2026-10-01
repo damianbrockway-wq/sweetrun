@@ -134,10 +134,14 @@ function srCumFromFirst(slog, uptoDays) {
 // f: { todayIso, season, slog, boilActive, hasMainlines, hasTreePins }
 // Deterministic and explained in PHASE5-6-NOTES.md.
 const SR_STAGE_IDS = ['weather','tap','lines','collect','boil','recap'];
+// Fix pass 1: a past season is the one before the season TODAY belongs to (srSeasonOf),
+// not the calendar year before, so a Dec-Jan run is not "over" on Jan 1; and a season he
+// closed (f.closed) is in Recap.
 function srStageOf(f) {
   const today = f.todayIso, s = f.slog || {};
-  const yr = parseInt(String(today).slice(0, 4), 10);
+  const yr = srSeasonOf(today) || parseInt(String(today).slice(0, 4), 10);
   if (f.season && parseInt(f.season, 10) < yr) return 'recap';
+  if (f.closed) return 'recap';
   if (f.boilActive) return 'boil';
   const last = kinds => { let m = null; kinds.forEach(k => (s[k] || []).forEach(e => {
     const p = srDateParts(e.date); if (!p || !(parseFloat(e.val) > 0)) return;
@@ -165,12 +169,15 @@ function srRoPlan(o) {
   const lvl = +o.levelGal || 0, cap = +o.capGal || 0, gph = +o.roGph || 0, rate = +o.fillGalH || 0;
   const margin = o.marginH == null ? 3 : o.marginH, minRun = o.minRunGal == null ? 150 : o.minRunGal;
   const runH = gph > 0 ? lvl / gph : null;
-  const fullH = rate > 0 ? Math.max(0, (cap - lvl) / rate) : null;
+  // o.fullH (optional, fix pass 1): hours to full from srTankFull, which stops the fill below
+  // freezing; null there means it does not fill in the forecast. o.paused: freezing now.
+  const fullH = o.fullH !== undefined ? o.fullH : rate > 0 ? Math.max(0, (cap - lvl) / rate) : null;
   let call = 'later', reason = 'fill', startInH = null;
   if (lvl < minRun) { call = 'wait'; reason = 'low'; }
   else if (o.ageH != null && o.ageH >= 24 && o.tempF != null && o.tempF > 38) { call = 'now'; reason = 'age'; }
   else if (fullH != null && runH != null && fullH <= runH + margin) { call = 'now'; reason = 'fill'; }
   else if (fullH != null && runH != null) { startInH = fullH - runH - margin; }
+  else if (o.paused) { call = 'later'; reason = 'freeze'; }
   else { call = 'unknown'; reason = 'rate'; }
   return { call, reason, runH, fullH, startInH, pct: cap > 0 ? Math.min(1, lvl / cap) : null };
 }
@@ -228,7 +235,7 @@ function srJobs(f) {
     return J;
   }
   const inSeason = f.stage === 'collect' || f.stage === 'boil';
-  const tonightIso = f.minutes >= 720 ? srIsoAdd(f.todayIso, 1) : f.todayIso;
+  const tonightIso = srTonightIsoOf(f.todayIso, f.minutes);   // tomorrow's daily low until 5 am (fix pass 1)
   const w = f.wx || null;
   if (f.boil && f.boil.startMs) {
     const h = Math.max(0, (f.now - f.boil.startMs) / 3600000);
@@ -247,7 +254,8 @@ function srJobs(f) {
   }
   (f.tanks || []).forEach(t => {
     if (!(t.capGal > 0) || t.levelGal == null) return;
-    const plan = srRoPlan({ levelGal:t.levelGal, capGal:t.capGal, fillGalH:t.fillGalH, roGph:f.roGph });
+    // Sap stops below freezing: a tank's fill rate counts only while it is above 32°F (t.fillNow).
+    const plan = srRoPlan({ levelGal:t.levelGal, capGal:t.capGal, fillGalH:t.fillGalH, roGph:f.roGph, ...(t.fullH !== undefined ? { fullH: t.fullH, paused: !!t.paused } : {}) });
     if (plan.call === 'now') add({ id:'ro-now', p:80, icon:'ro', family:'collect', title:'jRoNowT', why:'jRoNowW',
       vars:{ name:t.name, lvl:t.levelGal, cap:t.capGal, fullH:plan.fullH, runH:plan.runH }, btn:'jRoNowB', act:{ go:'stage/collect/ro' },
       alert:'jRoNowA', sub:'jRoNowS' });

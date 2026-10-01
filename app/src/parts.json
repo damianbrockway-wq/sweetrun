@@ -9,6 +9,7 @@
  "22-rs-engine2.jsx",
  "23-rs-engine3.jsx",
  "24-rs-terrain.jsx",
+ "27-rs-truth.jsx",
  "30-ui-kit.jsx",
  "31-rs-tokens.jsx",
  "32-rs-kit.jsx",
@@ -36,12 +37,14 @@
  "70-rs-recap2.jsx",
  "71-rs-guide.jsx",
  "72-rs-sheets.jsx",
+ "73-rs-fix1.jsx",
  "80-rs-core.jsx",
  "81-rs-routes.jsx",
  "82-rs-strings.jsx",
  "83-rs-strings2.jsx",
  "84-rs-strings3.jsx",
  "85-rs-strings-fr.jsx",
+ "86-rs-strings-fix1.jsx",
  "91-shell-runsheet.jsx",
  "99-mount.jsx"
 ]

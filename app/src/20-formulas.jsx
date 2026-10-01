@@ -49,8 +49,18 @@ const PAN_SIZES = [
   { label: '4×14 ft (~163 GPH)',area: 56, rate: 163 },
   { label: '5×16 ft (~232 GPH)',area: 80, rate: 232 },
   { label: 'Custom size…',      area: 0,  rate: 0   },
+  // Fix pass 1: more of the common sizes. Appended AFTER the custom entry so every index
+  // already stored in sg_panIdx keeps meaning the same pan (index 8 stays "custom").
+  // 2×3 is the wizard's own 10 GPH; the flue sizes use the table's ~2.9 GPH per sq ft.
+  { label: '2×3 ft (~10 GPH)',  area: 6,  rate: 10  },
+  { label: '3×12 ft (~104 GPH)',area: 36, rate: 104 },
+  { label: '3×14 ft (~122 GPH)',area: 42, rate: 122 },
+  { label: '5×14 ft (~203 GPH)',area: 70, rate: 203 },
+  { label: '6×16 ft (~278 GPH)',area: 96, rate: 278 },
 ];
-const CUSTOM_PAN_IDX = PAN_SIZES.length - 1;
+const CUSTOM_PAN_IDX = 8;   // fixed: sizes added later sit after it (see above)
+// Pan sizes in the order a picker shows them: smallest first, custom last.
+const PAN_ORDER = PAN_SIZES.map((p, i) => i).filter(i => i !== CUSTOM_PAN_IDX).sort((a, b) => PAN_SIZES[a].area - PAN_SIZES[b].area).concat([CUSTOM_PAN_IDX]);
 const FUELS = [
   // One cord of seasoned hardwood boils roughly 25 gal of syrup, about 1,000 gal
   // of 2° sap (USDA Forest Service; North American Maple Syrup Producers Manual).
@@ -388,7 +398,8 @@ function seasonScore({ sapT, syT, fuelT, taps, brix, yieldModel, fuelSpu }) {
 // are the same record when kind + date + value match exactly (imported rows
 // carry no ids). Dedupe is against the EXISTING store only — a file that
 // legitimately contains two identical rows still imports both the first time.
-const srEntryKey = (kind, e) => `${kind}|${e.date}|${parseFloat(e.val) || 0}`;
+// The date is compared as a calendar day, so "3/1/2027" and "2027-03-01" are the same day.
+const srEntryKey = (kind, e) => { const p = srDateParts(e.date); return `${kind}|${p ? `${p.y}-${p.mo}-${p.d}` : e.date}|${parseFloat(e.val) || 0}`; };
 function dedupeImport(existingSlog, additions) {
   const seen = new Set();
   Object.keys(additions).forEach(k =>

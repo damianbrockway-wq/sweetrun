@@ -15,18 +15,31 @@ function useSrCore() {
     return () => window.removeEventListener('sr-write-fail', h);
   }, []);
   const [units,    setUnits]    = useState(()=>ls.get('sg_units','GAL'));
-  const [season,   setSeason]   = useState(()=>ls.get('sg_season',new Date().getFullYear()));
+  // The season follows the date (srSeasonOf: Jul to Dec belong to the coming season), so opening
+  // the app in a new year never files sap into last season. Picking another season in Log history
+  // or Settings lasts until the next start.
+  const [season,   setSeason]   = useState(()=>srSeasonOf(srToday()) || ls.get('sg_season',new Date().getFullYear()));
   const [sapBrix,  setSapBrix]  = useState(()=>ls.get('sg_brix',2));
   const [trees,    setTrees]    = useState(()=>ls.get('sg_trees',50));
   const [waterBP,  setWaterBP]  = useState(()=>ls.get('sg_bp',212));
-  const [evapRate, setEvapRate] = useState(12);
-  const [fuelType, setFuelType] = useState(()=>{
+  // One evaporator rate for every screen (selEvap: the rate he typed, else his pan, else the setup's pan).
+  const evapRate = selEvap().rate;
+  const setEvapRate = r => { if (parseFloat(r) > 0) ls.set('sg_pan_rate', parseFloat(r)); else ls.set('sg_pan_rate', ''); srDataChanged(); };
+  const [fuelType, setFuelTypeS] = useState(()=>{
     const FIX = { 'Oil (gal)':'Oil (gallon)', 'Propane (gal)':'Propane (gallon)' };
     const f = ls.get('sg_fuel','Firewood (cord)');
     if (FIX[f]) { ls.set('sg_fuel', FIX[f]); return FIX[f]; }
     return f;
   });
-  const [fuelCost, setFuelCost] = useState(()=>ls.get('sg_fuelcost',300));
+  // The price of his fuel (srFuelCostOf): a stored 300 left over from the old start-up write is not
+  // read as $300 a gallon of oil. Written only when he changes it.
+  const [fuelCost, setFuelCostS] = useState(()=>selFuel().cost);
+  const setFuelCost = v => { setFuelCostS(v); if (v !== '' && v != null) ls.set('sg_fuelcost', v); };
+  // A new fuel brings its own unit price: a price per cord never carries over as a price per gallon of oil.
+  const setFuelType = f => {
+    if (f !== fuelType) setFuelCost(srFuelDefaultCost(f));
+    setFuelTypeS(f);
+  };
   const [onboard,  setOnboard]  = useState(()=>ls.get('sg_onboarded',false)===false);
   const [showWizard, setShowWizard] = useState(false);
   const [notifBanner, setNotifBanner] = useState(null);
@@ -49,16 +62,18 @@ function useSrCore() {
       const sessions = (ls.get('sg_sessions', 0) || 0) + 1;
       try { localStorage.setItem('sg_sessions', JSON.stringify(sessions)); } catch {}
       const tok = ls.get('sg_license', null);
+      let cantCheck = false;
       if (tok) {
         const p = await verifyLicense(tok);
-        if (p && !p.expired) { SR_LOCKED = false; _srClear(); setLic({ status: 'licensed', until: p.x }); return; }
+        if (p && !p.unverifiable && !p.expired) { SR_LOCKED = false; _srClear(); setLic({ status: 'licensed', until: p.x }); return; }
+        if (p && p.unverifiable) cantCheck = true;   // this browser cannot check the key: never taken on trust
       }
       const t = trialStatus();
       if (t.expired) {
         SR_LOCKED = true;
-        setLic({ status: 'expired' });
+        setLic({ status: 'expired', cantCheck });
       } else {
-        setLic({ status: 'trial', daysLeft: t.daysLeft });
+        setLic({ status: 'trial', daysLeft: t.daysLeft, cantCheck });
         if (!ls.get('sg_trial_pinged', false)) pingEvent('trial_start').then(() => ls.set('sg_trial_pinged', true)).catch(() => {});
         if (sessions >= 2 && ls.get('sg_onboarded', false) && !ls.get('sg_email_prompted', false)) setShowLicense(true);
       }
@@ -71,7 +86,6 @@ function useSrCore() {
   useEffect(()=>{ ls.set('sg_trees',trees);       },[trees]);
   useEffect(()=>{ ls.set('sg_bp',waterBP);        },[waterBP]);
   useEffect(()=>{ ls.set('sg_fuel',fuelType);     },[fuelType]);
-  useEffect(()=>{ ls.set('sg_fuelcost',fuelCost); },[fuelCost]);
   SR_NUM_LOC = lang === 'fr' ? 'fr-CA' : 'en-US';
   RS_LANG = lang;   // before any child formats a number this render
   useEffect(()=>{ ls.set('sg_lang',lang); try { document.documentElement.lang = lang === 'fr' ? 'fr-CA' : 'en'; } catch {} },[lang]);

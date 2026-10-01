@@ -134,7 +134,8 @@ function srOpsModel(d, now) {
 }
 
 // Freeze prep for tonight: the items, what is done, and tonight's forecast low.
-function srTonightIso(now) { const d = new Date(now); return srIsoOf(d.getHours() >= 12 ? new Date(now + 86400000) : d); }
+// Tonight's low is tomorrow's daily low until 5 am (srTonightIsoOf, fix pass 1).
+function srTonightIso(now) { const d = new Date(now); return srTonightIsoOf(srIsoOf(d), srMinutesOf(d)); }
 function srPrepState(model, wx) {
   const night = srTonightIso(model.now);
   const w = wx && wx[night];
@@ -150,7 +151,7 @@ function srOpsForJobs(model, wx) {
   const prep = srPrepState(model, wx);
   return {
     prefs: model.prefs,
-    pumps: model.pumps.map(p => ({ id: p.id, name: p.name, kind: p.kind, status: p.status, statusAt: p.statusMs, note: p.note, fuel: p.fuel })),
+    pumps: model.pumps.map(p => ({ id: p.id, name: p.name, kind: p.kind, status: p.status, statusAt: p.statusMs, note: p.note, fuel: p.fuel, svcLeftH: p.svcLeftH, serviceEveryH: p.serviceEveryH })),
     leaks: model.leaks,
     freeze: prep.freezing && prep.items.length ? { lo: prep.lo, done: prep.nDone, total: prep.items.length } : null,
   };

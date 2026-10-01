@@ -434,15 +434,19 @@ function srPumpJobs(f) {
   if (o.freeze && o.freeze.total > 0 && o.freeze.done < o.freeze.total) J.push({ id: 'freeze-prep', p: night ? 90 : 55, tone: 'ice', icon: 'snow', family: 'ice',
     title: 'jPrepT', why: 'jPrepW', vars: { lo: o.freeze.lo, done: o.freeze.done, total: o.freeze.total, left: o.freeze.total - o.freeze.done },
     btn: 'jPrepB', act: { go: 'pumps/freeze' }, alert: 'jPrepT', sub: 'jPrepS' });
+  // Fuel: one verdict (srFuelState) on every screen. "Low" is under the fuel-low hours; after
+  // 5 pm a tank that will not last the night says so. A tank with hours to spare says nothing
+  // here, as the pump's own page says "Fine" (fix pass 1: it used to say "low on fuel" at 85%).
   (o.pumps || []).filter(p => p.status === 'running' && p.fuel && p.fuel.hoursLeft != null).forEach(p => {
-    const h = p.fuel.hoursLeft;
-    const soon = h <= (P.fuelLowH || 4), overnight = night && h <= 12;
-    if (soon || overnight) J.push({ id: 'fuel-' + p.id, p: 75, tone: 'bad', icon: 'fuel', family: 'power', title: overnight && !soon ? 'jFuelNT' : 'jFuelT',
+    const h = p.fuel.hoursLeft, st = srFuelState(p.fuel, f.minutes, P);
+    if (st === 'low' || st === 'night') J.push({ id: 'fuel-' + p.id, p: 75, tone: 'bad', icon: 'fuel', family: 'power', title: st === 'night' ? 'jFuelNT' : 'jFuelT',
       why: 'jFuelW', vars: { name: p.name, h, lvl: p.fuel.levelGal, emptyAtMs: f.now + h * SR_H_MS, nowMs: f.now }, btn: 'jFuelB', act: { go: 'pumps/' + p.id },
-      alert: overnight && !soon ? 'jFuelNT' : 'jFuelT', sub: 'jFuelS' });
-    else if (h <= 12) J.push({ id: 'fuel-' + p.id, p: 35, icon: 'fuel', family: 'power', title: 'jFuelT', why: 'jFuelW',
-      vars: { name: p.name, h, lvl: p.fuel.levelGal, emptyAtMs: f.now + h * SR_H_MS, nowMs: f.now }, btn: 'jFuelB', act: { go: 'pumps/' + p.id }, alert: 'jFuelT', sub: 'jFuelS' });
+      alert: st === 'night' ? 'jFuelNT' : 'jFuelT', sub: 'jFuelS' });
   });
+  // Service past its interval: shown on the Season card and Pumps, not only on the pump's page.
+  (o.pumps || []).filter(p => p.svcLeftH != null && p.svcLeftH <= 0).forEach(p => J.push({ id: 'svc-' + p.id, p: 30, icon: 'wrench', family: 'power',
+    title: 'jSvcT', why: 'jSvcW', vars: { name: p.name, over: Math.round(-p.svcLeftH), every: p.serviceEveryH }, btn: 'jSvcB', act: { go: 'pumps/' + p.id },
+    alert: 'jSvcT', sub: 'jSvcS' }));
   (o.leaks || []).forEach(l => J.push({ id: 'leak-' + l.id, p: 70, tone: 'bad', icon: 'alert', family: 'bad', title: 'jLeakT',
     why: l.method === 'releaser' ? 'jLeakWR' : 'jLeakW',
     vars: { name: l.name, v: l.latest, base: l.baseline, rel: l.releaser, drop: l.drop, lim: P.leakLimitIn }, btn: 'jLeakB', act: { go: 'bush/line/' + l.id },

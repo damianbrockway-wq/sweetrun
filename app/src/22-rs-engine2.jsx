@@ -164,7 +164,9 @@ function srScoreRows(sc, o) {
 
 // ── Yield gap (YieldGapAnalyzer, 40-26) ──────────────────────────────────────
 // null when the card would not show (no taps or syrup, or a suspect ratio).
-function srYieldGap(sapGal, syrupGal, taps, sapBrix, model, price) {
+// roFits (optional, default true): false for an operation an RO does not suit (buckets, small
+// sugarbushes, srRoAdviceFits); the RO cause is then left out.
+function srYieldGap(sapGal, syrupGal, taps, sapBrix, model, price, roFits) {
   taps = parseInt(taps) || 0;
   const brix = parseFloat(sapBrix) || 2.0;
   if (!taps || !syrupGal) return null;
@@ -182,9 +184,12 @@ function srYieldGap(sapGal, syrupGal, taps, sapBrix, model, price) {
   else if (ypp < yieldMidOf(model)) causes.push({ id:'belowAvg', sev:'medium', cls, add: (yieldMidOf(model) - ypp) * taps, fixes:['audit5','checkValveLow'] });
   if (effPct !== null && effPct < 80) causes.push({ id:'evapLow', sev:'high', fixes:['float','descale','drawTiming'] });
   else if (effPct !== null && effPct < 90) causes.push({ id:'evapMinor', sev:'medium', fixes:['floatCal'] });
-  if (sapGal > 0 && syrupGal > 0 && sapGal / syrupGal > theoretical * 1.15) causes.push({ id:'considerRo', sev:'medium', fixes:['roSingle','roDiy'] });
+  if (roFits !== false && sapGal > 0 && syrupGal > 0 && sapGal / syrupGal > theoretical * 1.15) causes.push({ id:'considerRo', sev:'medium', fixes:['roSingle','roDiy'] });
   if (!causes.length) causes.push({ id:'good', sev:'low', fixes:['document'] });
-  return { theoretical, hi, lo, gapHigh, gapLow, gapMid, dollarGap: gapMid * (parseFloat(price) || 0), actualRatio, effPct, ypp, causes };
+  // over: syrup past the top of what his system reaches (0 inside the range). The card used to
+  // print gapLow here, which is 0 whenever he is over, so it read "Over by +0".
+  const over = Math.max(0, syrupGal - hi);
+  return { theoretical, hi, lo, gapHigh, gapLow, gapMid, over, dollarGap: gapMid * (parseFloat(price) || 0), actualRatio, effPct, ypp, causes };
 }
 // Cost, time and impact of each fix, as the classic cards printed them.
 const SR_FIXES = {
@@ -198,23 +203,31 @@ const SR_FIXES = {
 
 // ── RO savings against a straight boil (RecapTab, 40-26) ─────────────────────
 // null when the section would not show (roGal > sapGal is a double entry).
-function srRoSavings(sapGal, roGal, evapRate, burnLbsHr, hasPreheater, roBrix, sapBrix) {
+// Fix pass 1: fuel is counted in HIS fuel's unit with the app's one fuel model
+// (FUELS spu: sap gallons boiled per unit of fuel, the model the Evaporator uses),
+// not a fixed 23 lb of wood an hour. Hours are unchanged.
+//   fuelSpu: sap gallons per fuel unit (FUELS[..].spu)
+function srRoSavings(sapGal, roGal, evapRate, fuelSpu, hasPreheater, roBrix, sapBrix) {
   if (!(sapGal > 0) || !(evapRate > 0) || roGal > sapGal) return null;
+  const spu = fuelSpu > 0 ? fuelSpu : FUELS[0].spu;
   const straightHrs  = sapGal / evapRate;
-  const straightWood = straightHrs * burnLbsHr;
+  const straightFuel = sapGal / spu;
   const roConc = roBrix > sapBrix && roGal > 0 ? roGal * (sapBrix / roBrix) : roGal;
   const roReducedSap = (sapGal - roGal) + roConc;
   const preH  = hasPreheater ? 0.85 : 1.0;
   const roHrs = (roReducedSap / evapRate) * preH;
-  const roWood = roHrs * burnLbsHr * (hasPreheater ? 0.88 : 1.0);
-  return { straightHrs, straightWood, roConc, roHrs, roWood, savedHrs: straightHrs - roHrs, savedWood: straightWood - roWood, cords: (straightWood - roWood) / 2000 };
+  const roFuel = (roReducedSap / spu) * (hasPreheater ? 0.88 : 1.0);
+  return { straightHrs, straightFuel, roConc, roHrs, roFuel, savedHrs: straightHrs - roHrs, savedFuel: straightFuel - roFuel, roShare: roGal / sapGal };
 }
 
 // ── Recap facts (RecapTab, 40-26): best day, span, Brix, year over year ──────
-function srRecapFacts(slog, prevSlog, brixArr, units) {
+// season (optional, fix pass 1): first, last, length and best day use only entries dated inside
+// the season's window (srSlogDated); totals still count every entry.
+function srRecapFacts(slog, prevSlog, brixArr, units, season) {
   const g = seasonTotalsGal(slog || {}, units), p = seasonTotalsGal(prevSlog || {}, units);
-  const sapEntries = [...((slog || {}).sapCollected || [])].sort((a, b) => (parseFloat(b.val) || 0) - (parseFloat(a.val) || 0));
-  const all = [...((slog || {}).sapCollected || []), ...((slog || {}).syrupMade || [])].map(e => e.date).filter(Boolean).sort((a, b) => srDateMs(a) - srDateMs(b));
+  const ds = srSlogDated(slog, season).slog;
+  const sapEntries = [...(ds.sapCollected || [])].sort((a, b) => (parseFloat(b.val) || 0) - (parseFloat(a.val) || 0));
+  const all = [...(ds.sapCollected || []), ...(ds.syrupMade || [])].map(e => e.date).filter(Boolean).sort((a, b) => srDateMs(a) - srDateMs(b));
   const first = all[0] || null, last = all[all.length - 1] || null;
   const b = (brixArr || []).map(e => parseFloat(e.brix)).filter(v => !isNaN(v) && v > 0);
   return {
@@ -272,7 +285,7 @@ function srDiagnose(o) {
     const util = roGal / evapGal;
     if (util < 0.7) { const cords = (evapGal - roGal) * 0.6 / FUELS[0].spu; R.push({ id:'roLow', sev:'medium', roi: cords * wood, v:{ pct: util * 100, cords, save: cords * wood, ro: roGal, ev: evapGal, gap: evapGal - roGal, wood } }); }
     else R.push({ id:'roOk', sev:'good', roi:0, v:{ pct: util * 100 } });
-  } else if (evapGal > 50 && roGal === 0) {
+  } else if (evapGal > 50 && roGal === 0 && o.roFits !== false) {
     const cords = evapGal * 0.65 / FUELS[0].spu;
     R.push({ id:'roNone', sev:'high', roi: cords * wood, v:{ ev: evapGal, cords, save: cords * wood, wood } });
   }
@@ -352,26 +365,72 @@ function srHandFlow(high, low) {
 // ── Sap monitor import (SapImportModal, 40-11) ───────────────────────────────
 // CSV: header row, then rows; columns found by name. PDF: the text of a
 // SugarCalc Season Report. Both return a preview or { error:'key' }.
-function srParseSapCsv(text) {
-  const lines = String(text || '').trim().split('\n').filter(l => l.trim());
-  if (lines.length < 2) return { error:'impNeedRows' };
-  const headers = lines[0].toLowerCase().split(',').map(h => h.trim().replace(/['"]/g, ''));
-  const sapIdx   = headers.findIndex(h => h.includes('sap') && (h.includes('gal') || h.includes('col') || h.includes('vol') || h === 'sap'));
-  const syrupIdx = headers.findIndex(h => h.includes('syrup') || h.includes('prod') || h.includes('made'));
-  const dateIdx  = headers.findIndex(h => h.includes('date') || h.includes('day') || h.includes('time'));
-  const roIdx    = headers.findIndex(h => h.includes('ro') || h.includes('r/o') || h.includes('reverse'));
-  if (sapIdx === -1 && syrupIdx === -1) return { error:'impNoCols' };
-  const rows = [];
-  for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split(',').map(c => c.trim().replace(/['"]/g, ''));
-    const sap   = sapIdx   >= 0 && sapIdx   < cols.length ? parseFloat(cols[sapIdx])   || 0 : 0;
-    const syrup = syrupIdx >= 0 && syrupIdx < cols.length ? parseFloat(cols[syrupIdx]) || 0 : 0;
-    const ro    = roIdx    >= 0 && roIdx    < cols.length ? parseFloat(cols[roIdx])    || 0 : 0;
-    const date  = dateIdx  >= 0 && dateIdx  < cols.length ? cols[dateIdx] : `Day ${i}`;
-    if (sap > 0 || syrup > 0 || ro > 0) rows.push({ date, sap, syrup, ro });
+// Fix pass 1: a real CSV reader (quoted "1,450" stays one number), header words
+// instead of substrings ("Syrup produced" is syrup, not RO), every row needs a real
+// date (no more "Day 1"), and SweetRun's own export (Type,Date,Value,Unit,Note)
+// reads back in. Rows carry their unit when the file says it (a Unit column, or
+// "(L)" / "gal" in a header); otherwise they come in the display unit, as before.
+// kindLabels (optional): extra { kind: [label, ...] } for the long format.
+function srCsvDate(x) {
+  const s = String(x == null ? '' : x).trim();
+  const m = s.match(/^(\d{4}-\d{1,2}-\d{1,2})[T\s]/);
+  const p = srDateParts(m ? m[1] : s);
+  if (!p || p.y < 1990 || p.y > 2100 || p.mo < 1 || p.mo > 12 || p.d < 1 || p.d > 31) return null;
+  return `${p.y}-${String(p.mo).padStart(2, '0')}-${String(p.d).padStart(2, '0')}`;
+}
+function srParseSapCsv(text, kindLabels) {
+  const all = srCsvRows(text);
+  if (all.length < 2) return { error:'impNeedRows' };
+  const head = all[0].map(srCsvWords);
+  const has = (w, list) => list.some(x => w.includes(x));
+  const col = (test, skip) => head.findIndex((w, i) => !(skip || []).includes(i) && test(w));
+  const unitOfWords = w => has(w, ['l', 'litres', 'liters', 'litre', 'liter']) ? 'L' : has(w, ['gal', 'gallons', 'gallon']) ? 'GAL' : null;
+  const dateIdx = col(w => has(w, ['date', 'day', 'jour', 'time', 'timestamp']));
+  const typeIdx = col(w => has(w, ['type', 'kind', 'catégorie', 'category']));
+  const valIdx  = col(w => has(w, ['value', 'valeur', 'amount', 'quantité']));
+  const entries = []; let badDates = 0;
+  // Long format: one row per entry (SweetRun's own export).
+  if (typeIdx >= 0 && valIdx >= 0) {
+    if (dateIdx < 0) return { error:'impNoDate' };
+    const unitIdx = col(w => has(w, ['unit', 'unité', 'units']));
+    const noteIdx = col(w => has(w, ['note', 'notes']));
+    const labels = {};
+    Object.keys(SR_CSV_KIND_LABELS).forEach(k => { labels[k] = [...SR_CSV_KIND_LABELS[k], ...((kindLabels || {})[k] || [])].map(x => String(x).toLowerCase().trim()); });
+    for (let i = 1; i < all.length; i++) {
+      const r = all[i];
+      const lab = String(r[typeIdx] || '').toLowerCase().trim();
+      const kind = Object.keys(labels).find(k => labels[k].includes(lab) || k.toLowerCase() === lab);
+      const val = srCsvNum(r[valIdx]);
+      if (!kind || !(val > 0)) continue;
+      const date = srCsvDate(r[dateIdx]); if (!date) { badDates++; continue; }
+      const uw = unitIdx >= 0 ? srCsvWords(r[unitIdx]) : [];
+      entries.push({ kind, date, val, u: SR_VOL_KINDS.includes(kind) ? unitOfWords(uw) : null, note: noteIdx >= 0 ? String(r[noteIdx] || '') : '' });
+    }
+  } else {
+    const syrupIdx = col(w => has(w, ['syrup', 'sirop']));
+    const roIdx    = col(w => has(w, ['ro', 'osmosis', 'osmose', 'reverse', 'o/i', 'oi']), [syrupIdx]);
+    const evapIdx  = col(w => has(w, ['evap', 'evaporator', 'évaporateur', 'boiled']), [syrupIdx, roIdx]);
+    const sapIdx   = col(w => has(w, ['sap', 'sève', 'eau', 'collected', 'récoltée']), [syrupIdx, roIdx, evapIdx, dateIdx]);
+    if (sapIdx === -1 && syrupIdx === -1 && roIdx === -1) return { error:'impNoCols' };
+    if (dateIdx === -1) return { error:'impNoDate' };
+    const cols = [['sapCollected', sapIdx], ['syrupMade', syrupIdx], ['sapRO', roIdx], ['sapEvap', evapIdx]].filter(([, i]) => i >= 0);
+    for (let i = 1; i < all.length; i++) {
+      const r = all[i];
+      const vals = cols.map(([k, ix]) => [k, ix, srCsvNum(r[ix])]).filter(([, , v]) => v > 0);
+      if (!vals.length) continue;
+      const date = srCsvDate(r[dateIdx]); if (!date) { badDates++; continue; }
+      vals.forEach(([kind, ix, val]) => entries.push({ kind, date, val, u: unitOfWords(head[ix]), note: '' }));
+    }
   }
-  if (!rows.length) return { error:'impNoRows' };
-  return { rows, totalSap: rows.reduce((s, r) => s + r.sap, 0), totalSyrup: rows.reduce((s, r) => s + r.syrup, 0), totalRO: rows.reduce((s, r) => s + r.ro, 0) };
+  if (!entries.length) return { error: badDates ? 'impBadDates' : 'impNoRows' };
+  const tot = k => entries.filter(e => e.kind === k).reduce((s, e) => s + e.val, 0);
+  const days = [...new Set(entries.map(e => e.date))];
+  // rows: one per date (the preview counts these), with the same totals as before.
+  const rows = days.map(d => ({ date: d, sap: entries.filter(e => e.date === d && e.kind === 'sapCollected').reduce((s, e) => s + e.val, 0),
+    syrup: entries.filter(e => e.date === d && e.kind === 'syrupMade').reduce((s, e) => s + e.val, 0),
+    ro: entries.filter(e => e.date === d && e.kind === 'sapRO').reduce((s, e) => s + e.val, 0) }));
+  return { rows, entries, badDates, totalSap: tot('sapCollected'), totalSyrup: tot('syrupMade'), totalRO: tot('sapRO'), totalEvap: tot('sapEvap'),
+    totalFuel: tot('fuelUsed'), totalHours: tot('boilHours'), seasons: [...new Set(entries.map(e => srSeasonOf(e.date)))].sort() };
 }
 function srParseSugarCalcText(fullText, thisYear) {
   const CAT = { 'Sap Collected':'sap', 'Syrup Made':'syrup', 'Sap Thru R/O':'ro', 'Sap through R/O':'ro', 'Sap in Evaporator':'evap' };
@@ -389,23 +448,41 @@ function srImportAdditions(preview, source) {
   if (preview.isPDF) {
     preview.rows.forEach(r => { const e = { val:r.val, note:'Imported (SugarCalc PDF)', date:r.date };
       if (r.cat === 'sap') sap.push(e); else if (r.cat === 'syrup') syrup.push(e); else if (r.cat === 'ro') ro.push(e); else if (r.cat === 'evap') evap.push(e); });
-  } else {
-    sap   = preview.rows.filter(r => r.sap > 0).map(r => ({ val:r.sap, note:`Imported (${source})`, date:r.date }));
-    syrup = preview.rows.filter(r => r.syrup > 0).map(r => ({ val:r.syrup, note:`Imported (${source})`, date:r.date }));
-    ro    = preview.rows.filter(r => r.ro > 0).map(r => ({ val:r.ro, note:`Imported (${source})`, date:r.date }));
+    return { sapCollected:sap, syrupMade:syrup, sapRO:ro, sapEvap:evap };
   }
+  if (Array.isArray(preview.entries)) {
+    const out = { sapCollected:[], syrupMade:[], sapRO:[], sapEvap:[] };
+    preview.entries.forEach(e => { out[e.kind] = out[e.kind] || [];
+      out[e.kind].push({ val:e.val, note: e.note ? `${e.note} (imported, ${source})` : `Imported (${source})`, date:e.date, ...(e.u ? { u:e.u } : {}) }); });
+    return out;
+  }
+  sap   = preview.rows.filter(r => r.sap > 0).map(r => ({ val:r.sap, note:`Imported (${source})`, date:r.date }));
+  syrup = preview.rows.filter(r => r.syrup > 0).map(r => ({ val:r.syrup, note:`Imported (${source})`, date:r.date }));
+  ro    = preview.rows.filter(r => r.ro > 0).map(r => ({ val:r.ro, note:`Imported (${source})`, date:r.date }));
   return { sapCollected:sap, syrupMade:syrup, sapRO:ro, sapEvap:evap };
+}
+// Additions split by the season each row's date belongs to (srSeasonOf); rows
+// without a usable date go to `fallback` (the PDF importer's detected year).
+function srImportBySeason(added, fallback) {
+  const out = {};
+  Object.keys(added || {}).forEach(k => (added[k] || []).forEach(e => {
+    const s = srSeasonOf(e.date) || fallback; if (s == null) return;
+    out[s] = out[s] || {}; (out[s][k] = out[s][k] || []).push(e);
+  }));
+  return out;
 }
 function srMergeImport(existing, season, added) {
   const all = existing || {};
   const slog = all[season] || { sapCollected:[], syrupMade:[], sapRO:[], sapEvap:[] };
-  return { ...all, [season]: { ...slog,
-    sapCollected: [...(slog.sapCollected || []), ...added.sapCollected], syrupMade: [...(slog.syrupMade || []), ...added.syrupMade],
-    sapRO: [...(slog.sapRO || []), ...added.sapRO], sapEvap: [...(slog.sapEvap || []), ...added.sapEvap] } };
+  const next = { ...slog };
+  Object.keys(added || {}).forEach(k => { if ((added[k] || []).length || next[k] === undefined) next[k] = [...(slog[k] || []), ...(added[k] || [])]; });
+  return { ...all, [season]: next };
 }
 
 // ── First-season plan (FirstSeasonWizard, 40-01) ─────────────────────────────
-const SR_WIZ_PANS = { '2x3':10, '2x4':16, '2x6':25, '2x8':35, '3x8':70, '3x10':85, '4x12':140, '4x14':163, '5x16':232 };
+// Fix pass 1: the setup's pans ARE the pan table (smallest first), so a size picked in the
+// setup is the same size, at the same rate, on the Boil and Evaporator screens.
+const SR_WIZ_PANS = Object.fromEntries(PAN_ORDER.filter(i => i !== CUSTOM_PAN_IDX).map(i => [PAN_SIZES[i].label.replace(/ ft.*$/, '').replace('×', 'x'), PAN_SIZES[i].rate]));
 function srWizardPlan(o) {
   const trees = parseInt(o.treeCount) || 0;
   const tapsPerTree = o.trunkSize === 'large' ? 2 : 1;
