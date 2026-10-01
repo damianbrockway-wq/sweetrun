@@ -527,7 +527,8 @@ function RsBush({ c, sub }) {
   const selLine = sel && sel.type === 'line' ? model.lines.find(l => l.id === sel.id) : null;
   const selPin = sel && sel.type === 'pin' ? model.pins.find(p => p.id === sel.id) : null;
   const trees = model.pins.filter(p => p.type === 'tree');
-  const taps = trees.reduce((s, p) => s + (parseInt(p.taps) || 0), 0);
+  // The season's one tap count (srTaps), with the mapped count beside it when the plan differs.
+  const tapsInfo = srTaps({ wizard: ls.get('sg_wizard_data', {}) || {}, pins: model.pins, trees: c.trees });
   const empty = model.pins.length === 0 && !model.property;
   const tileTrouble = tiles.err > 8 && tiles.ok === 0 && lf === 'ready';
   const accTier = gps.acc == null ? '' : gps.acc <= 5 ? 'ok' : gps.acc <= 15 ? 'check' : 'bad';
@@ -544,7 +545,7 @@ function RsBush({ c, sub }) {
         {lf === 'error' && <div className="rs-mapstate"><div className="rs-empty"><b>{rt(L_, 'mapLoadT')}</b><p>{rt(L_, 'mapLoadP')}</p>
           <RsBtn kind="secondary" onClick={retryLf}>{rt(L_, 'tryAgain')}</RsBtn></div></div>}
         <header className="rs-phead rs-maptop">
-          <div className="rs-mapt"><h1>{rt(L_, 'bushMap')}</h1><span className="tn">{rt(L_, 'bushCountsT', { t: fmt(taps, 0), l: model.lines.length }).replace(' · ', '\u00a0· ')}</span></div>
+          <div className="rs-mapt"><h1>{rt(L_, 'bushMap')}</h1><span className="tn" id="rs-bush-counts">{rt(L_, 'bushCountsT2', { t: rtTapsLine(L_, tapsInfo), l: model.lines.length })}</span></div>
           <div className="rs-mbtns">
             <button type="button" className="rs-mbtn" aria-label={rt(L_, 'addToMap')} onClick={() => setSheet('add')}><RsIcon name="plus" size={26} sw={2.4} /></button>
             <button type="button" className="rs-mbtn" aria-label={rt(L_, 'bushLayers')} onClick={() => setSheet('layers')}><RsIcon name="layers" size={25} sw={2.2} /></button>
@@ -1040,7 +1041,7 @@ function srParseBoundary(text, ext) {
   if (ext === 'geojson' || ext === 'json') return JSON.parse(text);
   const doc = new DOMParser().parseFromString(text, 'text/xml');
   const features = [];
-  const pts = t => (t || '').trim().split(/\s+/).filter(Boolean).map(s => { const [lng, lat] = s.split(',').map(Number); return [lng, lat]; }).filter(p => srFin(p[0]) && srFin(p[1]));
+  const pts = t => (t || '').trim().split(/\s+/).filter(Boolean).map(s => { const [lng, lat] = s.split(',').map(Number); return [lng, lat]; }).filter(srGeoOk);
   if (ext === 'kml') doc.querySelectorAll('Placemark').forEach(pm => {
     const name = (pm.querySelector('name') || {}).textContent || 'Property';
     const poly = pm.querySelector('Polygon coordinates') || pm.querySelector('outerBoundaryIs coordinates');
@@ -1066,6 +1067,20 @@ function RsMapTools({ c, model, mapRef, base, onClose, onDraw, extra }) {
   const [armed, setArmed] = useState(false);
   const [newLine, setNewLine] = useState(false);
   const busy = save && !save.result;
+  // Fix pass 1 (item 19): a file is merged with the saved boundary (srMergeBoundary). Lines only:
+  // the boundary stays and the lines are added. A new boundary replaces the old one only after he
+  // says so (a second tap); nothing is written until then.
+  const [pendingGj, setPendingGj] = useState(null);
+  const saveGeo = (gj, kept) => {
+    const n = srBoundaryCount(gj);
+    if (!ls.set('sg_property_geo', gj)) { setImp({ bad: true, t: rt(L, 'bNotSavedT') + ' ' + rt(L, SR_WRITE_FAIL === 'quota' ? 'bQuotaP' : 'bLockedP') }); return; }
+    // Feature indexes belong to the old file: keep the paths, forget where they came from.
+    const lm = srObj(ls.get('sg_line_meta', {}));
+    if (Object.values(lm).some(m => m && m.pathFrom != null)) ls.set('sg_line_meta', Object.fromEntries(Object.entries(lm).map(([k, m]) => [k, { ...srObj(m), pathFrom: null }])));
+    srDataChanged(); setPendingGj(null);
+    setImp({ t: kept ? rt(L, 'impKeptBoundary', { n: srBoundaryCount(gj) - kept }) : rt(L, n === 1 ? 'impOk1' : 'impOk', { n }) });
+    try { const map = mapRef.current, b = srBushBounds({ pins: [], lines: [], property: gj }); if (map && b.length >= 2) map.fitBounds(window.L.latLngBounds(b), { padding: [40, 40] }); } catch {}
+  };
   const onFile = f => {
     if (!f) return;
     const ext = (f.name.split('.').pop() || '').toLowerCase();
@@ -1076,12 +1091,9 @@ function RsMapTools({ c, model, mapRef, base, onClose, onDraw, extra }) {
       const n = gj ? srBoundaryCount(gj) : 0;
       if (!['kml', 'gpx', 'geojson', 'json'].includes(ext) || !gj) { setImp({ bad: true, t: rt(L, 'impBad') }); return; }
       if (!n) { setImp({ bad: true, t: rt(L, 'impNone') }); return; }
-      if (!ls.set('sg_property_geo', gj)) { setImp({ bad: true, t: rt(L, 'bNotSavedT') + ' ' + rt(L, SR_WRITE_FAIL === 'quota' ? 'bQuotaP' : 'bLockedP') }); return; }
-      // Feature indexes belong to the old file: keep the paths, forget where they came from.
-      const lm = srObj(ls.get('sg_line_meta', {}));
-      if (Object.values(lm).some(m => m && m.pathFrom != null)) ls.set('sg_line_meta', Object.fromEntries(Object.entries(lm).map(([k, m]) => [k, { ...srObj(m), pathFrom: null }])));
-      srDataChanged(); setImp({ t: rt(L, n === 1 ? 'impOk1' : 'impOk', { n }) });
-      try { const map = mapRef.current, b = srBushBounds({ pins: [], lines: [], property: gj }); if (map && b.length >= 2) map.fitBounds(window.L.latLngBounds(b), { padding: [40, 40] }); } catch {}
+      const mg = srMergeBoundary(ls.get('sg_property_geo', null), gj);
+      if (mg.replaces) { setPendingGj(mg.gj); setImp({ bad: true, t: rt(L, 'impReplaceQ') }); return; }
+      saveGeo(mg.gj, mg.kept);
     };
     r.readAsText(f);
   };
@@ -1139,6 +1151,9 @@ function RsMapTools({ c, model, mapRef, base, onClose, onDraw, extra }) {
         <input type="file" accept=".kml,.gpx,.geojson,.json" onChange={e => { onFile(e.target.files[0]); e.target.value = ''; }} />
       </label>
       {imp && <p className={imp.bad ? 'rs-errline' : 'rs-okline'} role="status">{imp.t}</p>}
+      {pendingGj && <div className="rs-btnrow" style={{ marginTop: 8 }}>
+        <RsBtn kind="bad" onClick={() => saveGeo(pendingGj, 0)} id="rs-imp-replace">{rt(L, 'impReplaceB')}</RsBtn>
+        <RsBtn kind="secondary" onClick={() => { setPendingGj(null); setImp({ t: rt(L, 'impKeptOld') }); }}>{rt(L, 'cancel')}</RsBtn></div>}
       {fileLines.length > 0 && pick && <div className="rs-implines" id="rs-implines">
         <h3 className="rs-subsec">{rt(L, 'impLinesT')}</h3>
         <p className="rs-meta">{rt(L, 'impLinesP')}</p>

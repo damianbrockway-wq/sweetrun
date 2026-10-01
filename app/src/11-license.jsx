@@ -22,19 +22,29 @@ async function verifyLicense(token) {
     try { sigBytes = b64uDec(sig); } catch { return null; }
     if (sigBytes.length !== 64) return null;
 
+    // Fix pass 1 (item 21): a key is accepted only when its signature is checked. A browser
+    // without Ed25519 in WebCrypto (Safari before 17) used to fall through and ACCEPT any key with
+    // a 64-byte signature, so a forged key worked on an older iPad. Now that browser asks the
+    // license Worker to check the key (POST /verify, when LICENSE_API is set), and with no Worker
+    // the key is refused with { unverifiable: true } so the screen can say why. Never accepted unchecked.
     let verified = false, unsupported = false;
     try {
       const key = await crypto.subtle.importKey('raw', b64uDec(LICENSE_PUBKEY), { name: 'Ed25519' }, false, ['verify']);
       verified = await crypto.subtle.verify('Ed25519', key, sigBytes, new TextEncoder().encode(p));
     } catch (e) {
-      // The ONLY reason to fall through unverified is a browser that genuinely
-      // can't do Ed25519 (Safari < 17). Any other error is a real failure and
-      // must reject — we do not accept on structure alone for a routine error.
-      unsupported = !!(e && (e.name === 'NotSupportedError' || e.name === 'OperationError'));
+      // Only a browser that cannot do Ed25519 gets the server check; any other error rejects.
+      unsupported = !!(e && (e.name === 'NotSupportedError' || e.name === 'OperationError' || e.name === 'NotImplementedError' || e.name === 'TypeError'));
       if (!unsupported) return null;
     }
-    if (!verified && !unsupported) return null;
-
+    if (unsupported) {
+      if (!LICENSE_API) return { unverifiable: true };
+      try {
+        const r = await fetch(LICENSE_API + '/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: String(token).trim() }) });
+        const j = r.ok ? await r.json() : null;
+        verified = !!(j && j.ok === true);
+      } catch { return { unverifiable: true, offline: true }; }
+    }
+    if (!verified) return null;
     if (new Date(payload.x + 'T23:59:59') < new Date()) return { ...payload, expired: true };
     return payload;
   } catch { return null; }

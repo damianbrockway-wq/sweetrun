@@ -99,7 +99,7 @@ function RsSapCalc({ c }) {
   const [sap, setSap] = useState(500);
   const b = parseFloat(c.sapBrix) || 0;
   const sy = syrupY(parseFloat(sap) || 0, b);
-  const taps = parseInt(c.trees) || 0;
+  const taps = selTaps(c.trees).taps;
   return (
     <div className="rs-inner">
       <RsShackHead c={c} title={rt(L,'sc_sap')} eyebrow={rt(L,'calcWord')} />
@@ -243,7 +243,7 @@ function RsEquipSheet({ c, onClose }) {
   const [f, setF] = useState({ name:'', brand:'', qty:1, year:'', condition:'Good', notes:'' });
   const [fail, setFail] = useState(false);
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
-  const save = () => {
+  const save = () => { if (srFormBlocked()) return;   // a refused number blocks the save (fix pass 1)
     if (!f.name.trim()) { const el = document.getElementById('rs-eq-name'); if (el) el.focus(); return; }
     const all = ls.get('sg_equip2', []) || [];
     if (!ls.set('sg_equip2', [...all, { ...f, id: Date.now() }])) { setFail(true); return; }
@@ -303,11 +303,27 @@ function RsBackupSheet({ c, onClose }) {
     };
     reader.readAsText(file);
   };
+  // Fix pass 1 (item 20): a restore REPLACES. Every sg_ key ends up exactly as in the backup:
+  // keys the backup has are written, sg_ keys it does not have are removed (they used to survive
+  // and mix in). Kept from this device (srRestorePlan, SR_RESTORE_KEEP): the Season Pass key, the
+  // trial's own records, the session counter and the language. A backup with a key that is not
+  // valid JSON is refused whole, and a write that fails puts every key back as it was.
   const restore = () => {
-    pending.entries.forEach(([k, v]) => { try { localStorage.setItem(k, v); } catch {} });
-    // Untagged entries in the backup were logged in its own unit: a backup made before log
-    // units carries no sg_units_legacy, so its sg_units stands in (see srSlogInUnit).
-    if (!pending.entries.some(([k]) => k === 'sg_units_legacy')) { const bu = pending.entries.find(([k]) => k === 'sg_units'); let x = 'GAL'; try { x = bu && JSON.parse(bu[1]) === 'L' ? 'L' : 'GAL'; } catch {} try { localStorage.setItem('sg_units_legacy', JSON.stringify(x)); } catch {} }
+    const devKeys = Object.keys(localStorage).filter(k => k.startsWith('sg_'));
+    const plan = srRestorePlan(devKeys, pending.entries);
+    if (plan.bad.length) { setPending(null); setMsg({ ok:false, text: rt(L,'backupCorrupt', { k: plan.bad.join(', ') }) }); return; }
+    const before = {}; devKeys.forEach(k => { before[k] = localStorage.getItem(k); });
+    try {
+      plan.remove.forEach(k => localStorage.removeItem(k));
+      plan.set.forEach(([k, v]) => localStorage.setItem(k, v));
+      // Untagged entries in the backup were logged in its own unit: a backup made before log
+      // units carries no sg_units_legacy, so its sg_units stands in (see srSlogInUnit).
+      if (!pending.entries.some(([k]) => k === 'sg_units_legacy')) { const bu = pending.entries.find(([k]) => k === 'sg_units'); let x = 'GAL'; try { x = bu && JSON.parse(bu[1]) === 'L' ? 'L' : 'GAL'; } catch {} localStorage.setItem('sg_units_legacy', JSON.stringify(x)); }
+    } catch {
+      try { Object.keys(localStorage).filter(k => k.startsWith('sg_')).forEach(k => { if (!(k in before)) localStorage.removeItem(k); });
+        Object.entries(before).forEach(([k, v]) => localStorage.setItem(k, v)); } catch {}
+      setPending(null); setMsg({ ok:false, text: rt(L,'restoreFailed') }); return;
+    }
     window.location.reload();
   };
   return (
@@ -317,7 +333,9 @@ function RsBackupSheet({ c, onClose }) {
         <span className="rs-bt"><span>{rt(L,'notPersisted')}</span></span></div>}
       {pending ? <div className="rs-card rs-confirm" style={{ marginTop:14 }}>
         <b className="rs-cardt">{rt(L,'restoreQ', { n: pending.entries.length, d: pending.when ? srDateShort(pending.when, L) : '' })}</b>
-        <p className="rs-meta">{rt(L,'restoreWarn')}</p>
+        {(() => { const pl = srRestorePlan(Object.keys(localStorage).filter(k => k.startsWith('sg_')), pending.entries);
+          return pl.remove.length ? <p className="rs-meta tn" id="rs-restore-remove">{rt(L,'restoreRemoves', { n: pl.remove.length })}</p> : null; })()}
+        <p className="rs-meta">{rt(L,'restoreWarnX')}</p>
         <div style={{ marginTop:14 }}><RsBtn onClick={restore} id="rs-restore-go">{rt(L,'restoreGo')}</RsBtn></div>
         <div style={{ marginTop:10 }}><RsBtn kind="secondary" onClick={() => setPending(null)}>{rt(L,'cancel')}</RsBtn></div>
       </div> : <>

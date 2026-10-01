@@ -4,12 +4,15 @@
 //   GET  /key?session_id=    — retrieve key after purchase (used by success.html)
 //   POST /event              — anonymous pings: {t:"trial_start"|..., email?:string}
 //   GET  /stats?admin=       — event counts + leads (admin only)
+//   POST /verify             — {key} → {ok}: Season Pass signature check for browsers without Ed25519
 //
 // Secrets (wrangler secret put ...): LICENSE_SIGNING_KEY, STRIPE_WEBHOOK_SECRET, ADMIN_KEY
 // Vars (wrangler.toml): WEB3FORMS_KEY, NOTIFY_EMAIL
 // KV binding: DATA
 
 const ALLOWED_ORIGINS = ['https://sweetrun.app', 'http://localhost:8788'];
+// The app's public key (app/src/11-license.jsx LICENSE_PUBKEY), for /verify.
+const LICENSE_PUBKEY = 'GfNHBIKm8enIoOW3yVfFuk7kz34xA3eYKUaWWzNVCzA=';
 
 function cors(req) {
   const origin = req.headers.get('Origin') || '';
@@ -135,6 +138,25 @@ export default {
       const token = await env.DATA.get(`key:session:${sid}`);
       if (!token) return json({ error: 'not found yet — try again in a few seconds' }, 404, c);
       return json({ key: token }, 200, c);
+    }
+
+    // ── License check for browsers without Ed25519 (fix pass 1) ──
+    // The app checks Season Pass keys itself with WebCrypto Ed25519. Safari before 17 has no
+    // Ed25519, so the app asks here instead and accepts the key only on { ok: true }. Public key
+    // only; nothing is stored. Rate limited like /event.
+    if (url.pathname === '/verify' && req.method === 'POST') {
+      const ip = req.headers.get('CF-Connecting-IP') || '';
+      if (await rateLimited(env, ip, 'verify', 60, 3600)) return json({ error: 'rate limited' }, 429, { ...c, 'Retry-After': '3600' });
+      let body; try { body = await req.json(); } catch { return json({ ok: false }, 400, c); }
+      const tok = String((body && body.key) || '').trim();
+      const [p, sig] = tok.split('.');
+      if (!p || !sig || tok.length > 2000) return json({ ok: false }, 200, c);
+      try {
+        const dec = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - s.length % 4) % 4)), ch => ch.charCodeAt(0));
+        const key = await crypto.subtle.importKey('raw', dec(LICENSE_PUBKEY), { name: 'Ed25519' }, false, ['verify']);
+        const ok = await crypto.subtle.verify('Ed25519', key, dec(sig), new TextEncoder().encode(p));
+        return json({ ok: !!ok }, 200, c);
+      } catch { return json({ ok: false }, 200, c); }
     }
 
     // ── Anonymous event ping / email capture ──
