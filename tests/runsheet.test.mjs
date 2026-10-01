@@ -233,7 +233,10 @@ const wxF = { '2027-03-17':{ hi:36, lo:19 } };
 eq('jobs freeze by day', E.srJobs({ ...base, wx:wxF }).map(j => [j.id, j.p]), [['freeze',55], ['log',10]]);
 eq('jobs freeze at night', E.srJobs({ ...base, wx:wxF, minutes:20*60 })[0].p, 90);
 eq('jobs freeze tonight low', E.srJobs({ ...base, wx:wxF })[0].vars.lo, 19);
-eq('jobs freeze morning uses today', ids({ wx:{ '2027-03-16':{ hi:36, lo:20 } }, minutes:7*60 }), ['freeze','log']);
+// Fix pass 1 (item 7): at 7 am today's daily low is this morning's, already past; tonight is tomorrow's low.
+eq('jobs freeze morning reads tomorrow', ids({ wx:{ '2027-03-16':{ hi:36, lo:20 }, '2027-03-17':{ hi:45, lo:35 } }, minutes:7*60 }), ['log']);
+eq('jobs freeze morning tomorrow cold', ids({ wx:{ '2027-03-16':{ hi:36, lo:40 }, '2027-03-17':{ hi:38, lo:20 } }, minutes:7*60 }), ['freeze','log']);
+eq('jobs freeze 3 am is the night under way', ids({ wx:{ '2027-03-16':{ hi:36, lo:20 }, '2027-03-17':{ hi:45, lo:35 } }, minutes:3*60 }), ['freeze','log']);
 eq('jobs no freeze at 29', ids({ wx:{ '2027-03-17':{ hi:36, lo:29 } } }), ['log']);
 eq('jobs freeze only in season', ids({ wx:wxF, stage:'tap' }), ['log']);
 eq('jobs boil', ids({ boil:{ startMs: base.now - 2*3600000 } }), ['boil','log']);
@@ -313,10 +316,12 @@ eq('evap boil time is boilTime()', ec.boilH, E2.boilTime(1000, 2, 35));
 eq('evap retail 1 gal at 40%', r2(ec.bottles[4].retail), r2(ec.cpg / 0.6));
 eq('evap cpg override', E2.srEvapCosts({ sapGal:1000, brix:2, rate:35, cpgOverride:20, margin:50 }).bottles[4].retail, 40);
 // RO savings
-const rs = E2.srRoSavings(1000, 600, 50, 23, false, 8, 2);
-eq('ro savings', [rs.straightHrs, rs.straightWood, rs.roConc, rs.roHrs, r2(rs.roWood), r2(rs.savedHrs), r2(rs.savedWood)], [20, 460, 150, 11, 253, 9, 207]);
-eq('ro savings preheater', r2(E2.srRoSavings(1000, 600, 50, 23, true, 8, 2).roHrs, 3), 9.35);
-eq('ro savings withheld when ro > sap', E2.srRoSavings(100, 200, 50, 23, false, 8, 2), null);
+// Fix pass 1: fuel in the fuel's own unit from FUELS spu (firewood 1000 sap gal a cord), hours unchanged.
+const rs = E2.srRoSavings(1000, 600, 50, 1000, false, 8, 2);
+eq('ro savings', [rs.straightHrs, rs.straightFuel, rs.roConc, rs.roHrs, r2(rs.roFuel, 3), r2(rs.savedHrs), r2(rs.savedFuel, 3), rs.roShare], [20, 1, 150, 11, 0.55, 9, 0.45, 0.6]);
+eq('ro savings preheater', r2(E2.srRoSavings(1000, 600, 50, 1000, true, 8, 2).roHrs, 3), 9.35);
+eq('ro savings oil', r2(E2.srRoSavings(1000, 600, 50, 10, false, 8, 2).savedFuel, 1), 45);
+eq('ro savings withheld when ro > sap', E2.srRoSavings(100, 200, 50, 1000, false, 8, 2), null);
 // yield gap
 const yg = E2.srYieldGap(1000, 20, 100, 2, E2.YIELD_MODELS.gravity, 40);
 eq('gap numbers', [yg.hi, yg.lo, yg.gapHigh, yg.gapLow, yg.gapMid, yg.dollarGap, yg.effPct], [45, 30, 25, 10, 17.5, 700, 86]);
@@ -537,7 +542,10 @@ const lj = m => E3.srJobs({ ...base, ops: { ...ops, leaks: [{ id: 'C', name: 'Ma
 eq('leak job names the pump when paired', [lj('releaser').why, lj('releaser').vars.rel], ['jLeakWR', 24.5]);
 eq('leak job falls back to baseline text', lj('baseline').why, 'jLeakW');
 eq('fuel under 4 h is 75', pj({ pumps: [{ id: 'g', name: 'Generator', status: 'running', fuel: { hoursLeft: 3, levelGal: 1 } }] }), [['fuel-g', 75], ['log', 10]]);
-eq('fuel 9 h by day is 35', pj({ pumps: [{ id: 'g', name: 'Generator', status: 'running', fuel: { hoursLeft: 9, levelGal: 3 } }] }), [['fuel-g', 35], ['log', 10]]);
+// Fix pass 1 (item 13): one fuel verdict (srFuelState). 9 h left by day is "Fine" on the pump's page, so no
+// "low on fuel" job on Season or Pumps either.
+eq('fuel 9 h by day is fine, no job', pj({ pumps: [{ id: 'g', name: 'Generator', status: 'running', fuel: { hoursLeft: 9, levelGal: 3 } }] }), [['log', 10]]);
+eq('service overdue is a job', pj({ pumps: [{ id: 'g', name: 'Generator', status: 'stopped', svcLeftH: -12, serviceEveryH: 100 }] }), [['svc-g', 30], ['log', 10]]);
 eq('fuel 9 h at night runs dry overnight', E3.srJobs({ ...base, minutes: 20 * 60, ops: { ...ops, pumps: [{ id: 'g', name: 'Generator', status: 'running', fuel: { hoursLeft: 9, levelGal: 3 } }] } })[0].title, 'jFuelNT');
 eq('fuel stopped pump no job', pj({ pumps: [{ id: 'g', name: 'Generator', status: 'stopped', fuel: { hoursLeft: 1, levelGal: 0.3 } }] }), [['log', 10]]);
 eq('freeze prep replaces the plain freeze job', E3.srJobs({ ...base, wx: wxF, ops: { ...ops, freeze: { lo: 19, done: 1, total: 4 } } }).map(j => [j.id, j.p]), [['freeze-prep', 55], ['log', 10]]);
@@ -955,11 +963,11 @@ eq('back: no loose floating pill left', /\.rs-backfloat \{/.test(rcss), false);
   eq('legacy unit: if it cannot be stored, untagged entries follow the setting (as before)', run(f).legacy, 'L');
 }
 eq('units: Equipment pump rate and tank size in the user\'s unit, stored in gallons', /useRsGalPref\('sg_pump_gpm', 28, c\.units\)/.test(src) && /useRsGalPref\('sg_pump_tank', 300, c\.units\)/.test(src) && src.includes("unit={c.units === 'L' ? 'L/min' : 'gpm'}"), true);
-eq('units: Recap RO evaporator rate in the user\'s unit', /useRsGalPref\('sg_recap_evap', 50, c\.units\)/.test(src) && src.includes("unit={u + '/h'} label={rt(L,'roEvapRate')}"), true);
+eq('units: Recap RO evaporator rate in the user\'s unit', /useRsGalPref\('sg_recap_evap', evDef, c\.units\)/.test(src) && src.includes("unit={u + '/h'} label={rt(L,'roEvapRate')}"), true);
 eq('units: no hard gal left in the Equipment and RO notes', ["haulNote:'Hauling at 90% of the tank, {g} {u}.'", "flowDrop:'line and lift cut flow to {g} {u}'", "roInputsSub:'{e} {u}/h,", 'boils about {r} {u} an hour a square foot'].every(k => src.includes(k)), true);
 eq('log units: every writer tags (log sheet, edit, boil, batch, import), the legacy unit is taken before mount', [
   src.includes("srTagUnit(kind, srMakeEntry(kind,"), /SR_VOL_KINDS\.includes\(kind\) \? \{ u: c\.units === 'L' \? 'L' : 'GAL' \} : \{\}/.test(src),
-  src.includes("val: sess.syrup, note, ...uu,"), src.includes("{ ...srMakeBatch(f, Date.now()), u: c.units === 'L' ? 'L' : 'GAL' }"), src.includes('srTagUnit(k, e, c.units)'),
+  src.includes("val: sess.syrup, note, grade: endGrade, ...uu,"), src.includes("{ ...srMakeBatch(f, Date.now()), u: c.units === 'L' ? 'L' : 'GAL' }"), src.includes('srTagUnit(k, e, c.units)'),
   /srSnapshotLegacyUnits\(\);[^\n]*\n\s*ReactDOM\.createRoot/.test(src)], [true, true, true, true, true, true]);
 eq('log units: every reader converts (no screen reads sg_logs2 raw for volumes)', (src.slice(src.indexOf('// ─── Shared UI')).match(/ls\.get\('sg_logs2'/g) || []).length, 7);   // the 7 left are writers' read-modify-writes, the import dedupe and a date-only count
 eq('log units: a restore without the legacy unit takes the backup\'s own', src.includes("if (!pending.entries.some(([k]) => k === 'sg_units_legacy'))"), true);

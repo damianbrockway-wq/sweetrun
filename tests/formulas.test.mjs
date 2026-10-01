@@ -76,7 +76,9 @@ eq('roConc(100gal 2°→8°)', F.roConc(100, 2, 8), 25, 1e-9);
 // ── Constants the Diagnose math depends on ──
 eq('FUELS firewood spu (gal sap/cord)', F.FUELS[0].spu, 1000);
 eq('PLATE_CUPS 7"', F.PLATE_CUPS['7" plates'], 3.25);
-eq('PAN_SIZES count', F.PAN_SIZES.length, 9);
+// Fix pass 1 added five common sizes AFTER the custom entry (index 8), so stored sg_panIdx values keep their pan.
+eq('PAN_SIZES count', F.PAN_SIZES.length, 14);
+eq('custom pan stays at index 8', F.PAN_SIZES[8].area, 0);
 
 // ── Tapping ──
 eq('tapsPer(9)', F.tapsPer(9), 0);
