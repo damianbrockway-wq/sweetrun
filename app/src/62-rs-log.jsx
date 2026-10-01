@@ -48,37 +48,69 @@ function RsLogSheet({ c, kind: kind0, editing, onClose }) {
   const inRange = isFinite(bx) && bx >= 66 && bx <= 68.9;   // FinishTab's legal range
 
   const writeLogs = up => { if (!ls.set('sg_logs2', up)) { setFail(SR_WRITE_FAIL || 'locked'); return false; } return true; };
+  // Fix pass 1. A new entry files into the season its date belongs to (srSeasonOf), not whatever
+  // season is on screen. An edited entry stays in its own season, and its date must stay inside
+  // that season's window (Jul 1 to Jun 30) and not after today: a 1999 or 2031 date is refused.
+  const fileSeason = srSeasonOf(srToday()) || c.season;
+  const editSeason = editing ? (editing.season != null ? +editing.season : c.season) : null;
+  const win = editing ? srSeasonWindow(editSeason) : null;
+  const dateMax = win ? (win.end < srToday() ? win.end : srToday()) : null;
+  const [dateErr, setDateErr] = useState(false);
+  const [warn, setWarn] = useState(null);       // a plausibility question, answered by a second tap
+  const busy = React.useRef(false);              // one save per tap: three quick taps make one entry
+  // The stored entry being edited: by its place in the list (old data can hold several entries
+  // sharing one id), else the first with its id.
+  const editIdx = list => { if (!editing) return -1; const i = editing._i; return i != null && list[i] && list[i].id === editing.id ? i : list.findIndex(x => x.id === editing.id); };
   const save = () => {
+    if (busy.current) return;
+    if (srFormBlocked('rs-log-sheet')) return;
     const n = parseFloat(val);
-    if (!n) { const el = document.getElementById('rs-log-v'); if (el) el.focus(); return; }
+    if (!(n > 0)) { const el = document.getElementById('rs-log-v'); if (el) el.focus(); return; }
     const all = ls.get('sg_logs2', {}) || {};
     if (editing) {
-      const slog = all[c.season] || SR_EMPTY_SLOG();
+      if (dateISO && (dateISO < win.start || dateISO > dateMax)) { setDateErr(true); const el = document.getElementById('rs-log-date'); if (el) el.focus(); return; }
+      const slog = all[editSeason] || SR_EMPTY_SLOG();
       // The value was shown and typed in the display unit, so it now carries that unit.
       const changes = { val: n, note, grade: K.grade ? grade : undefined, brix: SR_KIND_FIELDS[kind].brix && brix !== '' ? parseFloat(brix) : undefined, ...(SR_VOL_KINDS.includes(kind) ? { u: c.units === 'L' ? 'L' : 'GAL' } : {}) };
       if (dateISO) changes.date = dateISO;
-      const up = { ...all, [c.season]: { ...slog, [kind]: (slog[kind] || []).map(x => x.id === editing.id ? { ...x, ...changes } : x) } };
-      if (!writeLogs(up)) return;
+      const list = slog[kind] || [], at = editIdx(list);
+      const up = { ...all, [editSeason]: { ...slog, [kind]: list.map((x, i) => i === at ? { ...x, ...changes } : x) } };
+      busy.current = true;
+      if (!writeLogs(up)) { busy.current = false; return; }
       srDataChanged(); srToast(rt(L,'entryChanged')); onClose(); return;
     }
-    const entry = srTagUnit(kind, srMakeEntry(kind, { val: n, note, grade, brix: brix === '' ? '' : String(brix), point }, Date.now(), srToday()), c.units);
-    if (!writeLogs(srAppendEntry(all, c.season, kind, entry))) return;
+    // A day of sap far past what the taps can give is asked about once before it is saved.
+    if (isSap && !warn) {
+      const todayGal = toGal(selToday(srReadLogs(c.units)[fileSeason] || {}).sapVal + n, c.units);
+      // Only against a tap count he gave (the setup plan or the mapped trees), never the default tree count.
+      const ti = selTaps(c.trees);
+      const chk = ti.src !== 'trees' ? srSapDayCheck(todayGal, ti.taps) : null;
+      if (chk && chk.high) { setWarn({ per: fromGal(chk.per, c.units) }); return; }
+    }
+    busy.current = true;
+    const entry = srTagUnit(kind, srMakeEntry(kind, { val: n, note, grade, brix: brix === '' ? '' : String(brix), point }, srNewId(), srToday()), c.units);
+    if (!writeLogs(srAppendEntry(all, fileSeason, kind, entry))) { busy.current = false; return; }
     ls.set('sg_log_last_kind', kind);
     if (isSap) {
       const ac = ls.get('sg_autocopy', { ro:false, evap:false }) || {};
-      const up2 = srAutoCopy(ls.get('sg_logs2', {}), c.season, entry, ac, Date.now());
+      const id2 = srNewId(); srNewId();   // the copies take two fresh ids
+      const up2 = srAutoCopy(ls.get('sg_logs2', {}), fileSeason, entry, ac, id2);
       if (up2) ls.set('sg_logs2', up2);
     }
     srDataChanged();
-    srToast(rt(L,'savedEntry', { v: fmt(n, K.dp), u: K.unit, k: srKindWord(K) }));
+    srToast(rt(L,'savedEntry', { v: fmt(n, srDpOf(val, K.dp)), u: K.unit, k: srKindWord(K) }));
     onClose();
   };
   const del = () => {
     if (!armed) { setArmed(true); return; }
+    if (busy.current) return;
     const all = ls.get('sg_logs2', {}) || {};
-    const slog = all[c.season] || SR_EMPTY_SLOG();
-    const up = { ...all, [c.season]: { ...slog, [kind]: (slog[kind] || []).filter(x => x.id !== editing.id) } };
-    if (!writeLogs(up)) return;
+    const slog = all[editSeason] || SR_EMPTY_SLOG();
+    const list = slog[kind] || [], at = editIdx(list);
+    // Only this entry goes, even when an older bug left others with the same id.
+    const up = { ...all, [editSeason]: { ...slog, [kind]: list.filter((x, i) => i !== at) } };
+    busy.current = true;
+    if (!writeLogs(up)) { busy.current = false; return; }
     srDataChanged(); srToast(rt(L,'entryDeleted')); onClose();
   };
   const title = editing ? rt(L,'changeEntry') : rt(L,'logKind', { k: srKindWord(K) });
@@ -93,9 +125,11 @@ function RsLogSheet({ c, kind: kind0, editing, onClose }) {
       </>}
       {editing && <>
         <label className="rs-fl" htmlFor="rs-log-date">{rt(L,'date')}</label>
-        <input id="rs-log-date" className="rs-field" type="date" value={dateISO} onChange={e => setDateISO(e.target.value)} />
+        <input id="rs-log-date" className="rs-field" type="date" value={dateISO} min={win.start} max={dateMax} aria-invalid={dateErr ? 'true' : undefined}
+          onChange={e => { setDateISO(e.target.value); setDateErr(false); }} />
+        {dateErr && <p className="rs-errline" role="alert">{rt(L,'dateOutside', { y: editSeason, a: srDateShort(win.start, L) + ' ' + win.start.slice(0, 4), b: srDateShort(dateMax, L) + ' ' + dateMax.slice(0, 4) })}</p>}
       </>}
-      <RsStepper id="rs-log-v" value={val} onChange={setVal} steps={K.steps} dp={K.dp} unit={K.unit} label={rt(L,'amountIn', { k:K.l, u:K.unit })} />
+      <RsStepper id="rs-log-v" value={val} onChange={v => { setVal(v); setWarn(null); }} steps={K.steps} dp={Math.max(K.dp, 2)} unit={K.unit} label={rt(L,'amountIn', { k:K.l, u:K.unit })} />
       {isSap && cpoints.length > 0 && <>
         <label className="rs-fl">{rt(L,'fromWhere')}</label>
         <RsChips label={rt(L,'fromWhere')} value={point} onChange={setPoint}
@@ -119,13 +153,14 @@ function RsLogSheet({ c, kind: kind0, editing, onClose }) {
       <input id="rs-log-note" className="rs-field" type="text" value={note} onChange={e => setNote(e.target.value)} placeholder={rt(L,'addNote')}
         onKeyDown={e => { if (e.key === 'Enter') save(); }} />
       <div className="rs-sheetfoot">
+      {warn && <p className="rs-errline" role="alert" id="rs-log-warn">{rt(L,'sapDayHigh', { v: fmt(warn.per, 1), u: K.unit })}</p>}
       {fail && <div className="rs-banner bad rs-sheetfail" role="alert">
         <span className="rs-bic"><RsIcon name="alert" size={24} sw={2.4} /></span>
         <span className="rs-bt"><b>{rt(L,'bNotSavedT')}</b><span>{rt(L, fail === 'quota' ? 'bQuotaP' : 'bLockedP')}</span></span>
         {fail !== 'quota' && <button type="button" className="rs-bbtn" onClick={() => { onClose(); c.setShowLicense(true); }}>{rt(L,'bEnterKey')}</button>}
       </div>}
-        <RsBtn onClick={save} id="rs-log-save">{editing ? rt(L,'saveChange')
-          : parseFloat(val) ? rt(L,'saveAmt', { v: fmt(parseFloat(val), K.dp), u: K.unit, k: srKindWord(K) }) : rt(L,'saveKind', { k: srKindWord(K) })}</RsBtn>
+        <RsBtn onClick={save} id="rs-log-save">{editing ? rt(L,'saveChange') : warn ? rt(L,'saveAnyway', { v: fmt(parseFloat(val), srDpOf(val, K.dp)), u: K.unit })
+          : parseFloat(val) ? rt(L,'saveAmt', { v: fmt(parseFloat(val), srDpOf(val, K.dp)), u: K.unit, k: srKindWord(K) }) : rt(L,'saveKind', { k: srKindWord(K) })}</RsBtn>
       </div>
       {editing && <div style={{ marginTop:10 }}><RsBtn kind="bad" onClick={del} id="rs-log-del">{rt(L, armed ? 'tapAgainDelete' : 'deleteEntry')}</RsBtn></div>}
     </RsSheet>
@@ -148,7 +183,7 @@ function RsLogHistory({ c, openLog }) {
   const autoCopy = React.useMemo(() => ls.get('sg_autocopy', { ro:false, evap:false }) || { ro:false, evap:false }, [v]);
   const T_ = seasonTotals(slog);
   const seasons = [...new Set([...Object.keys(logs).map(Number), c.season])].filter(y => isFinite(y)).sort((a, b) => b - a);
-  const all = kinds.flatMap(K => (slog[K.k] || []).map(e => ({ ...e, kind:K.k })))
+  const all = kinds.flatMap(K => (slog[K.k] || []).map((e, i) => ({ ...e, kind:K.k, _i:i, season:c.season })))
     .filter(e => filter === 'all' || e.kind === filter)
     .filter(e => !pt || e.point === pt)
     .sort((a, b) => (srDateMs(b.date) - srDateMs(a.date)) || ((b.id || 0) - (a.id || 0)));
@@ -219,7 +254,7 @@ function RsLogHistory({ c, openLog }) {
                 <div className="rs-list">
                   {g.items.map(e => { const k = K(e.kind); const p = e.point ? cpoints.find(x => x.id === e.point) : null;
                     const extra = [e.grade && e.grade !== '—' ? srGradeLabel(e.grade, L) : null, e.brix != null ? `${fmt(e.brix, 1)} Brix` : null, p ? p.name : null, e.note || null].filter(Boolean).join(' · ');
-                    return <button key={e.kind + e.id} type="button" className="rs-row rs-entry" onClick={() => setEdit(e)}
+                    return <button key={e.kind + e.id + ':' + e._i} type="button" className="rs-row rs-entry" onClick={() => setEdit(e)}
                       aria-label={rt(L,'entryAria', { k:k.l, v:fmt(e.val, k.dp), u:k.unit, d:g.k })}>
                       <RsTile icon={k.icon} family={e.kind === 'syrupMade' || e.kind === 'sapEvap' || e.kind === 'boilHours' ? 'boil' : e.kind === 'fuelUsed' ? 'power' : 'collect'} size={36} />
                       <span className="rs-rt"><b>{k.l}</b>{extra && <span>{extra}</span>}</span>
@@ -237,7 +272,7 @@ function RsLogHistory({ c, openLog }) {
           <div className="rs-list">
             <RsRow icon="download" title={rt(L,'exportCsv', { y:c.season })} sub={rt(L,'exportCsvS')} onClick={exportCSV} />
             <RsRow icon="book" title={rt(L,'exportPdf', { y:c.season })} sub={rt(L,'exportPdfS')}
-              onClick={() => exportSeasonPDF({ season:c.season, trees:c.trees, units:c.units, logs, brixLog: ls.get('sg_brixlog',[]), sapBrix:c.sapBrix })} />
+              onClick={() => exportSeasonPDF(srPdfArgs(c))} />
             <RsRow icon="up" title={rt(L,'importMon')} sub={rt(L,'importMonS')} onClick={() => setShowImport(true)} />
           </div>
           <h2 className="rs-sec">{rt(L,'autoCopy')}</h2>

@@ -176,9 +176,15 @@ const srModelName = (label, L) => { const k = Object.keys(YIELD_MODELS).find(x =
 let _srCv = null;
 // A number as an input shows it: "2.5", or "2,5" in French (no grouping, so it edits cleanly).
 const srNumIn = n => { const s = String(n); return SR_NUM_LOC === 'fr-CA' ? s.replace('.', ',') : s; };
+// Typed numbers are checked, never clamped quietly (fix pass 1, item 14): "12" in a field
+// whose highest is 10 stays on screen as typed, marked invalid with the reason, and the value
+// is not changed; "-50" and "1e9" are shown as typed and refused, not read as 50 and 19.
+// Save buttons refuse while any field is invalid (srFormBlocked). The +/- keys stop at the range.
 function RsStepper({ id, value, onChange, steps, dp = 0, unit, label, min = 0, max = 1e7, big = true, base, pre, ph }) {
   const inRef = React.useRef(null);
   const [draft, setDraft] = useState(null);           // text while typing
+  const [bad, setBad] = useState(null);               // { kind, n } while the text is refused
+  const atFocus = React.useRef(undefined);            // the value before he started typing
   const shown = draft != null ? draft : (value === '' || value == null ? '' : srNumIn(+(+value).toFixed(dp)));
   React.useLayoutEffect(() => {
     const el = inRef.current; if (!el) return;
@@ -193,16 +199,22 @@ function RsStepper({ id, value, onChange, steps, dp = 0, unit, label, min = 0, m
     } catch {}
   });
   const clamp = n => Math.min(max, Math.max(min, n));
-  const bump = d => { setDraft(null); if ((value === '' || value == null) && base != null) { onChange(+(+base).toFixed(dp)); return; } const cur = parseFloat(value) || 0; onChange(+clamp(cur + d).toFixed(dp)); };
+  const bump = d => { setDraft(null); setBad(null); if ((value === '' || value == null) && base != null) { onChange(+(+base).toFixed(dp)); return; } const cur = parseFloat(value) || 0; onChange(+clamp(cur + d).toFixed(dp)); };
+  const L = RS_LANG;
+  const msg = bad ? (bad.kind === 'high' ? rt(L, 'numHigh', { v: srNumIn(max) }) : bad.kind === 'low' ? rt(L, 'numLow', { v: srNumIn(min) }) : rt(L, 'numBad')) : null;
   return (
     <div className="rs-stepper">
       <label className={`rs-stepv${big ? '' : ' sm'}`} htmlFor={id}>
         {pre && <small className="pre">{pre}</small>}
         <input ref={inRef} id={id} className="tn" type="text" inputMode="decimal" autoComplete="off" aria-label={label} placeholder={ph}
+          aria-invalid={bad ? 'true' : undefined} aria-describedby={bad ? id + '-err' : undefined}
           value={shown}
-          onChange={e => { const raw = e.target.value; if (!/^[\d.,\s]*$/.test(raw)) return; setDraft(raw); const n = srParseNum(raw); onChange(n == null ? '' : clamp(n)); }}
-          onFocus={e => { try { e.target.select(); } catch {} }}
-          onBlur={() => setDraft(null)} />
+          onChange={e => { const raw = e.target.value; setDraft(raw); const r = srCheckNum(raw, min, max);
+            if (r.kind === 'ok') { setBad(null); onChange(r.n); } else if (r.kind === 'empty') { setBad(null); onChange(''); }
+            // Refused: the value goes back to what it was before he typed, so nothing half-typed is kept.
+            else { setBad(r); if (atFocus.current !== undefined && value !== atFocus.current) onChange(atFocus.current); } }}
+          onFocus={e => { atFocus.current = value; try { e.target.select(); } catch {} }}
+          onBlur={() => { if (!bad) setDraft(null); }} />
         {unit && <small>{srUnitL(unit)}</small>}
       </label>
       <div className="rs-keys">
@@ -212,6 +224,7 @@ function RsStepper({ id, value, onChange, steps, dp = 0, unit, label, min = 0, m
           </button>
         ))}
       </div>
+      {msg && <p className="rs-errline rs-numerr" id={id + '-err'} role="alert">{msg}</p>}
     </div>
   );
 }

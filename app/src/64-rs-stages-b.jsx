@@ -28,17 +28,20 @@ function RsCollectStage({ c, openLog }) {
     .sort((a, b) => (b.id || 0) - (a.id || 0));
   // The RO call: from a tank reading once tanks exist (Phase 8), else from the sap logged today.
   const tank = m.d.tanks.find(t => t.levelGal != null);
+  const tfull = useRsTankFull(tank);
   const roOK = roB > sapBx;
   let next;
   if (tank) {
-    const pl = srRoPlan({ levelGal:tank.levelGal, capGal:tank.capGal, fillGalH:tank.fillGalH, roGph:null });
+    const pl = srRoPlan({ levelGal:tank.levelGal, capGal:tank.capGal, fillGalH:tank.fillGalH, roGph:null, fullH: tfull ? tfull.fullH : undefined, paused: !!(tfull && tfull.paused) });
     next = { title: rt(L, pl.call === 'now' ? 'roCallNow' : 'roCallKeep'), why: rt(L,'roCallTank', { n:tank.name, v:srVol(tank.levelGal, c.units), c:srVol(tank.capGal, c.units), u }), btn: rt(L,'openRoPlanner'), act: () => rsGo('stage/collect/ro') };
   } else if (m.today.sapVal > 0 && roOK) {
     const conc = roConc(m.today.sapVal, sapBx, roB), syr = syrupY(m.today.sapVal, sapBx);
     next = { title: rt(L,'roTodayT'), why: rt(L,'roTodayW', { v: fmt(m.today.sapVal, 0), u, b: fmt(sapBx, 1), c: fmt(conc, 0), tb: fmt(roB, 0), s: fmt(syr, 1) }),
       btn: rt(L,'openRoPlanner'), act: () => rsGo('stage/collect/ro') };
   } else next = { title: rt(L,'roNoSapT'), why: rt(L,'roNoSapW'), btn: rt(L,'logSap'), act: () => openLog('sapCollected') };
-  const bl = m.d.brixlog.filter(e => isFinite(parseFloat(e.brix))).slice().sort((a, b) => (srDateMs(a.date) - srDateMs(b.date)) || ((a.id || 0) - (b.id || 0)));
+  // The Brix trend: one point a day from the same source as the card (srBrixSource), so Brix typed
+  // on sap entries counts as much as a reading at the tree.
+  const bl = m.brix.series;
   return (
     <>
       <RsHero photo="sap-tank" />
@@ -52,10 +55,11 @@ function RsCollectStage({ c, openLog }) {
             <h2 className="rs-sec">{rt(L,'brixAtTree')}</h2>
             <div className="rs-card">
               <div className="rs-split">
-                <div><div className="rs-meta">{m.brix.from === 'log' ? rt(L,'lastReading', { d: srDateShort(m.brix.date, L) }) : rt(L,'brixSetting')}</div>
+                <div><div className="rs-meta">{m.brix.from !== 'setting' ? rt(L, m.brix.from === 'sap' ? 'lastReadingSap' : 'lastReading', { d: srDateShort(m.brix.date, L) }) : rt(L,'brixSetting')}</div>
                   <div className="rs-big tn">{fmt(sapBx, 1)}<small>%</small></div></div>
                 <div style={{ textAlign:'right' }}><div className="rs-meta">{rt(L,'sapForOne', { u })}</div><div className="rs-mid tn">{fmt(rule86(sapBx), 1)} {u}</div></div>
               </div>
+              {srBrixTrend(bl).buddy && <p className="rs-errline" role="status">{rt(L,'buddyDropP', { p: fmt(srBrixTrend(bl).peak, 1), l: fmt(srBrixTrend(bl).last, 1) })}</p>}
               {bl.length >= 2 && <RsLineChart h={120} yMax={Math.ceil(Math.max(...bl.map(e => parseFloat(e.brix))) + 0.5)}
                 yTicks={[0, Math.ceil(Math.max(...bl.map(e => parseFloat(e.brix))) + 0.5)]}
                 series={[{ v: bl.map(e => parseFloat(e.brix)), c:T.sap, area:true, name:'Brix', end: fmt(parseFloat(bl[bl.length - 1].brix), 1) + '%' }]}
@@ -147,7 +151,7 @@ function RsBrixSheet({ c, onClose }) {
   const [v, setV] = useState(() => { const b = selSapBrix(ls.get('sg_brixlog', []), c.sapBrix); return b.brix; });
   const [note, setNote] = useState('');
   const [fail, setFail] = useState(false);
-  const save = () => {
+  const save = () => { if (srFormBlocked()) return;   // a refused number blocks the save (fix pass 1)
     if (!v) return;
     const all = ls.get('sg_brixlog', []) || [];
     if (!ls.set('sg_brixlog', [...all, { id:Date.now(), date:srToday(), brix:parseFloat(v), note }])) { setFail(true); return; }
@@ -179,7 +183,7 @@ function RsROPlanner({ c }) {
   const sb = parseFloat(c.sapBrix) || 0;
   const ok = tgt > sb && sb > 0;
   const conc = ok ? roConc(inSap || 0, sb, tgt) : 0, perm = ok ? (inSap || 0) - conc : 0;
-  const rate = srPanRate(ls.get('sg_panIdx', 0), ls.get('sg_panW',''), ls.get('sg_panH',''));
+  const rate = selEvap().rate;   // the one evaporator rate (setup pan, picked pan or typed rate)
   const fuel = FUELS.find(f => f.label === c.fuelType) || FUELS[0];
   const sapG = toGal(inSap || 0, c.units), concG = toGal(conc, c.units);
   const saved = ok ? boilTime(sapG, sb, rate) - boilTime(concG, tgt, rate) : 0;
@@ -261,9 +265,18 @@ function RsBoilStage({ c }) {
     req(); document.addEventListener('visibilitychange', onVis);
     return () => { gone = true; document.removeEventListener('visibilitychange', onVis); try { lock && lock.release(); } catch {} };
   }, [active]);
-  const rate = m.d.panRate > 0 ? srSyrupRate(m.d.panRate, c.sapBrix) : 0;
+  // Expected so far (srBoilExpected): from the sap he fed in when counted, else the pan's rate,
+  // at the FEED's Brix: RO concentrate when he runs an RO, else this season's sap Brix.
+  const usesRo = selUsesRo(m.d.slog);
+  const concBx = parseFloat(ls.get('sg_dx_robrix', 8)) || 8;
   const hrs = active ? Math.max(0, (now - sess.start) / 3600000) : 0;
-  const est = rate * hrs;
+  const exp = srBoilExpected({ evapGph: m.d.panRate, hrs, sapInGal: active ? toGal(sess.sap || 0, c.units) : 0, sapBrix: m.brix.brix, concBrix: concBx, ro: usesRo });
+  const rate = m.d.panRate > 0 ? exp.perHour : 0;
+  const est = exp.gal;
+  // The first boil of the season has no syrup left in the pan from an earlier one.
+  const firstBoil = !((m.d.slog.syrupMade || []).length || (m.d.slog.sapEvap || []).length);
+  const [endGrade, setEndGrade] = useState('—');
+  const [endHrs, setEndHrs] = useState('');
   const drawn = active ? (sess.syrup || 0) : 0;
   const seasonSy = m.totals.syT + drawn;
   const panLbl = m.d.panIdx === CUSTOM_PAN_IDX ? rt(L,'customPan') : (PAN_SIZES[m.d.panIdx] || PAN_SIZES[0]).label.replace(/ \(.*\)/, '').replace(/ ft$/, ' ' + srUnitL('ft', L));
@@ -271,17 +284,26 @@ function RsBoilStage({ c }) {
   const bumpT = dDisp => { const d = srTempD(sess.tempF, c.units) + dDisp; const f = c.units === 'L' ? d * 9 / 5 + 32 : d; persist({ ...sess, tempF: Math.round(f * 100) / 100 }); };
   const add = (k, n) => persist({ ...sess, [k]: r1((sess[k] || 0) + n) });
   const logBoil = () => {
+    if (srFormBlocked('rs-boil-end')) return;
+    // A boil running longer than SR_BOIL_LONG_H is not logged until he says how long it really boiled.
+    if (hrs > SR_BOIL_LONG_H && !(endHrs !== '' && parseFloat(endHrs) >= 0)) { const el = document.getElementById('rs-end-h'); if (el) el.focus(); return; }
+    // A boil is dated by the day it started (an overnight boil belongs to the evening it began),
+    // and files into that day's season. Hours: what he confirms on the end sheet.
+    const startIso = srIsoOf(new Date(sess.start));
+    const season = srSeasonOf(startIso) || c.season;
     const all = ls.get('sg_logs2', {}) || {};
-    const slog = { ...(all[c.season] || {}) };
-    const date = srToday(), note = L === 'fr' ? 'Bouillée' : 'Boil Day';
-    let id = Date.now(); const dur = r1(hrs);
+    const slog = { ...(all[season] || {}) };
+    const date = startIso, note = L === 'fr' ? 'Bouillée' : 'Boil Day';
+    const dur = r1(endHrs !== '' && parseFloat(endHrs) >= 0 ? parseFloat(endHrs) : hrs);
+    const nid = () => srNewId();
     const uu = { u: c.units === 'L' ? 'L' : 'GAL' };   // the session is kept in the display unit (srSessInUnit)
-    if (sess.sap > 0)   slog.sapEvap   = [...(slog.sapEvap   || []), { id: id++, date, val: sess.sap,   note, ...uu }];
+    if (sess.sap > 0)   slog.sapEvap   = [...(slog.sapEvap   || []), { id: nid(), date, val: sess.sap,   note, ...uu }];
     // The last hydrometer Brix of the boil rides on the syrup entry (LogTab's optional brix field).
     const lastBx = srBoilSeries(sess).lastBrix;
-    if (sess.syrup > 0) slog.syrupMade = [...(slog.syrupMade || []), { id: id++, date, val: sess.syrup, note, ...uu, ...(lastBx ? { brix: lastBx } : {}) }];
-    if (dur >= 0.1)     slog.boilHours = [...(slog.boilHours || []), { id: id++, date, val: dur,        note }];
-    if (!ls.set('sg_logs2', { ...all, [c.season]: slog })) { setShowEnd(false); return; }
+    // The grade he picks at the end rides on the syrup entry, so Recap and the PDF see it.
+    if (sess.syrup > 0) slog.syrupMade = [...(slog.syrupMade || []), { id: nid(), date, val: sess.syrup, note, grade: endGrade, ...uu, ...(lastBx ? { brix: lastBx } : {}) }];
+    if (dur >= 0.1)     slog.boilHours = [...(slog.boilHours || []), { id: nid(), date, val: dur,        note }];
+    if (!ls.set('sg_logs2', { ...all, [season]: slog })) { setShowEnd(false); return; }
     srToast(rt(L,'boilLogged', { v: fmt(sess.syrup || 0, 1), u }));
     ls.set('sg_boil_session', null); setSess(null); setShowEnd(false); srDataChanged();
   };
@@ -298,7 +320,8 @@ function RsBoilStage({ c }) {
           <div className="bg-col">
             <div className="bg-evap">{active
               ? <RsBoilLive c={c} sess={sess} now={now} est={est} rate={rate} state={state} stateWord={stateWord} finT={finT}
-                  onRead={() => setReadSheet('read')} onDraw={() => setReadSheet('draw')} onEnd={() => { setArmed(false); setShowEnd(true); }} onSap={n => add('sap', n)} />
+                  firstBoil={firstBoil} feedBrix={exp.feedBrix} feedRo={usesRo}
+                  onRead={() => setReadSheet('read')} onDraw={() => setReadSheet('draw')} onEnd={() => { setArmed(false); setEndGrade('—'); setEndHrs(hrs > SR_BOIL_LONG_H ? '' : String(r1(hrs))); setShowEnd(true); }} onSap={n => add('sap', n)} />
               : <section className="rs-card rs-boilcard" aria-label={rt(L,'boilCard')}>
               <div className="rs-split">
                 <RsSt kind="idle">{rt(L,'nNotBoiling')}</RsSt>
@@ -317,7 +340,7 @@ function RsBoilStage({ c }) {
               <div className="rs-split"><div className="rs-meta">{rt(L,'drawOffAt')}</div>
                 <span className="rs-fresh"><RsIcon name="therm" size={14} />{rt(L,'waterBoilsAtV', { v: fmt(srTempD(c.waterBP, c.units), 1), u: uT })}</span></div>
               <div className="rs-huge tn">{fmt(srTempD(finT, c.units), 1)}<small>{uT}</small></div>
-              <p className="rs-meta">{rt(L,'drawOffP')}</p>
+              <p className="rs-meta">{rt(L, c.units === 'L' ? 'drawOffPC' : 'drawOffP')}</p>
               <div className="rs-btnrow">
                 <RsBtn kind="secondary" href={rsHref('stage/boil/draw-off')}>{rt(L,'recheckWater')}</RsBtn>
                 <RsBtn kind="secondary" href={rsHref('stage/boil/draw-off')}>{rt(L,'hydroFix')}</RsBtn>
@@ -345,10 +368,17 @@ function RsBoilStage({ c }) {
           </div>
         </div>
       </div>
-      {showEnd && active && <RsSheet title={rt(L,'endSummary')} onClose={() => setShowEnd(false)}>
+      {showEnd && active && <RsSheet title={rt(L,'endSummary')} onClose={() => setShowEnd(false)} id="rs-boil-end">
         <RsKv big rows={[[rt(L,'duration'), srDur(hrs, L) || '0 min'], [rt(L,'sapIn'), `${fmt(sess.sap || 0, 0)} ${u}`], [rt(L,'syrupDrawn'), `${fmt(sess.syrup || 0, 1)} ${u}`],
           [rt(L,'ratioWord'), sess.sap > 0 && sess.syrup > 0 ? `${fmt(sess.sap / sess.syrup, 0)}:1` : rt(L,'notYet')]]} />
-        <p className="rs-note">{rt(L,'logBoilNote')}</p>
+        {hrs > SR_BOIL_LONG_H && <p className="rs-errline" role="alert" id="rs-boil-long">{rt(L,'boilLongP', { h: fmt(hrs, 0), t: srClock(sess.start, L), d: srDateShort(srIsoOf(new Date(sess.start)), L) })}</p>}
+        <label className="rs-fl" htmlFor="rs-end-h">{rt(L,'hoursToLog')}</label>
+        <RsStepper id="rs-end-h" value={endHrs} onChange={setEndHrs} steps={[-1, -0.5, 0.5, 1]} dp={1} unit="h" label={rt(L,'hoursToLog')} min={0} max={48} big={false} />
+        {(sess.syrup || 0) > 0 && <>
+          <label className="rs-fl">{rt(L,'grade')}</label>
+          <RsChips label={rt(L,'grade')} value={endGrade} onChange={setEndGrade} options={[['—', rt(L,'gradeNone')], ...SR_GRADES.map(g => [g, srGradeLabel(g, L)])]} />
+        </>}
+        <p className="rs-note">{rt(L,'logBoilNoteD', { d: srDateShort(srIsoOf(new Date(sess.start)), L) })}</p>
         <div style={{ marginTop:16 }}><RsBtn onClick={logBoil} id="rs-boil-log">{rt(L,'logThisBoil')}</RsBtn></div>
         <div style={{ marginTop:10 }}><RsBtn kind="bad" onClick={discard}>{rt(L, armed ? 'discardArm' : 'discardBoil')}</RsBtn></div>
       </RsSheet>}
@@ -371,7 +401,7 @@ function RsCounter({ label, value, unit, steps, onAdd }) {
 // Status and a session clock, four translucent numbers over the steam, the
 // jugs, a readings chart, then one primary (Add a reading) and two secondaries
 // (Draw off, End the boil). Sap in stays a quick counter under them.
-function RsBoilLive({ c, sess, now, est, rate, state, stateWord, finT, onRead, onDraw, onEnd, onSap }) {
+function RsBoilLive({ c, sess, now, est, rate, state, stateWord, finT, onRead, onDraw, onEnd, onSap, firstBoil, feedBrix, feedRo }) {
   const L = c.lang, u = srU(c.units), uT = srTempU(c.units);
   const hrs = Math.max(0, (now - sess.start) / 3600000);
   const S = srBoilSeries(sess);
@@ -425,7 +455,7 @@ function RsBoilLive({ c, sess, now, est, rate, state, stateWord, finT, onRead, o
       <div className="rs-counters rs-blsap"><RsCounter label={rt(L,'sapIn')} value={fmt(sess.sap || 0, 0)} unit={u} steps={[1, 5, 10]} onAdd={onSap} /></div>
       {/* The jugs are the syrup actually drawn; the sentence says how that sits against the pan's pace. */}
       <RsJugs gal={drawn} label={rt(L,'jugsAria', { v: fmt(drawn, 1), u })} />
-      <p className="rs-note rs-blest">{rate > 0 ? rt(L, pace.kind === 'none' ? 'bpNone' : pace.kind === 'on' ? 'bpOn' : pace.kind === 'ahead' ? 'bpAhead' : 'bpBehind', { e: fmt(estD, 1), d: fmt(pace.d, 1), u }) + ' ' : ''}{rt(L,'estNote', { b: fmt(parseFloat(c.sapBrix) || 2, 1) })}</p>
+      <p className="rs-note rs-blest">{rate > 0 || (sess.sap || 0) > 0 ? rt(L, pace.kind === 'none' ? 'bpNone' : pace.kind === 'on' ? 'bpOn' : pace.kind === 'ahead' ? (firstBoil ? 'bpAheadFirst' : 'bpAhead') : 'bpBehind', { e: fmt(estD, 1), d: fmt(pace.d, 1), u }) + ' ' : ''}{rt(L, (sess.sap || 0) > 0 ? (feedRo ? 'estNoteSapRo' : 'estNoteSap') : (feedRo ? 'estNoteRo' : 'estNote'), { b: fmt(feedBrix || parseFloat(c.sapBrix) || 2, 1) })}</p>
 
     </section>
   );
@@ -482,7 +512,7 @@ function RsBoilReadSheet({ c, mode, sess, persist, onClose }) {
   const [draw, setDraw] = useState('');
   const [fail, setFail] = useState(false);
   const draw_ = mode === 'draw';
-  const save = () => {
+  const save = () => { if (srFormBlocked()) return;   // a refused number blocks the save (fix pass 1)
     const tv = parseFloat(temp);
     if (!isFinite(tv)) { const el = document.getElementById('rs-bl-temp'); if (el) el.focus(); return; }
     if (draw_ && !(parseFloat(draw) > 0)) { const el = document.getElementById('rs-bl-draw'); if (el) el.focus(); return; }
@@ -520,7 +550,7 @@ function RsBatchRows({ c, batches, limit, onDelete }) {
           <span className="rs-tag tn">{i + 1}</span>
           <span className="rs-rt"><b>{b.syrupOut !== '' && b.syrupOut != null ? `${fmt(parseFloat(b.syrupOut) || 0, 1)} ${u} · ` : ''}{srGradeLabel(g.name, L)}</b>
             <span className="tn">{[srDateShort(b.date, L), b.sapIn ? rt(L,'batchSap', { v: fmt(parseFloat(b.sapIn) || 0, 0), u }) : null, b.loc || null, b.notes || null].filter(Boolean).join(' · ')}</span></span>
-          <button type="button" className="rs-iconbtn" aria-label={rt(L,'labelFor', { n: i + 1 })} onClick={() => _downloadBatchLabel(b, i + 1, c.season, c.trees, c.units)}><RsIcon name="tag" size={20} /></button>
+          <button type="button" className="rs-iconbtn" aria-label={rt(L,'labelFor', { n: i + 1 })} onClick={() => _downloadBatchLabel(b, i + 1, c.season, selTaps(c.trees).taps, c.units)}><RsIcon name="tag" size={20} /></button>
           {onDelete && <button type="button" className="rs-iconbtn bad" aria-label={rt(L,'deleteBatch', { n: i + 1 })} onClick={() => onDelete(i)}><RsIcon name="trash" size={20} /></button>}
         </div>; })}
     </div>
@@ -531,7 +561,7 @@ function RsBatchSheet({ c, onClose }) {
   const [f, setF] = useState({ date: srToday(), sapIn:'', syrupOut:'', grade:'amber', loc:'', notes:'' });
   const [fail, setFail] = useState(false);
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
-  const save = () => {
+  const save = () => { if (srFormBlocked()) return;   // a refused number blocks the save (fix pass 1)
     if (!f.syrupOut && !f.sapIn) { const el = document.getElementById('rs-b-syr'); if (el) el.focus(); return; }
     const all = ls.get('sg_batches', []) || [];
     if (!ls.set('sg_batches', [...all, { ...srMakeBatch(f, Date.now()), u: c.units === 'L' ? 'L' : 'GAL' }])) { setFail(true); return; }
@@ -616,6 +646,12 @@ function RsDrawOff({ c }) {
   };
   const corr = denCorr(syT || 0), corrB = (syBx || 0) + corr;
   const inR = corrB >= 66 && corrB <= 68.9;
+  // Fix pass 1 (item 12): in litre mode every temperature here is typed and shown in °C, and the
+  // field's own range is in °C (93.3 to 101.7 for water), so a °C reading is never clamped to 200°F.
+  // Stored in °F, as before (sg_bp); the draw-off rule is the same 7.1°F (3.9°C) above water.
+  const isC = c.units === 'L', uT = srTempU(c.units);
+  const tD = f => isC ? Math.round((f - 32) * 5 / 9 * 10) / 10 : f, tF = d => isC ? d * 9 / 5 + 32 : d;
+  const bpShown = Math.round(tD(bp) * 10) / 10;
   return (
     <div className="rs-inner">
       <header className="rs-phead"><RsPushBar href={rsHref('stage/boil')} label={rt(L,'st_boil')} />
@@ -625,10 +661,12 @@ function RsDrawOff({ c }) {
         <div>
           <div className="rs-card">
             <div className="rs-meta">{rt(L,'drawOffAt')}</div>
-            <div className="rs-huge tn">{fmt(fin, 1)}<small>°F</small></div>
-            <p className="rs-meta tn">{rt(L,'drawOffC', { c: fmt(toC(fin), 1) })}</p>
-            <label className="rs-fl" htmlFor="rs-bp">{rt(L,'waterBoilsAtL')}</label>
-            <RsStepper id="rs-bp" value={bp} onChange={v => c.setWaterBP(v === '' ? 212 : v)} steps={[-1, -0.1, 0.1, 1]} dp={1} unit="°F" label={rt(L,'waterBoilsAtL')} min={200} max={215} big={false} />
+            <div className="rs-huge tn">{fmt(tD(fin), 1)}<small>{uT}</small></div>
+            <p className="rs-meta tn">{isC ? rt(L,'drawOffF', { f: fmt(fin, 1) }) : rt(L,'drawOffC', { c: fmt(toC(fin), 1) })}</p>
+            <p className="rs-meta">{rt(L, isC ? 'drawOffRuleC' : 'drawOffRuleF')}</p>
+            <label className="rs-fl" htmlFor="rs-bp">{rt(L, isC ? 'waterBoilsAtLC' : 'waterBoilsAtL')}</label>
+            <RsStepper id="rs-bp" value={bpShown} onChange={v => { if (v !== '') c.setWaterBP(Math.round(tF(v) * 100) / 100); }} steps={isC ? [-0.5, -0.1, 0.1, 0.5] : [-1, -0.1, 0.1, 1]} dp={1} unit={uT}
+              label={rt(L, isC ? 'waterBoilsAtLC' : 'waterBoilsAtL')} min={isC ? 93.3 : 200} max={isC ? 101.7 : 215} big={false} />
             <p className="rs-note">{rt(L,'bpNote')}</p>
           </div>
           <h2 className="rs-sec">{rt(L,'fromAltitude')}</h2>
@@ -644,7 +682,7 @@ function RsDrawOff({ c }) {
             <RsStepper id="rs-alt" value={alt} onChange={useAlt} steps={[-100, 100]} dp={0} unit="ft" label={rt(L,'altitudeFt')} min={0} max={15000} big={false} />
           </div>
           <div className="rs-list" style={{ marginTop:12 }}>
-            {ALT_REF.map(r => <RsRow key={r.alt} chev={false} title={(L === 'fr' ? r.alt.replace(/,/g, '\u00a0') : r.alt).replace(/ ft$/, ' ' + srUnitL('ft', L))} value={rt(L,'altRow', { bp: fmt(r.bp, 1), fin: fmt(r.fin, 1) })} />)}
+            {ALT_REF.map(r => <RsRow key={r.alt} chev={false} title={(L === 'fr' ? r.alt.replace(/,/g, '\u00a0') : r.alt).replace(/ ft$/, ' ' + srUnitL('ft', L))} value={rt(L, isC ? 'altRowC' : 'altRow', { bp: fmt(tD(r.bp), 1), fin: fmt(tD(r.fin), 1) })} />)}
           </div>
         </div>
         <div>
@@ -654,14 +692,14 @@ function RsDrawOff({ c }) {
               <div><label className="rs-fl" htmlFor="rs-sbx">{rt(L,'hydroReads')}</label>
                 <RsStepper id="rs-sbx" value={syBx} onChange={setSyBx} steps={[-0.1, 0.1]} dp={1} unit="Brix" label={rt(L,'hydroReads')} min={50} max={75} big={false} /></div>
               <div><label className="rs-fl" htmlFor="rs-sty">{rt(L,'syrupAt')}</label>
-                <RsStepper id="rs-sty" value={syT} onChange={setSyT} steps={[-5, 5]} dp={0} unit="°F" label={rt(L,'syrupAt')} min={32} max={230} big={false} /></div>
+                <RsStepper id="rs-sty" value={isC ? Math.round(tD(syT)) : syT} onChange={v => setSyT(v === '' ? '' : (isC ? Math.round(tF(v) * 10) / 10 : v))} steps={isC ? [-2, 2] : [-5, 5]} dp={0} unit={uT} label={rt(L,'syrupAt')} min={isC ? 0 : 32} max={isC ? 110 : 230} big={false} /></div>
             </div>
             <div className="rs-hr" />
             <div className="rs-split" style={{ alignItems:'flex-end' }}>
               <div><div className="rs-meta">{rt(L,'correctedTo')}</div><div className="rs-big tn">{fmt(corrB, 1)}<small>Brix</small></div></div>
               <RsSt kind={inR ? 'ok' : 'check'}>{rt(L, inR ? 'densityOk' : corrB < 66 ? 'densityLight' : 'densityHeavy')}</RsSt>
             </div>
-            <p className="rs-meta tn">{rt(L, corr >= 0 ? 'corrAdd' : 'corrSub', { v: fmt(Math.abs(corr), 2), t: fmt(syT || 0, 0) })}</p>
+            <p className="rs-meta tn">{rt(L, (corr >= 0 ? 'corrAdd' : 'corrSub') + (isC ? 'C' : ''), { v: fmt(Math.abs(corr), 2), t: fmt(isC ? tD(syT || 0) : (syT || 0), 0) })}</p>
             <p className="rs-note">{rt(L,'legalRangeNote')}</p>
           </div>
           <h2 className="rs-sec">{rt(L,'brixBaume')}</h2>

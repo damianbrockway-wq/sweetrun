@@ -381,6 +381,9 @@ a.rs-num:active { background: var(--rs-s2); }
 .rs-stepv.sm input { font-size: 36px; min-height: 48px; text-align: left; }
 .rs-stepv.sm small { font-size: 17px; }
 .rs-keys { display: grid; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap: 8px; }
+/* Fix pass 1: a refused typed value is marked and explained, never clamped quietly. */
+.rs-stepv input[aria-invalid="true"] { border-bottom-color: var(--rs-bad); color: var(--rs-bad); }
+.rs-numerr { margin-top: 8px; }
 .rs-keys button { min-height: 64px; border-radius: var(--rs-r-ctl); background: var(--rs-s3); border: 1px solid var(--rs-line2) !important;
   font: 800 22px var(--rs-f); font-variant-numeric: tabular-nums; color: var(--rs-tx); }
 .rs-keys button:active { background: var(--rs-s4); transform: scale(.96); }
