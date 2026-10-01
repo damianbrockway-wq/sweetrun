@@ -200,9 +200,13 @@ function RsDegreeDays({ c }) {
   }, [place && place.lat, place && place.lon, start]);
   const dd = st.d ? srDegreeDays(st.d.daily) : null;
   const log = React.useMemo(() => ls.get('sg_brixlog', []) || [], [v]);
-  const tr = srBrixTrend(log);
+  // The trend, the buddy warning and the chart read the one Brix source (srBrixSource): the
+  // Brix on sap entries and the tree readings, a point a day. The list below is the tree readings.
+  const bs = React.useMemo(() => selBrix(c.season, null, c.sapBrix), [v, c.season, c.sapBrix]);
+  const ser = bs.series.map(x => ({ date: x.date, brix: x.brix }));
+  const tr = srBrixTrend(ser);
   const del = id => { if (armed !== id) { setArmed(id); srToast(rt(L,'tapAgainDelete')); return; } if (ls.set('sg_brixlog', log.filter(e => e.id !== id))) { setArmed(null); srDataChanged(); } };
-  const bmax = Math.ceil(Math.max(3, ...log.map(e => parseFloat(e.brix) || 0)) + 0.5);
+  const bmax = Math.ceil(Math.max(3, ...ser.map(e => e.brix)) + 0.5);
   return (
     <div className="rs-inner">
       <RsSubHead c={c} back="stage/weather" backLabel={rt(L,'st_weather')} eyebrow={rt(L,'stageOf', { n:1 })} title={rt(L,'sc_degree')} lede={rt(L,'ddLede')} />
@@ -247,10 +251,11 @@ function RsDegreeDays({ c }) {
           <h2 className="rs-sec">{rt(L,'brixTrendT')}</h2>
           {tr.buddy && <div className="rs-banner" style={{ marginBottom:12 }}><span className="rs-bic"><RsIcon name="alert" size={22} /></span>
             <span className="rs-bt"><b>{rt(L,'buddyDropT')}</b><span>{rt(L,'buddyDropP', { l: fmt(tr.last, 1), p: fmt(tr.peak, 1) })}</span></span></div>}
-          {log.length === 0 ? <div className="rs-empty"><b>{rt(L,'brixNoneT')}</b><p>{rt(L,'brixNoneP')}</p></div> :
-            <RsStat title={rt(L,'latestReading')} value={fmt(tr.last, 1)} unit="%" delta={log.length >= 2 ? <span>{rt(L,'peakBrixV', { v: fmt(tr.peak, 1) })}</span> : null}>
-              {log.length >= 2 && <RsLineChart yMax={bmax} yTicks={[0, bmax]} series={[{ v: log.map(e => parseFloat(e.brix) || 0), c:T.sap, area:true, name:'Brix', end: fmt(tr.last, 1) + '%' }]}
-                xLabels={[[0, srDateShort(log[0].date, L)], [log.length - 1, srDateShort(log[log.length - 1].date, L)]]} label={rt(L,'brixTrendAria', { n: log.length })} rowLabel={i => srDateShort(log[i].date, L)} rowHead={rt(L,'date')} dp={1} />}
+          {ser.length === 0 ? <div className="rs-empty"><b>{rt(L,'brixNoneT')}</b><p>{rt(L,'brixNoneP')}</p></div> :
+            <RsStat title={rt(L,'latestReading')} value={fmt(tr.last, 1)} unit="%" delta={ser.length >= 2 ? <span>{rt(L,'peakBrixV', { v: fmt(tr.peak, 1) })}</span> : null}
+              note={bs.nSap > 0 ? rt(L,'brixFromBoth', { s: bs.nSap, t: bs.nTree }) : null}>
+              {ser.length >= 2 && <RsLineChart yMax={bmax} yTicks={[0, bmax]} series={[{ v: ser.map(e => e.brix), c:T.sap, area:true, name:'Brix', end: fmt(tr.last, 1) + '%' }]}
+                xLabels={[[0, srDateShort(ser[0].date, L)], [ser.length - 1, srDateShort(ser[ser.length - 1].date, L)]]} label={rt(L,'brixTrendAria', { n: ser.length })} rowLabel={i => srDateShort(ser[i].date, L)} rowHead={rt(L,'date')} dp={1} />}
             </RsStat>}
           <div style={{ marginTop:12 }}><RsBtn icon="drop" onClick={() => setBrixSheet(true)}>{rt(L,'logBrix')}</RsBtn></div>
           {log.length > 0 && <div className="rs-list" style={{ marginTop:12 }}>

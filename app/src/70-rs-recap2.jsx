@@ -13,14 +13,18 @@ function useRsRecapData(c) {
     const logs = srReadLogs(c.units);
     const slog = logs[c.season] || {}, prev = logs[c.season - 1] || {};
     const brixArr = ls.get('sg_brixlog', []) || [];
-    const f = srRecapFacts(slog, prev, brixArr, c.units);
-    const taps = parseInt(c.trees) || 0;
+    const f = srRecapFacts(slog, prev, brixArr, c.units, c.season);
+    // One tap count (srTaps), one Brix (srBrixSource, the season's), one fuel (selFuel).
+    const tapsInfo = selTaps(c.trees), taps = tapsInfo.taps;
     const model = yieldModelSaved();
-    const fuelDef = FUELS.find(x => x.label === ls.get('sg_fuel', 'Firewood (cord)')) || FUELS[0];
-    const brix = parseFloat(c.sapBrix) || 2.0;
+    const fuelDef = selFuel().def;
+    const bs = srBrixSource({ slog, brixlog: brixArr, season: c.season, setting: c.sapBrix });
+    const brix = bs.season;
+    f.brixAvg = bs.seasonFrom !== 'setting' ? bs.season : null; f.brixMin = bs.min; f.brixMax = bs.max;
+    const roFits = srRoAdviceFits(taps, ls.get('sg_wizard_data', {}) || {});
     const sc = srSeasonScore({ sapT:f.sapGal, syT:f.syrupGal, fuelT:f.fuelT, taps, brix, yieldModel:model, fuelSpu:fuelDef.spu });
     const replay = srReplaySteps(slog);
-    return { slog, prev, brixArr, f, taps, model, fuelDef, brix, sc, replay, moments: srReplayMoments(replay.steps, brixArr),
+    return { slog, prev, brixArr, f, taps, tapsInfo, model, fuelDef, brix, bs, roFits, sc, replay, moments: srReplayMoments(replay.steps, brixArr),
       cpoints: ls.get('sg_cpoints', []) || [] };
   }, [c.season, c.units, c.trees, c.sapBrix, v]);
 }
@@ -37,7 +41,7 @@ function RsRecapDetail({ c }) {
   const has = f.sapGal > 0 || f.syrupGal > 0;
   const canReplay = D.replay.entryCount >= 3;
   const theory = D.brix > 0 ? RULE_DIVISOR / D.brix : 0;
-  const gap = srYieldGap(f.sapGal, f.syrupGal, D.taps, D.brix, D.model, price);
+  const gap = srYieldGap(f.sapGal, f.syrupGal, D.taps, D.brix, D.model, price, D.roFits);
   const rows = has ? srScoreRows(sc, { syrupGal:f.syrupGal, sapGal:f.sapGal, fuelT:f.fuelT, taps:D.taps, brix:D.brix, model:D.model, fuelDef:D.fuelDef }) : [];
   const share = () => srShareCardPng(c, D, op);
   const copyScore = () => { const tx = rt(L,'scoreShareText', { y:c.season, s:sc.overall, g:sc.grade });
@@ -65,7 +69,7 @@ function RsRecapDetail({ c }) {
                 <div className="rs-meta tn">{f.first && f.last ? rt(L,'rangeTo', { a: srDateShort(f.first, L), b: srDateShort(f.last, L) }) : rt(L,'rdNoDates')}</div></div>
               <div><div className="rs-meta">{rt(L,'rdBest')}</div><div className="rs-mid tn">{f.best ? fmt(parseFloat(f.best.val) || 0, 0) : '0'}<small>{u}</small></div><div className="rs-meta tn">{f.best ? srDateShort(f.best.date, L) : ''}</div></div>
               <div><div className="rs-meta">{rt(L,'rdRo')}</div><div className="rs-mid tn">{srVol(f.roGal, c.units)}<small>{u}</small></div>
-                <div className="rs-meta tn">{f.roGal > 0 && f.evapGal > 0 ? rt(L,'rdUtil', { p: fmt(f.roGal / f.evapGal * 100, 0) }) : ''}</div></div>
+                <div className="rs-meta tn">{f.roGal > 0 && f.sapGal > 0 ? (f.roGal <= f.sapGal ? rt(L,'rdUtilSap', { p: fmt(f.roGal / f.sapGal * 100, 0) }) : rt(L,'rdUtilOver')) : ''}</div></div>
               <div><div className="rs-meta">{rt(L,'avgBrix')}</div><div className="rs-mid tn">{fmt(f.brixAvg != null ? f.brixAvg : D.brix, 2)}<small>%</small></div>
                 <div className="rs-meta tn">{f.brixMax != null ? rt(L,'rdBrixRange', { a: fmt(f.brixMin, 2), b: fmt(f.brixMax, 2) }) : rt(L,'brixSetting')}</div></div>
               <div><div className="rs-meta">{rt(L,'rdEntries')}</div><div className="rs-mid tn">{((D.slog.sapCollected || []).length + (D.slog.syrupMade || []).length)}</div>
@@ -113,7 +117,7 @@ function RsRecapDetail({ c }) {
             <div className="rs-card">
               <div className="rs-grid2" style={{ marginTop:0 }}>
                 <div><div className="rs-meta">{rt(L,'gapMade')}</div><div className="rs-mid tn">{srVol(f.syrupGal, c.units, 1)}<small>{u}</small></div></div>
-                <div><div className="rs-meta">{rt(L, gap.gapMid > 0 ? 'gapGap' : 'gapSurplus')}</div><div className="rs-mid tn">{gap.gapMid > 0 ? srVol(gap.gapMid, c.units) : '+' + srVol(Math.abs(gap.gapLow), c.units)}<small>{u}</small></div></div>
+                <div><div className="rs-meta">{rt(L, gap.gapMid > 0 ? 'gapGap' : gap.over > 0 ? 'gapSurplus' : 'gapAtTop')}</div><div className="rs-mid tn">{gap.gapMid > 0 ? srVol(gap.gapMid, c.units, 1) : gap.over > 0 ? '+' + srVol(gap.over, c.units, 1) : srVol(gap.hi, c.units)}<small>{u}</small></div></div>
               </div>
               <RsKv rows={[[rt(L,'gapBench'), `${rt(L,'rangeTo', { a: srVol(gap.lo, c.units), b: srVol(gap.hi, c.units) })} ${u}`]]} />
               <p className="rs-meta tn">{rt(L,'gapBenchNote', { a: fmt(fromGal(D.model.low, c.units), 2), b: fmt(fromGal(D.model.high, c.units), 2), u, m: srModelName(D.model.label, L), na: fmt(fromGal(SR_YIELD_BAND.low, c.units), 2), nb: fmt(fromGal(SR_YIELD_BAND.high, c.units), 2) })}</p>
@@ -130,7 +134,7 @@ function RsRecapDetail({ c }) {
                 <span>{rt(L,'fixMeta', { c: rt(L, 'fixC_' + fx), t: rt(L, 'fixT_' + fx) })}</span></span><span className="rs-rv">{rt(L, 'imp_' + SR_FIXES[fx].impact)}</span></div>)}</div>
             </RsDisclose>)}</div>
           </>}
-          {has && <RsRoSavings c={c} f={f} brix={D.brix} />}
+          {has && <RsRoSavings c={c} f={f} brix={D.brix} fuelDef={D.fuelDef} />}
           {bp && <>
             <h2 className="rs-sec">{rt(L,'rdPoints')}</h2>
             <div className="rs-list">
@@ -139,7 +143,7 @@ function RsRecapDetail({ c }) {
               {(bp.unSap > 0 || bp.unSyrup > 0) && <RsRow chev={false} title={rt(L,'rdUnassigned')} value={`${fmt(bp.unSap, 1)} ${u}`} />}
             </div>
           </>}
-          <div style={{ marginTop:16 }}><RsBtn kind="secondary" icon="download" onClick={() => exportSeasonPDF({ season:c.season, trees:c.trees, units:c.units, logs: srReadLogs(c.units), brixLog: D.brixArr, sapBrix:c.sapBrix })}>{rt(L,'exportPdf', { y:c.season })}</RsBtn></div>
+          <div style={{ marginTop:16 }}><RsBtn kind="secondary" icon="download" onClick={() => exportSeasonPDF(srPdfArgs(c))}>{rt(L,'exportPdf', { y:c.season })}</RsBtn></div>
         </div>
       </div>
       {replay && canReplay && <RsReplay c={c} D={D} onClose={() => setReplay(false)} onShare={share} />}
@@ -155,18 +159,23 @@ function srScoreSub(r, model, L, units) {
   return rt(L, 'srs_data', { n: r.pts });
 }
 
-// RO savings against a straight boil. Inputs live in sg_recap_* and sg_dx_robrix.
-function RsRoSavings({ c, f, brix }) {
+// RO savings against a straight boil. Fix pass 1: the evaporator rate is HIS (selEvap) unless he
+// sets one here (sg_recap_evap), fuel is his fuel in its own unit (selFuel, srRoSavings), and the
+// RO's share is of the sap collected, never a percent of what was boiled.
+function RsRoSavings({ c, f, brix, fuelDef }) {
   const L = c.lang, u = srU(c.units);
-  const [ev, setEv] = useRsGalPref('sg_recap_evap', 50, c.units);   // gal/h stored, L/h shown in litre mode
-  const evG = parseFloat(ev) > 0 ? srGalStored(parseFloat(ev), c.units) : 50;
-  const [burn, setBurn] = useRsPref('sg_recap_burn', 23);
+  const evDef = selEvap().rate || 50;
+  const [ev, setEv] = useRsGalPref('sg_recap_evap', evDef, c.units);   // gal/h stored, L/h shown in litre mode
+  const evG = parseFloat(ev) > 0 ? srGalStored(parseFloat(ev), c.units) : evDef;
   const [pre, setPreS] = useState(() => !!ls.get('sg_recap_preheat', false));
   const [rb, setRb] = useRsPref('sg_dx_robrix', 8);
   const setPre = x => { setPreS(x); ls.set('sg_recap_preheat', x); };
-  const s = srRoSavings(f.sapGal, f.roGal, evG, parseFloat(burn) || 23, pre, parseFloat(rb) || 8, brix);
+  const fd = fuelDef || selFuel().def;
+  const s = srRoSavings(f.sapGal, f.roGal, evG, fd.spu, pre, parseFloat(rb) || 8, brix);
   if (!s) return null;
   const n1 = x => x >= 10 ? fmt(x, 0) : fmt(x, 1);
+  const fu = L === 'fr' ? fd.unitFr : fd.unit;
+  const fq = x => x >= 10 ? fmt(x, 0) : x >= 1 ? fmt(x, 1) : fmt(x, 2);
   return <>
     <h2 className="rs-sec">{rt(L,'roSavT')}</h2>
     <div className="rs-card rs-stack">
@@ -174,23 +183,20 @@ function RsRoSavings({ c, f, brix }) {
       <RsBarRow label={rt(L,'roStraight')} value={`${n1(s.straightHrs)} h`} pct={100} tone="mute" />
       <RsBarRow label={rt(L, pre ? 'roWithPre' : 'roWith')} value={`${n1(s.roHrs)} h`} pct={s.roHrs / Math.max(s.straightHrs, 0.1) * 100}
         sub={f.roGal > 0 ? rt(L,'roConcNote', { r: srVol(f.roGal, c.units), c: srVol(s.roConc, c.units), u }) : rt(L,'roNoData')} />
-      <div className="rs-meta">{rt(L,'roSavWood')}</div>
-      <RsBarRow label={rt(L,'roStraight')} value={`${n1(s.straightWood)} lb`} pct={100} tone="mute" />
-      <RsBarRow label={rt(L, pre ? 'roWithPre' : 'roWith')} value={`${n1(s.roWood)} lb`} pct={s.roWood / Math.max(s.straightWood, 0.1) * 100} />
-      {s.savedHrs > 0 && <div className="rs-grid3" style={{ marginTop:6 }}>
+      <div className="rs-meta">{rt(L,'roSavFuel', { f: fuelLabel(fd, L).replace(/ \(.*\)/, '').toLowerCase() })}</div>
+      <RsBarRow label={rt(L,'roStraight')} value={`${fq(s.straightFuel)} ${fu}`} pct={100} tone="mute" />
+      <RsBarRow label={rt(L, pre ? 'roWithPre' : 'roWith')} value={`${fq(s.roFuel)} ${fu}`} pct={s.roFuel / Math.max(s.straightFuel, 0.0001) * 100} />
+      {s.savedHrs > 0 && <div className="rs-grid2" style={{ marginTop:6 }}>
         <div><div className="rs-meta">{rt(L,'roSavedH')}</div><div className="rs-mid tn">{fmt(s.savedHrs, 0)}<small>h</small></div></div>
-        <div><div className="rs-meta">{rt(L,'roSavedW')}</div><div className="rs-mid tn">{s.savedWood >= 1000 ? fmt(s.savedWood / 1000, 1) + 'k' : fmt(s.savedWood, 0)}<small>lb</small></div></div>
-        <div><div className="rs-meta">{rt(L,'roSavedC')}</div><div className="rs-mid tn">{fmt(s.cords, 2)}</div></div>
+        <div><div className="rs-meta">{rt(L,'roSavedF')}</div><div className="rs-mid tn">{fq(s.savedFuel)}<small>{fu}</small></div><div className="rs-meta tn">{srMoney(s.savedFuel * (parseFloat(c.fuelCost) || 0))}</div></div>
       </div>}
       {f.roGal === 0 && <p className="rs-note">{rt(L,'roLogNote')}</p>}
-      <RsDisclose title={rt(L,'roInputs')} sub={rt(L,'roInputsSub', { e: fmt(fromGal(evG, c.units), 0), u, b: fmt(parseFloat(burn) || 23, 0), x: fmt(parseFloat(rb) || 8, 1) })}>
-        <div className="rs-grid2">
-          <div><label className="rs-fl" htmlFor="rs-ro-e">{rt(L,'roEvapRate')}</label><RsStepper id="rs-ro-e" value={ev} onChange={setEv} steps={srVolSteps([-5, 5], [-20, 20], c.units)} unit={u + '/h'} label={rt(L,'roEvapRate')} min={1} max={c.units === 'L' ? 1900 : 500} big={false} /></div>
-          <div><label className="rs-fl" htmlFor="rs-ro-b">{rt(L,'roBurn')}</label><RsStepper id="rs-ro-b" value={burn} onChange={setBurn} steps={[-1, 1]} unit="lb/h" label={rt(L,'roBurn')} min={5} max={100} big={false} /></div>
-        </div>
+      <RsDisclose title={rt(L,'roInputs')} sub={rt(L,'roInputsSub2', { e: fmt(fromGal(evG, c.units), 0), u, x: fmt(parseFloat(rb) || 8, 1), f: fuelLabel(fd, L).replace(/ \(.*\)/, '').toLowerCase() })}>
+        <div><label className="rs-fl" htmlFor="rs-ro-e">{rt(L,'roEvapRate')}</label><RsStepper id="rs-ro-e" value={ev} onChange={setEv} steps={srVolSteps([-5, 5], [-20, 20], c.units)} unit={u + '/h'} label={rt(L,'roEvapRate')} min={1} max={c.units === 'L' ? 1900 : 500} big={false} /></div>
         <label className="rs-fl" htmlFor="rs-ro-x">{rt(L,'roOutBrix')}</label><RsStepper id="rs-ro-x" value={rb} onChange={setRb} steps={[-0.5, 0.5]} dp={1} unit="%" label={rt(L,'roOutBrix')} min={1} max={20} big={false} />
         <label className="rs-fl">{rt(L,'roPreheater')}</label>
         <RsSeg label={rt(L,'roPreheater')} value={pre} onChange={setPre} options={[[false, rt(L,'noW')], [true, rt(L,'yesW')]]} />
+        <p className="rs-note">{rt(L,'roFuelNote', { n: fmt(fromGal(fd.spu, c.units), 0), u, fu })}</p>
       </RsDisclose>
     </div>
   </>;
@@ -291,21 +297,27 @@ function RsDiagnose({ c }) {
   const v = useSrDataVersion();
   const [price, setPriceS] = useState(() => getSyrupPrice());
   const [wood, setWoodS] = useState(() => getWoodCost());
-  const [lr, setLrS] = useState(() => getLaborRate());
+  // Labor only counts once he has set a rate: no finding is built on a $15 he never typed.
+  const [lr, setLrS] = useState(() => getSetting('sg_rate_labor', ['sg_dx_labor', 'sg_laborrate', 'sg_bev_lrate'], ''));
   const [ro, setRo] = useRsPref('sg_dx_robrix', 0);
-  const [vac, setVac] = useRsPref('sg_dx_vac', 'gravity');
+  const wiz = React.useMemo(() => ls.get('sg_wizard_data', {}) || {}, [v]);
+  // Vacuum: what the setup said until he picks here.
+  const [vac, setVac] = useRsPref('sg_dx_vac', srDxVacOf(wiz));
+  const tapsInfo = React.useMemo(() => selTaps(c.trees), [v, c.trees]);
+  const roFits = srRoAdviceFits(tapsInfo.taps, wiz);
   const w = (k, set) => x => { set(x); if (x !== '') ls.set(k, x); };
   const logs = React.useMemo(() => srReadLogs(c.units), [v, c.units]);
   const slog = logs[c.season] || {};
   const has = (slog.sapCollected || []).length > 0 || (slog.syrupMade || []).length > 0;
-  const findings = srDiagnose({ slog, prevSlog: logs[c.season - 1] || {}, brixLog: ls.get('sg_brixlog', []), pins: ls.get('sg_lines_pins', []),
-    routeResults: ls.get('sg_lines_results', []), trees: c.trees, units: c.units, sapBrix: c.sapBrix, syrupPrice: parseFloat(price) || 0,
-    woodCost: parseFloat(wood) || 0, laborRate: parseFloat(lr) || 0, vacLevel: vac, roOutBrix: ro });
+  const bs = srBrixSource({ slog, brixlog: ls.get('sg_brixlog', []) || [], season: c.season, setting: c.sapBrix });
+  const findings = srDiagnose({ slog, prevSlog: logs[c.season - 1] || {}, brixLog: bs.series, pins: ls.get('sg_lines_pins', []),
+    routeResults: ls.get('sg_lines_results', []), trees: tapsInfo.taps, units: c.units, sapBrix: bs.season, syrupPrice: parseFloat(price) || 0,
+    woodCost: parseFloat(wood) || 0, laborRate: parseFloat(lr) || 0, vacLevel: vac, roOutBrix: ro, roFits });
   const total = findings.reduce((s, f) => s + (Number.isFinite(f.roi) ? f.roi : 0), 0);
   const cnt = s => findings.filter(f => f.sev === s).length;
   const G = seasonTotalsGal(slog, c.units);
-  const fuelDef = FUELS.find(x => x.label === ls.get('sg_fuel', 'Firewood (cord)')) || FUELS[0];
-  const brix = parseFloat(c.sapBrix) || 2.0, taps = parseInt(c.trees) || 0;
+  const fuelDef = selFuel().def;
+  const brix = bs.season, taps = tapsInfo.taps;
   const sc = srSeasonScore({ sapT:G.sapGal, syT:G.syrupGal, fuelT:G.fuelT, taps, brix, yieldModel:yieldModelSaved(), fuelSpu:fuelDef.spu });
   const ins = srInsights(G.sapGal, G.syrupGal, G.roGal, G.fuelT, taps, brix, sc.effScore, fuelDef);
   const kind = s => s === 'high' ? 'fault' : s === 'medium' ? 'check' : s === 'low' ? 'idle' : 'ok';
@@ -317,7 +329,7 @@ function RsDiagnose({ c }) {
         <div>
           <div className="rs-card">
             <div className="rs-grid2">
-              <div><label className="rs-fl" htmlFor="rs-dx-p" style={{ marginTop:0 }}>{rt(L,'dxPrice')}</label><RsMoney id="rs-dx-p" value={price} onChange={w('sg_price_syrup', setPriceS)} label={rt(L,'dxPrice')} steps={[-1, 1]} unit="/gal" /></div>
+              <div><label className="rs-fl" htmlFor="rs-dx-p" style={{ marginTop:0 }}>{rt(L,'dxPrice')}</label><RsMoney id="rs-dx-p" value={c.units === 'L' ? +srPerU(parseFloat(price) || 0, c.units).toFixed(2) : price} onChange={x => { const g = x === '' ? '' : srPerGal(x, c.units); setPriceS(g); if (g !== '') ls.set('sg_price_syrup', g); }} label={rt(L,'dxPrice')} steps={[-1, 1]} dp={c.units === 'L' ? 2 : 0} unit={'/' + u} /></div>
               <div><label className="rs-fl" htmlFor="rs-dx-w" style={{ marginTop:0 }}>{rt(L,'dxWood')}</label><RsMoney id="rs-dx-w" value={wood} onChange={w('sg_cost_wood', setWoodS)} label={rt(L,'dxWood')} steps={[-10, 10]} unit="/cord" /></div>
               <div><label className="rs-fl" htmlFor="rs-dx-l">{rt(L,'evLaborR')}</label><RsMoney id="rs-dx-l" value={lr} onChange={w('sg_rate_labor', setLrS)} label={rt(L,'evLaborR')} steps={[-1, 1]} unit="/h" /></div>
               <div><label className="rs-fl" htmlFor="rs-dx-r">{rt(L,'dxRoBrix')}</label><RsStepper id="rs-dx-r" value={ro} onChange={setRo} steps={[-0.5, 0.5]} dp={1} unit="%" label={rt(L,'dxRoBrix')} min={0} max={30} big={false} /></div>
@@ -327,6 +339,8 @@ function RsDiagnose({ c }) {
             <div className="rs-opts three" role="group" aria-label={rt(L,'dxVac')}>{['gravity', 'vac15', 'high'].map(k => <button key={k} type="button" className={`rs-opt${vac === k ? ' on' : ''}`}
               aria-pressed={vac === k} onClick={() => setVac(k)}><b>{rt(L, 'vacB_' + k)}</b><span>{rt(L, 'vacS_' + k)}</span></button>)}</div>
             <p className="rs-note">{rt(L,'dxGalNote')}</p>
+            <p className="rs-meta tn" id="rs-dx-taps">{rt(L,'dxTapsLine', { t: rtTapsLine(L, tapsInfo) })}</p>
+            {!(parseFloat(lr) > 0) && <p className="rs-note">{rt(L,'dxLaborUnset')}</p>}
           </div>
           {ins.length > 0 && <>
             <h2 className="rs-sec">{rt(L,'insT')}</h2>

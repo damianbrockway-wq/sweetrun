@@ -80,7 +80,7 @@ function RsPumpCenter({ c, addPin, addTankPin }) {
     <div className="rs-list rs-board">
       {model.pumps.map(p => { const [v, un] = srPumpValue(p, c); return (
         <RsReadoutRow key={p.id} href={rsHref('pumps/' + p.id)} lead={<RsPumpTile p={p} />} title={p.name}
-          status={<RsPumpStatus p={p} L={L} now={now} />} value={v} unit={un} tone={p.status === 'fault' ? 'bad' : (p.fuel && p.fuel.hoursLeft != null && p.fuel.hoursLeft <= 4) ? 'bad' : ''} />); })}
+          status={<RsPumpStatus p={p} L={L} now={now} />} value={v} unit={un} tone={p.status === 'fault' ? 'bad' : p.status === 'running' && srFuelState(p.fuel, minutes, model.prefs) !== 'ok' && srFuelState(p.fuel, minutes, model.prefs) !== 'none' ? 'bad' : ''} />); })}
       {model.lines.filter(l => l.latest || l.trees.length).map(l => (
         <RsReadoutRow key={l.id} onClick={() => setLine(l.id)} lead={<RsLinePlate l={l} size={40} />} title={rt(L, 'lineEnd', { n: l.label })}
           status={<RsSt kind={l.leak.status === 'suspect' ? 'check' : l.latest ? (l.tier === 'old' ? 'idle' : 'ok') : 'idle'}>
@@ -216,7 +216,7 @@ function RsReadingSheet({ c, title, unit, dp, steps, min, max, base, sensor, onS
   const [v, setV] = useState('');
   const [ago, setAgo] = useState(0);
   const [fail, setFail] = useState(null);
-  const save = () => {
+  const save = () => { if (srFormBlocked()) return;   // a refused number blocks the save (fix pass 1)
     const n = parseFloat(v);
     if (!srFin(n)) { const el = document.getElementById('rs-read-v'); if (el) el.focus(); return; }
     const t = Date.now() - ago * 60000;
@@ -268,7 +268,7 @@ function RsPumpSheet({ c, model, pump, pinId, onClose }) {
   const defName = rt(L, 'kindName_' + kind);
   const pins = model.pins.filter(p => ['pump', 'sugarhouse', 'tank', 'marker', 'junction'].includes(p.type));
   const gen = kind === 'generator';
-  const save = () => {
+  const save = () => { if (srFormBlocked()) return;   // a refused number blocks the save (fix pass 1)
     const f = { kind, name: name.trim() || defName, where: where.trim(), pinId: pin || null, lineIds: kind === 'vacuum' ? lines : [], tankId: ['transfer', 'ro'].includes(kind) ? tank : null,
       fuelCapGal: gen ? (cap !== '' ? toGal(parseFloat(cap), c.units) : 6.6) : (cap !== '' ? toGal(parseFloat(cap), c.units) : null),
       burnGalH: gen ? (burn !== '' ? toGal(parseFloat(burn), c.units) : 0.34) : (burn !== '' ? toGal(parseFloat(burn), c.units) : null),
@@ -373,7 +373,8 @@ function RsPumpScreen({ c, id }) {
               <div className="rs-card">
                 {p.fuel ? <>
                   <div className="rs-split"><div className="rs-meta">{rt(L, 'fuelLeft')}</div>
-                    <RsSt kind={p.fuel.hoursLeft != null && p.fuel.hoursLeft <= 4 ? 'check' : 'ok'}>{p.fuel.hoursLeft != null && p.fuel.hoursLeft <= 4 ? rt(L, 'fillSoon') : rt(L, 'fineW')}</RsSt></div>
+                    {(() => { const fs = p.status === 'running' ? srFuelState(p.fuel, srMinutesOf(new Date(now)), model.prefs) : (p.fuel.hoursLeft != null && p.fuel.hoursLeft <= (model.prefs.fuelLowH || 4) ? 'low' : 'ok');
+                      return <RsSt kind={fs === 'low' || fs === 'night' ? 'check' : 'ok'}>{rt(L, fs === 'low' ? 'fillSoon' : fs === 'night' ? 'dryOvernight' : 'fineW')}</RsSt>; })()}</div>
                   <div className="rs-big tn">{fmt(fromGal(p.fuel.levelGal, c.units), 1)}<small>{p.fuelCapGal ? rt(L, 'ofCap', { c: fmt(fromGal(p.fuelCapGal, c.units), 1), u }) : u}</small></div>
                   {fuelPct != null && <div className="rs-bar" role="presentation"><i style={{ width: fuelPct + '%' }} /></div>}
                   <RsKv rows={[
@@ -468,7 +469,7 @@ function RsFuelSheet({ c, p, onClose }) {
   const cap = p.fuelCapGal ? fromGal(p.fuelCapGal, c.units) : null;
   const [v, setV] = useState(cap != null ? String(+cap.toFixed(1)) : '');
   const [fail, setFail] = useState(null);
-  const save = () => {
+  const save = () => { if (srFormBlocked()) return;   // a refused number blocks the save (fix pass 1)
     const n = parseFloat(v); if (!(n >= 0)) { const el = document.getElementById('rs-fuel-v'); if (el) el.focus(); return; }
     const level = toGal(n, c.units);
     const before = p.fuel ? p.fuel.levelGal : null;
@@ -492,7 +493,7 @@ function RsServiceSheet({ c, p, onClose }) {
   const [parts, setParts] = useState('');
   const [fail, setFail] = useState(null);
   const quick = ['svcOil', 'svcFilter', 'svcBelt', 'svcClean'];
-  const save = () => {
+  const save = () => { if (srFormBlocked()) return;   // a refused number blocks the save (fix pass 1)
     const w = what.trim(); if (!w) { const el = document.getElementById('rs-svc-what'); if (el) el.focus(); return; }
     if (!srLogPumpEvent({ pumpId: p.id, kind: 'service', t: new Date().toISOString(), what: w, parts: parts.trim(), hoursAt: Math.round(p.hoursTotal * 10) / 10 })) { setFail(SR_WRITE_FAIL || 'locked'); return; }
     srToast(rt(L, 'serviceSaved')); onClose();
@@ -639,7 +640,7 @@ function RsTankSheet({ c, model, tank, pinId, onClose }) {
   const [role, setRole] = useState(tank ? tank.role || 'collection' : 'collection');
   const [pin, setPin] = useState(tank ? tank.pinId : pinId);
   const [fail, setFail] = useState(null);
-  const save = () => {
+  const save = () => { if (srFormBlocked()) return;   // a refused number blocks the save (fix pass 1)
     const cp = parseFloat(cap); if (!(cp > 0)) { const el = document.getElementById('rs-tank-cap'); if (el) el.focus(); return; }
     const t = { id: tank ? tank.id : srUid('t'), name: name.trim() || rt(L, 'tankN', { n: model.tanksRaw.length + 1 }), role, capGal: Math.round(toGal(cp, c.units) * 10) / 10, pinId: pin || null };
     if (!srSaveTank(t)) { setFail(SR_WRITE_FAIL || 'locked'); return; }
@@ -665,13 +666,14 @@ function RsTankScreen({ c, id }) {
   const raw = model.tanksRaw.find(t => t.id === id);
   const t = model.tanks.find(x => x.id === id);
   const [sheet, setSheet] = useState(null);
+  const tf = useRsTankFull(t);   // the fill stops below freezing (srTankFull)
   if (!raw || !t) return (
     <div className="rs-inner"><RsSubHead c={c} back="pumps" backLabel={rt(L, 'pumpsTitle')} title={rt(L, 'tankGoneT')} />
       <div className="rs-empty"><p>{rt(L, 'tankGoneP')}</p><RsBtn kind="secondary" href={rsHref('pumps')}>{rt(L, 'backToPumps')}</RsBtn></div></div>);
   const sid = srSensorId('tank', id);
   const hist = model.src.history(sid).slice(-8).reverse();
   const pct = t.levelGal != null && t.capGal > 0 ? Math.round(t.levelGal / t.capGal * 100) : null;
-  const plan = t.levelGal != null ? srRoPlan({ levelGal: t.levelGal, capGal: t.capGal, fillGalH: t.fillGalH, roGph: null }) : null;
+  const plan = tf;
   return (
     <>
       <RsHero photo="sap-tank" />
@@ -686,8 +688,8 @@ function RsTankScreen({ c, id }) {
                 <span className="rs-v tn">{t.levelGal != null ? srVol(t.levelGal, c.units) : '·'}<small>{u}</small></span>
                 <span className="rs-pctline tn">{pct != null ? <><b>{pct}%</b> {rt(L, 'fullOf', { c: srVol(t.capGal, c.units), u })}</> : rt(L, 'noLevelYet')}</span>
                 <RsKv rows={[
-                  t.fillGalH ? [rt(L, 'filling'), `+${srVol(t.fillGalH, c.units)} ${u}/h`] : null,
-                  plan && plan.fullH != null ? [rt(L, 'fullAt'), srClock(Date.now() + plan.fullH * 3600000, L)] : null,
+                  t.fillGalH ? [rt(L, 'filling'), plan && plan.paused ? rt(L, 'fillPaused') : `+${srVol(t.fillGalH, c.units)} ${u}/h`] : null,
+                  plan && plan.fullH != null ? [rt(L, 'fullAt'), srClock(Date.now() + plan.fullH * 3600000, L)] : t.fillGalH && plan && plan.paused ? [rt(L, 'fullAt'), rt(L, 'fullAfterThaw')] : null,
                 ]} />
                 {t.readMs && <span className="rs-fresh"><RsIcon name="clock" size={13} />{rt(L, 'readAgo', { a: srAgo(t.readMs, model.now, L), t: srClock(t.readMs, L) })}</span>}
               </div>

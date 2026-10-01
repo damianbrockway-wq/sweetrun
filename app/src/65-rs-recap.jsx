@@ -10,24 +10,26 @@ function RsRecapStage({ c }) {
   const s = m.d.slog;
   const T_ = m.totals, G = m.totalsGal;
   const pct = m.goalGal > 0 ? Math.min(100, G.syrupGal / m.goalGal * 100) : null;
-  const yr = String(c.season);
-  const bxSeason = m.d.brixlog.filter(e => String(e.date || '').startsWith(yr) || (srDateParts(e.date) || {}).y === +yr).map(e => parseFloat(e.brix)).filter(isFinite);
-  const avgBx = bxSeason.length ? bxSeason.reduce((a, b) => a + b, 0) / bxSeason.length : null;
-  const fuelDef = FUELS.find(f => f.label === ls.get('sg_fuel', 'Firewood (cord)')) || FUELS[0];
-  const sc = srSeasonScore({ sapT: G.sapGal, syT: G.syrupGal, fuelT: G.fuelT, taps: m.taps, brix: parseFloat(c.sapBrix) || 2.0, yieldModel: m.model, fuelSpu: fuelDef.spu });
+  // The season's Brix (srBrixSource: sap-entry Brix by volume, plus tree readings) sets the
+  // theory the score grades against, on this screen, Recap detail, Diagnose and the PDF.
+  const avgBx = m.brix.seasonFrom !== 'setting' ? m.brix.season : null;
+  const fuelDef = selFuel().def;
+  const sc = srSeasonScore({ sapT: G.sapGal, syT: G.syrupGal, fuelT: G.fuelT, taps: m.taps, brix: m.brix.season, yieldModel: m.model, fuelSpu: fuelDef.spu });
   // Sap a day, first sap day to today (or the last logged day for a past season)
   const first = m.series.firstSap;
-  const sapBy = srDayTotals(s.sapCollected);
+  const sapBy = srDayTotals(m.dated.slog.sapCollected);
   const lastSap = Object.keys(sapBy).sort().pop();
-  const endIso = c.season < parseInt(m.todayIso.slice(0, 4)) ? (lastSap || m.todayIso) : m.todayIso;
+  // A season that is over (closed, quiet two weeks, or past) charts to its last sap day; a live one to today.
+  // Far-dated entries outside the season's window never stretch it (srInSeason).
+  const endIso = m.run.kind === 'over' || c.season < (srSeasonOf(m.todayIso) || 0) ? (m.run.last || lastSap || m.todayIso) : m.todayIso;
   const nDays = first ? Math.min(90, srDaysBetween(first, endIso) + 1) : 0;
   const sapDays = nDays > 0 ? Array.from({ length:nDays }, (_, i) => sapBy[srIsoAdd(first, i)] || 0) : [];
   const peakI = sapDays.reduce((b, v, i) => v > sapDays[b] ? i : b, 0);
-  const cum = first ? srCumFromFirst(s, Math.max(2, nDays)) : [];
+  const cum = first ? srCumFromFirst(m.dated.slog, Math.max(2, nDays)) : [];
   const perTap = m.taps > 0 ? cum.map(v => toGal(v, c.units) / m.taps) : [];
-  const bl = m.d.brixlog.filter(e => (srDateParts(e.date) || {}).y === +yr && isFinite(parseFloat(e.brix))).slice().sort((a, b) => srDateMs(a.date) - srDateMs(b.date));
-  const grades = {};
-  (s.syrupMade || []).forEach(e => { const g = e.grade && e.grade !== '—' ? e.grade : 'none'; grades[g] = (grades[g] || 0) + (parseFloat(e.val) || 0); });
+  const bl = m.brix.series;
+  // Grades: on each syrup entry, and the batches' grades for syrup logged without one (srGradeMix).
+  const grades = srGradeMix(s.syrupMade, m.d.batches, c.season).grades;
   const gOrder = [...SR_GRADES, 'none'].filter(g => grades[g] > 0);
   const gTot = gOrder.reduce((a, g) => a + grades[g], 0);
   const has = T_.sapT > 0 || T_.syT > 0;
@@ -37,6 +39,9 @@ function RsRecapStage({ c }) {
       <div className="rs-inner">
         <RsStageHead c={c} id="recap" m={m} lede={rt(L,'recapLede', { y:c.season })} />
         <RsBanners c={c} />
+        {m.dated.outside > 0 && <div className="rs-banner" role="status"><span className="rs-bic"><RsIcon name="alert" size={22} /></span>
+          <span className="rs-bt"><b>{rt(L, m.dated.outside === 1 ? 'outsideT1' : 'outsideT', { n: m.dated.outside, y: c.season })}</b><span>{rt(L,'outsideP')}</span></span>
+          <button type="button" className="rs-bbtn" onClick={() => rsGo('shack/log')}>{rt(L,'checkEntries')}</button></div>}
         {!has ? (
           <div className="rs-empty"><div className="rs-mk"><M.jug size={52} /></div><b>{rt(L,'recapEmptyT', { y:c.season })}</b><p>{rt(L,'recapEmptyP')}</p></div>
         ) : null}
@@ -47,12 +52,12 @@ function RsRecapStage({ c }) {
                 <div><div className="rs-meta">{rt(L,'nSyrupSoFar')}</div><div className="rs-huge tn">{fmt(T_.syT, 1)}<small>{u}</small></div></div>
                 {pct != null && <RsRing pct={pct} size={104} label={rt(L,'goalAria', { p: Math.round(pct), g: srVol(m.goalGal, c.units), u })} />}
               </div>
-              {pct != null && <div className="rs-meta">{rt(L,'goalLine', { g: srVol(m.goalGal, c.units), u, t: fmt(m.taps, 0), m: srModelName(m.model.label, L) })}</div>}
+              {pct != null && <div className="rs-meta">{rt(L,'goalLine2', { g: srVol(m.goalGal, c.units), u, t: rtTapsLine(L, m.tapsInfo), m: srModelName(m.model.label, L) })}</div>}
               <div className="rs-grid2 rs-recapnums">
                 <div><div className="rs-meta">{rt(L,'perTapW')}</div><div className="rs-mid tn">{m.taps > 0 ? fmt(T_.syT / m.taps, 2) : '0'}<small>{u}</small></div></div>
                 <div><div className="rs-meta">{rt(L,'sapCollected')}</div><div className="rs-mid tn">{fmt(T_.sapT, 0)}<small>{u}</small></div></div>
-                <div><div className="rs-meta">{rt(L,'avgBrix')}</div><div className="rs-mid tn">{avgBx != null ? fmt(avgBx, 1) + '%' : fmt(parseFloat(c.sapBrix) || 2, 1) + '%'}</div>
-                  <div className="rs-meta">{avgBx != null ? rt(L,'nReadings', { n: bxSeason.length }) : rt(L,'brixSetting')}</div></div>
+                <div><div className="rs-meta">{rt(L,'avgBrix')}</div><div className="rs-mid tn">{fmt(m.brix.season, 1) + '%'}</div>
+                  <div className="rs-meta">{avgBx != null ? rt(L,'nReadings', { n: m.brix.n }) : rt(L,'brixSetting')}</div></div>
                 <div><div className="rs-meta">{rt(L,'nBoilHours')}</div><div className="rs-mid tn">{fmt(T_.hoursT, 1)}<small>h</small></div></div>
               </div>
             </div></div>
@@ -89,7 +94,7 @@ function RsRecapStage({ c }) {
           <div className="rc-col">
             <div className="rc-charts"><h2 className="rs-sec">{rt(L,'howGoing')}</h2>
             <div className="rs-stack">
-              <RsSyrupVsLast c={c} slog={s} prev={m.d.prevSlog} dayOfRun={m.series.dayOfRun || nDays} />
+              <RsSyrupVsLast c={c} slog={s} prev={m.d.prevSlog} dayOfRun={m.run.kind === 'running' ? m.run.day : (m.run.length || nDays)} />
               {sapDays.length > 0 && <RsStat title={rt(L,'sapADay')} value={fmt(sapDays[sapDays.length - 1], 0)} unit={rt(L,'uLast', { u })}
                 delta={<>{rt(L,'peakV', { v: fmt(sapDays[peakI], 0) })}<br /><span>{srDayLabel(srIsoAdd(first, peakI), L)}</span></>}>
                 <RsBarChart v={sapDays} hi={sapDays.length - 1} unitFmt={x => fmt(x, 0)} label={rt(L,'sapDayAria', { n: nDays })} rowLabel={i => srDayLabel(srIsoAdd(first, i), L)} rowHead={rt(L,'date')} valueHead={rt(L,'sapWordC', { u })}
@@ -113,13 +118,13 @@ function RsRecapStage({ c }) {
               </RsStat>}
             </div>
             </div>
-            <div className="rc-more"><h2 className="rs-sec">{rt(L,'moreRecap')}</h2>
+            <div className="rc-more">{has && <RsCloseSeason c={c} />}<h2 className="rs-sec">{rt(L,'moreRecap')}</h2>
             <RsDetailRows c={c} paths={['stage/recap/season','stage/recap/diagnose']} />
             <div className="rs-list" style={{ marginTop:12 }}>
               <RsRow icon="list" family="power" title={rt(L,'sc_log')} sub={rt(L,'exportCsvS')} href={rsHref('shack/log')} />
             </div>
             <div style={{ marginTop:16 }}><RsBtn icon="download" id="rs-recap-pdf"
-              onClick={() => exportSeasonPDF({ season:c.season, trees:c.trees, units:c.units, logs:m.d.logs, brixLog: ls.get('sg_brixlog',[]), sapBrix:c.sapBrix })}>{rt(L,'exportPdf', { y:c.season })}</RsBtn></div></div>
+              onClick={() => exportSeasonPDF(srPdfArgs(c))}>{rt(L,'exportPdf', { y:c.season })}</RsBtn></div></div>
           </div>
         </div>
       </div>

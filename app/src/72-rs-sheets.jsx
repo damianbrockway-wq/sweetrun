@@ -15,6 +15,7 @@ function RsPassSheet({ c, onClose }) {
   useEffect(() => { ls.set('sg_email_prompted', true); }, []);
   const apply = async () => {
     const p = await verifyLicense(key);
+    if (p && p.unverifiable) { setMsg({ ok:false, t: rt(L, p.offline ? 'passCheckOffline' : 'passCantCheck') }); return; }
     if (!p) { setMsg({ ok:false, t: rt(L,'passBad') }); return; }
     if (p.expired) { setMsg({ ok:false, t: rt(L,'passExpired', { d: p.x }) }); return; }
     SR_LOCKED = false; _srClear();
@@ -29,6 +30,7 @@ function RsPassSheet({ c, onClose }) {
   return (
     <RsSheet title={rt(L,'secPass')} onClose={onClose} id="rs-pass-sheet">
       <p className="rs-body">{lic.status === 'licensed' ? rt(L,'passActiveP', { d: lic.until }) : lic.status === 'expired' ? rt(L,'passEndedP') : rt(L,'passTrialP', { n: lic.daysLeft })}</p>
+      {lic.cantCheck && <p className="rs-errline" role="alert" id="rs-pass-cantcheck">{rt(L,'passCantCheck')}</p>}
       {lic.status !== 'licensed' && <div style={{ marginTop:14 }}><RsBtn href={STRIPE_BUY_URL} ext>{rt(L,'passBuy')}</RsBtn></div>}
       <label className="rs-fl" htmlFor="rs-pass-key">{rt(L,'passHave')}</label>
       <textarea id="rs-pass-key" className="rs-field rs-mono" rows={3} value={key} onChange={e => setKey(e.target.value)} placeholder={rt(L,'passPh')} />
@@ -55,10 +57,13 @@ function RsWizard({ c, onClose, onComplete }) {
   const [o, setO] = useState({ treeCount:'', trunkSize:'medium', systemType:'gravity', collectionType:'mainline', hasEvap:null, panSize:'2x4',
     fuelType:'Firewood (cord)', fuelCost:'', syrupPrice:'' });
   const set = k => x => setO(p => ({ ...p, [k]: x }));
-  const p = srWizardPlan(o);
+  const p = srWizardPlan({ ...o, syrupPrice: o.syrupPrice === '' ? '' : srPerGal(parseFloat(o.syrupPrice) || 0, c.units) });
   const can = [p.trees > 0, true, o.hasEvap !== null, true, true][step];
+  // Money is typed per the display unit (a litre in litre mode) and kept per US gallon, as every price is.
+  const oG = { ...o, syrupPrice: o.syrupPrice === '' ? '' : srPerGal(parseFloat(o.syrupPrice) || 0, c.units) };
   const finish = () => {
-    const data = srWizardData(o);
+    if (srFormBlocked('rs-wizard')) return;
+    const data = srWizardData(oG);
     ls.set('sg_wizard_data', data); ls.set('sg_onboarded', true);
     srDataChanged(); onComplete(data);
   };
@@ -86,7 +91,8 @@ function RsWizard({ c, onClose, onComplete }) {
       <label className="rs-fl">{rt(L,'wzHasEvap')}</label>
       <div className="rs-opts"><Opt k="hasEvap" val={true} label={rt(L,'wzYes')} sub={rt(L,'wzYesS')} /><Opt k="hasEvap" val={false} label={rt(L,'wzNo')} sub={rt(L,'wzNoS')} /></div>
       {o.hasEvap && <><label className="rs-fl">{rt(L,'evPan')}</label>
-        <RsSeg wrap label={rt(L,'evPan')} value={o.panSize} onChange={set('panSize')} options={Object.keys(SR_WIZ_PANS).map(k => [k, k.replace('x', '×')])} /></>}
+        <RsSeg wrap label={rt(L,'evPan')} value={o.panSize} onChange={set('panSize')} options={Object.keys(SR_WIZ_PANS).map(k => [k, k.replace('x', '×')])} />
+        <p className="rs-note">{rt(L,'wzPanRate', { v: srVol(SR_WIZ_PANS[o.panSize] || 0, c.units), u })}</p></>}
       <label className="rs-fl">{rt(L,'evFuelT')}</label>
       <RsSeg wrap label={rt(L,'evFuelT')} value={o.fuelType} onChange={set('fuelType')} options={FUELS.map(f => [f.label, f.unit === 'ccf' ? rt(L,'fuelGas') : f.unit === 'cord' ? rt(L,'fuelWood') : fuelLabel(f, L).replace(/ \(.*\)/, '')])} />
     </div>,
@@ -96,7 +102,7 @@ function RsWizard({ c, onClose, onComplete }) {
       <RsMoney id="rs-wz-fc" value={o.fuelCost} onChange={set('fuelCost')} label={rt(L,'wzFuelCost')} steps={[-50, 50]} />
       <p className="rs-note">{rt(L,'wzFuelCostNote')}</p>
       <label className="rs-fl" htmlFor="rs-wz-sp">{rt(L,'wzPrice')}</label>
-      <RsMoney id="rs-wz-sp" value={o.syrupPrice} onChange={set('syrupPrice')} label={rt(L,'wzPrice')} steps={[-5, 5]} unit="/gal" />
+      <RsMoney id="rs-wz-sp" value={o.syrupPrice} onChange={set('syrupPrice')} label={rt(L,'wzPrice')} steps={c.units === 'L' ? [-1, 1] : [-5, 5]} dp={c.units === 'L' ? 2 : 0} unit={'/' + u} />
       <p className="rs-note">{rt(L,'wzPriceNote')}</p>
     </div>,
     <div key="4">
@@ -121,7 +127,7 @@ function RsWizard({ c, onClose, onComplete }) {
       {steps[step]}
       <div className="rs-sheetfoot"><div className="rs-btnrow">
         {step > 0 ? <RsBtn kind="secondary" onClick={() => setStep(s => s - 1)}>{rt(L,'backW')}</RsBtn> : <RsBtn kind="secondary" onClick={onClose}>{rt(L,'notNow')}</RsBtn>}
-        {step < 4 ? <RsBtn onClick={() => can && setStep(s => s + 1)} disabled={!can} id="rs-wz-next">{rt(L,'nextW')}</RsBtn>
+        {step < 4 ? <RsBtn onClick={() => { if (srFormBlocked('rs-wizard')) return; can && setStep(s => s + 1); }} disabled={!can} id="rs-wz-next">{rt(L,'nextW')}</RsBtn>
           : <RsBtn onClick={finish} disabled={p.trees <= 0} id="rs-wz-finish">{rt(L,'wzFinish')}</RsBtn>}
       </div></div>
     </RsSheet>
@@ -149,6 +155,9 @@ function RsImportSheet({ c, onClose }) {
   const [busy, setBusy] = useState(false);
   const [fail, setFail] = useState(false);
   const take = r => { if (r.error) { setErr(r.error); setPv(null); } else { setErr(''); setPv(r); } };
+  // SweetRun's own CSV names each kind the way the Log does, in English or French.
+  const kindLabels = React.useMemo(() => Object.fromEntries(SR_LOG_KINDS.map(k => [k, [t('en', k), t('fr', k)]])), []);
+  const parseCsv = txt => srParseSapCsv(txt, kindLabels);
   const readPdf = async file => {
     setBusy(true); setErr(''); setPv(null);
     try {
@@ -165,17 +174,26 @@ function RsImportSheet({ c, onClose }) {
     const file = e.target.files && e.target.files[0]; e.target.value = '';
     if (!file) return;
     if (file.name.toLowerCase().endsWith('.pdf') || src === 'sugarcalc_pdf') { readPdf(file); return; }
-    const r = new FileReader(); r.onload = ev => { setText(ev.target.result); take(srParseSapCsv(ev.target.result)); }; r.readAsText(file);
+    const r = new FileReader(); r.onload = ev => { setText(ev.target.result); take(parseCsv(ev.target.result)); }; r.readAsText(file);
   };
+  // Each row files into the season its date belongs to (srSeasonOf), like a new log entry;
+  // the PDF report's rows fall back to the year it was for.
   const target = pv ? (pv.isPDF ? (pv.detectedYear || c.season) : c.season) : c.season;
   const adds = pv ? srImportAdditions(pv, src) : null;
-  const dd = pv ? dedupeImport(((ls.get('sg_logs2', {}) || {})[target]) || {}, adds) : null;
+  const bySeason = adds ? srImportBySeason(adds, target) : {};
+  const seasons = Object.keys(bySeason).map(Number).sort();
+  const dd = pv ? (() => { const all = ls.get('sg_logs2', {}) || {}; let addedCount = 0, skippedCount = 0;
+    seasons.forEach(y => { const r = dedupeImport(all[y] || {}, bySeason[y]); addedCount += r.addedCount; skippedCount += r.skippedCount; });
+    return { addedCount, skippedCount }; })() : null;
   const doImport = () => {
-    const existing = ls.get('sg_logs2', {}) || {};
-    const { added: a0 } = dedupeImport(existing[target] || {}, adds);
-    // Imported numbers are taken in the display unit, as they always were; now they say so.
-    const added = Object.fromEntries(Object.entries(a0).map(([k, arr]) => [k, (arr || []).map(e => srTagUnit(k, e, c.units))]));
-    if (!ls.set('sg_logs2', srMergeImport(existing, target, added))) { setFail(true); return; }
+    let next = ls.get('sg_logs2', {}) || {};
+    seasons.forEach(y => {
+      const { added: a0 } = dedupeImport(next[y] || {}, bySeason[y]);
+      // A row says its unit when the file did (a Unit column, or L / gal in a header); else it is the display unit.
+      const added = Object.fromEntries(Object.entries(a0).map(([k, arr]) => [k, (arr || []).map(e => e.u ? e : srTagUnit(k, e, c.units))]));
+      next = srMergeImport(next, y, added);
+    });
+    if (!ls.set('sg_logs2', next)) { setFail(true); return; }
     srDataChanged(); srToast(rt(L,'impDone', { n: dd.addedCount })); onClose();
   };
   return (
@@ -190,15 +208,17 @@ function RsImportSheet({ c, onClose }) {
       {src !== 'sugarcalc_pdf' && <>
         <label className="rs-fl" htmlFor="rs-import-text">{rt(L,'impPaste')}</label>
         <textarea id="rs-import-text" className="rs-field rs-mono" rows={5} value={text} placeholder={'date,sap_gallons,syrup_gallons\n2027-03-15,450,4.2'}
-          onChange={e => { setText(e.target.value); if (e.target.value.trim()) take(srParseSapCsv(e.target.value)); else { setPv(null); setErr(''); } }} />
+          onChange={e => { setText(e.target.value); if (e.target.value.trim()) take(parseCsv(e.target.value)); else { setPv(null); setErr(''); } }} />
       </>}
       {busy && <div className="rs-sk" style={{ height:60, marginTop:12 }} aria-busy="true" />}
       {err && <p className="rs-errline" role="alert">{rt(L, err)}</p>}
       {pv && !err && <div className="rs-card" style={{ marginTop:12 }}>
-        <b className="rs-cardt">{rt(L,'impReady', { n: pv.rows.length, y: target })}</b>
+        <b className="rs-cardt">{rt(L,'impReady', { n: pv.rows.length, y: seasons.length ? seasons.join(', ') : target })}</b>
         <RsKv rows={[pv.totalSap ? [rt(L,'sapCollected'), `${fmt(pv.totalSap, 1)} ${u}`] : null, pv.totalSyrup ? [rt(L,'syrupMadeW'), `${fmt(pv.totalSyrup, 1)} ${u}`] : null,
-          pv.totalRO ? [rt(L,'impRo'), `${fmt(pv.totalRO, 1)} ${u}`] : null, pv.totalEvap ? [rt(L,'impEvap'), `${fmt(pv.totalEvap, 1)} ${u}`] : null]} />
+          pv.totalRO ? [rt(L,'impRo'), `${fmt(pv.totalRO, 1)} ${u}`] : null, pv.totalEvap ? [rt(L,'impEvap'), `${fmt(pv.totalEvap, 1)} ${u}`] : null,
+          pv.totalFuel ? [rt(L,'kFuel'), fmt(pv.totalFuel, 1)] : null, pv.totalHours ? [rt(L,'kHours'), `${fmt(pv.totalHours, 1)} h`] : null]} />
         {dd.skippedCount > 0 && <p className="rs-meta">{rt(L,'impSkip', { n: dd.skippedCount })}</p>}
+        {pv.badDates > 0 && <p className="rs-errline">{rt(L,'impBadDateRows', { n: pv.badDates })}</p>}
         <p className="rs-note">{rt(L,'impUnitNote', { u })}</p>
       </div>}
       <div className="rs-sheetfoot">{fail && <p className="rs-errline" role="alert">{rt(L,'bNotSavedT')}. {rt(L,'bLockedP')}</p>}

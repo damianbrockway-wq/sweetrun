@@ -17,12 +17,16 @@ function useRsSeasonModel(c) {
   const now = useRsNow();
   const todayIso = srToday();
   const minutes = srMinutesOf(now);
-  const stage = srStageOf({ todayIso, season:c.season, slog:d.slog, boilActive: !!(d.boil && d.boil.start),
-    hasMainlines: d.mainlines.length > 0, hasTreePins: d.treePins.length > 0 });
-  const series0 = srSeasonSeries(d.slog, todayIso, null);
+  // Dated views use entries inside the season's window only (srSlogDated); totals use all of them.
+  const dated = React.useMemo(() => srSlogDated(d.slog, c.season), [d, c.season]);
+  const stage = srStageOf({ todayIso, season:c.season, slog:dated.slog, boilActive: !!(d.boil && d.boil.start),
+    hasMainlines: d.mainlines.length > 0, hasTreePins: d.treePins.length > 0, closed: d.closed });
+  // Where the run stands (running: day N; over: it lasted N days; none yet).
+  const run = srRunState({ slog: dated.slog, todayIso, closed: d.closed || stage === 'recap' });
+  const series0 = srSeasonSeries(dated.slog, todayIso, null);
   const pastDays = Math.max(0, srDaysBetween(series0.start, todayIso));
   const wx = useSrWx(d.loc, pastDays);
-  const series = React.useMemo(() => srSeasonSeries(d.slog, todayIso, wx.data), [d, todayIso, wx.data]);
+  const series = React.useMemo(() => srSeasonSeries(dated.slog, todayIso, wx.data), [dated, todayIso, wx.data]);
   const today = selToday(d.slog);
   // First run: nothing logged in any season, no pins, and the season setup never finished
   // (sg_trees defaults to 50, so it can't be the test). The setup's finish step writes
@@ -32,23 +36,32 @@ function useRsSeasonModel(c) {
   // Phases 7-8: pumps, freeze prep, fuel and leak suspects join the engine; the
   // RO pump's rate (sg_pumps) feeds the RO call. Demo readings never reach here.
   const ops = useSrOps(c, false, now.getTime());
+  // Tanks fill only above freezing: hours to full from the hourly forecast (srTankFull).
+  const hourly = useSrHourly(d.tanks.some(t => t.levelGal != null) ? d.loc : null);
+  const tanks = React.useMemo(() => d.tanks.map(t => { if (t.levelGal == null) return t;
+    const H = srHourlyRows(hourly);
+    const tf = srTankFull({ levelGal: t.levelGal, capGal: t.capGal, fillGalH: t.fillGalH, now: now.getTime(), hourly: H.rows, tempF: H.cur });
+    return { ...t, fullH: tf.atMs != null ? Math.max(0, (tf.atMs - now.getTime()) / 3600000) : null, paused: tf.paused }; }), [d, hourly.data, Math.floor(now.getTime() / 600000)]);
   const roPump = ops.pumps.find(p => p.kind === 'ro' && p.gph > 0);
   const jobs = srJobs({
     now: now.getTime(), minutes, todayIso, stage, firstRun,
     wizardDone: d.wizardDone, hasPins: d.pins.length > 0, hasLocation: !!d.loc,
     wx: wx.data, boil: d.boil && d.boil.start ? { startMs: d.boil.start } : null,
     fresh: d.freshStart ? { startMs: d.freshStart } : null,
-    tanks: d.tanks, roGph: roPump ? roPump.gph : null, sapBrix: c.sapBrix, waterBP: c.waterBP,
+    tanks, roGph: roPump ? roPump.gph : null, sapBrix: c.sapBrix, waterBP: c.waterBP,
     loggedToday: today, checks: d.checks, ops: srOpsForJobs(ops, wx.data),
   });
   const totals = seasonTotals(d.slog);
   const totalsGal = seasonTotalsGal(d.slog, c.units);
-  const taps = parseInt(c.trees) || 0;
+  // One tap count (srTaps) and one Brix (srBrixSource) for every screen built on this model.
+  const tapsInfo = d.tapsInfo, taps = tapsInfo.taps;
   const model = yieldModelSaved();
   const goalGal = taps * yieldMidOf(model);
-  const brix = selSapBrix(d.brixlog, c.sapBrix);
+  const brix = srBrixSource({ slog: d.slog, brixlog: d.brixlog, season: c.season, setting: c.sapBrix });
+  // Getting ready: nothing logged this season yet, and the season before has a record.
+  const ready = !d.anyThisSeason && !!d.prevSlog && SR_LOG_KINDS.some(k => ((d.prevSlog || {})[k] || []).length > 0);
   return { d, ops, now, todayIso, minutes, stage, stageIdx: SR_STAGE_IDS.indexOf(stage), wx, series, today, firstRun, jobs,
-    totals, totalsGal, taps, model, goalGal, brix };
+    totals, totalsGal, taps, tapsInfo, model, goalGal, brix, run, ready, dated };
 }
 
 // What a job's button does.
@@ -107,7 +120,7 @@ function RsSeason({ c, openLog }) {
             <span className="rs-when tn">{rsWhen(m.now, L)}</span>
             <RsLicenseChip c={c} />
           </div>
-          <div className="rs-eyebrow">{rt(L,'stageOf', { n: m.stageIdx + 1 })}</div>
+          <div className="rs-eyebrow">{m.ready ? rt(L,'readyFor', { y: c.season }) : m.d.closed ? rt(L,'seasonClosedE', { y: c.season }) : rt(L,'stageOf', { n: m.stageIdx + 1 })}</div>
           <h1>{rt(L, 'st_' + st.id)}</h1>
         </header>
         <div className="hb-banners"><RsBanners c={c} /></div>
@@ -125,18 +138,18 @@ function RsSeason({ c, openLog }) {
           <RsTankCard c={c} tanks={m.d.tanks} tankPins={m.d.tankPins} />
           <div className="rs-grid2" style={{ marginTop:10 }}>
             <RsNum label={rt(L,'nBrix')} value={fmt(m.brix.brix, 1)} unit="%"
-              sub={rt(L,'nBrixSub', { r: fmt(rule86(m.brix.brix), 0) })} href={rsHref('stage/collect')} />
-            <RsBoilNum c={c} boil={m.d.boil} />
+              sub={m.brix.from === 'setting' ? rt(L,'nBrixSubSet', { r: fmt(rule86(m.brix.brix), 0) }) : rt(L,'nBrixSub', { r: fmt(rule86(m.brix.brix), 0) })} href={rsHref('stage/collect')} />
+            <RsBoilNum c={c} boil={m.d.boil} m={m} />
             <RsNum label={rt(L,'nSapToday')} value={fmt(m.today.sapVal, 0)} unit={srU(c.units)}
               sub={m.today.sap ? rt(L, m.today.sap === 1 ? 'nEntries1' : 'nEntries', { n: m.today.sap }) : rt(L,'nNoSapToday')} href={rsHref('shack/log')} />
             <RsNum label={rt(L,'nSyrupSoFar')} value={fmt(m.totals.syT, 1)} unit={srU(c.units)}
-              sub={m.taps > 0 && !m.firstRun ? rt(L,'nPerTap', { v: fmt(m.totals.syT / m.taps, 2), u: srU(c.units) }) : rt(L,'nNoTaps')} href={rsHref('stage/recap')} />
+              sub={m.taps > 0 && !m.firstRun ? rt(L,'nPerTapOf', { v: fmt(m.totals.syT / m.taps, 2), u: srU(c.units), t: rtTapsLine(L, m.tapsInfo) }) : rt(L,'nNoTaps')} href={rsHref('stage/recap')} />
           </div>
         </div>
         <div className="hb-ops rs-wideonly"><RsOpsCard c={c} ops={m.ops} /></div>
         <div className="hb-going">
           <h2 className="rs-sec">{rt(L,'howGoing')}<a className="rs-more" href={rsHref('stage/recap')}>{rt(L,'allCharts')}<RsIcon name="chev" size={18} /></a></h2>
-          <RsSyrupVsLast c={c} slog={m.d.slog} prev={m.d.prevSlog} dayOfRun={m.series.dayOfRun} />
+          <RsSyrupVsLast c={c} slog={m.d.slog} prev={m.d.prevSlog} dayOfRun={m.run.kind === 'running' ? m.run.day : m.run.length} />
         </div>
         <div className="hb-log">
           {!night && <><h2 className="rs-sec">{rt(L,'logIt')}</h2>{logBtns}</>}
@@ -166,7 +179,9 @@ function rsContextLine(m, c) {
   const leak = m.jobs.find(j => j.id.startsWith('leak-'));
   if (leak && m.minutes < 12 * 60) return rt(L,'ctxLeak', { n: leak.vars.name });
   if (m.today.sapVal > 0) return rt(L,'ctxSapToday', { v: fmt(m.today.sapVal, 0), u });
-  if (m.series.dayOfRun) return rt(L,'ctxDay', { n: m.series.dayOfRun, v: fmt(m.totals.syT, 1), u });
+  if (m.ready) return rt(L,'ctxReady', { y: c.season, p: c.season - 1 });
+  if (m.run.kind === 'running') return rt(L,'ctxDay', { n: m.run.day, v: fmt(m.totals.syT, 1), u });
+  if (m.run.kind === 'over') return rt(L,'ctxOver', { y: c.season, n: m.run.length, v: fmt(m.totals.syT, 1), u });
   if (m.wx.data) {
     const good = [1,2,3,4,5,6,7,8,9,10].filter(i => { const d = m.wx.data[srIsoAdd(m.todayIso, i)]; return d && srDayClass(d.hi, d.lo) === 'ideal'; }).length;
     return rt(L, good === 1 ? 'ctxGood1' : 'ctxGood', { n: good });
@@ -184,7 +199,7 @@ function RsSeasonCard({ m, c }) {
       <div className="rs-split" style={{ alignItems:'flex-start' }}>
         <div>
           <div className="rs-eyebrow plain">{rt(L,'seasonWord')}</div>
-          <div className="rs-sday tn">{m.series.dayOfRun ? rt(L,'dayN', { n: m.series.dayOfRun }) : rt(L,'beforeRun')}</div>
+          <div className="rs-sday tn">{m.run.kind === 'running' ? rt(L,'dayN', { n: m.run.day }) : m.run.kind === 'over' ? rt(L,'runLasted', { n: m.run.length }) : m.ready ? rt(L,'readyShort', { y: c.season }) : rt(L,'beforeRun')}</div>
         </div>
         {pct != null && <a className="rs-sgoal" href={rsHref('stage/recap')}>
           <RsRing pct={pct} size={56} label={rt(L,'goalAria', { p: Math.round(pct), g: srVol(m.goalGal, c.units), u })} />
@@ -211,9 +226,12 @@ function RsSeasonCard({ m, c }) {
 function RsTankCard({ c, tanks, tankPins, big }) {
   const L = c.lang, u = srU(c.units);
   const t = (tanks || []).find(x => x.levelGal != null);
+  // Sap stops running below freezing: "Full at" comes from the hourly forecast, adding the fill
+  // rate only in hours above 32°F, and says it is paused while it is freezing (srTankFull).
+  const tf = useRsTankFull(t);
   if (t) {
     const pct = t.capGal > 0 ? Math.round(t.levelGal / t.capGal * 100) : 0;
-    const plan = srRoPlan({ levelGal:t.levelGal, capGal:t.capGal, fillGalH:t.fillGalH, roGph:null });
+    const plan = { fullH: tf.fullH };
     return (
       <a className="rs-card rs-tankcard" href={rsHref('stage/collect')} aria-label={rt(L,'tankAria', { n:t.name, v:srVol(t.levelGal, c.units), u, p:pct })}>
         <RsTankViz level={t.levelGal} cap={t.capGal} w={big ? 112 : 92} h={big ? 176 : 150} />
@@ -222,8 +240,8 @@ function RsTankCard({ c, tanks, tankPins, big }) {
           <span className="rs-v tn">{srVol(t.levelGal, c.units)}<small>{u}</small></span>
           <span className="rs-pctline tn"><b>{pct}%</b> {rt(L,'fullOf', { c: srVol(t.capGal, c.units), u })}</span>
           <RsKv rows={[
-            t.fillGalH ? [rt(L,'filling'), `+${srVol(t.fillGalH, c.units)} ${u}/h`] : null,
-            plan.fullH != null ? [rt(L,'fullAt'), srClock(Date.now() + plan.fullH * 3600000, L)] : null,
+            t.fillGalH ? [rt(L,'filling'), tf.paused ? rt(L,'fillPaused') : `+${srVol(t.fillGalH, c.units)} ${u}/h`] : null,
+            plan.fullH != null ? [rt(L,'fullAt'), srClock(Date.now() + plan.fullH * 3600000, L)] : t.fillGalH && tf.paused ? [rt(L,'fullAt'), rt(L,'fullAfterThaw')] : null,
           ]} />
           {t.readMs && <span className="rs-fresh"><RsIcon name="clock" size={13} />{rt(L,'readAt', { t: srClock(t.readMs, L) })}</span>}
         </span>
@@ -246,14 +264,16 @@ function RsTankCard({ c, tanks, tankPins, big }) {
 // Boiling: a live, estimated syrup counter while a boil session runs. Rate =
 // srSyrupRate(evaporator rate from the pan setting, sap Brix); the estimate is
 // labelled as one. Otherwise the last logged boil.
-function RsBoilNum({ c, boil }) {
+function RsBoilNum({ c, boil, m }) {
   const L = c.lang, u = srU(c.units);
   const on = !!(boil && boil.start);
   const now = useRsTick(on && !srRM());
   if (!on) return <RsNum label={rt(L,'nBoiling')} value={rt(L,'nOff')} sub={rt(L,'nStartBoil')} href={rsHref('stage/boil')} />;
-  const rate = srSyrupRate(srPanRate(ls.get('sg_panIdx', 0), ls.get('sg_panW',''), ls.get('sg_panH','')), c.sapBrix);
-  const est = rate * Math.max(0, (now - boil.start) / 3600000);
+  // The same expected-so-far the Boil screen shows (srBoilExpected: sap fed in, else the pan's
+  // rate, at the feed's Brix).
   const sess = srSessInUnit(boil, c.units, srLegacyUnits()), drawn = sess.syrup || 0;
+  const est = srBoilExpected({ evapGph: selEvap().rate, hrs: Math.max(0, (now - boil.start) / 3600000), sapInGal: toGal(sess.sap || 0, c.units),
+    sapBrix: m ? m.brix.brix : c.sapBrix, concBrix: parseFloat(ls.get('sg_dx_robrix', 8)) || 8, ro: m ? selUsesRo(m.d.slog) : false }).gal;
   return <RsNum label={rt(L,'nBoiling')} live={rt(L,'live')} value={srVol(est, c.units, 2)} unit={u}
     sub={drawn > 0 ? rt(L,'nEstBoilD', { d: fmt(drawn, 1), u }) : rt(L,'nEstBoil')} href={rsHref('stage/boil')} />;
 }

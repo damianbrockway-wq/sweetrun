@@ -35,7 +35,7 @@ function RsWeatherStage({ c }) {
   const good = days.filter(d => d.cls === 'ideal').length;
   let streak = null;
   for (let k = 0; k < days.length - 1; k++) if (days[k].cls === 'ideal' && days[k + 1].cls === 'ideal') { streak = days[k]; break; }
-  const tonight = wx.data && wx.data[m.minutes >= 720 ? srIsoAdd(m.todayIso, 1) : m.todayIso];
+  const tonight = wx.data && wx.data[srTonightIsoOf(m.todayIso, m.minutes)];
   const x = v => Math.max(0, Math.min(100, (v - 10) / 50 * 100));
   const clsWord = cls => rt(L, cls === 'ideal' ? 'wxGoodRun' : cls === 'freezeThaw' ? 'wxFreezeThaw' : cls === 'tooWarm' ? 'wxTooWarm' : cls === 'allFreeze' ? 'wxAllFreeze' : 'wxNoRun');
   const clsKind = cls => cls === 'ideal' ? 'ok' : cls === 'allFreeze' ? 'ice' : 'idle';
@@ -186,7 +186,8 @@ function RsTapStage({ c }) {
           <div>
             <div className="rs-card">
               <div className="rs-split">
-                <div><div className="rs-meta">{rt(L,'tapsPlanned')}</div><div className="rs-big tn">{fmt(m.taps, 0)}<small>{rt(L,'tapsWord')}</small></div></div>
+                <div><div className="rs-meta">{rt(L,'tapsPlanned')}</div><div className="rs-big tn">{fmt(m.taps, 0)}<small>{rt(L,'tapsWord')}</small></div>
+                  <div className="rs-meta tn" id="rs-taps-line">{m.tapsInfo.differ ? rtTapsLine(L, m.tapsInfo) : rtTapsSrc(L, m.tapsInfo)}</div></div>
                 <RsSt kind={trees.length ? 'ok' : 'idle'}>{rt(L, trees.length ? 'onMapN' : 'noneOnMap', { n: trees.length })}</RsSt>
               </div>
               {trees.length > 0 && <>
@@ -194,7 +195,7 @@ function RsTapStage({ c }) {
                 <p className="rs-meta tn" style={{ marginTop:6 }}>{rt(L,'tapsMapped', { t: fmt(tapSum, 0), n: fmt(trees.length, 0) })}</p>
                 <RsKv rows={Object.keys(byLine).sort().map(k => [lineName(k), rtTreesTaps(L, byLine[k].trees, byLine[k].taps)])} />
               </>}
-              <p className="rs-note">{rt(L,'tapsSetting')}</p>
+              <p className="rs-note">{rt(L,'tapsRule')}</p>
             </div>
             <h2 className="rs-sec">{rt(L,'howManyTaps')}</h2>
             <div className="rs-card">

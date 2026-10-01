@@ -24,6 +24,12 @@ function RsBanners({ c }) {
       <span className="rs-bt"><b>{rt(L,'bExpiredT')}</b><span>{rt(L,'bExpiredP')}</span></span>
       <button type="button" className="rs-bbtn primary" onClick={()=>c.setShowLicense(true)}>{rt(L,'bGetPass')}</button>
     </div>);
+  // A Season Pass key this browser cannot check is not taken on trust (fix pass 1): say why.
+  if (c.lic.cantCheck) out.push(
+    <div key="cc" className="rs-banner bad" role="status">
+      <span className="rs-bic"><RsIcon name="lock" size={24} /></span>
+      <span className="rs-bt"><b>{rt(L,'passCantCheckT')}</b><span>{rt(L,'passCantCheck')}</span></span>
+    </div>);
   if (!ls.get('sg_wizard_done', false) && parseInt(c.trees) === 0 && !c.onboard && !c.showWizard) out.push(
     <div key="fs" className="rs-banner tap">
       <span className="rs-bic"><RsIcon name="tree" size={26} /></span>
@@ -163,7 +169,14 @@ function RunSheetApp() {
             onClose={()=>{ ls.set('sg_onboarded', true); c.setOnboard(false); c.setShowWizard(false); }}
             onComplete={data=>{
               if(data.trees > 0) { c.setTrees(data.trees); ls.set('sg_trees', data.trees); }
+              // Every choice in the setup reaches the screens that use it (fix pass 1): the fuel (its
+              // unit price follows it, srFuelCostOf), the pan (as sg_panIdx, marked picked) and the
+              // syrup price (per US gallon). The season's fuel total stays in sg_wizard_data for Break-even.
               if(data.fuelType) { c.setFuelType(data.fuelType); ls.set('sg_fuel', data.fuelType); }
+              const pi = data.hasEvap ? srPanIdxOf(data.panSize) : null;
+              if(pi != null) { ls.set('sg_panIdx', pi); ls.set('sg_pan_set', true); ls.set('sg_pan_rate', ''); }
+              if(data.syrupPrice > 0) ls.set('sg_price_syrup', data.syrupPrice);
+              srDataChanged();
               c.setOnboard(false); c.setShowWizard(false); srToast(rt(c.lang,'wzSaved'));
             }}
           />

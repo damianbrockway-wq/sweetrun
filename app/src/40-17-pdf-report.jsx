@@ -15,7 +15,9 @@ function srLoadJsPDF() {
   }
   return _jspdfPromise;
 }
-async function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix }) {
+// Fix pass 1: taps (srTaps), Brix (srBrixSource) and grades (srGradeMix, batches included) come in
+// from srPdfArgs, the same numbers the screens show.
+async function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix, taps, brix, batches: batchList }) {
   try { await srLoadJsPDF(); }
   catch { alert(t(ls.get('sg_lang','en'),'pdfOffline')); return; }
   const { jsPDF } = window.jspdf;
@@ -28,15 +30,16 @@ async function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix })
   const tot  = k => ((slog[k]||[]).reduce((s,e)=>s+(parseFloat(e.val)||0),0));
   const sapT = tot('sapCollected'), syT = tot('syrupMade');
   const ratio = syT > 0 ? (sapT/syT).toFixed(1) : '—';
-  const goal  = trees * yieldMidOf(yieldModelSaved());     // gallons
+  const T = taps || srTaps({ trees });
+  const B = brix || srBrixSource({ slog: (logs || {})[season] || {}, brixlog: brixLog, season, setting: sapBrix });
+  const goal  = T.taps * yieldMidOf(yieldModelSaved());     // gallons
   const syGal = toGal(syT, units);                          // syT is display units; goal is gallons
   const pctGoal = goal > 0 ? Math.round((syGal/goal)*100) : 0;
 
-  // Grade breakdown from syrup entries
+  // Grade breakdown: syrup entries, and batch grades for syrup logged without one (srGradeMix)
+  const gm = srGradeMix(slog.syrupMade, batchList || [], season).grades;
   const gradeTotals = {};
-  (slog.syrupMade||[]).forEach(e => {
-    if (e.grade && e.grade !== '—') gradeTotals[e.grade] = (gradeTotals[e.grade]||0) + (parseFloat(e.val)||0);
-  });
+  Object.keys(gm).forEach(g => { if (g !== 'none') gradeTotals[g] = gm[g]; });
 
   const W = 210, M = 18;
   let y = M;
@@ -62,12 +65,13 @@ async function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix })
   doc.setDrawColor(200,200,200); doc.line(M, y, W-M, y); y += 6;
 
   const summaryRows = [
-    ['Trees Tapped',    `${trees} trees`],
+    ['Taps',            T.differ ? `${T.planned} planned, ${T.mapped} mapped` : `${T.taps} taps`],
     ['Sap Collected',   `${(+sapT).toFixed(0)} ${u}`],
     ['Syrup Produced',  `${(+syT).toFixed(1)} ${u}`],
     ['Sap:Syrup Ratio', `${ratio}:1`],
     ['Season Target',   `${conv(goal)} ${u}  (${syT>0?pctGoal:'0'}% of goal)`],
-    ['Sap °Brix',       `${sapBrix}° avg`],
+    ['Syrup per Tap',   T.taps > 0 ? `${(syT / T.taps).toFixed(3)} ${u}` : '0'],
+    ['Sap °Brix',       `${(+B.season).toFixed(1)}° ${B.seasonFrom === 'sap' ? 'avg, weighted by sap' : B.seasonFrom === 'tree' ? 'avg of tree readings' : '(your setting)'}`],
   ];
 
   doc.setFont('helvetica','normal'); doc.setFontSize(10);
@@ -97,14 +101,15 @@ async function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix })
   }
 
   // ── Brix Trend ──────────────────────────────────────────────
-  if (brixLog.length > 0) {
+  const bser = B.series || [];
+  if (bser.length > 0) {
     doc.setFont('helvetica','bold'); doc.setFontSize(12);
     doc.setTextColor(30,30,30);
     doc.text('Sap Brix Readings', M, y); y += 6;
     doc.setDrawColor(200,200,200); doc.line(M, y, W-M, y); y += 6;
     doc.setFont('helvetica','normal'); doc.setFontSize(10);
-    const peak = Math.max(...brixLog.map(e=>e.brix));
-    const last = brixLog[brixLog.length-1].brix;
+    const peak = Math.max(...bser.map(e=>e.brix));
+    const last = bser[bser.length-1].brix;
     doc.setTextColor(100,100,100); doc.text('Peak Brix', M, y);
     doc.setTextColor(20,20,20); doc.setFont('helvetica','bold'); doc.text(`${peak.toFixed(1)}°`, W/2, y);
     doc.setFont('helvetica','normal'); y += 7;
@@ -112,7 +117,7 @@ async function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix })
     doc.setTextColor(20,20,20); doc.setFont('helvetica','bold'); doc.text(`${last.toFixed(1)}°`, W/2, y);
     doc.setFont('helvetica','normal'); y += 7;
     doc.setTextColor(100,100,100); doc.text('Readings logged', M, y);
-    doc.setTextColor(20,20,20); doc.setFont('helvetica','bold'); doc.text(`${brixLog.length}`, W/2, y);
+    doc.setTextColor(20,20,20); doc.setFont('helvetica','bold'); doc.text(`${B.n}`, W/2, y);
     doc.setFont('helvetica','normal'); y += 10;
   }
 

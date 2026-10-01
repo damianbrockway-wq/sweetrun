@@ -19,7 +19,12 @@ function RsTapGuide({ c }) {
   useEffect(() => { if (armed == null) return; const tm = setTimeout(() => setArmed(null), 3000); return () => clearTimeout(tm); }, [armed]);
   const notes = React.useMemo(() => ls.get('sg_treenotes', []) || [], [v]);
   const rots = React.useMemo(() => ls.get('sg_rotation', []) || [], [v]);
+  // Taps per tree comes from the size; the season's taps are the one count (srTaps), so the
+  // estimate below matches Season, Recap and the PDF.
   const est = srTapEstimate(c.trees, parseFloat(dbh) || 0, c.sapBrix, yieldModelSaved());
+  const tapsInfo = React.useMemo(() => selTaps(c.trees), [v, c.trees]);
+  const sapGalT = Math.round(tapsInfo.taps * yieldMidOf(yieldModelSaved()) * (RULE_DIVISOR / (parseFloat(c.sapBrix) || 2)));
+  const syrupGalT = syrupY(sapGalT, c.sapBrix);
   const sp = SPOUTS[parseInt(spout) || 0] || SPOUTS[0];
   const del = (key, list, id) => { const k = key + id; if (armed !== k) { setArmed(k); srToast(rt(L,'tapAgainDelete')); return; }
     if (ls.set(key, list.filter(x => x.id !== id))) { setArmed(null); srDataChanged(); } };
@@ -43,9 +48,10 @@ function RsTapGuide({ c }) {
             <div className="rs-hr" />
             <div className="rs-grid2">
               <div><div className="rs-meta">{rt(L,'tgPerTree')}</div><div className="rs-big tn">{est.tpt}<small>{rt(L, est.tpt === 1 ? 'tapWord1' : 'tapsWord')}</small></div></div>
-              <div><div className="rs-meta">{rt(L,'tgTotal')}</div><div className="rs-big tn">{fmt(est.tot, 0)}<small>{rt(L,'tapsWord')}</small></div></div>
-              <div><div className="rs-meta">{rt(L,'tgSap')}</div><div className="rs-mid tn">{srVol(est.sapGal, c.units)}<small>{u}</small></div></div>
-              <div><div className="rs-meta">{rt(L,'tgSyrup')}</div><div className="rs-mid tn">{srVol(est.syrupGal, c.units, 1)}<small>{u}</small></div></div>
+              <div><div className="rs-meta">{rt(L,'tgTotalSeason')}</div><div className="rs-big tn">{fmt(tapsInfo.taps, 0)}<small>{rt(L,'tapsWord')}</small></div>
+                <div className="rs-meta tn" id="rs-tg-taps">{tapsInfo.differ ? rtTapsLine(L, tapsInfo) : rtTapsSrc(L, tapsInfo)}</div></div>
+              <div><div className="rs-meta">{rt(L,'tgSap')}</div><div className="rs-mid tn">{srVol(sapGalT, c.units)}<small>{u}</small></div></div>
+              <div><div className="rs-meta">{rt(L,'tgSyrup')}</div><div className="rs-mid tn">{srVol(syrupGalT, c.units, 1)}<small>{u}</small></div></div>
             </div>
             <p className="rs-note">{rt(L,'tgEstNote', { r: fmt(rule86(c.sapBrix), 0), m: srModelName(yieldModelSaved().label, L) })}</p>
           </div>
@@ -88,7 +94,7 @@ function RsTreeNoteSheet({ c, onClose }) {
   const L = c.lang;
   const [f, setF] = useState({ tree:'', obs:'', date: srToday() });
   const [fail, setFail] = useState(false);
-  const save = () => {
+  const save = () => { if (srFormBlocked()) return;   // a refused number blocks the save (fix pass 1)
     if (!f.tree && !f.obs) { const el = document.getElementById('rs-tn-tree'); el && el.focus(); return; }
     const all = ls.get('sg_treenotes', []) || [];
     if (!ls.set('sg_treenotes', [...all, { ...f, id: Date.now() }])) { setFail(true); return; }
@@ -113,7 +119,7 @@ function RsRotSheet({ c, onClose }) {
   const L = c.lang;
   const [f, setF] = useState({ tree:'', side:'N', year: new Date().getFullYear() });
   const [fail, setFail] = useState(false);
-  const save = () => {
+  const save = () => { if (srFormBlocked()) return;   // a refused number blocks the save (fix pass 1)
     if (!f.tree) { const el = document.getElementById('rs-rot-tree'); el && el.focus(); return; }
     const all = ls.get('sg_rotation', []) || [];
     if (!ls.set('sg_rotation', [...all, { ...f, id: Date.now() }])) { setFail(true); return; }
@@ -136,7 +142,7 @@ function RsRotSheet({ c, onClose }) {
 // ── Tubing (replaces TubingTab; nothing stored, as before) ───────────────────
 function RsTubing({ c }) {
   const L = c.lang;
-  const [f, setF] = useState(() => ({ taps: parseInt(c.trees) || '', ml: '', g: '', tv: 25, lt: 12 }));
+  const [f, setF] = useState(() => ({ taps: selTaps(c.trees).taps || '', ml: '', g: '', tv: 25, lt: 12 }));
   const set = k => x => setF(p => ({ ...p, [k]: x }));
   const r = srTubing(f.taps, f.ml, f.g, f.tv, f.lt);
   const presets = [['small', 200, 800, 6], ['mid', 500, 2000, 8], ['large', 1200, 4000, 10]];
@@ -198,10 +204,15 @@ function RsTubing({ c }) {
 // ── Evaporator, fuel, true cost and retail (replaces EvapTab) ───────────────
 function RsEvaporator({ c }) {
   const L = c.lang, u = srU(c.units);
-  const [panIdx, setPanIdx] = useRsPref('sg_panIdx', 0);
+  // The pan and rate every screen uses (selEvap): the setup's pan until he picks one here;
+  // a rate he types is kept (sg_pan_rate, gal/h) instead of being lost on leaving the screen.
+  const ev0 = React.useMemo(() => selEvap(), []);
+  const [panIdx, setPanIdxS] = useState(ev0.panIdx);
+  const setPanIdx = i => { setPanIdxS(i); ls.set('sg_panIdx', i); ls.set('sg_pan_set', true); srDataChanged(); };
   const [panW, setPanW] = useRsPref('sg_panW', '');
   const [panH, setPanH] = useRsPref('sg_panH', '');
-  const [customR, setCustomR] = useState('');
+  const [customR, setCustomRS] = useState(() => { const r = parseFloat(ls.get('sg_pan_rate', '')); return r > 0 ? Math.round(fromGal(r, c.units)) : ''; });
+  const setCustomR = x => { setCustomRS(x); const n = parseFloat(x); ls.set('sg_pan_rate', n > 0 ? +toGal(n, c.units).toFixed(3) : ''); srDataChanged(); };
   const [sap, setSap] = useState(() => c.units === 'L' ? 1900 : 500);
   const [laborHrs, setLaborHrs] = useRsPref('sg_laborhrs', 0);
   const [laborRate, setLaborRate] = useState(() => getLaborRate());
@@ -210,7 +221,6 @@ function RsEvaporator({ c }) {
   const [margin, setMargin] = useRsPref('sg_retailmargin', 40);
   const [cpgU, setCpgU] = useState('');
   const er = srEvapRate(panIdx, panW, panH, customR === '' ? '' : toGal(parseFloat(customR) || 0, c.units));
-  useEffect(() => { c.setEvapRate(er.rate); }, [er.rate]);
   const setLR = x => { setLaborRate(x); if (x !== '') ls.set('sg_rate_labor', x); };
   const sapGal = toGal(parseFloat(sap) || 0, c.units);
   const k = srEvapCosts({ fuelType:c.fuelType, sapGal, brix:c.sapBrix, rate:er.rate, fuelCost:c.fuelCost, laborHrs, laborRate,
@@ -226,9 +236,9 @@ function RsEvaporator({ c }) {
         <div>
           <div className="rs-card">
             <label className="rs-fl" style={{ marginTop:0 }}>{rt(L,'evPan')}</label>
-            <div className="rs-opts five" role="group" aria-label={rt(L,'evPan')}>{PAN_SIZES.map((p, i) => <button key={i} type="button" className={`rs-opt${(parseInt(panIdx) || 0) === i ? ' on' : ''}`}
+            <div className="rs-opts five" role="group" aria-label={rt(L,'evPan')}>{PAN_ORDER.map(i => { const p = PAN_SIZES[i]; return <button key={i} type="button" className={`rs-opt${(parseInt(panIdx) || 0) === i ? ' on' : ''}`}
               aria-pressed={(parseInt(panIdx) || 0) === i} onClick={() => { setPanIdx(i); setCustomR(''); }}>
-              <b>{i === CUSTOM_PAN_IDX ? rt(L,'evCustom') : p.label.replace(/ ft.*$/, '')}</b><span className="tn">{i === CUSTOM_PAN_IDX ? rt(L,'evYourSize') : `${srVol(p.rate, c.units)} ${u}/h`}</span></button>)}</div>
+              <b>{i === CUSTOM_PAN_IDX ? rt(L,'evCustom') : p.label.replace(/ ft.*$/, '')}</b><span className="tn">{i === CUSTOM_PAN_IDX ? rt(L,'evYourSize') : `${srVol(p.rate, c.units)} ${u}/h`}</span></button>; })}</div>
             {er.isCustomPan && <div className="rs-grid2">
               <div><label className="rs-fl" htmlFor="rs-ev-w">{rt(L,'evWidth')}</label><RsStepper id="rs-ev-w" value={panW} onChange={setPanW} steps={[-0.5, 0.5]} dp={1} unit="ft" label={rt(L,'evWidth')} min={0} max={20} big={false} base={2} /></div>
               <div><label className="rs-fl" htmlFor="rs-ev-h">{rt(L,'evLength')}</label><RsStepper id="rs-ev-h" value={panH} onChange={setPanH} steps={[-0.5, 0.5]} dp={1} unit="ft" label={rt(L,'evLength')} min={0} max={30} big={false} base={6} /></div>
@@ -365,7 +375,7 @@ function RsFinishing({ c }) {
 function RsBreakeven({ c }) {
   const L = c.lang, u = srU(c.units);
   const wiz = ls.get('sg_wizard_data', {}) || {};
-  const [taps, setTaps] = useRsPref('sg_bev_taps', parseInt(c.trees) || 0);
+  const [taps, setTaps] = useRsPref('sg_bev_taps', selTaps(c.trees).taps || 0);
   const [fuel, setFuel] = useRsPref('sg_bev_fuel', wiz.fuelCost || 300);
   const [price, setPriceS] = useState(() => getSyrupPrice());
   const [sup, setSup] = useRsPref('sg_bev_supply', 0);

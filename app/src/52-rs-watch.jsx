@@ -97,7 +97,7 @@ function RsWatch({ c, sub }) {
   const alerts = [
     ...V.pumps.filter(p => p.status === 'fault').map(p => ({ k: 'f' + p.id, tone: 'bad', icon: 'alert', fam: 'bad', t: rt(L, 'wFault', { n: p.name }), s: p.note || rt(L, 'sinceT', { t: srWhen2(p.statusMs, model.now, L) }), go: 'pumps/' + p.id })),
     ...V.leaks.map(l => ({ k: 'l' + l.id, tone: 'bad', icon: 'alert', fam: 'bad', t: rt(L, 'wLeak', { n: l.label }), s: rt(L, 'wLeakS', { v: fmt(l.latest.v, 1), d: fmt(l.leak.drop, 1) }), line: l.id })),
-    ...V.pumps.filter(p => p.status === 'running' && p.fuel && p.fuel.hoursLeft != null && p.fuel.hoursLeft <= 12).map(p => ({ k: 'g' + p.id, tone: p.fuel.hoursLeft <= 4 ? 'bad' : '', icon: 'fuel', fam: 'power',
+    ...V.pumps.filter(p => p.status === 'running' && ['low', 'night'].includes(srFuelState(p.fuel, srMinutesOf(new Date(model.now)), model.prefs))).map(p => ({ k: 'g' + p.id, tone: 'bad', icon: 'fuel', fam: 'power',
       t: rt(L, 'wFuel', { n: p.name, h: srDur(p.fuel.hoursLeft, L) }), s: p.fuel.emptyAtMs ? rt(L, 'dryAt', { t: srWhenAhead(p.fuel.emptyAtMs, model.now, L) }) : '', go: 'pumps/' + p.id })),
     ...V.tanks.filter(t => t.levelGal != null && t.capGal > 0 && t.levelGal / t.capGal >= .85).map(t => ({ k: 't' + t.id, tone: 'bad', icon: 'tank', fam: 'collect',
       t: rt(L, 'wTankFull', { n: t.name }), s: rt(L, 'tankPct', { p: Math.round(t.levelGal / t.capGal * 100) }), go: 'pumps/tank/' + t.id })),
