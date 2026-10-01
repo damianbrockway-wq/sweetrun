@@ -31,7 +31,8 @@ function RsWeatherStage({ c }) {
   const m = useRsSeasonModel(c);
   const [editLoc, setEditLoc] = useState(false);
   const wx = m.wx;
-  const days = [0,1,2,3,4,5,6,7,8,9].map(i => { const iso = srIsoAdd(m.todayIso, i); const d = wx.data && wx.data[iso]; return d ? { iso, i, hi: Math.round(d.hi), lo: Math.round(d.lo), cls: srDayClass(d.hi, d.lo) } : null; }).filter(Boolean);
+  // Fix pass 2 (P2): the same 7 days from today that Season and the forecast count (srRunDays).
+  const days = Array.from({ length: SR_RUN_WINDOW }, (_, i) => i).map(i => { const iso = srIsoAdd(m.todayIso, i); const d = wx.data && wx.data[iso]; return d ? { iso, i, hi: Math.round(d.hi), lo: Math.round(d.lo), cls: srDayClass(d.hi, d.lo) } : null; }).filter(Boolean);
   const good = days.filter(d => d.cls === 'ideal').length;
   let streak = null;
   for (let k = 0; k < days.length - 1; k++) if (days[k].cls === 'ideal' && days[k + 1].cls === 'ideal') { streak = days[k]; break; }
@@ -46,7 +47,7 @@ function RsWeatherStage({ c }) {
   else if (wx.status === 'error') body = <div className="rs-err" role="alert"><b>{rt(L,'wxErrT')}</b><p>{rt(L,'wxErrP')}</p><RsBtn kind="secondary" onClick={wx.retry}>{rt(L,'tryAgain')}</RsBtn></div>;
   else body = (
     <div className="rs-card">
-      <div className="rs-split"><div><div className="rs-meta">{rt(L,'goodDays10')}</div><div className="rs-big tn">{good}<small>{rt(L,'ofN', { n: days.length })}</small></div></div>
+      <div className="rs-split"><div><div className="rs-meta">{rt(L,'runDaysShort', { d: days.length })}</div><div className="rs-big tn">{good}<small>{rt(L,'ofN', { n: days.length })}</small></div></div>
         <span className="rs-fresh"><RsIcon name="clock" size={14} />{rt(L,'updatedAt', { t: srClock(wx.at || Date.now(), L) })}</span></div>
       <p className="rs-meta" style={{ marginTop:8 }}>{rt(L,'runRule')}</p>
       <div style={{ marginTop:14 }}>
@@ -233,7 +234,7 @@ function RsTapStage({ c }) {
               ) : <>
                 <div className="rs-list" style={{ marginTop:12 }}>
                   {shown.map(p => <RsRow key={p.id} title={p.tagged || p.label || rt(L,'treeWord')}
-                    sub={[p.dbh ? `${p.dbh} ${srUnitL('in', L)}` : null, rt(L, tapsOf(p) === 1 ? 'nTap1' : 'nTaps', { n: tapsOf(p) }), p.mainline ? lineName(p.mainline) : null, look(p) ? rt(L,'needsLook') : null].filter(Boolean).join(' · ')}
+                    sub={[p.dbh ? srDbhTxt(p.dbh) : null, rt(L, tapsOf(p) === 1 ? 'nTap1' : 'nTaps', { n: tapsOf(p) }), p.mainline ? lineName(p.mainline) : null, look(p) ? rt(L,'needsLook') : null].filter(Boolean).join(' · ')}
                     onClick={() => setTree(p)} />)}
                 </div>
                 {list.length > 25 && !all && <div style={{ marginTop:10 }}><RsBtn kind="secondary" onClick={() => setAll(true)}>{rt(L,'showAllN', { n: list.length })}</RsBtn></div>}
@@ -250,7 +251,7 @@ function RsTapStage({ c }) {
         <RsKv rows={[
           tree.label && tree.tagged ? [rt(L,'nameWord'), tree.label] : null,
           tree.species ? [rt(L,'species'), String(tree.species).replace(/_/g, ' ')] : null,
-          tree.dbh ? [rt(L,'diameter'), `${tree.dbh} ${srUnitL('in', L)}`] : null,
+          tree.dbh ? [rt(L,'diameter'), srDbhTxt(tree.dbh)] : null,
           [rt(L,'tapsWordC'), String(tapsOf(tree))],
           tree.mainline ? [rt(L,'mainlineWord'), lineName(tree.mainline)] : null,
           tree.health ? [rt(L,'health'), String(tree.health)] : null,
@@ -271,6 +272,7 @@ function RsLinesStage({ c }) {
   const per = id => trees.filter(p => p.mainline === id);
   const tapsOf = p => parseInt(p.taps) || 0;
   const tanks = m.d.tanks.filter(t => t.levelGal != null);
+  const bk = !!(c.profile && !c.profile.showTubing);
   return (
     <>
       <RsHero photo="bush-aerial" />
@@ -281,10 +283,11 @@ function RsLinesStage({ c }) {
           <div>
             <a className="rs-card rs-bushcard" href={rsHref('bush')}>
               <RsTile icon="map" family="lines" size={48} />
-              <span className="rs-rt"><b>{rt(L,'sc_map')}</b><span className="tn">{rt(L,'bushCounts', { m: ml.length, p: m.d.pins.length, t: m.d.tankPins.length })}</span></span>
+              <span className="rs-rt"><b>{rt(L,'sc_map')}</b><span className="tn">{bk ? rt(L,'bushCountsBk', { p: m.d.pins.length, t: m.d.tankPins.length }) : rt(L,'bushCounts', { m: ml.length, p: m.d.pins.length, t: m.d.tankPins.length })}</span></span>
               <span className="rs-chev"><RsIcon name="chev" size={22} /></span>
             </a>
-            <h2 className="rs-sec">{rt(L,'mainlines')}</h2>
+            {/* Fix pass 2 (item 35): a bucket producer with no mainline is not shown an empty tubing section. */}
+            {bk ? null : <><h2 className="rs-sec">{rt(L,'mainlines')}</h2>
             {ml.length === 0 ? <div className="rs-empty"><b>{rt(L,'noLinesT')}</b><p>{rt(L,'noLinesP')}</p></div> :
               <div className="rs-list">
                 {ml.map(x => { const tr = per(x.id); return (
@@ -292,7 +295,7 @@ function RsLinesStage({ c }) {
                     sub={tr.length ? rtTreesTaps(L, tr.length, tr.reduce((s, p) => s + tapsOf(p), 0)) : rt(L,'noTreesOnLine')}
                     value={<svg className="rs-mldash" width="36" height="6" viewBox="0 0 36 6" aria-hidden="true"><line x1="2" y1="3" x2="34" y2="3" strokeDasharray={SR_LINE_DASH[ml.indexOf(x) % SR_LINE_DASH.length] || undefined} /></svg>} href={rsHref('bush/line/' + x.id)} />); })}
               </div>}
-            <p className="rs-note">{rt(L,'linesNote')}</p>
+            <p className="rs-note">{rt(L,'linesNote')}</p></>}
           </div>
           <div>
             <h2 className="rs-sec">{rt(L,'tanksWord')}</h2>
@@ -303,12 +306,18 @@ function RsLinesStage({ c }) {
             {m.d.tankPins.length > 0 && <div className="rs-list" style={{ marginTop:12 }}>
               {m.d.tankPins.map(p => <RsRow key={p.id} icon="tank" family="collect" title={p.label || rt(L,'tankWord')} sub={p.notes || rt(L,'onTheMap')} href={rsHref('bush')} />)}
             </div>}
+            {bk ? <>
+              <div style={{ marginTop:16 }}><RsBtn icon="map" href={rsHref('bush')}>{rt(L,'openBushMap')}</RsBtn></div>
+              <div className="rs-list" style={{ marginTop:12 }}>
+                <RsRow icon="plus" family="lines" title={rt(L,'tubingLaterT')} sub={rt(L,'tubingLaterS')} href={rsHref('bush/tools')} />
+              </div>
+            </> : <>
             <h2 className="rs-sec">{rt(L,'tubingWord')}</h2>
             <div className="rs-list">
               <RsRow icon="calc" family="lines" title={rt(L,'sc_tubing')} sub={rt(L,'sc_tubing_s')} href={rsHref('stage/lines/tubing')} />
               <RsRow icon="up" family="lines" title={rt(L,'importKml')} sub={rt(L,'importKmlS')} href={rsHref('bush/tools')} />
             </div>
-            <div style={{ marginTop:16 }}><RsBtn icon="plus" onClick={() => rsGo('bush/tools')}>{rt(L,'drawLine')}</RsBtn></div>
+            <div style={{ marginTop:16 }}><RsBtn icon="plus" onClick={() => rsGo('bush/tools')}>{rt(L,'drawLine')}</RsBtn></div></>}
           </div>
         </div>
       </div>

@@ -235,9 +235,9 @@ function srAddMainline(label) {
   const saved = srArr(ls.get('sg_mainlines', null)).filter(m => m && m.id);
   const base = saved.length ? saved.map(m => ({ id: String(m.id), label: String(m.label || 'Mainline ' + m.id), color: m.color || SR_ML_STORED[0] }))
     : selMainlines(ls.get('sg_lines_pins', [])).map((m, i) => ({ ...m, color: SR_ML_STORED[i % SR_ML_STORED.length] }));
-  const used = new Set(base.map(m => m.id));
-  const id = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].find(ch => !used.has(ch));
-  if (!id) return null;
+  // Fix pass 2 (item 27): after Z come AA, AB... (srNextMainlineId). A 27th line is a line.
+  const id = srNextMainlineId(base.map(m => m.id));
+  if (!id) { SR_WRITE_FAIL = null; return null; }
   const list = [...base, { id, label: label || 'Mainline ' + id, color: SR_ML_STORED[base.length % SR_ML_STORED.length] }];
   if (!srOpsSet('sg_mainlines', list)) return null;
   return id;
@@ -247,6 +247,41 @@ function srRenameMainline(id, label) {
   const base = saved.length ? saved : selMainlines(ls.get('sg_lines_pins', [])).map((m, i) => ({ ...m, color: SR_ML_STORED[i % SR_ML_STORED.length] }));
   const ok = srOpsSet('sg_mainlines', base.map(m => String(m.id) === id ? { id: String(m.id), label, color: m.color || SR_ML_STORED[0] } : { id: String(m.id), label: String(m.label || 'Mainline ' + m.id), color: m.color || SR_ML_STORED[0] }));
   return ok;
+}
+// Fix pass 2 (item 27): delete a mainline. Its trees, pumps and gauges let go of it
+// (srMainlineDelete); its readings stay in sg_readings. Each write is checked; the first
+// refused one stops the rest, and the line itself goes first so nothing points at it after.
+function srDeleteMainline(id) {
+  const pins = srArr(ls.get('sg_lines_pins', []));
+  const saved = srArr(ls.get('sg_mainlines', null)).filter(m => m && m.id);
+  const base = saved.length ? saved : selMainlines(pins).map((m, i) => ({ ...m, color: SR_ML_STORED[i % SR_ML_STORED.length] }));
+  const D = srMainlineDelete(id, { mainlines: base, pins, pumps: srArr(ls.get('sg_pumps', [])), lineMeta: srObj(ls.get('sg_line_meta', {})), gauges: srObj(ls.get('sg_line_gauges', {})) });
+  const ok = ls.set('sg_mainlines', D.mainlines.map(m => ({ id: String(m.id), label: String(m.label || 'Mainline ' + m.id), color: m.color || SR_ML_STORED[0] })))
+    && ls.set('sg_lines_pins', D.pins) && ls.set('sg_pumps', D.pumps) && ls.set('sg_line_meta', D.lineMeta) && ls.set('sg_line_gauges', D.gauges);
+  srDataChanged();
+  return ok;
+}
+// Delete a tank: pumps that fed it and lines that ran to it let go; its readings stay.
+function srDeleteTank(id) {
+  const tanks = srArr(ls.get('sg_tanks', []));
+  if (!ls.set('sg_tanks', tanks.filter(t => t.id !== id))) return false;
+  const pumps = srArr(ls.get('sg_pumps', []));
+  if (pumps.some(p => p.tankId === id) && !ls.set('sg_pumps', pumps.map(p => p.tankId === id ? { ...p, tankId: null } : p))) return false;
+  const lm = srObj(ls.get('sg_line_meta', {}));
+  if (Object.values(lm).some(m => m && m.tankId === id) && !ls.set('sg_line_meta', Object.fromEntries(Object.entries(lm).map(([k, m]) => [k, m && m.tankId === id ? { ...m, tankId: null } : m])))) return false;
+  srDataChanged();
+  return true;
+}
+// Delete a pin (tank, pump, sugarhouse, waypoint). A tank or pump placed on it stays on
+// Pumps, just off the map.
+function srDeletePin(id) {
+  const pins = srArr(ls.get('sg_lines_pins', []));
+  if (!ls.set('sg_lines_pins', pins.filter(p => String(p.id) !== String(id)))) return false;
+  const tanks = srArr(ls.get('sg_tanks', [])), pumps = srArr(ls.get('sg_pumps', []));
+  if (tanks.some(t => String(t.pinId) === String(id))) ls.set('sg_tanks', tanks.map(t => String(t.pinId) === String(id) ? { ...t, pinId: null } : t));
+  if (pumps.some(p => String(p.pinId) === String(id))) ls.set('sg_pumps', pumps.map(p => String(p.pinId) === String(id) ? { ...p, pinId: null } : p));
+  srDataChanged();
+  return true;
 }
 // Tree pins: the same write classic's updatePinField does (whole array back to sg_lines_pins).
 function srSavePins(pins) { return srOpsSet('sg_lines_pins', pins); }

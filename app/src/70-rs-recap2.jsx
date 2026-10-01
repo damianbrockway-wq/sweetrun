@@ -65,11 +65,16 @@ function RsRecapDetail({ c }) {
           <div className="rs-card">
             <div className="rs-grid2 rs-recapnums" style={{ marginTop:0 }}>
               <div><div className="rs-meta">{rt(L,'rdRatio')}</div><div className="rs-mid tn">{f.ratio > 0 ? fmt(f.ratio, 1) + ':1' : '0'}</div><div className="rs-meta tn">{rt(L,'rdTheory', { r: fmt(theory, 1) })}</div></div>
-              <div><div className="rs-meta">{rt(L,'rdLength')}</div><div className="rs-mid tn">{f.days != null ? f.days : '0'}<small>{rt(L,'daysW')}</small></div>
+              <div><div className="rs-meta">{rt(L,'rdLength')}</div>{(() => { // Fix pass 2 (P2): the same run count as Season's "Day N" (srRunState): first sap day to today
+                  // while it runs, first to last sap day once over. It used to count syrup days too, so it disagreed.
+                  const run = srRunState({ slog: srSlogDated(D.slog, c.season).slog, todayIso: srToday(), closed: !!(ls.get('sg_season_closed', {}) || {})[c.season] });
+                  const n = run.kind === 'running' ? run.day : run.length;
+                  return <div className="rs-mid tn" id="rs-rd-len">{n != null ? n : '0'}<small>{run.kind === 'running' ? rt(L,'seasonLenSoFar', { n: '' }).trim() : rt(L,'daysW')}</small></div>; })()}
                 <div className="rs-meta tn">{f.first && f.last ? rt(L,'rangeTo', { a: srDateShort(f.first, L), b: srDateShort(f.last, L) }) : rt(L,'rdNoDates')}</div></div>
               <div><div className="rs-meta">{rt(L,'rdBest')}</div><div className="rs-mid tn">{f.best ? fmt(parseFloat(f.best.val) || 0, 0) : '0'}<small>{u}</small></div><div className="rs-meta tn">{f.best ? srDateShort(f.best.date, L) : ''}</div></div>
               <div><div className="rs-meta">{rt(L,'rdRo')}</div><div className="rs-mid tn">{srVol(f.roGal, c.units)}<small>{u}</small></div>
-                <div className="rs-meta tn">{f.roGal > 0 && f.sapGal > 0 ? (f.roGal <= f.sapGal ? rt(L,'rdUtilSap', { p: fmt(f.roGal / f.sapGal * 100, 0) }) : rt(L,'rdUtilOver')) : ''}</div></div>
+                <div className="rs-meta tn">{f.roGal > 0 && f.sapGal > 0 ? (f.roGal <= f.sapGal ? rt(L,'rdUtilSap2', { p: fmt(f.roGal / f.sapGal * 100, 0) }) : rt(L,'rdUtilOver')) : ''}</div>
+                {(() => { const rc = srRoConcOf(D.slog.sapRO, D.brix, ls.get('sg_dx_robrix', 8)); return rc.conc > 0 ? <div className="rs-meta tn" id="rs-rd-conc">{rt(L,'rdRoConc', { c: fmt(rc.conc, 0), u })}</div> : null; })()}</div>
               <div><div className="rs-meta">{rt(L,'avgBrix')}</div><div className="rs-mid tn">{fmt(f.brixAvg != null ? f.brixAvg : D.brix, 2)}<small>%</small></div>
                 <div className="rs-meta tn">{f.brixMax != null ? rt(L,'rdBrixRange', { a: fmt(f.brixMin, 2), b: fmt(f.brixMax, 2) }) : rt(L,'brixSetting')}</div></div>
               <div><div className="rs-meta">{rt(L,'rdEntries')}</div><div className="rs-mid tn">{((D.slog.sapCollected || []).length + (D.slog.syrupMade || []).length)}</div>
@@ -134,7 +139,7 @@ function RsRecapDetail({ c }) {
                 <span>{rt(L,'fixMeta', { c: rt(L, 'fixC_' + fx), t: rt(L, 'fixT_' + fx) })}</span></span><span className="rs-rv">{rt(L, 'imp_' + SR_FIXES[fx].impact)}</span></div>)}</div>
             </RsDisclose>)}</div>
           </>}
-          {has && <RsRoSavings c={c} f={f} brix={D.brix} fuelDef={D.fuelDef} />}
+          {has && <RsRoSavings c={c} f={f} brix={D.brix} fuelDef={D.fuelDef} roEntries={D.slog.sapRO} />}
           {bp && <>
             <h2 className="rs-sec">{rt(L,'rdPoints')}</h2>
             <div className="rs-list">
@@ -155,14 +160,14 @@ function srScoreSub(r, model, L, units) {
   const u = srU(units);
   if (r.id === 'yield') return rt(L, 'srs_yield_' + r.band, { y: fmt(fromGal(r.ypp, units), 2), a: fmt(fromGal(SR_YIELD_BAND.low, units), 2), b: fmt(fromGal(SR_YIELD_BAND.high, units), 2), m: srModelName(model.label, L), u });
   if (r.id === 'eff') return rt(L, 'srs_eff', { a: fmt(r.ratio, 0), t: fmt(r.theory, 0) });
-  if (r.id === 'fuel') return rt(L, 'srs_fuel', { f: srFine(srPerU(r.fr, units)), b: srFine(srPerU(r.bench, units)), fu: r.unit, w: rt(L, units === 'L' ? 'litreW' : 'gallonW') });
+  if (r.id === 'fuel') { const fS = srFuelShow(FUELS.find(f => f.unit === r.unit) || FUELS[0], units, L); return rt(L, 'srs_fuel', { f: srFine(srPerU(r.fr * fS.k, units)), b: srFine(srPerU(r.bench * fS.k, units)), fu: fS.u, w: rt(L, units === 'L' ? 'litreW' : 'gallonW') }); }
   return rt(L, 'srs_data', { n: r.pts });
 }
 
 // RO savings against a straight boil. Fix pass 1: the evaporator rate is HIS (selEvap) unless he
 // sets one here (sg_recap_evap), fuel is his fuel in its own unit (selFuel, srRoSavings), and the
 // RO's share is of the sap collected, never a percent of what was boiled.
-function RsRoSavings({ c, f, brix, fuelDef }) {
+function RsRoSavings({ c, f, brix, fuelDef, roEntries }) {
   const L = c.lang, u = srU(c.units);
   const evDef = selEvap().rate || 50;
   const [ev, setEv] = useRsGalPref('sg_recap_evap', evDef, c.units);   // gal/h stored, L/h shown in litre mode
@@ -171,10 +176,12 @@ function RsRoSavings({ c, f, brix, fuelDef }) {
   const [rb, setRb] = useRsPref('sg_dx_robrix', 8);
   const setPre = x => { setPreS(x); ls.set('sg_recap_preheat', x); };
   const fd = fuelDef || selFuel().def;
-  const s = srRoSavings(f.sapGal, f.roGal, evG, fd.spu, pre, parseFloat(rb) || 8, brix);
+  // Fix pass 2 (item 31): concentrate he logged on RO entries counts (srRoConcOf); else the Brix setting.
+  const rc = srRoConcOf(roEntries, brix, rb);
+  const s = srRoSavings(f.sapGal, f.roGal, evG, fd.spu, pre, rc.measured ? rc.effBrix : (parseFloat(rb) || 8), brix);
   if (!s) return null;
   const n1 = x => x >= 10 ? fmt(x, 0) : fmt(x, 1);
-  const fu = L === 'fr' ? fd.unitFr : fd.unit;
+  const fS = srFuelShow(fd, c.units, L), fu = fS.u, fk = fS.k;
   const fq = x => x >= 10 ? fmt(x, 0) : x >= 1 ? fmt(x, 1) : fmt(x, 2);
   return <>
     <h2 className="rs-sec">{rt(L,'roSavT')}</h2>
@@ -182,13 +189,13 @@ function RsRoSavings({ c, f, brix, fuelDef }) {
       <div className="rs-meta">{rt(L,'roSavHours')}</div>
       <RsBarRow label={rt(L,'roStraight')} value={`${n1(s.straightHrs)} h`} pct={100} tone="mute" />
       <RsBarRow label={rt(L, pre ? 'roWithPre' : 'roWith')} value={`${n1(s.roHrs)} h`} pct={s.roHrs / Math.max(s.straightHrs, 0.1) * 100}
-        sub={f.roGal > 0 ? rt(L,'roConcNote', { r: srVol(f.roGal, c.units), c: srVol(s.roConc, c.units), u }) : rt(L,'roNoData')} />
+        sub={f.roGal > 0 ? (rc.conc > 0 ? rt(L,'roConcLogged', { r: fmt(rc.roLogged, 0), c: fmt(rc.conc, 0), b: fmt(rc.concBrix, 1), u }) : rt(L,'roConcNote', { r: srVol(f.roGal, c.units), c: srVol(s.roConc, c.units), u })) : rt(L,'roNoData')} />
       <div className="rs-meta">{rt(L,'roSavFuel', { f: fuelLabel(fd, L).replace(/ \(.*\)/, '').toLowerCase() })}</div>
-      <RsBarRow label={rt(L,'roStraight')} value={`${fq(s.straightFuel)} ${fu}`} pct={100} tone="mute" />
-      <RsBarRow label={rt(L, pre ? 'roWithPre' : 'roWith')} value={`${fq(s.roFuel)} ${fu}`} pct={s.roFuel / Math.max(s.straightFuel, 0.0001) * 100} />
+      <RsBarRow label={rt(L,'roStraight')} value={`${fq(s.straightFuel * fk)} ${fu}`} pct={100} tone="mute" />
+      <RsBarRow label={rt(L, pre ? 'roWithPre' : 'roWith')} value={`${fq(s.roFuel * fk)} ${fu}`} pct={s.roFuel / Math.max(s.straightFuel, 0.0001) * 100} />
       {s.savedHrs > 0 && <div className="rs-grid2" style={{ marginTop:6 }}>
         <div><div className="rs-meta">{rt(L,'roSavedH')}</div><div className="rs-mid tn">{fmt(s.savedHrs, 0)}<small>h</small></div></div>
-        <div><div className="rs-meta">{rt(L,'roSavedF')}</div><div className="rs-mid tn">{fq(s.savedFuel)}<small>{fu}</small></div><div className="rs-meta tn">{srMoney(s.savedFuel * (parseFloat(c.fuelCost) || 0))}</div></div>
+        <div><div className="rs-meta">{rt(L,'roSavedF')}</div><div className="rs-mid tn">{fq(s.savedFuel * fk)}<small>{fu}</small></div><div className="rs-meta tn">{srMoney(s.savedFuel * (parseFloat(c.fuelCost) || 0))}</div></div>
       </div>}
       {f.roGal === 0 && <p className="rs-note">{rt(L,'roLogNote')}</p>}
       <RsDisclose title={rt(L,'roInputs')} sub={rt(L,'roInputsSub2', { e: fmt(fromGal(evG, c.units), 0), u, x: fmt(parseFloat(rb) || 8, 1), f: fuelLabel(fd, L).replace(/ \(.*\)/, '').toLowerCase() })}>
@@ -196,7 +203,7 @@ function RsRoSavings({ c, f, brix, fuelDef }) {
         <label className="rs-fl" htmlFor="rs-ro-x">{rt(L,'roOutBrix')}</label><RsStepper id="rs-ro-x" value={rb} onChange={setRb} steps={[-0.5, 0.5]} dp={1} unit="%" label={rt(L,'roOutBrix')} min={1} max={20} big={false} />
         <label className="rs-fl">{rt(L,'roPreheater')}</label>
         <RsSeg label={rt(L,'roPreheater')} value={pre} onChange={setPre} options={[[false, rt(L,'noW')], [true, rt(L,'yesW')]]} />
-        <p className="rs-note">{rt(L,'roFuelNote', { n: fmt(fromGal(fd.spu, c.units), 0), u, fu })}</p>
+        <p className="rs-note">{rt(L,'roFuelNote', { n: fmt(fromGal(fd.spu, c.units) / fk, 0), u, fu })}</p>
       </RsDisclose>
     </div>
   </>;
@@ -346,7 +353,7 @@ function RsDiagnose({ c }) {
             <h2 className="rs-sec">{rt(L,'insT')}</h2>
             <div className="rs-stack">{ins.map(i => <RsDisclose key={i.id} tone={i.type === 'warn' ? 'medium' : i.type === 'ok' ? 'good' : 'low'} title={rt(L, 'ins_' + i.id)}
               sub={rt(L, 'ins_' + i.id + '_b', { su: u, y: fmt(fromGal(i.v.ypp || 0, c.units), 2), lo: fmt(fromGal(SR_YIELD_BAND.low, c.units), 2), hi: fmt(fromGal(SR_YIELD_BAND.high, c.units), 2), n: fmt(fromGal(NASS_US_AVG, c.units), 2), r: fmt(i.v.ratio || 0, 0), e: i.v.eff, g: i.v.gapPct, bx: fmt(i.v.brix || 0, 1),
-                f: srFine(srPerU(i.v.fr || 0, c.units)), b: srFine(srPerU(i.v.bench || 0, c.units)), u: i.v.unit, w: rt(L, c.units === 'L' ? 'litreW' : 'gallonW'), p: i.v.pct })}>
+                f: srFine(srPerU((i.v.fr || 0) * srFuelShow(FUELS.find(f => f.unit === i.v.unit), c.units, L).k, c.units)), b: srFine(srPerU((i.v.bench || 0) * srFuelShow(FUELS.find(f => f.unit === i.v.unit), c.units, L).k, c.units)), u: i.v.unit ? srFuelShow(FUELS.find(f => f.unit === i.v.unit), c.units, L).u : i.v.unit, w: rt(L, c.units === 'L' ? 'litreW' : 'gallonW'), p: i.v.pct })}>
               <p className="rs-body">{rt(L, 'ins_' + i.id + '_a')}</p></RsDisclose>)}</div>
           </>}
         </div>

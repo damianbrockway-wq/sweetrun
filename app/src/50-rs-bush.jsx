@@ -58,6 +58,8 @@ function srSpeciesName(sp, L) {
 }
 // The map's own chrome a line plate must stay clear of (title card, buttons, chips, notes, legends).
 const SR_MAP_CHROME = '.rs-mapt, .rs-maptop .rs-mbtn, .rs-mapfoot .rs-mbtn, .rs-mapchips .rs-chip, .rs-mapnotes > *, .rs-readcard, .rs-mapempty, .rs-wlegend, .rs-wmaphint, .leaflet-control-attribution';
+const SR_NEW_LINE = '__new';
+const srDist2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2;   // draw mode for a mainline that does not exist until it is saved
 const SR_BUSH_LAYERS = { base: 'sat', trees: true, laterals: true, mainlines: true, vacuum: true, brix: false, pumps: true, tanks: true, property: true };
 const srEsc = v => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 // Impeller glyph (prototype): a ring and four vanes that turn while the pump runs.
@@ -154,7 +156,7 @@ function srDrawBush(L, map, G, model, ly, o) {
       try { const dur = leak ? 3200 : 1600; fl._path.style.animationDelay = -(performance.now() % dur) + 'ms'; } catch {}
     }
     const hit = L.polyline(pts, { className: 'rs-ml-hit', weight: 26, interactive: true, bubblingMouseEvents: false });
-    hit.on('click', () => opt.onLine && opt.onLine(l.id));
+    hit.on('click', e => opt.onLine && opt.onLine(l.id, e));
     hit.addTo(G.lines);
     // Letter plate at the top end, the reading beside it on the vacuum layer.
     const top = pts[0];
@@ -164,7 +166,7 @@ function srDrawBush(L, map, G, model, ly, o) {
       ? `<button type="button" class="${cls}" data-line="${srEsc(l.id)}" data-fk="line:${srEsc(l.id)}" aria-label="${srEsc(opt.lineAria ? opt.lineAria(l) : l.label)}"><b>${srEsc(l.id)}</b><span class="rs-pv">${val ? srEsc(val) : '&middot;'}</span><small>${val ? srEsc(opt.unitIn || 'in') : srEsc(opt.noReading || '')}</small></button>`
       : `<button type="button" class="${cls}" data-line="${srEsc(l.id)}" data-fk="line:${srEsc(l.id)}" aria-label="${srEsc(opt.lineAria ? opt.lineAria(l) : l.label)}"><b>${srEsc(l.id)}</b>${vacOn && val ? `<span class="rs-pv">${srEsc(val)}</span>` : ''}</button>`;
     const mk = L.marker(top, { icon: L.divIcon({ className: 'rs-divicon', html, iconSize: null, iconAnchor: [0, 0] }), keyboard: false, zIndexOffset: 800, bubblingMouseEvents: false });
-    mk.on('click', () => opt.onLine && opt.onLine(l.id));
+    mk.on('click', e => opt.onLine && opt.onLine(l.id, e));
     mk.addTo(G.marks);
     let ring = null;
     if (vacOn && leak && !watchOne) {
@@ -179,13 +181,13 @@ function srDrawBush(L, map, G, model, ly, o) {
     if (bx) {
       const b = parseFloat(bx.brix);
       L.marker([t.lat, t.lon], { icon: L.divIcon({ className: 'rs-divicon', html: `<span class="rs-bxdot${b >= 2.5 ? ' hi' : b >= 2 ? ' mid' : ''}${isSel ? ' sel' : ''}">${srEsc(fmt(b, 1))}</span>`, iconSize: null, iconAnchor: [0, 0] }), keyboard: false, bubblingMouseEvents: false })
-        .on('click', () => opt.onTree && opt.onTree(t.id)).addTo(G.marks);
+        .on('click', e => opt.onTree && opt.onTree(t.id, e)).addTo(G.marks);
       return;
     }
     if (!ly.trees) return;
     L.circleMarker([t.lat, t.lon], { radius: isSel ? 8 : 5.5, className: 'rs-tree' + (t.health === 'dead' ? ' dead' : '') + (isSel ? ' sel' : '') + (t.mainline ? '' : ' free'), weight: 1.4, fillOpacity: 1, interactive: false }).addTo(G.trees);
     L.circleMarker([t.lat, t.lon], { radius: 14, className: 'rs-hitdot', weight: 0, fillOpacity: 0, interactive: true, bubblingMouseEvents: false })
-      .on('click', () => opt.onTree && opt.onTree(t.id)).addTo(G.trees);
+      .on('click', e => opt.onTree && opt.onTree(t.id, e)).addTo(G.trees);
   });
   // The pin just added: a pulsing ring so it is easy to spot.
   if (opt.fresh != null) { const f = model.pins.find(p => p.id === opt.fresh);
@@ -221,7 +223,7 @@ function srDrawBush(L, map, G, model, ly, o) {
     // Space opens its detail, and data-fk lets focus find it again after a redraw.
     const kb = !!opt.onPin;
     const mk = L.marker([p.lat, p.lon], { icon: L.divIcon({ className: 'rs-divicon rs-center', html, iconSize: null, iconAnchor: anchor }), keyboard: kb, bubblingMouseEvents: false, zIndexOffset: 600 });
-    mk.on('click', () => opt.onPin && opt.onPin(p.id));
+    mk.on('click', e => opt.onPin && opt.onPin(p.id, e));
     // Set on 'add', when Leaflet has made the icon element (it does not exist yet while
     // the marker group is off the map, as on the first draw).
     if (kb) mk.on('add', () => {
@@ -238,6 +240,8 @@ function srDrawBush(L, map, G, model, ly, o) {
   // (its real spot is unchanged) and redo it after every zoom.
   const tankHalf = watch ? 30 : 20;
   const nudge = () => {
+    // Fix pass 2 (P2): two pumps beside one tank stack, so their names never print over each other.
+    const taken = [];
     pumpMks.forEach(mk => {
       const el = mk.getElement && mk.getElement(); if (!el) return;
       const pp = map.latLngToContainerPoint(mk.getLatLng());
@@ -249,6 +253,10 @@ function srDrawBush(L, map, G, model, ly, o) {
       if (lb) lb.classList.toggle('flip', flip);
       const d = flip ? dxL : dx;
       el.style.marginLeft = d ? Math.round(d) + 'px' : '';
+      let dy = 0; const wv = 44 + (lb ? lb.offsetWidth : 0);
+      while (taken.some(t => Math.abs(t.y - (pp.y + dy)) < 44 && Math.abs(t.x - (pp.x + d)) < Math.max(t.w, wv))) dy += 48;
+      el.style.marginTop = dy ? dy + 'px' : '';
+      taken.push({ x: pp.x + d, y: pp.y + dy, w: wv });
     });
   };
   if (map._rsNudge) map.off('zoomend moveend', map._rsNudge);
@@ -354,7 +362,15 @@ function RsBush({ c, sub }) {
   const online = useSrOnline();
   const tfbRef = React.useRef(tfb); tfbRef.current = tfb;
   const s0 = sub || [];
-  const [sel, setSelState] = useState(() => s0[0] === 'tree' ? { type: 'tree', id: +s0[1] } : s0[0] === 'line' ? { type: 'line', id: s0[1] } : null);
+  const [sel, setSelState] = useState(() => s0[0] === 'tree' ? { type: 'tree', id: +s0[1] } : s0[0] === 'line' ? { type: 'line', id: s0[1] } : s0[0] === 'pin' ? { type: 'pin', id: +s0[1] } : null);
+  // Fix pass 2: the notes under the map's title plate start below it however tall it wraps
+  // (three lines with planned and mapped taps), so draw mode's banner never sits on it.
+  const wrapRef = React.useRef(null);
+  useEffect(() => {
+    const w = wrapRef.current, top = w && w.querySelector('.rs-maptop'); if (!top || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => { try { w.style.setProperty('--rs-mtop', Math.round(top.offsetHeight + 12 + 6) + 'px'); } catch {} });
+    ro.observe(top); return () => ro.disconnect();
+  }, []);
   const [sheet, setSheet] = useState(() => s0[0] === 'tools' ? 'tools' : null);
   const [mode, setMode] = useState(() => s0[0] === 'draw' && s0[1] ? { kind: 'draw', id: s0[1], pts: [] } : null);   // {kind:'add', type, line} | {kind:'draw', id, pts}
   const [gps, setGps] = useState({ on: false, acc: null, err: null, pos: null });
@@ -366,7 +382,7 @@ function RsBush({ c, sub }) {
   const fitted = React.useRef(false);
   const setSel = s => {
     setSelState(s);
-    try { history.replaceState(null, '', '#/bush' + (s ? '/' + s.type + '/' + s.id : '')); } catch {}
+    try { history.replaceState(history.state, '', '#/bush' + (s ? '/' + s.type + '/' + s.id : '')); } catch {}
   };
   const tankLevels = React.useMemo(() => { const o = {}; model.tanks.forEach(t => { o[t.id] = t; }); return o; }, [model.tanks]);
   const drawModel = React.useMemo(() => ({ ...model, tanks: model.tanksRaw, tankLevels }), [model, tankLevels]);
@@ -420,9 +436,13 @@ function RsBush({ c, sub }) {
       lineAria: l => rt(L_, 'lineAria', { n: l.label, v: l.latest ? fmt(l.latest.v, 1) : rt(L_, 'noReadingW') }),
       // The name a screen reader hears is what the map shows ("Vacuum pump", "Tank 1 · 78%"), plus the kind when the label does not say it.
       pinAria: (p, shown) => { const k = rt(L_, 'pinK_' + p.type), t = shown || p.label || ''; return !t ? k : t.toLowerCase().includes(k.toLowerCase()) ? t : `${t}, ${k}`; },
-      onLine: id => { if (mode) return; setSel({ type: 'line', id }); },
-      onTree: id => { if (mode) return; setSel({ type: 'tree', id }); },
-      onPin: id => { if (mode) return; const p = model.pins.find(x => x.id === id); if (p) setSel({ type: 'pin', id }); },
+      // Fix pass 2 (item 29): while drawing, a tap on a line, tree or pin is a point of the new line,
+      // snapped to that feature (a line's nearest end), so a mainline can end at the tank.
+      onLine: (id, e) => { const M = modeRef.current; if (M && M.kind === 'draw') { const l = model.lines.find(x => x.id === id); const ends = l && l.geo.pts.length >= 2 ? [l.geo.pts[0], l.geo.pts[l.geo.pts.length - 1]] : [];
+          const ll = e && e.latlng ? [e.latlng.lat, e.latlng.lng] : ends[0]; const near = ends.length ? ends.reduce((a, b) => srDist2(a, ll) <= srDist2(b, ll) ? a : b) : ll; if (near) drawTap(near, l ? l.label : null); return; }
+        if (M) return; setSel({ type: 'line', id }); },
+      onTree: (id, e) => { const M = modeRef.current; if (M && M.kind === 'draw') { const t = model.pins.find(x => x.id === id); if (t) drawTap([t.lat, t.lon], t.tagged || t.label); return; } if (M) return; setSel({ type: 'tree', id }); },
+      onPin: (id, e) => { const M = modeRef.current; const p = model.pins.find(x => x.id === id); if (M && M.kind === 'draw') { if (p) drawTap([p.lat, p.lon], p.label); return; } if (M) return; if (p) setSel({ type: 'pin', id }); },
     });
     if (!fitted.current) {
       fitted.current = true;
@@ -432,19 +452,37 @@ function RsBush({ c, sub }) {
       // Room for the chrome: the title plate and buttons on top, the Watch button and chips below.
       if (pts.length >= 2) map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [40, 120], paddingBottomRight: [40, 150], maxZoom: 18 });
       else if (pts.length === 1) map.setView(pts[0], 17);
-      else map.setView([45.5, -72.0], 14);
+      else {
+        // Fix pass 2 (P2): an empty map opens over his place (the weather location he saved), not
+        // a default over Vermont and Quebec. The default is only for an app with no place at all.
+        const loc = selLocation();
+        if (loc && srFin(+loc.lat) && srFin(+loc.lon)) map.setView([+loc.lat, +loc.lon], 15); else map.setView([45.5, -72.0], 14);
+      }
     }
     // Plates are placed in screen space: once more now the view is set.
     requestAnimationFrame(() => { try { map._rsPlace && map._rsPlace(); } catch {} });
   }, [lf, model.ver, layers, sel, mode, L_, fresh]);
 
   // Map taps: add a pin, add a draw vertex, or clear the selection.
+  // A draw tap within 22 px of a line end, tank or pin snaps to it (fix pass 2, item 29).
+  const featTap = React.useRef(0);
+  const drawTap = (pt, name) => { featTap.current = Date.now(); setMode(m => m && m.kind === 'draw' ? { ...m, pts: [...m.pts, [pt[0], pt[1]]], snap: name || null } : m); };
+  const snapOf = (map, ll) => {
+    const cands = [];
+    model.lines.forEach(l => { if (l.geo.pts.length >= 2) { cands.push([l.geo.pts[0], l.label]); cands.push([l.geo.pts[l.geo.pts.length - 1], l.label]); } });
+    model.pins.filter(p => p.type !== 'tree' && srFin(p.lat) && srFin(p.lon)).forEach(p => cands.push([[p.lat, p.lon], p.label]));
+    let best = null, bd = 22 * 22;
+    try { const q = map.latLngToContainerPoint(ll); cands.forEach(([pt, nm]) => { const c2 = map.latLngToContainerPoint(pt); const d = (c2.x - q.x) ** 2 + (c2.y - q.y) ** 2; if (d <= bd) { bd = d; best = [pt, nm]; } }); } catch {}
+    return best;
+  };
   const modeRef = React.useRef(mode); modeRef.current = mode;
+  const snapRef = React.useRef(snapOf); snapRef.current = snapOf;
   useEffect(() => {
     const map = mapRef.current; if (!map) return;
     const h = e => {
       const M = modeRef.current;
-      if (M && M.kind === 'draw') { setMode(m => ({ ...m, pts: [...m.pts, [e.latlng.lat, e.latlng.lng]] })); return; }
+      if (Date.now() - featTap.current < 350) return;   // a feature took this tap already
+      if (M && M.kind === 'draw') { const sn = snapRef.current(map, e.latlng); if (sn) { drawTap(sn[0], sn[1]); return; } setMode(m => ({ ...m, pts: [...m.pts, [e.latlng.lat, e.latlng.lng]], snap: null })); return; }
       if (M && M.kind === 'add') { dropPin(e.latlng.lat, e.latlng.lng, M, null); return; }
       if (terrainRef.current) readAt(e.latlng.lat, e.latlng.lng); else setReadPt(null);
       setSel(null);
@@ -485,14 +523,16 @@ function RsBush({ c, sub }) {
     const all = srArr(ls.get('sg_lines_pins', []));
     const extra = { ...(acc != null ? { accuracy: acc } : {}), ...(M.type === 'tree' && M.line ? { mainline: M.line } : {}) };
     const pin = srMakePin(all, lat, lon, M.type, extra, Date.now());
-    if (!srSavePins([...all, pin])) { setMsg({ bad: true, t: rt(L_, 'bNotSavedT') + ' ' + rt(L_, SR_WRITE_FAIL === 'quota' ? 'bQuotaP' : 'bLockedP') }); setMode(null); return; }
+    if (!srSavePins([...all, pin])) { setMsg({ bad: true, t: rt(L_, 'bNotSavedT') + ' ' + rt(L_, srFailKey(SR_WRITE_FAIL)) }); setMode(null); return; }
     const nm = pin.tagged || pin.label;
     srToast(rt(L_, (acc != null ? 'pinAddedAcc' : 'pinAdded') + (M.keep ? '' : 'Tap'), { n: nm, a: acc }));
     if (!(M.keep)) setMode(null);
     // Keep the map in view so he sees it land: center on it and ring it. Tapping it opens the details.
     if (M.type === 'tree' && !layers.trees) setLayers({ trees: true });
     setFresh(pin.id);
-    const map = mapRef.current; if (map) { try { map.panTo([lat, lon]); } catch {} }
+    // Fix pass 2 (item 29): the map moves only when the new pin is out of view; tap-to-add
+    // places pins where he tapped and the map stays put between them.
+    const map = mapRef.current; if (map) { try { if (!map.getBounds().pad(-0.1).contains([lat, lon])) map.panTo([lat, lon]); } catch {} }
   };
   const addAtGps = M => {
     if (!navigator.geolocation) { setMsg({ bad: true, t: rt(L_, 'gpsNone') }); return; }
@@ -506,8 +546,13 @@ function RsBush({ c, sub }) {
   };
   const finishDraw = () => {
     if (!mode || mode.pts.length < 2) { setMode(null); return; }
+    if (mode.id === SR_NEW_LINE) {
+      const nid = srAddMainline();
+      if (!nid) { setMsg({ bad: true, t: SR_WRITE_FAIL ? rt(L_, 'bNotSavedT') + ' ' + rt(L_, srFailKey(SR_WRITE_FAIL)) : rt(L_, 'lineMax', { n: model.lines.length }) }); return; }
+      mode.id = nid;
+    }
     if (!srSaveLineMeta(mode.id, { path: mode.pts.map(p => [+p[0].toFixed(7), +p[1].toFixed(7)]), pathFrom: null })) {
-      setMsg({ bad: true, t: rt(L_, 'bNotSavedT') + ' ' + rt(L_, SR_WRITE_FAIL === 'quota' ? 'bQuotaP' : 'bLockedP') }); return;
+      setMsg({ bad: true, t: rt(L_, 'bNotSavedT') + ' ' + rt(L_, srFailKey(SR_WRITE_FAIL)) }); return;
     }
     const id = mode.id; setMode(null); setSel({ type: 'line', id }); srToast(rt(L_, 'lineDrawn'));
   };
@@ -538,14 +583,14 @@ function RsBush({ c, sub }) {
   const detailTitle = selTree ? (selTree.tagged || selTree.label) : selLine ? selLine.label : selPin ? selPin.label : '';
 
   return (
-    <div className={`rs-bushwrap${wide ? ' wide' : ''}`}>
+    <div ref={wrapRef} className={`rs-bushwrap${wide ? ' wide' : ''}${empty && lf === 'ready' && !mode ? ' rs-bushempty' : ''}`}>
       <div className="rs-bushmap">
         <div ref={divRef} className={`rs-map base-${layers.base}`} role="region" aria-label={rt(L_, 'bushMapAria', { t: trees.length, l: model.lines.length })} />
         {lf === 'loading' && <div className="rs-mapskel" aria-hidden="true" />}
         {lf === 'error' && <div className="rs-mapstate"><div className="rs-empty"><b>{rt(L_, 'mapLoadT')}</b><p>{rt(L_, 'mapLoadP')}</p>
           <RsBtn kind="secondary" onClick={retryLf}>{rt(L_, 'tryAgain')}</RsBtn></div></div>}
         <header className="rs-phead rs-maptop">
-          <div className="rs-mapt"><h1>{rt(L_, 'bushMap')}</h1><span className="tn" id="rs-bush-counts">{rt(L_, 'bushCountsT2', { t: rtTapsLine(L_, tapsInfo), l: model.lines.length })}</span></div>
+          <div className="rs-mapt"><h1>{rt(L_, 'bushMap')}</h1><span className="tn" id="rs-bush-counts">{(!model.lines.length && c.profile && !c.profile.showTubing ? rtTapsLine(L_, tapsInfo) : rt(L_, 'bushCountsT3', { t: rtTapsLine(L_, tapsInfo), l: rtLines(L_, model.lines.length) }))}</span></div>
           <div className="rs-mbtns">
             <button type="button" className="rs-mbtn" aria-label={rt(L_, 'addToMap')} onClick={() => setSheet('add')}><RsIcon name="plus" size={26} sw={2.4} /></button>
             <button type="button" className="rs-mbtn" aria-label={rt(L_, 'bushLayers')} onClick={() => setSheet('layers')}><RsIcon name="layers" size={25} sw={2.2} /></button>
@@ -562,9 +607,9 @@ function RsBush({ c, sub }) {
           {msg && <div className={`rs-mapmsg${msg.bad ? ' bad' : ''}`} role="status">{msg.t}<button type="button" className="rs-xbtn" aria-label={rt(L_, 'dismiss')} onClick={() => setMsg(null)}><RsIcon name="x" size={20} /></button></div>}
           {mode && mode.kind === 'add' && <div className="rs-mapmode" role="status"><b>{rt(L_, 'tapToAdd', { k: rt(L_, 'pinK_' + mode.type).toLowerCase() })}</b>
             <button type="button" className="rs-btn2 sm" onClick={() => setMode(null)}>{rt(L_, 'doneW')}</button></div>}
-          {mode && mode.kind === 'draw' && <div className="rs-mapmode" role="status">
-            <b>{rt(L_, 'drawHint', { n: (model.lines.find(l => l.id === mode.id) || {}).label || mode.id })}</b>
-            <span className="rs-meta tn">{rt(L_, 'drawPts', { n: mode.pts.length })}</span>
+          {mode && mode.kind === 'draw' && <div className="rs-mapmode compact" role="status">
+            <b>{rt(L_, 'drawHint2', { n: mode.id === SR_NEW_LINE ? rt(L_, 'newMainline') : (model.lines.find(l => l.id === mode.id) || {}).label || mode.id })}</b>
+            <span className="rs-meta tn" id="rs-draw-pts">{rt(L_, 'drawPts', { n: mode.pts.length })}{mode.snap ? ' · ' + rt(L_, 'drawSnapped', { n: mode.snap }) : ''}</span>
             <div className="rs-drawbtns">
               <button type="button" className="rs-btn2 sm" disabled={!mode.pts.length} onClick={() => setMode(m => ({ ...m, pts: m.pts.slice(0, -1) }))}><RsIcon name="undo" size={20} />{rt(L_, 'undoW')}</button>
               <button type="button" className="rs-btn2 sm" onClick={() => setMode(null)}>{rt(L_, 'cancelW')}</button>
@@ -593,9 +638,12 @@ function RsBush({ c, sub }) {
             <button type="button" className="rs-mbtn" aria-label={rt(L_, 'zoomOut')} onClick={() => mapRef.current && mapRef.current.zoomOut()}><RsIcon name="minus" size={24} /></button>
           </div>
         </div>
-        {!wide && <div className="rs-mapchips" role="group" aria-label={rt(L_, 'bushLayers')}>
+        {/* Hidden while adding or drawing: a tap meant for the map never toggles a layer (item 29). */}
+        {!wide && !mode && <div className="rs-mapchips" role="group" aria-label={rt(L_, 'bushLayers')}>
           <button type="button" className={`rs-chip${terrain.overlay === 'elev' ? ' on' : ''}`} aria-pressed={terrain.overlay === 'elev'} onClick={() => setTerrain({ overlay: terrain.overlay === 'elev' ? null : 'elev' })}>{rt(L_, 'lyElev')}</button>
-          {[['trees', 'lyTrees'], ['mainlines', 'lyLines'], ['vacuum', 'lyVacuum'], ['brix', 'lyBrix'], ['pumps', 'lyPumps'], ['tanks', 'lyTanks']].map(([k, l]) =>
+          {/* Item 35: no tubing, vacuum or pump chips for an operation without them (they'd toggle nothing). */}
+          {[['trees', 'lyTrees'], ['mainlines', 'lyLines'], ['vacuum', 'lyVacuum'], ['brix', 'lyBrix'], ['pumps', 'lyPumps'], ['tanks', 'lyTanks']]
+            .filter(([k]) => !c.profile || (k === 'mainlines' ? c.profile.showTubing : k === 'vacuum' ? c.profile.showVacuum : k === 'pumps' ? (c.profile.showPumps || model.pins.some(p => p.type === 'pump')) : true)).map(([k, l]) =>
             <button key={k} type="button" className={`rs-chip${layers[k] ? ' on' : ''}`} aria-pressed={!!layers[k]} onClick={() => setLayers({ [k]: !layers[k] })}>{rt(L_, l)}</button>)}
         </div>}
       </div>
@@ -754,10 +802,12 @@ function RsGaugeChain({ c, l, now, P, big, onLog, hasPump }) {
   const unread = ch.nodes.filter((n, i) => !loc.reads[i]).map(nm).join(', ');
   const tail = unread ? ' ' + rt(L, 'gSkipped', { n: unread }) : '';
   let head;
-  if (loc.status === 'located') {
+  // Fix pass 2 (P2): before any reading there is nothing to walk between yet; say how to read them.
+  if (!readIdx.length) head = ['idle', rt(L, 'gFewT'), rt(L, 'gWalkFirst')];
+  else if (loc.status === 'located') {
     const a = ch.nodes[seg.from], b = ch.nodes[seg.to];
     const ft = a.pos && b.pos ? Math.round(srDistM(a.pos, b.pos) * 3.28084 / 10) * 10 : null;
-    head = ['bad', rt(L, 'gWalkT', { a: nm(a), b: nm(b) }), [rt(L, 'gWalkP', { a: full(a), b: full(b), d: fmt(seg.drop, 1), u }),
+    head = ['bad', rt(L, 'gWalkT', { a: noun(a), b: noun(b) }), [rt(L, 'gWalkP', { a: full(a), b: full(b), d: fmt(seg.drop, 1), u }),
       ft ? rt(L, 'gDist', { f: fmt(ft, 0), u: srUnitL('ft', L) }) : '', unread ? rt(L, 'gSkipped', { n: unread }) : ''].filter(Boolean).join(' ')];
   } else if (loc.status === 'spread') head = ['bad', rt(L, 'gSpreadT'), rt(L, 'gSpreadP', { t: fmt(loc.total, 1), u, ...span }) + tail];
   else if (loc.status === 'ok') head = ['ok', rt(L, 'gOkT'), rt(L, 'gOkP', { t: fmt(loc.total, 1), l: fmt(P.leakLimitIn, 1), u, ...span }) + tail];
@@ -877,16 +927,21 @@ function RsTreeDetail({ c, model, tree, onClose }) {
       <RsKv rows={[
         tree.label && tree.tagged ? [rt(L, 'nameWord'), tree.label] : null,
         tree.species ? [rt(L, 'species'), srSpeciesName(tree.species, L)] : null,
-        tree.dbh ? [rt(L, 'diameter'), `${tree.dbh} ${srUnitL('in', L)}`] : null,
         srFin(parseFloat(tree.elev)) ? [rt(L, 'elevation'), `${fmt(parseFloat(tree.elev), 0)} ft`] : null,
         ev.st !== 'idle' ? [rt(L, 'groundLidar'), ev.st === 'ok' ? (ev.v[0] != null ? srElevText(ev.v[0], c.units, L) : rt(L, 'noLidarShort')) : ev.st === 'loading' ? '·' : rt(L, 'needsSignalShort')] : null,
         tree.accuracy != null ? [rt(L, 'placedBy'), <span className={`rs-acc ${tree.accuracy <= 5 ? 'ok' : tree.accuracy <= 15 ? 'check' : 'bad'}`}>{rt(L, 'gpsAccShort', { a: tree.accuracy })}</span>] : [rt(L, 'placedBy'), rt(L, 'placedByHand')],
       ]} />
       <label className="rs-fl" htmlFor="rs-tree-taps" style={{ marginTop: 16 }}>{rt(L, 'tapsWordC')}</label>
       <RsStepper id="rs-tree-taps" value={String(parseInt(tree.taps) || 0)} onChange={v => save({ taps: Math.max(0, Math.min(4, parseInt(v) || 0)) })} steps={[-1, 1]} dp={0} label={rt(L, 'tapsWordC')} min={0} max={4} big={false} />
-      <label className="rs-fl" style={{ marginTop: 16 }}>{rt(L, 'mainlineWord')}</label>
+      {/* Fix pass 2 (item 27): the diameter is his to set (stored in inches, shown in cm in metric). */}
+      <label className="rs-fl" htmlFor="rs-tree-dbh" style={{ marginTop: 16 }}>{rt(L, srMetric() ? 'diameterCm' : 'diameterIn')}</label>
+      <RsStepper id="rs-tree-dbh" value={tree.dbh ? String(srMetric() ? Math.round(srInToCm(+tree.dbh)) : +tree.dbh) : ''} big={false}
+        onChange={v => { const n = parseFloat(v); if (!(n > 0)) return; save({ dbh: srMetric() ? Math.round(srCmToIn(n) * 10) / 10 : n }); }}
+        steps={srMetric() ? [-5, -1, 1, 5] : [-2, -1, 1, 2]} dp={0} unit={srMetric() ? 'cm' : srUnitL('in', L)} label={rt(L, srMetric() ? 'diameterCm' : 'diameterIn')} min={1} max={srMetric() ? 250 : 100} />
+      {/* Item 35: a bucket producer with no mainlines is not asked which mainline a tree is on. */}
+      {(lines.length > 0 || tree.mainline) && <><label className="rs-fl" style={{ marginTop: 16 }}>{rt(L, 'mainlineWord')}</label>
       <RsChips label={rt(L, 'mainlineWord')} value={tree.mainline ? String(tree.mainline) : null} onChange={v => save({ mainline: v })}
-        options={[[null, rt(L, 'noLineW')], ...lines.map(l => [l.id, l.id])]} />
+        options={[[null, rt(L, 'noLineW')], ...lines.map(l => [l.id, l.id])]} /></>}
       <label className="rs-fl" style={{ marginTop: 16 }}>{rt(L, 'health')}</label>
       <RsChips label={rt(L, 'health')} value={tree.health || 'good'} onChange={v => save({ health: v })}
         options={['excellent', 'good', 'fair', 'poor', 'dead'].map(h => [h, rt(L, 'h_' + h)])} />
@@ -896,7 +951,7 @@ function RsTreeDetail({ c, model, tree, onClose }) {
       <div className="rs-split rs-bxrow" style={{ marginTop: 10, alignItems: 'center' }}>
         <RsStepper id="rs-tree-bx" value={bx} onChange={setBx} steps={[-0.1, 0.1]} dp={1} unit="%" label={rt(L, 'brixHere')} min={0} max={15} big={false} base={parseFloat(c.sapBrix) || 2} ph={fmt(parseFloat(c.sapBrix) || 2, 1)} />
       </div>
-      {fail && <p className="rs-errline" role="alert">{rt(L, 'bNotSavedT')} {rt(L, fail === 'quota' ? 'bQuotaP' : 'bLockedP')}</p>}
+      {fail && <p className="rs-errline" role="alert">{rt(L, 'bNotSavedT')} {rt(L, srFailKey(fail))}</p>}
       <div style={{ marginTop: 14 }}><RsBtn onClick={logBrix} id="rs-tree-logbx" icon="drop">{bx !== '' ? rt(L, 'saveBrixV', { v: fmt(parseFloat(bx) || 0, 1) }) : rt(L, 'logBrixHere')}</RsBtn></div>
       {tree.notes && <p className="rs-body" style={{ marginTop: 12 }}>{tree.notes}</p>}
       <div style={{ marginTop: 10 }}><RsBtn kind="bad" onClick={del}>{rt(L, armed ? 'tapAgainDelete' : 'deleteTree')}</RsBtn></div>
@@ -927,6 +982,10 @@ function RsLineDetail({ c, model, line, onClose, onDraw, watch }) {
           <div className="rs-meta tn">{line.latest ? rt(L, 'readAgo', { a: srAgo(line.latest.ms, model.now, L), t: srClock(line.latest.ms, L) }) : rt(L, 'noReadingYet')}</div></div>
       </div>
       <p className={`rs-verdict ${verdict[0]}`}>{verdict[1]}</p>
+      {/* Fix pass 2 (P2): a line that was a leak suspect and reads normal again says it was fixed. */}
+      {(() => { const h = line.hist; if (lk.status === 'suspect' || lk.baseline == null || !line.latest || h.length < 2) return null;
+        const was = h.slice(0, -1).some(r => lk.baseline - r.v > P.leakLimitIn);
+        return was ? <p className="rs-okline" id="rs-leak-repaired">{rt(L, 'leakRepaired', { v: fmt(line.latest.v, 1), lim: fmt(P.leakLimitIn, 1) })}</p> : null; })()}
       {line.chain ? <RsGaugeChain c={c} l={line} now={model.now} P={P} hasPump={!!relPump}
           onLog={n => setReading(n.kind === 'pump' ? 'pump' : n.kind === 'end' ? true : { g: n })} />
         : <RsLeakChain c={c} l={line} now={model.now} P={P} onLogPump={relPump ? () => setReading('pump') : null} />}
@@ -942,7 +1001,7 @@ function RsLineDetail({ c, model, line, onClose, onDraw, watch }) {
       ]} />
       <p className="rs-note">{rt(L, 'leakRuleNote', { l: fmt(P.leakLimitIn, 1), d: fmt(P.baselineDays, 0), h: fmt(P.pairH, 0) })}</p>
       {!watch && <RsLineFall c={c} model={model} line={line} />}
-      {fail && <p className="rs-errline" role="alert">{rt(L, 'bNotSavedT')} {rt(L, fail === 'quota' ? 'bQuotaP' : 'bLockedP')}</p>}
+      {fail && <p className="rs-errline" role="alert">{rt(L, 'bNotSavedT')} {rt(L, srFailKey(fail))}</p>}
       <div style={{ marginTop: 14 }}><RsBtn icon="gauge" onClick={() => setReading(true)} id="rs-line-read">{rt(L, 'logVacuum')}</RsBtn></div>
       <div className="rs-btnrow">
         <RsBtn kind="secondary" icon="check" onClick={mark}>{rt(L, 'markChecked')}</RsBtn>
@@ -956,6 +1015,11 @@ function RsLineDetail({ c, model, line, onClose, onDraw, watch }) {
         <RsStepper id="rs-line-taps" value={line.tapsSet ? String(line.taps) : ''} onChange={setTaps} steps={[-10, -1, 1, 10]} dp={0} label={rt(L, 'tapsOnLine')} min={0} max={100000} big={false} ph={String(line.treeTaps)} />
         <p className="rs-note">{rt(L, 'tapsOnLineNote', { n: line.treeTaps })}</p>
         {onDraw && <div style={{ marginTop: 12 }}><RsBtn kind="secondary" icon="pen" onClick={onDraw}>{rt(L, line.geo.source === 'drawn' ? 'redrawLine' : 'drawThisLine')}</RsBtn></div>}
+        {/* Fix pass 2 (item 27): delete, saying what is attached before the second tap. */}
+        <RsDeleteBtn c={c} id="rs-line-del" label={rt(L, 'deleteLine')} onDelete={() => { if (!srDeleteMainline(line.id)) { setFail(SR_WRITE_FAIL || 'locked'); return; } srToast(rt(L, 'lineDeleted', { n: line.label })); onClose && onClose(); }}
+          consequence={(() => { const w = srMainlineDeleteOf(line.id, { pins: model.pins, gauges: model.lineGauges, readings: model.readings, pumps: model.pumps });
+            return [w.trees ? rt(L, 'lineDelWhat', { n: line.label, t: rt(L, w.trees === 1 ? 'treesN1' : 'treesNn', { n: w.trees }) }) : rt(L, 'lineDelWhat0', { n: line.label }),
+              w.gauges ? rt(L, 'lineDelGauges', { g: w.gauges }) : null, w.readings ? rt(L, 'lineDelKept') : null].filter(Boolean).join(' '); })()} />
       </RsDisclose>}
       {!watch && <RsDisclose title={rt(L, 'gEditT')} sub={line.gauges.length ? rt(L, 'gCount', { n: line.gauges.length }) : null} icon="gauge" family="lines">
         <RsGaugeEdit c={c} line={line} onFail={setFail} />
@@ -973,7 +1037,7 @@ function RsLineDetail({ c, model, line, onClose, onDraw, watch }) {
 }
 
 // ── Detail: a tank, pump, sugarhouse or waypoint pin ─────────────────────────
-function RsPinDetail({ c, model, pin }) {
+function RsPinDetail({ c, model, pin, onClose }) {
   const L = c.lang, u = srU(c.units);
   const tank = pin.type === 'tank' ? model.tanksRaw.find(t => String(t.pinId) === String(pin.id)) : null;
   const tl = tank ? model.tanks.find(t => t.id === tank.id) : null;
@@ -991,8 +1055,33 @@ function RsPinDetail({ c, model, pin }) {
       {pump && <div style={{ marginTop: 14 }}><RsBtn href={rsHref('pumps/' + pump.id)} icon="pump">{rt(L, 'openPump', { n: pump.name })}</RsBtn></div>}
       {pin.type === 'tank' && !tank && <div style={{ marginTop: 14 }}><RsBtn kind="secondary" href={rsHref('pumps/add-tank/' + pin.id)} icon="tank">{rt(L, 'trackTank')}</RsBtn></div>}
       {pin.type === 'pump' && !pump && <div style={{ marginTop: 14 }}><RsBtn kind="secondary" href={rsHref('pumps/add/' + pin.id)} icon="pump">{rt(L, 'trackPump')}</RsBtn></div>}
+      <RsPinEdit c={c} pin={pin} tank={tank} pump={pump} onClose={onClose} />
     </div>
   );
+}
+
+// Fix pass 2 (item 27): a pin's name and note, and delete. A tank or pump placed on it stays.
+function RsPinEdit({ c, pin, tank, pump, onClose }) {
+  const L = c.lang;
+  const [name, setName] = useState(pin.label || '');
+  const [note, setNote] = useState(pin.notes || '');
+  const [fail, setFail] = useState(null);
+  useEffect(() => { setName(pin.label || ''); setNote(pin.notes || ''); }, [pin.id]);
+  const save = () => {
+    const all = srArr(ls.get('sg_lines_pins', []));
+    if (!srSavePins(all.map(p => String(p.id) === String(pin.id) ? { ...p, label: name.trim() || p.label, notes: note } : p))) { setFail(SR_WRITE_FAIL || 'locked'); return; }
+    setFail(null); srToast(rt(L, 'pinSaved'));
+  };
+  return <RsDisclose title={rt(L, 'editPin')} icon="pen" family="lines">
+    <label className="rs-fl" htmlFor="rs-pin-name">{rt(L, 'nameWord')}</label>
+    <input id="rs-pin-name" className="rs-field" value={name} onChange={e => setName(e.target.value)} onBlur={save} onKeyDown={e => { if (e.key === 'Enter') save(); }} />
+    <label className="rs-fl" htmlFor="rs-pin-note" style={{ marginTop: 14 }}>{rt(L, 'noteW')}</label>
+    <input id="rs-pin-note" className="rs-field" value={note} onChange={e => setNote(e.target.value)} onBlur={save} onKeyDown={e => { if (e.key === 'Enter') save(); }} />
+    {fail && <p className="rs-errline" role="alert">{rt(L, 'bNotSavedT')} {rt(L, srFailKey(fail))}</p>}
+    <RsDeleteBtn c={c} id="rs-pin-del" label={rt(L, 'deletePin')}
+      consequence={tank ? rt(L, 'pinDelTank', { n: tank.name }) : pump ? rt(L, 'pinDelPump', { n: pump.name }) : rt(L, 'pinDelPlain')}
+      onDelete={() => { if (!srDeletePin(pin.id)) { setFail(SR_WRITE_FAIL || 'locked'); return; } srToast(rt(L, 'pinDeleted', { n: pin.label })); onClose && onClose(); }} />
+  </RsDisclose>;
 }
 
 // ── Sheets: layers, add, map tools ───────────────────────────────────────────
@@ -1073,12 +1162,12 @@ function RsMapTools({ c, model, mapRef, base, onClose, onDraw, extra }) {
   const [pendingGj, setPendingGj] = useState(null);
   const saveGeo = (gj, kept) => {
     const n = srBoundaryCount(gj);
-    if (!ls.set('sg_property_geo', gj)) { setImp({ bad: true, t: rt(L, 'bNotSavedT') + ' ' + rt(L, SR_WRITE_FAIL === 'quota' ? 'bQuotaP' : 'bLockedP') }); return; }
+    if (!ls.set('sg_property_geo', gj)) { setImp({ bad: true, t: rt(L, 'bNotSavedT') + ' ' + rt(L, srFailKey(SR_WRITE_FAIL)) }); return; }
     // Feature indexes belong to the old file: keep the paths, forget where they came from.
     const lm = srObj(ls.get('sg_line_meta', {}));
     if (Object.values(lm).some(m => m && m.pathFrom != null)) ls.set('sg_line_meta', Object.fromEntries(Object.entries(lm).map(([k, m]) => [k, { ...srObj(m), pathFrom: null }])));
     srDataChanged(); setPendingGj(null);
-    setImp({ t: kept ? rt(L, 'impKeptBoundary', { n: srBoundaryCount(gj) - kept }) : rt(L, n === 1 ? 'impOk1' : 'impOk', { n }) });
+    setImp({ t: kept ? rt(L, srBoundaryCount(gj) - kept === 1 ? 'impKeptBoundary1' : 'impKeptBoundary', { n: srBoundaryCount(gj) - kept }) : rt(L, n === 1 ? 'impOk1' : 'impOk', { n }) });
     try { const map = mapRef.current, b = srBushBounds({ pins: [], lines: [], property: gj }); if (map && b.length >= 2) map.fitBounds(window.L.latLngBounds(b), { padding: [40, 40] }); } catch {}
   };
   const onFile = f => {
@@ -1132,10 +1221,11 @@ function RsMapTools({ c, model, mapRef, base, onClose, onDraw, extra }) {
     const next = { ...all };
     // A line that used to come from the file but is now unassigned keeps its path; only chosen ones change.
     chosen.forEach(x => { next[pick[x.i]] = { ...srObj(all[pick[x.i]]), path: x.pts.map(p => [+p[0].toFixed(7), +p[1].toFixed(7)]), pathFrom: x.i }; });
-    if (!srOpsSet('sg_line_meta', next)) { setPathMsg({ bad: true, t: rt(L, 'bNotSavedT') + ' ' + rt(L, SR_WRITE_FAIL === 'quota' ? 'bQuotaP' : 'bLockedP') }); return; }
+    if (!srOpsSet('sg_line_meta', next)) { setPathMsg({ bad: true, t: rt(L, 'bNotSavedT') + ' ' + rt(L, srFailKey(SR_WRITE_FAIL)) }); return; }
     setPathMsg({ t: rt(L, 'impSaved', { n: chosen.length }) });
   };
-  const addLine = () => { const id = srAddMainline(); if (!id) { setImp({ bad: true, t: rt(L, 'bNotSavedT') + ' ' + rt(L, SR_WRITE_FAIL === 'quota' ? 'bQuotaP' : 'bLockedP') }); return; } onDraw(id); };
+  // Fix pass 2 (item 27): a new mainline is made when its path is saved, so a cancelled draw leaves nothing.
+  const addLine = () => onDraw(SR_NEW_LINE);
   return (
     <RsSheet title={rt(L, 'mapTools')} onClose={onClose} id="rs-tools">
       <h3 className="rs-sec" style={{ marginTop: 0 }}>{rt(L, 'drawAMainline')}</h3>

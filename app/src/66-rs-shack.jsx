@@ -59,6 +59,8 @@ function RsShack({ c }) {
             <label className="rs-fl">{rt(L,'unitsWord')}</label>
             <RsSeg label={rt(L,'unitsWord')} value={c.units} onChange={c.setUnits} options={[['GAL', rt(L,'gallons')], ['L', rt(L,'litres')]]} />
             <div className="rs-note">{rt(L,'unitsNote', { u: rt(L, srLegacyUnits() === 'L' ? 'litres' : 'gallons').toLowerCase() })}</div>
+            <label className="rs-fl">{rt(L,'measureWord')}</label>
+            <RsSeg label={rt(L,'measureWord')} value={c.metric ? 'metric' : 'us'} onChange={c.setMeasure} options={[['us', rt(L,'measureUS')], ['metric', rt(L,'measureMetric')]]} />
             <label className="rs-fl">{rt(L,'langWord')}</label>
             <RsSeg label={rt(L,'langWord')} value={c.lang} onChange={c.setLang} options={[['en', 'English'], ['fr', 'Français']]} />
             <label className="rs-fl">{rt(L,'seasonYear')}</label>
@@ -142,7 +144,12 @@ function RsChecklists({ c }) {
   const cust = custom[phase] || [];
   const all = [...base, ...cust];
   const chk = checks[key] || {};
-  const done = all.filter((_, i) => chk[i]).length;
+  // Fix pass 2 (item 35): tubing, vacuum and RO items are left out for an operation without them
+  // (srTaskHidden); a box he already ticked stays visible, so nothing he did disappears.
+  const hide = srTaskHidden(phase, c.profile);
+  const shown = i => !(hide.has(i) && !chk[i]);
+  const done = all.filter((_, i) => chk[i] && shown(i)).length;
+  const nShown = all.filter((_, i) => shown(i)).length;
   const W = (k, val) => { if (ls.set(k, val)) srDataChanged(); };
   const toggle = i => W('sg_checks2', { ...checks, [key]: { ...chk, [i]: !chk[i] } });
   const reset = () => { const up = { ...checks }; delete up[key]; W('sg_checks2', up); };
@@ -154,11 +161,11 @@ function RsChecklists({ c }) {
       <RsBanners c={c} />
       <RsSeg label={rt(L,'sc_tasks')} value={phase} onChange={setPhase} options={[['pre', rt(L,'preSeasonW')], ['post', rt(L,'postSeasonW')]]} />
       <div className="rs-card" style={{ marginTop:12 }}>
-        <div className="rs-split"><div className="rs-meta tn">{rt(L,'doneOf', { d: done, n: all.length })}</div><div className="rs-meta tn">{all.length ? Math.round(done / all.length * 100) : 0}%</div></div>
-        <div className="rs-bar"><i style={{ width: (all.length ? done / all.length * 100 : 0) + '%', background:T.ok }} /></div>
+        <div className="rs-split"><div className="rs-meta tn">{rt(L,'doneOf', { d: done, n: nShown })}</div><div className="rs-meta tn">{nShown ? Math.round(done / nShown * 100) : 0}%</div></div>
+        <div className="rs-bar"><i style={{ width: (nShown ? done / nShown * 100 : 0) + '%', background:T.ok }} /></div>
       </div>
       <div className="rs-list" style={{ marginTop:12 }}>
-        {all.map((task, i) => <div key={i} className={`rs-chk${chk[i] ? ' on' : ''}`}>
+        {all.map((task, i) => !shown(i) ? null : <div key={i} className={`rs-chk${chk[i] ? ' on' : ''}`}>
           <button type="button" className="rs-chkbtn" role="checkbox" aria-checked={!!chk[i]} onClick={() => toggle(i)}>
             <span className="rs-box" aria-hidden="true">{chk[i] && <RsIcon name="check" size={20} sw={3} />}</span><span className="rs-rt"><b>{i < base.length ? rt(L, (phase === 'pre' ? 'taskPre' : 'taskPost') + i) : task}</b></span>
           </button>
@@ -185,8 +192,10 @@ function RsEquipment({ c }) {
   const P = (k, d) => { const x = ls.get(k, d); return x === '' || x == null ? d : x; };
   // Pump rate and tank size are kept in gallons and shown in the user's unit (L/min and L in litre mode).
   const [gpm, setGpm] = useRsGalPref('sg_pump_gpm', 28, c.units);
-  const [tank, setTank] = useRsGalPref('sg_pump_tank', 300, c.units);
-  const gpmG = parseFloat(gpm) > 0 ? srGalStored(parseFloat(gpm), c.units) : 28, tankG = parseFloat(tank) > 0 ? srGalStored(parseFloat(tank), c.units) : 300;
+  // Fix pass 2 (P2): the haul tank defaults to his real collection tank on Pumps, not 300 gal.
+  const realTank = React.useMemo(() => (ls.get('sg_tanks', []) || []).filter(t => t && +t.capGal > 0 && t.role !== 'concentrate').sort((a, b) => b.capGal - a.capGal)[0] || null, [v]);
+  const [tank, setTank] = useRsGalPref('sg_pump_tank', realTank ? +realTank.capGal : 300, c.units);
+  const gpmG = parseFloat(gpm) > 0 ? srGalStored(parseFloat(gpm), c.units) : 28, tankG = parseFloat(tank) > 0 ? srGalStored(parseFloat(tank), c.units) : (realTank ? +realTank.capGal : 300);
   const [line, setLine] = useState(() => P('sg_pump_line', 0));
   const [lift, setLift] = useState(() => P('sg_pump_lift', 0));
   const [setup, setSetup] = useState(() => P('sg_pump_setup', 4));
@@ -264,7 +273,7 @@ function RsEquipSheet({ c, onClose }) {
       <label className="rs-fl" htmlFor="rs-eq-notes">{rt(L,'noteOpt')}</label>
       <input id="rs-eq-notes" className="rs-field" value={f.notes} onChange={e => set('notes', e.target.value)} />
       <div className="rs-sheetfoot">
-      {fail && <p className="rs-errline" role="alert">{rt(L,'bNotSavedT')}. {rt(L,'bLockedP')}</p>}
+      {fail && <p className="rs-errline" role="alert">{rt(L,'bNotSavedT')}. {rt(L, srFailKey(SR_WRITE_FAIL))}</p>}
       <div><RsBtn onClick={save}>{rt(L,'saveEquip')}</RsBtn></div></div>
     </RsSheet>
   );
@@ -277,7 +286,9 @@ function RsBackupSheet({ c, onClose }) {
   const [msg, setMsg] = useState(null);
   const [pending, setPending] = useState(null);
   useEffect(() => { if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(setPersisted).catch(() => {}); }, []);
-  const keyCount = Object.keys(localStorage).filter(k => k.startsWith('sg_')).length;
+  // Fix pass 2 (P2): "entries" are records (log entries, batches, pins, readings...), not storage keys.
+  const parsedAll = () => { const o = {}; Object.keys(localStorage).forEach(k => { if (k.startsWith('sg_')) { try { o[k] = JSON.parse(localStorage.getItem(k)); } catch {} } }); return o; };
+  const entryCount = React.useMemo(() => srBackupEntries(parsedAll()), []);
   const doExport = () => {
     const keys = {};
     Object.keys(localStorage).forEach(k => { if (k.startsWith('sg_')) keys[k] = localStorage.getItem(k); });
@@ -286,7 +297,7 @@ function RsBackupSheet({ c, onClose }) {
     a.href = URL.createObjectURL(new Blob([JSON.stringify(payload)], { type:'application/json' }));
     a.download = `sweetrun-backup-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
-    setMsg({ ok:true, text: rt(L,'backupDone', { n: Object.keys(keys).length }) });
+    setMsg({ ok:true, text: rt(L,'backupDone2', { n: fmt(entryCount, 0) }) });
   };
   const doImport = e => {
     const file = e.target.files && e.target.files[0]; e.target.value = '';
@@ -298,7 +309,8 @@ function RsBackupSheet({ c, onClose }) {
         if (!obj || obj.app !== 'SweetRun' || !obj.keys || typeof obj.keys !== 'object') throw new Error('bad format');
         const entries = Object.entries(obj.keys).filter(([k, v]) => k.startsWith('sg_') && typeof v === 'string');
         if (!entries.length) throw new Error('empty');
-        setPending({ entries, when: obj.exportedAt ? String(obj.exportedAt).split('T')[0] : null }); setMsg(null);
+        const parsed = {}; entries.forEach(([k, v]) => { try { parsed[k] = JSON.parse(v); } catch {} });
+        setPending({ entries, records: srBackupEntries(parsed), when: obj.exportedAt ? String(obj.exportedAt).split('T')[0] : null }); setMsg(null);
       } catch { setMsg({ ok:false, text: rt(L,'backupBad') }); }
     };
     reader.readAsText(file);
@@ -328,11 +340,11 @@ function RsBackupSheet({ c, onClose }) {
   };
   return (
     <RsSheet title={rt(L,'set_backup')} onClose={onClose} id="rs-backup-sheet">
-      <p className="rs-meta">{rt(L,'backupLede', { n: keyCount })}</p>
+      <p className="rs-meta" id="rs-backup-lede">{rt(L,'backupLede2', { n: fmt(entryCount, 0) })}</p>
       {persisted === false && <div className="rs-banner" style={{ marginTop:12 }}><span className="rs-bic"><RsIcon name="alert" size={22} /></span>
         <span className="rs-bt"><span>{rt(L,'notPersisted')}</span></span></div>}
       {pending ? <div className="rs-card rs-confirm" style={{ marginTop:14 }}>
-        <b className="rs-cardt">{rt(L,'restoreQ', { n: pending.entries.length, d: pending.when ? srDateShort(pending.when, L) : '' })}</b>
+        <b className="rs-cardt">{rt(L,'restoreQ2', { n: fmt(pending.records, 0), d: pending.when ? srDateMid(pending.when, L) : '' })}</b>
         {(() => { const pl = srRestorePlan(Object.keys(localStorage).filter(k => k.startsWith('sg_')), pending.entries);
           return pl.remove.length ? <p className="rs-meta tn" id="rs-restore-remove">{rt(L,'restoreRemoves', { n: pl.remove.length })}</p> : null; })()}
         <p className="rs-meta">{rt(L,'restoreWarnX')}</p>
@@ -367,7 +379,7 @@ function RsOpsSettings({ c }) {
       <RsStepper id="rs-leak-lim" value={String(P.leakLimitIn)} onChange={x => put({ leakLimitIn: x === '' ? null : x })} steps={[-0.5, -0.1, 0.1, 0.5]} dp={1} unit="in" label={rt(L,'setLeak')} min={0.5} max={10} big={false} />
       <div className="rs-note">{rt(L,'setLeakN', { d: fmt(SR_OPS_DEFAULTS.leakLimitIn, 1) })}</div>
       <label className="rs-fl" htmlFor="rs-freeze-f">{rt(L,'setFreeze')}</label>
-      <RsStepper id="rs-freeze-f" value={String(P.freezeF)} onChange={x => put({ freezeF: x === '' ? null : x })} steps={[-2, -1, 1, 2]} dp={0} unit="°F" label={rt(L,'setFreeze')} min={0} max={40} big={false} />
+      <RsStepper id="rs-freeze-f" value={srMetric() ? String(Math.round(srFtoC(+P.freezeF))) : String(P.freezeF)} onChange={x => put({ freezeF: x === '' ? null : srMetric() ? Math.round(srCtoF(+x)) : x })} steps={[-2, -1, 1, 2]} dp={0} unit={srTempUnit()} label={rt(L,'setFreeze')} min={srMetric() ? -18 : 0} max={srMetric() ? 4 : 40} big={false} />
       <div className="rs-note">{rt(L,'setFreezeN', { d: SR_OPS_DEFAULTS.freezeF })}</div>
       <label className="rs-fl" htmlFor="rs-fuel-h">{rt(L,'setFuel')}</label>
       <RsStepper id="rs-fuel-h" value={String(P.fuelLowH)} onChange={x => put({ fuelLowH: x === '' ? null : x })} steps={[-1, 1]} dp={0} unit="h" label={rt(L,'setFuel')} min={1} max={24} big={false} />

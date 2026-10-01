@@ -40,7 +40,10 @@ function selSeason(season) {
     const base = phase === 'pre' ? PRE_TASKS : POST_TASKS;
     const all = [...base, ...(custom[phase] || [])];
     const c = checks[`${season}-${phase}`] || {};
-    return { done: all.filter((_, i) => c[i]).length, total: all.length };
+    // Fix pass 2 (item 35): items that don't fit the operation are not counted, unless ticked.
+    const hide = srTaskHidden(phase, selProfile());
+    const shown = all.map((_, i) => !(hide.has(i) && !c[i]));
+    return { done: all.filter((_, i) => c[i] && shown[i]).length, total: shown.filter(Boolean).length };
   };
   const anyEntries = Object.keys(logs).some(y => SR_LOG_KINDS.some(k => ((logs[y] || {})[k] || []).length));
   const anyThisSeason = SR_LOG_KINDS.some(k => (slog[k] || []).length > 0);

@@ -127,8 +127,11 @@ function RsWatch({ c, sub }) {
       {empty ? (
         <div className="rs-wempty"><div className="rs-empty">
           <div className="rs-mk"><RsIcon name="watch" size={48} /></div>
-          <b>{rt(L, 'wEmptyT')}</b><p>{rt(L, 'wEmptyP')}</p>
-          <div className="rs-btnrow"><RsBtn kind="secondary" icon="map" href={rsHref('bush')}>{rt(L, 'openBush')}</RsBtn><RsBtn kind="secondary" icon="pump" href={rsHref('pumps')}>{rt(L, 'pumpCenter')}</RsBtn></div>
+          {/* Item 35: Watch stays open to a bucket producer, and says honestly what it can show him. */}
+          {c.profile && c.profile.simple ? <><b>{rt(L, 'watchEmptyBkT')}</b><p>{rt(L, 'watchEmptyBkP')}</p>
+            <div className="rs-btnrow"><RsBtn icon="tank" href={rsHref('pumps/add-tank')}>{rt(L, 'addTank')}</RsBtn><RsBtn kind="secondary" icon="map" href={rsHref('bush')}>{rt(L, 'openBush')}</RsBtn></div></>
+          : <><b>{rt(L, 'wEmptyT')}</b><p>{rt(L, 'wEmptyP')}</p>
+          <div className="rs-btnrow"><RsBtn kind="secondary" icon="map" href={rsHref('bush')}>{rt(L, 'openBush')}</RsBtn><RsBtn kind="secondary" icon="pump" href={rsHref('pumps')}>{rt(L, 'pumpCenter')}</RsBtn></div></>}
           <div className="rs-wsensor"><span className="rs-soon">{rt(L, 'wSensors')}</span><p>{rt(L, 'wSensorsP')}</p></div>
         </div></div>
       ) : oneLine ? <RsWatchOne c={c} model={model} V={V} l={oneLine} demo={demo} />
@@ -151,15 +154,15 @@ function RsWatch({ c, sub }) {
                 <div className="rs-wcard">
                   <div className="rs-wk2">{rt(L, 'wOutside')}</div>
                   {V.tempF != null ? <>
-                    <div className="rs-wtemp tn">{fmt(V.tempF, 1)}<small>°F</small></div>
+                    <div className="rs-wtemp tn">{srTempShow(V.tempF, 1)}<small>{srTempUnit()}</small></div>
                     <div className="rs-wsub">{V.ft ? rt(L, 'trend_' + V.ft.trend) + (V.ft.cross ? ' · ' + rt(L, V.ft.cross.kind === 'freeze' ? 'freezeNear' : 'thawNear', { t: srClock(V.ft.cross.ms, L) }) : '') : ''}</div>
                     <div className="rs-wsrc">{demo ? rt(L, 'wDemoTag') : rt(L, 'wTempSrc', { p: (loc && loc.name) || rt(L, 'yourPlaceL') })}</div>
                   </> : <div className="rs-wsub">{!loc ? rt(L, 'wNoPlace') : hourly.status === 'loading' ? rt(L, 'wTempLoading') : rt(L, 'wTempErr')}</div>}
                 </div>
-                {V.tanks.length ? V.tanks.slice(0, 1).map(t => <RsWatchTank key={t.id} c={c} t={t} now={model.now} demo={demo} />)
+                {V.tanks.length === 1 ? <RsWatchTank c={c} t={V.tanks[0]} now={model.now} demo={demo} />
+                  : V.tanks.length > 1 ? <RsWatchTanks c={c} tanks={V.tanks} now={model.now} />
                   : <div className="rs-wcard"><div className="rs-wk2">{rt(L, 'tanksWord')}</div><div className="rs-wsub">{rt(L, 'wNoTank')}</div></div>}
               </div>
-              {V.tanks.length > 1 && <div className="rs-wgrid">{V.tanks.slice(1, 3).map(t => <RsWatchTank key={t.id} c={c} t={t} now={model.now} demo={demo} />)}</div>}
               <div className="rs-wcard">
                 <div className="rs-wk2">{rt(L, 'tabPumps')}</div>
                 {V.pumps.length ? <div className="rs-wpumps">{V.pumps.map(p => <a key={p.id} className="rs-wpump" href={rsHref('pumps/' + p.id)}><RsPumpTile p={p} size={44} />
@@ -176,6 +179,18 @@ function RsWatch({ c, sub }) {
         onSaved={() => srSaveLineMeta(l.id, { checkedAt: new Date().toISOString() })} onClose={() => setReadLine(null)} /> : null; })()}
     </div>
   );
+}
+// Fix pass 2 (P2): two or more tanks are one compact card, every tank listed (the third
+// and later ones used to be dropped, and the second ran off the bottom of the rail).
+function RsWatchTanks({ c, tanks, now }) {
+  const L = c.lang, u = srU(c.units);
+  return <div className="rs-wcard rs-wtanks" id="rs-wtanks">
+    <div className="rs-wk2">{rt(L, 'tanksWord')}</div>
+    {tanks.map(t => { const pct = t.levelGal != null && t.capGal > 0 ? Math.round(t.levelGal / t.capGal * 100) : null;
+      return <a key={t.id} className="rs-wtrow" href={rsHref('pumps/tank/' + t.id)}>
+        <span className="rs-wtn"><b>{t.name}</b><span className="tn">{pct != null ? rt(L, 'tankPctRead', { p: pct, a: srAgo(t.readMs, now, L) }) : rt(L, 'noLevelYet')}</span></span>
+        {t.levelGal != null && <span className="rs-wnum tn">{srVol(t.levelGal, c.units)}<small>{' ' + u}</small></span>}</a>; })}
+  </div>;
 }
 // Lines and pumps exist, but nothing has been read yet. Say how to read them,
 // that sensors are coming, and offer the demo (labelled, never saved).

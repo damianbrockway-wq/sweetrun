@@ -52,7 +52,7 @@ Object.assign(RS_TR.en, {
   jRoLaterT:'RO by {at}', jRoLaterW:'{name} fills in about {full}. Start the RO by {at} to stay ahead of it.', jRoLaterB:'Open Collect & RO', jRoLaterA:'Start the RO by {at}', jRoLaterS:'{name} at {lvl} {u}',
   jFreshT:'Sap has sat {hr} h', jFreshW24:'The freshness clock has run {h}. Boil it or run the RO before it turns.', jFreshW12:'The freshness clock has run {h}. Plan the boil.',
   jFreshB:'Open Collect & RO', jFreshA:'Sap has sat {hr} h', jFreshS:'Freshness clock started {h} ago',
-  jTapWxT:'Good sap weather is coming', jTapWxW:'{n} good run days in the next 5, starting with {hi}°F after {lo}°F. Get your taps in.', jTapWxB:'Go to Plan & tap',
+  jTapWxT:'Good sap weather is coming', jTapWxW:'{n} run days in the next 7, starting with {hi}°F after {lo}°F. Get your taps in.', jTapWxB:'Go to Plan & tap',
   jTapWxA:'Good sap weather is coming', jTapWxS:'{n} good run days in the next 5',
   jRunT1:'Sap run tomorrow', jRunT2:'Sap run in 2 days', jRunW:'A thaw to {hi}°F after a night of {lo}°F. Empty the tanks and be ready.', jRunB:'Open the forecast', jRunS:'{hi}°F after {lo}°F',
   jPreT:'Pre-season checklist', jPreW:'{done} of {total} jobs done. Finish them before the first run.', jPreB:'Open the checklist', jPreS:'{done} of {total} done',

@@ -305,7 +305,10 @@ function srPlacePlates(lines, o) {
     // Standing on the line first; then, unless the plate carries a marker that must stay on
     // the line (fixed: the leak ring), hanging below it or beside it.
     const w = l.w || 48, h = l.h || 44, up = l.up != null ? l.up : 12;
-    const offs = [[0, 0]].concat(l.fixed ? [] : [[0, h + 2 * up], [w / 2 + 10, h / 2 + up], [-(w / 2 + 10), h / 2 + up]]);
+    // Fix pass 2 (P2, ten lines on Watch): when all of those collide, a wider ring of spots
+    // beside the line before settling for the least overlap.
+    const offs = [[0, 0]].concat(l.fixed ? [] : [[0, h + 2 * up], [w / 2 + 10, h / 2 + up], [-(w / 2 + 10), h / 2 + up],
+      [w + 16, 0], [-(w + 16), 0], [0, -(h + 8)], [w + 16, h + 2 * up], [-(w + 16), h + 2 * up], [0, 2 * (h + 2 * up)], [w * 1.5 + 24, h / 2], [-(w * 1.5 + 24), h / 2]]);
     let best = null;
     outer: for (let o = 0; o < offs.length; o++) for (let k = 0; k <= steps; k++) {
       const t = tot * k / steps; let i = 1; while (i < Q.length - 1 && d[i] < t) i++;

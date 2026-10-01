@@ -17,10 +17,10 @@ function RsPassSheet({ c, onClose }) {
     const p = await verifyLicense(key);
     if (p && p.unverifiable) { setMsg({ ok:false, t: rt(L, p.offline ? 'passCheckOffline' : 'passCantCheck') }); return; }
     if (!p) { setMsg({ ok:false, t: rt(L,'passBad') }); return; }
-    if (p.expired) { setMsg({ ok:false, t: rt(L,'passExpired', { d: p.x }) }); return; }
-    SR_LOCKED = false; _srClear();
+    if (p.expired) { setMsg({ ok:false, t: rt(L,'passExpired2', { d: srDateMid(p.x, L) }) }); return; }
+    SR_LOCKED = false; SR_TRIAL_GATE = null; _srClear();
     ls.set('sg_license', key.trim());
-    setMsg({ ok:true, t: rt(L,'passOk', { d: p.x }) });
+    setMsg({ ok:true, t: rt(L,'passOk2', { d: srDateMid(p.x, L) }) });
     c.setLic({ status:'licensed', until:p.x });
   };
   const saveEmail = async () => {
@@ -29,7 +29,10 @@ function RsPassSheet({ c, onClose }) {
   };
   return (
     <RsSheet title={rt(L,'secPass')} onClose={onClose} id="rs-pass-sheet">
-      <p className="rs-body">{lic.status === 'licensed' ? rt(L,'passActiveP', { d: lic.until }) : lic.status === 'expired' ? rt(L,'passEndedP') : rt(L,'passTrialP', { n: lic.daysLeft })}</p>
+      <p className="rs-body" id="rs-pass-status">{lic.status === 'licensed' ? rt(L,'passActiveP2', { d: srDateMid(lic.until, L) }) : lic.status === 'expired' ? rt(L,'passEndedP')
+        : lic.trial && lic.trial.mode === 'sap' ? rt(L,'passTrialSapP', { u: rt(L, lic.trial.sapUsed === 0 ? 'sapDays0' : lic.trial.sapUsed === 1 ? 'sapDays1' : 'sapDaysN', { n: lic.trial.sapUsed }),
+            left: lic.trial.lastFree ? rt(L,'passSapLeft0') : rt(L, lic.trial.sapLeft === 1 ? 'passSapLeft1' : 'passSapLeftN', { n: lic.trial.sapLeft }) })
+        : rt(L,'passTrialP', { n: lic.daysLeft })}</p>
       {lic.cantCheck && <p className="rs-errline" role="alert" id="rs-pass-cantcheck">{rt(L,'passCantCheck')}</p>}
       {lic.status !== 'licensed' && <div style={{ marginTop:14 }}><RsBtn href={STRIPE_BUY_URL} ext>{rt(L,'passBuy')}</RsBtn></div>}
       <label className="rs-fl" htmlFor="rs-pass-key">{rt(L,'passHave')}</label>
@@ -58,19 +61,34 @@ function RsWizard({ c, onClose, onComplete }) {
     fuelType:'Firewood (cord)', fuelCost:'', syrupPrice:'' });
   const set = k => x => setO(p => ({ ...p, [k]: x }));
   const p = srWizardPlan({ ...o, syrupPrice: o.syrupPrice === '' ? '' : srPerGal(parseFloat(o.syrupPrice) || 0, c.units) });
-  const can = [p.trees > 0, true, o.hasEvap !== null, true, true][step];
+  // Fix pass 2 (item 34): a first step for language and units, so a French phone starts in French
+  // and litres, °C and cm are chosen before any number is typed. Steps: u, 0, 1, 2, 3, 4.
+  const KEYS = ['u', '0', '1', '2', '3', '4'], sk = KEYS[step];
+  const [fail, setFail] = useState(null);
+  const can = [true, p.trees > 0, true, o.hasEvap !== null, true, true][step];
   // Money is typed per the display unit (a litre in litre mode) and kept per US gallon, as every price is.
   const oG = { ...o, syrupPrice: o.syrupPrice === '' ? '' : srPerGal(parseFloat(o.syrupPrice) || 0, c.units) };
   const finish = () => {
     if (srFormBlocked('rs-wizard')) return;
     const data = srWizardData(oG);
-    ls.set('sg_wizard_data', data); ls.set('sg_onboarded', true);
+    // Fix pass 2 (item 23): a refused write (an ended trial) says so; it never says "saved".
+    if (!ls.set('sg_wizard_data', data)) { setFail(SR_WRITE_FAIL || 'locked'); return; }
+    ls.set('sg_onboarded', true);
     srDataChanged(); onComplete(data);
   };
   const Opt = ({ k, val, label, sub }) => <button type="button" className={`rs-opt${o[k] === val ? ' on' : ''}`} aria-pressed={o[k] === val} onClick={() => set(k)(val)}>
     <b>{label}</b>{sub && <span>{sub}</span>}</button>;
   const Y = m => `${rt(L,'rangeTo', { a: fmt(fromGal(m.low, c.units), 2), b: fmt(fromGal(m.high, c.units), 2) })} ${u}`;
   const steps = [
+    <div key="u">
+      <p className="rs-meta" style={{ marginTop:0 }}>{rt(L,'wzuP')}</p>
+      <label className="rs-fl">{rt(L,'langWord')}</label>
+      <RsSeg label={rt(L,'langWord')} value={c.lang} onChange={c.setLang} options={[['en', 'English'], ['fr', 'Français']]} />
+      <label className="rs-fl">{rt(L,'unitsWord')}</label>
+      <RsSeg label={rt(L,'unitsWord')} value={c.units} onChange={c.setUnits} options={[['GAL', rt(L,'gallons')], ['L', rt(L,'litres')]]} />
+      <label className="rs-fl">{rt(L,'measureWord')}</label>
+      <RsSeg label={rt(L,'measureWord')} value={c.metric ? 'metric' : 'us'} onChange={c.setMeasure} options={[['us', rt(L,'measureUS')], ['metric', rt(L,'measureMetric')]]} />
+    </div>,
     <div key="0">
       <p className="rs-meta" style={{ marginTop:0 }}>{rt(L,'wz0P')}</p>
       <label className="rs-fl" htmlFor="rs-wz-trees">{rt(L,'wzTrees')}</label>
@@ -121,13 +139,13 @@ function RsWizard({ c, onClose, onComplete }) {
     </div>,
   ];
   return (
-    <RsSheet title={rt(L, 'wzT' + step)} onClose={onClose} id="rs-wizard">
-      <div className="rs-eyebrow plain" style={{ marginTop:-6 }}>{rt(L,'wzStep', { n: step + 1 })}</div>
-      <div className="rs-wzbar" aria-hidden="true">{[0,1,2,3,4].map(i => <i key={i} className={i <= step ? 'on' : ''} />)}</div>
+    <RsSheet title={rt(L, 'wzT' + sk)} onClose={onClose} id="rs-wizard">
+      <div className="rs-eyebrow plain" style={{ marginTop:-6 }}>{rt(L,'wzStep6', { n: step + 1 })}</div>
+      <div className="rs-wzbar" aria-hidden="true">{KEYS.map((k, i) => <i key={k} className={i <= step ? 'on' : ''} />)}</div>
       {steps[step]}
-      <div className="rs-sheetfoot"><div className="rs-btnrow">
+      <div className="rs-sheetfoot"><RsSheetFail c={c} fail={fail} onClose={onClose} /><div className="rs-btnrow">
         {step > 0 ? <RsBtn kind="secondary" onClick={() => setStep(s => s - 1)}>{rt(L,'backW')}</RsBtn> : <RsBtn kind="secondary" onClick={onClose}>{rt(L,'notNow')}</RsBtn>}
-        {step < 4 ? <RsBtn onClick={() => { if (srFormBlocked('rs-wizard')) return; can && setStep(s => s + 1); }} disabled={!can} id="rs-wz-next">{rt(L,'nextW')}</RsBtn>
+        {step < KEYS.length - 1 ? <RsBtn onClick={() => { if (srFormBlocked('rs-wizard')) return; can && setStep(s => s + 1); }} disabled={!can} id="rs-wz-next">{rt(L,'nextW')}</RsBtn>
           : <RsBtn onClick={finish} disabled={p.trees <= 0} id="rs-wz-finish">{rt(L,'wzFinish')}</RsBtn>}
       </div></div>
     </RsSheet>
@@ -221,7 +239,7 @@ function RsImportSheet({ c, onClose }) {
         {pv.badDates > 0 && <p className="rs-errline">{rt(L,'impBadDateRows', { n: pv.badDates })}</p>}
         <p className="rs-note">{rt(L,'impUnitNote', { u })}</p>
       </div>}
-      <div className="rs-sheetfoot">{fail && <p className="rs-errline" role="alert">{rt(L,'bNotSavedT')}. {rt(L,'bLockedP')}</p>}
+      <div className="rs-sheetfoot">{fail && <p className="rs-errline" role="alert">{rt(L,'bNotSavedT')}. {rt(L, srFailKey(SR_WRITE_FAIL))}</p>}
         <div><RsBtn onClick={doImport} disabled={!pv || !!err || !dd || dd.addedCount === 0} id="rs-import-go">{rt(L,'impGo', { n: dd ? dd.addedCount : 0 })}</RsBtn></div></div>
     </RsSheet>
   );

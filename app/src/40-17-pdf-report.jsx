@@ -18,18 +18,24 @@ function srLoadJsPDF() {
 // Fix pass 1: taps (srTaps), Brix (srBrixSource) and grades (srGradeMix, batches included) come in
 // from srPdfArgs, the same numbers the screens show.
 async function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix, taps, brix, batches: batchList }) {
+  // Fix pass 2 (item 33, P2): the report is in his language (and number format), the footer
+  // names sweetrun.app on every page, and notes wrap in full instead of stopping at 30 characters.
+  const LG = ls.get('sg_lang', 'en') === 'fr' ? 'fr' : 'en';
   try { await srLoadJsPDF(); }
-  catch { alert(t(ls.get('sg_lang','en'),'pdfOffline')); return; }
+  catch { alert(t(LG,'pdfOffline')); return; }
   const { jsPDF } = window.jspdf;
-  const loc0 = SR_NUM_LOC; SR_NUM_LOC = 'en-US';   // the report is English
+  const loc0 = SR_NUM_LOC; SR_NUM_LOC = LG === 'fr' ? 'fr-CA' : 'en-US';
+  // Helvetica in jsPDF has no narrow no-break space (fr-CA's thousands mark): plain spaces.
+  const P = x => String(x == null ? '' : x).replace(/[\u202f\u00a0]/g, ' ');
+  const R = k => P(rt(LG, k));
   try {
   const doc = new jsPDF({ unit:'mm', format:'a4' });
   const u = units === 'L' ? 'L' : 'gal';
-  const conv = v => units === 'L' ? (v*3.78541).toFixed(1) : v.toFixed(1);
+  const conv = v => fmt(units === 'L' ? v*3.78541 : v, 1);
   const slog = logs[season] || {};
   const tot  = k => ((slog[k]||[]).reduce((s,e)=>s+(parseFloat(e.val)||0),0));
   const sapT = tot('sapCollected'), syT = tot('syrupMade');
-  const ratio = syT > 0 ? (sapT/syT).toFixed(1) : '—';
+  const ratio = syT > 0 ? fmt(sapT/syT, 1) : '0';
   const T = taps || srTaps({ trees });
   const B = brix || srBrixSource({ slog: (logs || {})[season] || {}, brixlog: brixLog, season, setting: sapBrix });
   const goal  = T.taps * yieldMidOf(yieldModelSaved());     // gallons
@@ -43,6 +49,12 @@ async function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix, t
 
   const W = 210, M = 18;
   let y = M;
+  const footer = () => {
+    doc.setFontSize(8); doc.setTextColor(160,160,160); doc.setFont('helvetica','normal');
+    doc.text(P(rt(LG, 'pdfGenerated', { d: srDateMid(srToday(), LG) })), M, 287);
+    doc.text(R('pdfFooter'), W-M, 287, { align:'right' });
+  };
+  const page = need => { if (y + (need || 0) > 272) { footer(); doc.addPage(); y = M; } };
 
   // ── Header ──────────────────────────────────────────────────
   doc.setFillColor(19, 46, 38);
@@ -52,7 +64,7 @@ async function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix, t
   doc.text('SweetRun', M+8, y+11);
   doc.setFontSize(9); doc.setFont('helvetica','normal');
   doc.setTextColor(180,210,200);
-  doc.text('MAPLE PRODUCTION SEASON REPORT', M+8, y+19);
+  doc.text(R('pdfKicker'), M+8, y+19);
   doc.setTextColor(255,255,255);
   doc.setFont('helvetica','bold'); doc.setFontSize(16);
   doc.text(String(season), W - M - 8, y+16, { align:'right' });
@@ -61,17 +73,17 @@ async function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix, t
   // ── Season Summary ───────────────────────────────────────────
   doc.setTextColor(30,30,30);
   doc.setFont('helvetica','bold'); doc.setFontSize(12);
-  doc.text('Season Summary', M, y); y += 6;
+  doc.text(R('pdfSummary'), M, y); y += 6;
   doc.setDrawColor(200,200,200); doc.line(M, y, W-M, y); y += 6;
 
   const summaryRows = [
-    ['Taps',            T.differ ? `${T.planned} planned, ${T.mapped} mapped` : `${T.taps} taps`],
-    ['Sap Collected',   `${(+sapT).toFixed(0)} ${u}`],
-    ['Syrup Produced',  `${(+syT).toFixed(1)} ${u}`],
-    ['Sap:Syrup Ratio', `${ratio}:1`],
-    ['Season Target',   `${conv(goal)} ${u}  (${syT>0?pctGoal:'0'}% of goal)`],
-    ['Syrup per Tap',   T.taps > 0 ? `${(syT / T.taps).toFixed(3)} ${u}` : '0'],
-    ['Sap °Brix',       `${(+B.season).toFixed(1)}° ${B.seasonFrom === 'sap' ? 'avg, weighted by sap' : B.seasonFrom === 'tree' ? 'avg of tree readings' : '(your setting)'}`],
+    [R('pdfTaps'),      T.differ ? P(rt(LG, 'tapsPlanMap', { p: fmt(T.planned, 0), m: fmt(T.mapped, 0) })) : P(rt(LG, T.taps === 1 ? 'tapsN1' : 'tapsN', { n: fmt(T.taps, 0) }))],
+    [R('pdfSap'),       `${P(fmt(sapT, 0))} ${u}`],
+    [R('pdfSyrup'),     `${P(fmt(syT, 1))} ${u}`],
+    [R('pdfRatio'),     `${P(ratio)}:1`],
+    [R('pdfTarget'),    P(rt(LG, 'pdfTargetV', { v: conv(goal), u, p: syT > 0 ? pctGoal : 0 }))],
+    [R('pdfPerTap'),    T.taps > 0 ? `${P(fmt(syT / T.taps, 3))} ${u}` : '0'],
+    [R('pdfBrix'),      `${P(fmt(+B.season, 1))}° ${R(B.seasonFrom === 'sap' ? 'pdfBrixSap' : B.seasonFrom === 'tree' ? 'pdfBrixTree' : 'pdfBrixSet')}`],
   ];
 
   doc.setFont('helvetica','normal'); doc.setFontSize(10);
@@ -87,14 +99,14 @@ async function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix, t
   if (Object.keys(gradeTotals).length > 0) {
     doc.setFont('helvetica','bold'); doc.setFontSize(12);
     doc.setTextColor(30,30,30);
-    doc.text('Syrup Grade Breakdown', M, y); y += 6;
+    page(30); doc.text(R('pdfGrades'), M, y); y += 6;
     doc.setDrawColor(200,200,200); doc.line(M, y, W-M, y); y += 6;
     doc.setFont('helvetica','normal'); doc.setFontSize(10);
     Object.entries(gradeTotals).forEach(([grade, vol]) => {
       const pct = syT > 0 ? ((vol/syT)*100).toFixed(0) : 0;
-      doc.setTextColor(100,100,100); doc.text(grade, M, y);
+      doc.setTextColor(100,100,100); doc.text(P(srGradeLabel(grade, LG)), M, y);
       doc.setTextColor(20,20,20); doc.setFont('helvetica','bold');
-      doc.text(`${(+vol).toFixed(1)} ${u}  (${pct}%)`, W/2, y);
+      doc.text(`${P(fmt(+vol, 1))} ${u}  (${pct}%)`, W/2, y);
       doc.setFont('helvetica','normal'); y += 7;
     });
     y += 4;
@@ -105,18 +117,18 @@ async function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix, t
   if (bser.length > 0) {
     doc.setFont('helvetica','bold'); doc.setFontSize(12);
     doc.setTextColor(30,30,30);
-    doc.text('Sap Brix Readings', M, y); y += 6;
+    page(30); doc.text(R('pdfBrixT'), M, y); y += 6;
     doc.setDrawColor(200,200,200); doc.line(M, y, W-M, y); y += 6;
     doc.setFont('helvetica','normal'); doc.setFontSize(10);
     const peak = Math.max(...bser.map(e=>e.brix));
     const last = bser[bser.length-1].brix;
-    doc.setTextColor(100,100,100); doc.text('Peak Brix', M, y);
-    doc.setTextColor(20,20,20); doc.setFont('helvetica','bold'); doc.text(`${peak.toFixed(1)}°`, W/2, y);
+    doc.setTextColor(100,100,100); doc.text(R('pdfPeak'), M, y);
+    doc.setTextColor(20,20,20); doc.setFont('helvetica','bold'); doc.text(`${P(fmt(peak, 1))}°`, W/2, y);
     doc.setFont('helvetica','normal'); y += 7;
-    doc.setTextColor(100,100,100); doc.text('Final Brix', M, y);
-    doc.setTextColor(20,20,20); doc.setFont('helvetica','bold'); doc.text(`${last.toFixed(1)}°`, W/2, y);
+    doc.setTextColor(100,100,100); doc.text(R('pdfFinal'), M, y);
+    doc.setTextColor(20,20,20); doc.setFont('helvetica','bold'); doc.text(`${P(fmt(last, 1))}°`, W/2, y);
     doc.setFont('helvetica','normal'); y += 7;
-    doc.setTextColor(100,100,100); doc.text('Readings logged', M, y);
+    doc.setTextColor(100,100,100); doc.text(R('pdfReadings'), M, y);
     doc.setTextColor(20,20,20); doc.setFont('helvetica','bold'); doc.text(`${B.n}`, W/2, y);
     doc.setFont('helvetica','normal'); y += 10;
   }
@@ -126,28 +138,27 @@ async function exportSeasonPDF({ season, trees, units, logs, brixLog, sapBrix, t
   if (batches.length > 0) {
     doc.setFont('helvetica','bold'); doc.setFontSize(12);
     doc.setTextColor(30,30,30);
-    doc.text('Syrup Batch Log', M, y); y += 6;
+    page(24); doc.text(R('pdfBatches'), M, y); y += 6;
     doc.setDrawColor(200,200,200); doc.line(M, y, W-M, y); y += 6;
     doc.setFont('helvetica','normal'); doc.setFontSize(9);
     doc.setTextColor(120,120,120);
-    doc.text('Date', M, y); doc.text(`${u.toUpperCase()}`, M+40, y);
-    doc.text('Grade', M+70, y); doc.text('Note', M+110, y);
+    doc.text(R('date'), M, y); doc.text(u, M+34, y);
+    doc.text(R('grade'), M+52, y); doc.text(R('noteW'), M+96, y);
     y += 5; doc.setTextColor(30,30,30);
     batches.forEach(b => {
-      if (y > 270) { doc.addPage(); y = M; }
-      doc.text(b.date||'', M, y);
-      doc.text(fmt(b.val,1), M+40, y);
-      doc.text(b.grade&&b.grade!=='—'?b.grade:'', M+70, y);
-      doc.text((b.note||'').slice(0,30), M+110, y);
-      y += 6;
+      const lines = doc.splitTextToSize(P(b.note || ''), W - M - (M + 96));
+      page(6 * Math.max(1, lines.length));
+      doc.text(P(srDateShort(b.date, LG)), M, y);
+      doc.text(P(fmt(b.val,1)), M+34, y);
+      doc.text(b.grade&&b.grade!=='—'?P(srGradeLabel(b.grade, LG)):'', M+52, y);
+      if (lines.length) doc.text(lines, M+96, y);
+      y += 5 * Math.max(1, lines.length) + 1;
     });
     y += 4;
   }
 
   // ── Footer ──────────────────────────────────────────────────
-  doc.setFontSize(8); doc.setTextColor(160,160,160);
-  doc.text(`Generated by SweetRun · ${new Date().toLocaleDateString()}`, M, 287);
-  doc.text(`sugarcalc.netlify.app`, W-M, 287, { align:'right' });
+  footer();
 
   doc.save(`SweetRun-Season-${season}.pdf`);
   } finally { SR_NUM_LOC = loc0; }

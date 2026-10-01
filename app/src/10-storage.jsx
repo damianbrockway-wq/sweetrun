@@ -20,10 +20,14 @@ const SR_PREF_KEYS = [
   'sg_bush_layers','sg_watch_prefs','sg_demo_readings',
   // LiDAR terrain: which terrain layers are on, their strength, the heat map's range
   'sg_bush_terrain',
+  // Fix pass 2: °C, km/h and cm or °F, mph and inches
+  'sg_measure',
 ];
 const SR_PREF_PREFIXES = ['sg_last_screen','sg_pan','sg_dx_','sg_bev_','sg_recap_'];
 const _srIsPref = k => SR_PREF_KEYS.includes(k) || SR_PREF_PREFIXES.some(p => k.startsWith(p));
-let SR_WRITE_FAIL = null; // null | 'locked' | 'quota'
+let SR_WRITE_FAIL = null; // null | 'locked' | 'quota' | 'trialsap' (fix pass 2: a 4th sap day in the trial)
+// The sentence for a refused write.
+const srFailKey = f => f === 'quota' ? 'bQuotaP' : f === 'trialsap' ? 'bTrialSapP' : 'bLockedP';
 const _srFail = why => {
   SR_WRITE_FAIL = why;
   try { window.dispatchEvent(new Event('sr-write-fail')); } catch {}
@@ -34,9 +38,22 @@ const _srClear = () => {
   SR_WRITE_FAIL = null;
   try { window.dispatchEvent(new Event('sr-write-fail')); } catch {}
 };
+// Fix pass 2 (item 23): while a Season Trial runs, every data write asks the trial first
+// (srTrialGate in 11-license), so a session left open across midnight, or the Watch iPad,
+// locks when the rule says, not at the next start-up. Null until the core knows the trial.
+let SR_TRIAL_GATE = null;
+const _srGate = (k, v) => {
+  if (SR_LOCKED || !SR_TRIAL_GATE || SR_LOCK_ALLOW.includes(k) || _srIsPref(k)) return null;
+  try { if (localStorage.getItem(k) === JSON.stringify(v)) return null; } catch {}
+  let g = null; try { g = SR_TRIAL_GATE(k, v); } catch { g = null; }
+  if (g === 'expired') { SR_LOCKED = true; try { window.dispatchEvent(new Event('sr-lic')); } catch {} }
+  return g;
+};
 const ls = {
   get: (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set: (k, v) => {
+    const gate = _srGate(k, v);
+    if (gate === 'refuse') return _srFail('trialsap');
     if (SR_LOCKED && !SR_LOCK_ALLOW.includes(k) && !_srIsPref(k)) {
       // Mount-persist effects re-write the value already stored (e.g. TasksTab
       // writes sg_checks2 on open). Writing an identical value changes nothing,

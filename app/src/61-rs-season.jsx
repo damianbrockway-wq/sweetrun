@@ -49,7 +49,7 @@ function useRsSeasonModel(c) {
     wx: wx.data, boil: d.boil && d.boil.start ? { startMs: d.boil.start } : null,
     fresh: d.freshStart ? { startMs: d.freshStart } : null,
     tanks, roGph: roPump ? roPump.gph : null, sapBrix: c.sapBrix, waterBP: c.waterBP,
-    loggedToday: today, checks: d.checks, ops: srOpsForJobs(ops, wx.data),
+    loggedToday: today, checks: d.checks, ops: srOpsForJobs(ops, wx.data), profile: c.profile,
   });
   const totals = seasonTotals(d.slog);
   const totalsGal = seasonTotalsGal(d.slog, c.units);
@@ -90,6 +90,7 @@ function rsJobVars(j, c) {
     lim: v.lim != null ? fmt(v.lim, 1) : '', left: v.left, note: v.note || '',
     empty: v.emptyAtMs ? srWhenAhead(v.emptyAtMs, v.nowMs || Date.now(), L) : '', since: v.startMs ? srClock(v.startMs, L) : '',
     fuel: v.lvl != null ? srVol(v.lvl, c.units, 1) : '',
+    items: v.items ? rtList(L, v.items) : '',
   };
 }
 
@@ -101,6 +102,7 @@ function RsSeason({ c, openLog }) {
   const top = m.jobs[0], rest = m.jobs.slice(1).filter(j => j.alert).slice(0, 3);
   const boilOn = !!(m.d.boil && m.d.boil.start);
   const night = m.minutes >= 17 * 60 || m.minutes < 5 * 60;
+  const noOps = !!(c.profile && c.profile.simple && !m.ops.pumps.length && !m.ops.lines.length);
   const logBtns = (
     <div className="rs-btnrow">
       <RsBtn kind="secondary" icon="pail" onClick={() => openLog('sapCollected')} big={night}>{rt(L,'logSap')}</RsBtn>
@@ -110,7 +112,7 @@ function RsSeason({ c, openLog }) {
   return (
     <>
       <RsHero photo={SR_GREET_PHOTO[part]} />
-      <div className="rs-inner rs-home">
+      <div className={`rs-inner rs-home${noOps ? ' rs-noops' : ''}`}>
         <header className="rs-phead hb-top">
           <div className="rs-topbar">
             <div className="rs-greet"><RsBrandMark /><span className="rs-gname" data-part={part}>{srGreeting(part, c.firstName, L)}</span></div>
@@ -146,7 +148,8 @@ function RsSeason({ c, openLog }) {
               sub={m.taps > 0 && !m.firstRun ? rt(L,'nPerTapOf', { v: fmt(m.totals.syT / m.taps, 2), u: srU(c.units), t: rtTapsLine(L, m.tapsInfo) }) : rt(L,'nNoTaps')} href={rsHref('stage/recap')} />
           </div>
         </div>
-        <div className="hb-ops rs-wideonly"><RsOpsCard c={c} ops={m.ops} /></div>
+        {/* Item 35: no "add a pump" card for a bucket or gravity producer who has none. */}
+        {!noOps && <div className="hb-ops rs-wideonly"><RsOpsCard c={c} ops={m.ops} /></div>}
         <div className="hb-going">
           <h2 className="rs-sec">{rt(L,'howGoing')}<a className="rs-more" href={rsHref('stage/recap')}>{rt(L,'allCharts')}<RsIcon name="chev" size={18} /></a></h2>
           <RsSyrupVsLast c={c} slog={m.d.slog} prev={m.d.prevSlog} dayOfRun={m.run.kind === 'running' ? m.run.day : m.run.length} />
@@ -183,8 +186,9 @@ function rsContextLine(m, c) {
   if (m.run.kind === 'running') return rt(L,'ctxDay', { n: m.run.day, v: fmt(m.totals.syT, 1), u });
   if (m.run.kind === 'over') return rt(L,'ctxOver', { y: c.season, n: m.run.length, v: fmt(m.totals.syT, 1), u });
   if (m.wx.data) {
-    const good = [1,2,3,4,5,6,7,8,9,10].filter(i => { const d = m.wx.data[srIsoAdd(m.todayIso, i)]; return d && srDayClass(d.hi, d.lo) === 'ideal'; }).length;
-    return rt(L, good === 1 ? 'ctxGood1' : 'ctxGood', { n: good });
+    // One run-day count (fix pass 2): srRunDays, 7 days from today, as on Weather and the forecast.
+    const rd = srRunDays(m.wx.data, m.todayIso);
+    return rt(L, rd.n === 1 ? 'runDaysOf1' : 'runDaysOf', { n: rd.n, d: rd.of || SR_RUN_WINDOW }) + '.';
   }
   return rt(L,'ctxPlain', { y: c.season });
 }
@@ -193,7 +197,8 @@ function rsContextLine(m, c) {
 function RsSeasonCard({ m, c }) {
   const L = c.lang, u = srU(c.units);
   // No goal ring before the season is set up: the tap count is still the shell's default.
-  const pct = m.goalGal > 0 && !m.firstRun ? Math.min(100, (m.totalsGal.syrupGal / m.goalGal) * 100) : null;
+  // The arc stops at full (RsRing clamps it); the number is the real share, past 100% too (fix pass 2).
+  const pct = m.goalGal > 0 && !m.firstRun ? srRingOf(m.totalsGal.syrupGal, m.goalGal).real : null;
   return (
     <section className="rs-card rs-season" aria-label={rt(L,'seasonChart')}>
       <div className="rs-split" style={{ alignItems:'flex-start' }}>
@@ -248,6 +253,16 @@ function RsTankCard({ c, tanks, tankPins, big }) {
       </a>
     );
   }
+  // Fix pass 2 (item 26): a tank set up on Pumps with no level yet is that tank, not "no tank".
+  // Its button logs a level on the tank's own page; it never creates a second tank.
+  const cfg = (tanks || [])[0];
+  if (cfg) return (
+    <div className="rs-empty rs-tankempty" id="rs-tank-noread">
+      <RsTankViz empty w={big ? 96 : 72} h={big ? 150 : 116} />
+      <div><b>{rt(L,'tankNoReadT', { n: cfg.name })}</b><p>{rt(L,'tankNoReadP')}</p></div>
+      <div className="rs-tebtn"><RsBtn kind="secondary" icon="tank" href={rsHref('pumps/tank/' + cfg.id)}>{rt(L,'tankLogLevel')}</RsBtn></div>
+    </div>
+  );
   const pin = (tankPins || [])[0];
   return (
     <div className="rs-empty rs-tankempty">
@@ -273,7 +288,7 @@ function RsBoilNum({ c, boil, m }) {
   // rate, at the feed's Brix).
   const sess = srSessInUnit(boil, c.units, srLegacyUnits()), drawn = sess.syrup || 0;
   const est = srBoilExpected({ evapGph: selEvap().rate, hrs: Math.max(0, (now - boil.start) / 3600000), sapInGal: toGal(sess.sap || 0, c.units),
-    sapBrix: m ? m.brix.brix : c.sapBrix, concBrix: parseFloat(ls.get('sg_dx_robrix', 8)) || 8, ro: m ? selUsesRo(m.d.slog) : false }).gal;
+    sapBrix: m ? m.brix.brix : c.sapBrix, concBrix: m ? srRoConcOf(m.d.slog.sapRO, m.brix.brix, ls.get('sg_dx_robrix', 8)).concBrix : (parseFloat(ls.get('sg_dx_robrix', 8)) || 8), ro: m ? selUsesRo(m.d.slog) : false }).gal;
   return <RsNum label={rt(L,'nBoiling')} live={rt(L,'live')} value={srVol(est, c.units, 2)} unit={u}
     sub={drawn > 0 ? rt(L,'nEstBoilD', { d: fmt(drawn, 1), u }) : rt(L,'nEstBoil')} href={rsHref('stage/boil')} />;
 }

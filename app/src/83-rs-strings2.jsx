@@ -13,7 +13,7 @@ Object.assign(RS_TR.en, {
   // Forecast
   fcLede:'Every day scored for sap flow from the freeze, the thaw, the swing, sun, wind and rain.',
   fcRunDays:'Run days, next 7', fcBest:'Best score', fcPickDay:'Pick a day', fcDayAria:'{d}, score {s}, {q}',
-  fcBarsNote:'Orange bars are run days, 44 and up. Tap a day for why it scored that way.',
+  fcBarsNote:'Orange bars are run days: 40°F or warmer after a night of 28°F or colder, the rule every screen uses. The number is how good the run looks. Tap a day for why.',
   fcModelNote:'Scored on sugar maple physiology from Cornell and UVM Proctor research. Your bush may run a little different.',
   qExcellent:'Excellent run', qGood:'Good run', qFair:'Fair run', qPoor:'Poor run', qNoFlow:'No flow',
   fNight:'Night freeze', fDay:'Day thaw', fSwing:'Swing', fWind:'Wind', fRain:'Rain', fSun:'Sun',
@@ -42,7 +42,7 @@ Object.assign(RS_TR.en, {
   // Tapping guide
   tgLede:'How many taps your trees can take, the right bit and depth, and notes on each tree.',
   tgTrees:'Trees', tgDbh:'Trunk size', tgVac:'Tap system',
-  tgv_gravBuckets:'Gravity', tgv_gravBuckets_s:'or buckets', tgv_lowVac:'Low vacuum', tgv_lowVac_s:'under 15 in', tgv_highVac:'High vacuum', tgv_highVac_s:'15 in and up', tgPerTree:'Taps a tree', tgTotal:'Total taps', tgSap:'Sap this season', tgSyrup:'Syrup this season',
+  tgv_gravBuckets:'Gravity', tgv_gravBuckets_s:'or buckets', tgv_lowVac:'Low vacuum', tgv_lowVac_s:'under 15 inHg', tgv_highVac:'High vacuum', tgv_highVac_s:'15 inHg and up', tgPerTree:'Taps a tree', tgTotal:'Total taps', tgSap:'Sap this season', tgSyrup:'Syrup this season',
   tgEstNote:'At {r} to 1 and the {m} yield. The tree count is shared with the rest of the app.',
   tgSizeT:'Smallest tree to tap', tgSpoutT:'Spout and bit', tgBit:'Drill bit', tgDepth:'Depth',
   tgDrillT:'Drilling', tgNotesT:'Tree notes', tgNotesNoneT:'No tree notes yet', tgNotesNoneP:'Note a tree that runs well, runs thin, or needs a year off.',
@@ -248,7 +248,7 @@ Object.assign(RS_TR.en, {
   // Season Pass
   passActiveP:'Your Season Pass is active through {d}. Thank you for backing a one person project.',
   passEndedP:'Your Season Trial has ended. Your data is safe, and viewing and export always work, but new entries need a pass.',
-  passTrialP:'You are on a free Season Trial, {n} days left. It never ends before you have had 3 real sap days. Everything is unlocked.',
+  passTrialP:'You are on the free Season Trial, {n} days left, with everything unlocked. From February to April it then stays open until you have logged sap on 3 days.',
   passBuy:'Get a Season Pass, $49.99 a year', passHave:'Have a pass key?', passPh:'Paste your Season Pass key', passActivate:'Activate',
   passBad:'That key doesn\'t look right. Check for missing characters, or email hello@sweetrun.app and I\'ll sort it out.',
   passExpired:'This Season Pass expired {d}. Get a new one above.', passOk:'Season Pass active through {d}. Boil on.',

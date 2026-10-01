@@ -40,7 +40,9 @@ function RsTapGuide({ c }) {
               <div><label className="rs-fl" htmlFor="rs-tg-trees" style={{ marginTop:0 }}>{rt(L,'tgTrees')}</label>
                 <RsStepper id="rs-tg-trees" value={c.trees} onChange={x => c.setTrees(x === '' ? 0 : x)} steps={[-10, 10]} unit="" label={rt(L,'tgTrees')} min={0} max={100000} big={false} /></div>
               <div><label className="rs-fl" htmlFor="rs-tg-dbh" style={{ marginTop:0 }}>{rt(L,'tgDbh')}</label>
-                <RsStepper id="rs-tg-dbh" value={dbh} onChange={setDbh} steps={[-1, 1]} unit="in" label={rt(L,'dbhLabel')} min={6} max={60} big={false} /></div>
+                {/* Fix pass 2 (item 33): typed in cm in metric, kept in inches (sg_dbh). */}
+                <RsStepper id="rs-tg-dbh" value={srMetric() ? String(Math.round(srInToCm(parseFloat(dbh) || 0))) : dbh} onChange={x => setDbh(srMetric() && x !== '' ? String(Math.round(srCmToIn(parseFloat(x)) * 10) / 10) : x)}
+                  steps={srMetric() ? [-2, 2] : [-1, 1]} unit={srMetric() ? 'cm' : 'in'} label={rt(L,'dbhLabel')} min={srMetric() ? 15 : 6} max={srMetric() ? 152 : 60} big={false} /></div>
             </div>
             <label className="rs-fl">{rt(L,'tgVac')}</label>
             <div className="rs-opts three" role="group" aria-label={rt(L,'tgVac')}>{SR_VAC_KEYS.map(k => <button key={k} type="button" className={`rs-opt${vac === t('en', k) ? ' on' : ''}`}
@@ -56,12 +58,12 @@ function RsTapGuide({ c }) {
             <p className="rs-note">{rt(L,'tgEstNote', { r: fmt(rule86(c.sapBrix), 0), m: srModelName(yieldModelSaved().label, L) })}</p>
           </div>
           <h2 className="rs-sec">{rt(L,'tgSizeT')}</h2>
-          <div className="rs-list">{sizes.map(([s, n, k]) => <RsRow key={s} chev={false} title={srPlain(t(L, s), L)} sub={t(L, n)} value={rt(L, k === '1' ? 'nTap1' : 'nTaps', { n:k })} />)}</div>
+          <div className="rs-list">{sizes.map(([s, n, k]) => <RsRow key={s} chev={false} title={srPlain(t(srMetric() ? 'fr' : 'en', s), L)} sub={t(L, n)} value={rt(L, k === '1' ? 'nTap1' : 'nTaps', { n:k })} />)}</div>
           <h2 className="rs-sec">{rt(L,'tgSpoutT')}</h2>
           <div className="rs-card">
             <div className="rs-opts three" role="group" aria-label={rt(L,'tgSpoutT')}>{SPOUTS.map((sp_, i) => <button key={i} type="button" className={`rs-opt${(parseInt(spout) || 0) === i ? ' on' : ''}`}
               aria-pressed={(parseInt(spout) || 0) === i} onClick={() => setSpout(i)}><b>{sp_.bit}</b><span>{rt(L, 'spoutS' + i)}</span></button>)}</div>
-            <RsKv rows={[[rt(L,'tgBit'), sp.bit], [rt(L,'tgDepth'), srPlain(sp.depth, L).replace(/ in$/, ' ' + srUnitL('in', L))]]} />
+            <RsKv rows={[[rt(L,'tgBit'), sp.bit], [rt(L,'tgDepth'), (srMetric() ? srPlain(sp.depth, L).replace(/(\d+(?:[.,]\d+)?)(\s*(?:to|à)\s*)?(\d+(?:[.,]\d+)?)?\s*in$/, (a, x, mid, y) => fmt(srInToCm(parseFloat(String(x).replace(',', '.'))), 1) + (y ? mid + fmt(srInToCm(parseFloat(String(y).replace(',', '.'))), 1) : '') + ' cm') : srPlain(sp.depth, L).replace(/ in$/, ' ' + srUnitL('in', L)))]]} />
             <p className="rs-note">{rt(L, 'spoutN' + (SPOUTS.indexOf(sp)))}</p>
           </div>
         </div>
@@ -110,7 +112,7 @@ function RsTreeNoteSheet({ c, onClose }) {
       <div className="rs-chips wrap">{SR_HEALTH_TAGS.map(k => <button key={k} type="button" className="rs-chip" onClick={() => setF(p => ({ ...p, obs: p.obs ? p.obs + ', ' + t(L, k) : t(L, k) }))}>{t(L, k)}</button>)}</div>
       <label className="rs-fl" htmlFor="rs-tn-obs">{rt(L,'tgObs')}</label>
       <input id="rs-tn-obs" className="rs-field" value={f.obs} onChange={e => setF(p => ({ ...p, obs:e.target.value }))} placeholder={rt(L,'tgObsPh')} />
-      <div className="rs-sheetfoot">{fail && <p className="rs-errline" role="alert">{rt(L,'bNotSavedT')}. {rt(L,'bLockedP')}</p>}
+      <div className="rs-sheetfoot">{fail && <p className="rs-errline" role="alert">{rt(L,'bNotSavedT')}. {rt(L, srFailKey(SR_WRITE_FAIL))}</p>}
         <div><RsBtn onClick={save} id="rs-tn-save">{rt(L,'saveNote')}</RsBtn></div></div>
     </RsSheet>
   );
@@ -133,7 +135,7 @@ function RsRotSheet({ c, onClose }) {
       <RsSeg label={rt(L,'tgSide')} value={f.side} onChange={s => setF(p => ({ ...p, side:s }))} options={Object.keys(SR_SIDES).map(k => [k, t(L, SR_SIDES[k])])} />
       <label className="rs-fl" htmlFor="rs-rot-y">{rt(L,'yearWord')}</label>
       <RsStepper id="rs-rot-y" value={f.year} onChange={y => setF(p => ({ ...p, year: y === '' ? p.year : y }))} steps={[-1, 1]} unit="" label={rt(L,'yearWord')} min={2000} max={2100} big={false} />
-      <div className="rs-sheetfoot">{fail && <p className="rs-errline" role="alert">{rt(L,'bNotSavedT')}. {rt(L,'bLockedP')}</p>}
+      <div className="rs-sheetfoot">{fail && <p className="rs-errline" role="alert">{rt(L,'bNotSavedT')}. {rt(L, srFailKey(SR_WRITE_FAIL))}</p>}
         <div><RsBtn onClick={save} id="rs-rot-save">{rt(L,'tgAddRot')}</RsBtn></div></div>
     </RsSheet>
   );
@@ -214,7 +216,11 @@ function RsEvaporator({ c }) {
   const [customR, setCustomRS] = useState(() => { const r = parseFloat(ls.get('sg_pan_rate', '')); return r > 0 ? Math.round(fromGal(r, c.units)) : ''; });
   const setCustomR = x => { setCustomRS(x); const n = parseFloat(x); ls.set('sg_pan_rate', n > 0 ? +toGal(n, c.units).toFixed(3) : ''); srDataChanged(); };
   const [sap, setSap] = useState(() => c.units === 'L' ? 1900 : 500);
-  const [laborHrs, setLaborHrs] = useRsPref('sg_laborhrs', 0);
+  // Fix pass 2 (P2): hours this season start from the boil hours he logged, until he types his own.
+  const loggedH = React.useMemo(() => Math.round(seasonTotals(srReadLogs(c.units)[c.season] || {}).hoursT * 10) / 10, [c.season, c.units]);
+  const [laborHrs0, setLaborHrs] = useRsPref('sg_laborhrs', '');
+  const laborTyped = laborHrs0 !== '' && laborHrs0 != null && !(+laborHrs0 === 0 && loggedH > 0);
+  const laborHrs = laborTyped ? laborHrs0 : (loggedH > 0 ? String(loggedH) : laborHrs0);
   const [laborRate, setLaborRate] = useState(() => getLaborRate());
   const [spoutC, setSpoutC] = useRsPref('sg_spoutcost', 0), [bottleC, setBottleC] = useRsPref('sg_bottlecost', 0);
   const [filterC, setFilterC] = useRsPref('sg_filtercost', 0), [otherC, setOtherC] = useRsPref('sg_othercost', 0);
@@ -226,7 +232,7 @@ function RsEvaporator({ c }) {
   const k = srEvapCosts({ fuelType:c.fuelType, sapGal, brix:c.sapBrix, rate:er.rate, fuelCost:c.fuelCost, laborHrs, laborRate,
     supplies:[spoutC, bottleC, filterC, otherC], margin, cpgOverride: cpgU === '' ? '' : srPerGal(parseFloat(cpgU) || 0, c.units) });
   const fl = f => f.unit === 'ccf' ? rt(L,'fuelGas') : f.unit === 'cord' ? rt(L,'fuelWood') : fuelLabel(f, L).replace(/ \(.*\)/, '');
-  const fu = L === 'fr' ? (k.fuel.unitFr || k.fuel.unit) : k.fuel.unit;
+  const fS = srFuelShow(k.fuel, c.units, L), fu = fS.u;   // litres of oil or propane in litre mode (item 33)
   const bottleName = { '250ml':'250 mL', '500ml':'500 mL', '1l':'1 L', '1qt':'1 qt', '1gal':'1 gal' };
   return (
     <div className="rs-inner">
@@ -268,20 +274,21 @@ function RsEvaporator({ c }) {
           <div className="rs-card">
             <RsSeg wrap label={rt(L,'evFuelT')} value={c.fuelType} onChange={c.setFuelType} options={FUELS.map(f => [f.label, fl(f)])} />
             <label className="rs-fl" htmlFor="rs-ev-fc">{rt(L,'evFuelCost', { u: fu })}</label>
-            <RsMoney id="rs-ev-fc" value={c.fuelCost} onChange={x => c.setFuelCost(x === '' ? 0 : x)} label={rt(L,'evFuelCost', { u: fu })} />
+            <RsMoney id="rs-ev-fc" value={fS.k === 1 ? c.fuelCost : String(Math.round((parseFloat(c.fuelCost) || 0) / fS.k * 100) / 100)} onChange={x => c.setFuelCost(x === '' ? 0 : fS.k === 1 ? x : Math.round(parseFloat(x) * fS.k * 1000) / 1000)} label={rt(L,'evFuelCost', { u: fu })} dp={fS.k === 1 ? undefined : 2} />
             <div className="rs-hr" />
             <div className="rs-grid2">
-              <div><div className="rs-meta">{rt(L,'evFuelNeed')}</div><div className="rs-mid tn">{fmt(k.uNeeded, 2)}<small>{fu}</small></div></div>
+              <div><div className="rs-meta">{rt(L,'evFuelNeed')}</div><div className="rs-mid tn">{fmt(k.uNeeded * fS.k, 2)}<small>{fu}</small></div></div>
               <div><div className="rs-meta">{rt(L,'evFuelSpend')}</div><div className="rs-mid tn">{srMoney(k.cost, 2)}</div></div>
             </div>
             <p className="rs-note">{rt(L,'evForSap', { v: fmt(parseFloat(sap) || 0, 0), u })}</p>
           </div>
         </div>
         <div>
-          <h2 className="rs-sec" style={{ marginTop:0 }}>{rt(L,'evTrueT')}</h2>
+          <h2 className="rs-sec" style={{ marginTop:0 }}>{rt(L, c.units === 'L' ? 'evTrueTL' : 'evTrueT')}</h2>
           <div className="rs-card">
             <div className="rs-grid2">
-              <div><label className="rs-fl" htmlFor="rs-ev-lh" style={{ marginTop:0 }}>{rt(L,'evLaborH')}</label><RsStepper id="rs-ev-lh" value={laborHrs} onChange={setLaborHrs} steps={[-1, 1]} dp={1} unit="h" label={rt(L,'evLaborH')} min={0} max={10000} big={false} /></div>
+              <div><label className="rs-fl" htmlFor="rs-ev-lh" style={{ marginTop:0 }}>{rt(L,'evLaborH')}</label><RsStepper id="rs-ev-lh" value={laborHrs} onChange={setLaborHrs} steps={[-1, 1]} dp={1} unit="h" label={rt(L,'evLaborH')} min={0} max={10000} big={false} />
+                {!laborTyped && loggedH > 0 && <p className="rs-note" id="rs-ev-lh-src">{rt(L,'evHoursFromLog')}</p>}</div>
               <div><label className="rs-fl" htmlFor="rs-ev-lr" style={{ marginTop:0 }}>{rt(L,'evLaborR')}</label><RsMoney id="rs-ev-lr" value={laborRate} onChange={setLR} label={rt(L,'evLaborR')} steps={[-1, 1]} unit="/h" /></div>
               <div><label className="rs-fl" htmlFor="rs-ev-s1">{rt(L,'evSpouts')}</label><RsMoney steps={[-10, 10]} id="rs-ev-s1" value={spoutC} onChange={setSpoutC} label={rt(L,'evSpouts')} /></div>
               <div><label className="rs-fl" htmlFor="rs-ev-s2">{rt(L,'evBottles')}</label><RsMoney steps={[-10, 10]} id="rs-ev-s2" value={bottleC} onChange={setBottleC} label={rt(L,'evBottles')} /></div>
@@ -343,8 +350,8 @@ function RsFinishing({ c }) {
           <h2 className="rs-sec">{rt(L,'fiCanT')}</h2>
           <div className="rs-card">
             <div className="rs-meta">{rt(L,'fiCanBetween')}</div>
-            <div className="rs-huge tn">{rt(L,'rangeTo', { a: 180, b: 190 })}<small>°F</small></div>
-            <p className="rs-meta tn">{rt(L,'fiCanC')}</p>
+            <div className="rs-huge tn">{rt(L,'rangeTo', { a: srTempShow(180), b: srTempShow(190) })}<small>{srTempUnit()}</small></div>
+            <p className="rs-meta tn">{srMetric() ? rt(L,'rangeTo', { a: 180, b: 190 }) + '\u00a0°F' : rt(L,'fiCanC')}</p>
             <p className="rs-body" style={{ marginTop:12 }}>{rt(L,'fiWhyRange')}</p>
           </div>
           <div style={{ marginTop:10 }} className="rs-stack">
@@ -357,7 +364,7 @@ function RsFinishing({ c }) {
           <p className="rs-meta" style={{ marginTop:-4, marginBottom:10 }}>{rt(L,'fiCandyP', { bp: fmt(bp, 1) })}</p>
           <div className="rs-list">{SR_CANDY.map(k => <div key={k.id} className="rs-row rs-candy">
             <span className="rs-rt"><b>{rt(L, 'candy_' + k.id)}</b><span>{rt(L,'fiBpPlus', { o: k.off })} {rt(L, 'candy_' + k.id + '_d')}</span></span>
-            <span className="rs-rv"><b className="tn">{fmt(bp + k.off, 1)}°F</b><span className="tn">{fmt(toC(bp + k.off), 1)}°C</span></span></div>)}</div>
+            <span className="rs-rv"><b className="tn">{srTempTxt(bp + k.off, 1)}</b><span className="tn">{srMetric() ? fmt(bp + k.off, 1) + '°F' : fmt(toC(bp + k.off), 1) + '°C'}</span></span></div>)}</div>
           <h2 className="rs-sec">{rt(L,'fiMoldT')}</h2>
           <ol className="rs-steps rs-card">{[1,2,3,4,5,6].map(i => <li key={i}><b>{rt(L, 'mold' + i + 'T', { t: fmt(bp + 34, 1) })}</b>{' '}{rt(L, 'mold' + i + 'P')}</li>)}</ol>
           <div className="rs-list" style={{ marginTop:12 }}>

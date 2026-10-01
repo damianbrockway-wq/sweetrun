@@ -35,7 +35,7 @@ function RsCloseSeason({ c }) {
         <p className="rs-meta">{rt(L, 'closeSeasonP')}</p>
         <div style={{ marginTop: 10 }}><RsBtn kind="secondary" icon="check" onClick={close} id="rs-close-season-btn">{rt(L, armed ? 'closeSeasonArm' : 'closeSeasonB', { y: c.season })}</RsBtn></div>
       </>}
-      {fail && <p className="rs-errline" role="alert">{rt(L, 'bNotSavedT')}. {rt(L, SR_WRITE_FAIL === 'quota' ? 'bQuotaP' : 'bLockedP')}</p>}
+      {fail && <p className="rs-errline" role="alert">{rt(L, 'bNotSavedT')}. {rt(L, srFailKey(SR_WRITE_FAIL))}</p>}
     </div>
   );
 }

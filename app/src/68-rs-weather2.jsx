@@ -35,6 +35,8 @@ function srScoreForecast(D) {
     return { date, i, hiF, loF, windMph, precipIn, sunSec, score: sc.score, quality: sc.quality, buddyRisk: sc.buddyRisk };
   });
 }
+// Degree days are counted in °F above 40°F; in metric they show as °C-days (x 5/9).
+const srDdShow = x => srMetric() ? (+x || 0) * 5 / 9 : (+x || 0);
 const SR_QUAL_KEY = { 'Excellent':'qExcellent', 'Good':'qGood', 'Fair':'qFair', 'Poor':'qPoor', 'No Flow':'qNoFlow' };
 
 function RsForecast({ c }) {
@@ -52,7 +54,10 @@ function RsForecast({ c }) {
     return () => { live = false; };
   }, [loc && loc.lat, loc && loc.lon, tick]);
   const days = st.d ? srScoreForecast(st.d.daily) : [];
-  const good = days.filter(d => d.score >= 44).length;
+  // Fix pass 2 (P2): one definition of a run day everywhere (srDayClass 'ideal', srRunDays):
+  // a day of 40°F or more after a night of 28°F or less. The score stays the day's quality.
+  const isRun = d => srDayClass(d.hiF, d.loF) === 'ideal';
+  const good = days.filter(isRun).length;
   const best = days.length ? Math.max(...days.map(d => d.score)) : 0;
   const day = days[sel] || days[0];
   const dayName = d => d.i === 0 ? rt(L,'today') : srWeekday(d.date, L);
@@ -65,17 +70,17 @@ function RsForecast({ c }) {
   else body = <>
     <div className="rs-card">
       <div className="rs-split">
-        <div><div className="rs-meta">{rt(L,'fcRunDays')}</div><div className="rs-big tn">{good}<small>{rt(L,'ofN', { n: days.length })}</small></div></div>
+        <div><div className="rs-meta">{rt(L,'runDaysShort', { d: days.length })}</div><div className="rs-big tn">{good}<small>{rt(L,'ofN', { n: days.length })}</small></div></div>
         <div style={{ textAlign:'right' }}><div className="rs-meta">{rt(L,'fcBest')}</div><div className="rs-mid tn">{best}<small>/ 100</small></div></div>
       </div>
       <div className="rs-scorebars" role="group" aria-label={rt(L,'fcPickDay')}>
         {days.map((d, i) => (
-          <button key={d.date} type="button" className={`rs-sbar${i === sel ? ' on' : ''}${d.score >= 44 ? ' run' : ''}`} aria-pressed={i === sel}
+          <button key={d.date} type="button" className={`rs-sbar${i === sel ? ' on' : ''}${isRun(d) ? ' run' : ''}`} aria-pressed={i === sel}
             aria-label={rt(L,'fcDayAria', { d: dayName(d), s: d.score, q: rt(L, SR_QUAL_KEY[d.quality] || 'qNoFlow') })} onClick={() => setSel(i)}>
             <span className="rs-sbd">{d.i === 0 ? rt(L,'todayShort') : dayName(d)}</span>
             <span className="rs-sbtrack"><i style={{ height: Math.max(d.score > 0 ? 6 : 0, d.score) + '%' }} /></span>
             <b className="tn">{d.score > 0 ? d.score : '0'}</b>
-            <span className="rs-sbt tn"><span>{d.hiF}°</span><span>{d.loF}°</span></span>
+            <span className="rs-sbt tn"><span>{srTempShow(d.hiF)}°</span><span>{srTempShow(d.loF)}°</span></span>
           </button>
         ))}
       </div>
@@ -85,7 +90,7 @@ function RsForecast({ c }) {
       <div className="rs-split" style={{ alignItems:'flex-start' }}>
         <div><div className="rs-meta">{dayName(day)}, {srDayLabel(day.date, L)}</div>
           <b className="rs-cardt">{rt(L, SR_QUAL_KEY[day.quality] || 'qNoFlow')}, {day.score} / 100</b></div>
-        <div className="rs-mid tn" style={{ textAlign:'right' }}>{day.hiF}°<small>/ {day.loF}°F</small></div>
+        <div className="rs-mid tn" style={{ textAlign:'right' }}>{srTempShow(day.hiF)}°<small>/ {srTempTxt(day.loF)}</small></div>
       </div>
       <RsKv rows={srFactorRows(day, L)} />
       {day.buddyRisk && <div className="rs-banner" style={{ marginTop:12 }}><span className="rs-bic"><RsIcon name="alert" size={22} /></span>
@@ -121,11 +126,11 @@ function srFactorRows(d, L) {
   const sw = d.hiF - d.loF, sunH = (d.sunSec || 0) / 3600;
   const n = k => rt(L, k);
   return [
-    [n('fNight'), `${d.loF}°F · ${n(d.loF >= 18 && d.loF <= 28 ? 'fIdeal' : d.loF < 18 ? 'fVeryCold' : d.loF < 32 ? 'fLightFreeze' : 'fNoFreeze')}`],
-    [n('fDay'),   `${d.hiF}°F · ${n(d.hiF >= 40 && d.hiF < 46 ? 'fIdeal' : d.hiF >= 50 ? 'fBuddy' : d.hiF >= 33 ? 'fMarginal' : 'fNoThaw')}`],
-    [n('fSwing'), `${sw}°F · ${n(sw >= 25 ? 'fExcellent' : sw >= 18 ? 'fGood' : 'fLimited')}`],
-    [n('fWind'),  `${d.windMph} mph · ${n(d.windMph <= 10 ? 'fCalm' : d.windMph <= 20 ? 'fLightWind' : 'fCutsFlow')}`],
-    [n('fRain'),  `${d.precipIn} ${srUnitL('in', L)} · ${n(d.precipIn < 0.05 ? 'fDry' : d.precipIn < 0.2 ? 'fLightRain' : 'fHeavyRain')}`],
+    [n('fNight'), `${srTempTxt(d.loF)} · ${n(d.loF >= 18 && d.loF <= 28 ? 'fIdeal' : d.loF < 18 ? 'fVeryCold' : d.loF < 32 ? 'fLightFreeze' : 'fNoFreeze')}`],
+    [n('fDay'),   `${srTempTxt(d.hiF)} · ${n(d.hiF >= 40 && d.hiF < 46 ? 'fIdeal' : d.hiF >= 50 ? 'fBuddy' : d.hiF >= 33 ? 'fMarginal' : 'fNoThaw')}`],
+    [n('fSwing'), `${srMetric() ? fmt(srFdToCd(sw), 0) + '°C' : sw + '°F'} · ${n(sw >= 25 ? 'fExcellent' : sw >= 18 ? 'fGood' : 'fLimited')}`],
+    [n('fWind'),  `${srWindTxt(d.windMph)} · ${n(d.windMph <= 10 ? 'fCalm' : d.windMph <= 20 ? 'fLightWind' : 'fCutsFlow')}`],
+    [n('fRain'),  `${srRainTxt(d.precipIn)} · ${n(d.precipIn < 0.05 ? 'fDry' : d.precipIn < 0.2 ? 'fLightRain' : 'fHeavyRain')}`],
     [n('fSun'),   `${fmt(sunH, 1)} h · ${n(sunH >= 7 ? 'fSunny' : sunH >= 4 ? 'fPartSun' : 'fOvercast')}`],
   ];
 }
@@ -140,10 +145,10 @@ function RsRibbon({ days, lang, dayName }) {
   return (
     <div ref={ref} className="rs-chartwrap">
       <svg className="rs-chart" width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img"
-        aria-label={rt(lang,'ribbonAria', { n: days.filter(d => d.hiF >= 40 && d.loF <= 28).length })}>
-        {days.map((d, i) => d.hiF >= 40 && d.loF <= 28 ? <rect key={i} x={pl + i * cw + 1} y={pt} width={cw - 2} height={ih} rx="4" style={{ fill:T.accSoft }} /> : null)}
+        aria-label={rt(lang,'ribbonAria', { n: days.filter(d => srDayClass(d.hiF, d.loF) === 'ideal').length })}>
+        {days.map((d, i) => srDayClass(d.hiF, d.loF) === 'ideal' ? <rect key={i} x={pl + i * cw + 1} y={pt} width={cw - 2} height={ih} rx="4" style={{ fill:T.accSoft }} /> : null)}
         <line x1={pl} x2={W - pr} y1={Y(32)} y2={Y(32)} className="rs-refl" />
-        <text x={W - pr + 4} y={Y(32) + 4} className="rs-ct">32°F</text>
+        <text x={W - pr + 4} y={Y(32) + 4} className="rs-ct">{srTempTxt(32)}</text>
         <path d={path('hiF')} fill="none" style={{ stroke:T.acc }} strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
         <path d={path('loF')} fill="none" style={{ stroke:T.ice }} strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
         {days.map((d, i) => <g key={'p' + i}><circle cx={X(i)} cy={Y(d.hiF)} r="3" style={{ fill:T.acc }} /><circle cx={X(i)} cy={Y(d.loF)} r="3" style={{ fill:T.ice }} /></g>)}
@@ -151,21 +156,23 @@ function RsRibbon({ days, lang, dayName }) {
       </svg>
       <div className="rs-legend"><span><i className="lg" style={{ background:T.acc }} />{rt(lang,'lgHigh')}</span><span><i className="lg" style={{ background:T.ice }} />{rt(lang,'lgLow')}</span>
         <span><i className="lg" style={{ background:T.accSoft, outline:`1px solid ${T.acc}` }} />{rt(lang,'lgRunDay')}</span></div>
-      <RsDataTable caption={rt(lang,'ribbonAria', { n: days.filter(d => d.hiF >= 40 && d.loF <= 28).length })} head={['', rt(lang,'lgHigh'), rt(lang,'lgLow')]}
-        rows={days.map(d => [dayName(d), fmt(d.hiF, 0) + '°F', fmt(d.loF, 0) + '°F'])} />
+      <RsDataTable caption={rt(lang,'ribbonAria', { n: days.filter(d => srDayClass(d.hiF, d.loF) === 'ideal').length })} head={['', rt(lang,'lgHigh'), rt(lang,'lgLow')]}
+        rows={days.map(d => [dayName(d), srTempTxt(d.hiF), srTempTxt(d.loF)])} />
     </div>
   );
 }
 // A day judged by hand (SeasonIntelligence's quick check): no network needed.
 function RsHandCheck({ c }) {
   const L = c.lang;
-  const [hi, setHi] = useState(42), [lo, setLo] = useState(24);
-  const r = srHandFlow(hi, lo);
+  // Typed in the display unit (°C in metric), judged in °F as the model is.
+  const [hi, setHi] = useState(() => srMetric() ? 6 : 42), [lo, setLo] = useState(() => srMetric() ? -4 : 24);
+  const r = srHandFlow(Math.round(srTempFromShown(hi)), Math.round(srTempFromShown(lo)));
+  const tu = srTempUnit(), mn = srMetric() ? -40 : -40, mx = srMetric() ? 32 : 90;
   return (
     <div className="rs-card">
       <div className="rs-grid2">
-        <div><label className="rs-fl" htmlFor="rs-hc-hi">{rt(L,'handHi')}</label><RsStepper id="rs-hc-hi" value={hi} onChange={setHi} steps={[-1, 1]} unit="°F" label={rt(L,'handHi')} min={-40} max={90} big={false} /></div>
-        <div><label className="rs-fl" htmlFor="rs-hc-lo">{rt(L,'handLo')}</label><RsStepper id="rs-hc-lo" value={lo} onChange={setLo} steps={[-1, 1]} unit="°F" label={rt(L,'handLo')} min={-40} max={90} big={false} /></div>
+        <div><label className="rs-fl" htmlFor="rs-hc-hi">{rt(L,'handHi')}</label><RsStepper id="rs-hc-hi" value={hi} onChange={setHi} steps={[-1, 1]} unit={tu} label={rt(L,'handHi')} min={mn} max={mx} big={false} /></div>
+        <div><label className="rs-fl" htmlFor="rs-hc-lo">{rt(L,'handLo')}</label><RsStepper id="rs-hc-lo" value={lo} onChange={setLo} steps={[-1, 1]} unit={tu} label={rt(L,'handLo')} min={mn} max={mx} big={false} /></div>
       </div>
       {r && <RsBarRow label={rt(L, 'hand_' + r.id)} value={`${r.score} / 100`} pct={r.score} tone={r.score >= 70 ? '' : 'mute'} />}
     </div>
@@ -229,9 +236,9 @@ function RsDegreeDays({ c }) {
           {dd && dd.days.length > 0 && <>
             <div className="rs-card" style={{ marginTop:12 }}>
               <div className="rs-grid3">
-                <div><div className="rs-meta">{rt(L,'ddTotal')}</div><div className="rs-mid tn">{Math.round(dd.cumDD)}</div></div>
+                <div><div className="rs-meta">{rt(L,'ddTotal')}</div><div className="rs-mid tn">{fmt(srDdShow(dd.cumDD), 0)}</div></div>
                 <div><div className="rs-meta">{rt(L,'ddDays')}</div><div className="rs-mid tn">{dd.days.length}</div></div>
-                <div><div className="rs-meta">{rt(L,'ddAvg')}</div><div className="rs-mid tn">{fmt(dd.avg, 1)}</div></div>
+                <div><div className="rs-meta">{rt(L,'ddAvg')}</div><div className="rs-mid tn">{fmt(srDdShow(dd.avg), 1)}</div></div>
               </div>
               <div className="rs-list rs-ladder" style={{ marginTop:14 }}>
                 {SR_DD_STAGES.map(s => <div key={s.id} className={`rs-rung${dd.stage === s.id ? ' on' : dd.cumDD >= s.t ? ' past' : ''}`}>
@@ -242,7 +249,7 @@ function RsDegreeDays({ c }) {
             <div style={{ marginTop:12 }}>
               <RsDisclose title={rt(L,'ddDaily', { n: dd.days.length })}>
                 <table className="rs-table tn"><thead><tr><th>{rt(L,'date')}</th><th>{rt(L,'hiW')}</th><th>{rt(L,'loW')}</th><th>DD</th><th>{rt(L,'totalW')}</th></tr></thead>
-                  <tbody>{dd.days.slice().reverse().map(d => <tr key={d.date}><td>{srDateShort(d.date, L)}</td><td>{d.hi}°</td><td>{d.lo}°</td><td>{d.dd}</td><td>{d.cum}</td></tr>)}</tbody></table>
+                  <tbody>{dd.days.slice().reverse().map(d => <tr key={d.date}><td>{srDateShort(d.date, L)}</td><td>{srTempShow(d.hi)}°</td><td>{srTempShow(d.lo)}°</td><td>{fmt(srDdShow(d.dd), 0)}</td><td>{fmt(srDdShow(d.cum), 0)}</td></tr>)}</tbody></table>
               </RsDisclose>
             </div>
           </>}

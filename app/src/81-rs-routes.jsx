@@ -108,9 +108,14 @@ const RS_TR = {
     dismiss:'Fermer',
   },
 };
+// Fix pass 2: RS_ALIAS swaps a few words for a bucket producer (srAliasFor, 74-rs-fix2), and in
+// metric display every °F and mph in a finished sentence is shown in °C and km/h (srMetricText).
+let RS_ALIAS = {};
 function rt(lang, key, vars) {
-  let s = (RS_TR[lang] && RS_TR[lang][key]) || RS_TR.en[key] || key;
+  const k0 = RS_ALIAS[key] && ((RS_TR[lang] && RS_TR[lang][RS_ALIAS[key]]) || RS_TR.en[RS_ALIAS[key]]) ? RS_ALIAS[key] : key;
+  let s = (RS_TR[lang] && RS_TR[lang][k0]) || RS_TR.en[k0] || k0;
   if (vars) for (const k in vars) s = s.split('{' + k + '}').join(String(vars[k]));
+  if (typeof srMetric === 'function' && srMetric()) s = srMetricText(s, lang === 'fr' ? ',' : '.');
   return s;
 }
 
@@ -179,29 +184,44 @@ const RS_STAGE_SCREENS = {
 // Stage screens (Phase 6 replaces the Phase 4 hub lists).
 const RS_STAGE_VIEW = { weather:RsWeatherStage, tap:RsTapStage, lines:RsLinesStage, collect:RsCollectStage, boil:RsBoilStage, recap:RsRecapStage };
 
-// ─── Back navigation: remember where the user came from ────────────────────
-// A small stack of visited hashes. Going back (the new hash is the one before
-// the current) pops; anything else pushes. The push bar uses it to say
-// "Back to Boil" and return to the screen you were actually on.
+// ─── Back navigation: where the back pill really goes ──────────────────────
+// Fix pass 2 (item 32). Each history entry the app creates is stamped, in history.state,
+// with the screen it was opened from (rsPrev). The pill names that screen and goes back to
+// it with history.back(), which by construction is that entry. history.state survives a
+// refresh, so the pill stays true after one. An entry with no stamp (a deep link, a first
+// open) gets the parent's name and the parent's link. Replacing a route keeps its stamp.
 let RS_LANG = 'en';
 const RS_HIST = { stack: [] };
 function rsNavNorm(h) { const p = srParseHash(h); return '#/' + (p.length ? p.join('/') : 'season'); }
+const rsNavStamp = prev => { try { history.replaceState({ ...(history.state || {}), rsK: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), rsPrev: prev }, ''); } catch {} };
 (function rsNavInit() {
   try {
-    RS_HIST.stack = [rsNavNorm(location.hash)];
-    window.addEventListener('hashchange', () => {
-      const h = rsNavNorm(location.hash), st = RS_HIST.stack;
-      if (st[st.length - 1] === h) return;
-      if (st.length > 1 && st[st.length - 2] === h) st.pop(); else { st.push(h); if (st.length > 50) st.shift(); }
+    if (!(history.state && history.state.rsK)) rsNavStamp(null);
+    window.addEventListener('hashchange', e => {
+      if (history.state && history.state.rsK) return;   // an entry we stamped: back, forward or a replace
+      let prev = null; try { prev = e && e.oldURL ? rsNavNorm(new URL(e.oldURL).hash) : null; } catch {}
+      rsNavStamp(prev && prev !== rsNavNorm(location.hash) ? prev : null);
     });
   } catch {}
 })();
-function rsNavPrev() { const st = RS_HIST.stack; return st.length > 1 ? st[st.length - 2] : null; }
+function rsNavPrev() { const st = history.state; return st && st.rsK && st.rsPrev ? st.rsPrev : null; }
+// Go to a route in place of the current entry (a redirect), keeping the entry's stamp.
+function rsReplace(path) {
+  try { history.replaceState(history.state, '', rsHref(path)); window.dispatchEvent(new HashChangeEvent('hashchange')); } catch { rsGo(path); }
+}
+// A screen's name for "Back to …": the tank, pump, line or tree itself where the route names one.
 function rsNavTitle(h, L) {
   const p = srParseHash(h), path = p.join('/');
   if (!p.length || p[0] === 'season') return rt(L, 'tabSeason');
   if (RS_SCREENS[path]) return rt(L, RS_SCREENS[path].title);
   if (p[0] === 'stage' && p[1]) return rt(L, 'st_' + p[1]);
+  try {
+    if (p[0] === 'pumps' && p[1] === 'tank' && p[2]) { const t = (ls.get('sg_tanks', []) || []).find(x => x && x.id === p[2]); if (t) return t.name; }
+    else if (p[0] === 'pumps' && p[1] && !['add', 'add-tank', 'vacuum', 'freeze'].includes(p[1])) { const q = (ls.get('sg_pumps', []) || []).find(x => x && x.id === p[1]); if (q) return q.name; }
+    else if (p[0] === 'pumps' && p[1] === 'vacuum') return rt(L, 'vacAndLeaks');
+    else if (p[0] === 'pumps' && p[1] === 'freeze') return rt(L, 'freezePrep');
+    if ((p[0] === 'bush' || p[0] === 'watch') && p[1] === 'line' && p[2]) { const m = selMainlines(ls.get('sg_lines_pins', []) || []).find(x => x.id === p[2]); if (m) return m.label; }
+  } catch {}
   const top = { bush:'tabBush', pumps:'pumpsTitle', watch:'tabWatch', shack:'shackTitle' }[p[0]];
   return top ? rt(L, top) : null;
 }

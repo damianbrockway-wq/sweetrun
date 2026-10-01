@@ -75,9 +75,11 @@ function useRsWidth(fallback = 320) {
   useEffect(() => {
     const el = ref.current; if (!el) return;
     const set = () => { const x = Math.round(el.getBoundingClientRect().width); if (x > 0) setW(x); };
-    set();
-    if (typeof ResizeObserver === 'undefined') { window.addEventListener('resize', set); return () => window.removeEventListener('resize', set); }
-    const ro = new ResizeObserver(set); ro.observe(el); return () => ro.disconnect();
+    if (typeof ResizeObserver === 'undefined') { set(); window.addEventListener('resize', set); return () => window.removeEventListener('resize', set); }
+    // Fix pass 2 (P2 performance): the observer reports the width after the browser's own layout
+    // (its first callback comes on observe), so mounting a chart never forces a layout mid-render.
+    const ro = new ResizeObserver(es => { const x = Math.round(es[0] && es[0].contentRect ? es[0].contentRect.width : 0); if (x > 0) setW(x); else set(); });
+    ro.observe(el); return () => ro.disconnect();
   }, []);
   return [ref, w];
 }

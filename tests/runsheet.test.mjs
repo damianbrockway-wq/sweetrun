@@ -550,7 +550,9 @@ eq('fuel 9 h at night runs dry overnight', E3.srJobs({ ...base, minutes: 20 * 60
 eq('fuel stopped pump no job', pj({ pumps: [{ id: 'g', name: 'Generator', status: 'stopped', fuel: { hoursLeft: 1, levelGal: 0.3 } }] }), [['log', 10]]);
 eq('freeze prep replaces the plain freeze job', E3.srJobs({ ...base, wx: wxF, ops: { ...ops, freeze: { lo: 19, done: 1, total: 4 } } }).map(j => [j.id, j.p]), [['freeze-prep', 55], ['log', 10]]);
 eq('freeze prep at night 90', E3.srJobs({ ...base, wx: wxF, minutes: 20 * 60, ops: { ...ops, freeze: { lo: 19, done: 0, total: 4 } } })[0].p, 90);
-eq('freeze prep done: plain freeze job stays', E3.srJobs({ ...base, wx: wxF, ops: { ...ops, freeze: { lo: 19, done: 4, total: 4 } } }).map(j => j.id), ['freeze', 'log']);
+// Fix pass 2 (item 24): this assertion encoded the bug. Finishing freeze prep brought the plain freeze
+// job back; prep for tonight now replaces it whether or not its jobs are done.
+eq('freeze prep done: the plain freeze job does not come back', E3.srJobs({ ...base, wx: wxF, ops: { ...ops, freeze: { lo: 19, done: 4, total: 4 } } }).map(j => j.id), ['log']);
 eq('ranking fault > freeze > fuel > leak', E3.srJobs({ ...base, minutes: 20 * 60, ops: { ...ops, freeze: { lo: 19, done: 0, total: 2 },
   leaks: [{ id: 'C', name: 'C', latest: 17, baseline: 24, drop: 7 }],
   pumps: [{ id: 't', name: 'T', status: 'fault' }, { id: 'g', name: 'G', status: 'running', fuel: { hoursLeft: 2, levelGal: 0.7 } }] } }).map(j => j.id),
@@ -771,7 +773,8 @@ for (const f of [...rsFiles.map(f => join('app', 'src', f)), join('app', 'runshe
 // ── Fix pass 2 ───────────────────────────────────────────────────────────────
 {
   const fn = name => { const m = src.match(new RegExp('function ' + name + '\\([^)]*\\) \\{[\\s\\S]*?\\n\\}')); if (!m) throw new Error(name + ' not found'); return m[0]; };
-  const fmtLine = src.match(/const fmt {2}= \(n, d = 1\) => [^\n]+/)[0];
+  // Fix pass 2: fmt keeps one Intl.NumberFormat per language and decimals (same output), so it spans lines.
+  const fmtLine = src.match(/const _srNf = new Map\(\);\nconst fmt {2}= \(n, d = 1\) => \{[\s\S]*?\n\};/)[0];
   const numIn = src.match(/const srNumIn = [^\n]+/)[0];
   const money = src.match(/const srMoney = [^\n]+/)[0];
   const mk = loc => new Function(`let SR_NUM_LOC = '${loc}'; ${fmtLine}; ${numIn}; ${money}; ${fn('srParseNum')}; return { fmt, srNumIn, srMoney, srParseNum };`)();
@@ -785,7 +788,9 @@ for (const f of [...rsFiles.map(f => join('app', 'src', f)), join('app', 'runshe
   eq('parse en unchanged', [EN.srParseNum('1,500'), EN.srParseNum('2,5'), EN.srParseNum('12,345.67')], [1500, 2.5, 12345.67]);
   eq('parse fr: comma is always the decimal', [FR.srParseNum('1,500'), FR.srParseNum('2,5'), FR.srParseNum('1 000,5'), FR.srParseNum('1 000,5'), FR.srParseNum('24.5')], [1.5, 2.5, 1000.5, 1000.5, 24.5]);
   eq('parse fr: coordinates typed with a comma', FR.srParseNum('-69,6203'), -69.6203);
-  eq('PDF report formats in en-US', /const loc0 = SR_NUM_LOC; SR_NUM_LOC = 'en-US';[\s\S]*finally \{ SR_NUM_LOC = loc0; \}/.test(src.slice(src.indexOf('async function exportSeasonPDF('))), true);
+  // Fix pass 2 (item 33): the report is in his language now, so it formats in that language's locale,
+  // and puts the app's locale back after.
+  eq('PDF report formats in its language and restores the locale', /const loc0 = SR_NUM_LOC; SR_NUM_LOC = LG === 'fr' \? 'fr-CA' : 'en-US';[\s\S]*finally \{ SR_NUM_LOC = loc0; \}/.test(src.slice(src.indexOf('async function exportSeasonPDF('))), true);
   eq('shell sets the number locale while rendering', /SR_NUM_LOC = lang === 'fr' \? 'fr-CA' : 'en-US';/.test(src), true);
   // Season score memo: same numbers as seasonScore, computed once per input set.
   const E2m = new Function('ls', src.slice(a, b) + '\nreturn { seasonScore, srSeasonScore, YIELD_MODELS, FUELS };')({ get: (_k, d) => d, set: () => true });
@@ -866,7 +871,9 @@ for (const f of [...rsFiles.map(f => join('app', 'src', f)), join('app', 'runshe
   eq('plates: bad points are skipped, no plate', PP([{ id: 'A', pts: [[NaN, 1], null] }], {}), {});
   // Nowhere clear near a button at the edge: hanging off the map (hidden) beats covering the button.
   const edge = PP([{ id: 'A', pts: [[190, 100]] }], { bounds: { w: 200, h: 400 }, avoid: [{ l: 150, r: 200, t: 0, b: 400 }] }).A;
-  eq('plates: off the edge rather than under a button', [edge.clear, edge.off, edge.x > 200], [false, true, true]);
+  // Fix pass 2: the wider ring of spots finds a clear one beside the line, left of the button,
+  // where this used to settle for hanging off the edge. Still never under the button.
+  eq('plates: a clear spot beside the line beats the edge and the button', [edge.clear, edge.off, edge.x + 24 + 3 <= 150 || edge.x > 200], [true, true, true]);
 }
 
 // ── UI review: structure ──
@@ -962,14 +969,14 @@ eq('back: no loose floating pill left', /\.rs-backfloat \{/.test(rcss), false);
   const f = { get: (k, d) => k === 'sg_units' ? 'L' : d, set: () => false };
   eq('legacy unit: if it cannot be stored, untagged entries follow the setting (as before)', run(f).legacy, 'L');
 }
-eq('units: Equipment pump rate and tank size in the user\'s unit, stored in gallons', /useRsGalPref\('sg_pump_gpm', 28, c\.units\)/.test(src) && /useRsGalPref\('sg_pump_tank', 300, c\.units\)/.test(src) && src.includes("unit={c.units === 'L' ? 'L/min' : 'gpm'}"), true);
+eq('units: Equipment pump rate and tank size in the user\'s unit, stored in gallons', /useRsGalPref\('sg_pump_gpm', 28, c\.units\)/.test(src) && /useRsGalPref\('sg_pump_tank', realTank \? \+realTank\.capGal : 300, c\.units\)/.test(src) && src.includes("unit={c.units === 'L' ? 'L/min' : 'gpm'}"), true);
 eq('units: Recap RO evaporator rate in the user\'s unit', /useRsGalPref\('sg_recap_evap', evDef, c\.units\)/.test(src) && src.includes("unit={u + '/h'} label={rt(L,'roEvapRate')}"), true);
 eq('units: no hard gal left in the Equipment and RO notes', ["haulNote:'Hauling at 90% of the tank, {g} {u}.'", "flowDrop:'line and lift cut flow to {g} {u}'", "roInputsSub:'{e} {u}/h,", 'boils about {r} {u} an hour a square foot'].every(k => src.includes(k)), true);
 eq('log units: every writer tags (log sheet, edit, boil, batch, import), the legacy unit is taken before mount', [
   src.includes("srTagUnit(kind, srMakeEntry(kind,"), /SR_VOL_KINDS\.includes\(kind\) \? \{ u: c\.units === 'L' \? 'L' : 'GAL' \} : \{\}/.test(src),
   src.includes("val: sess.syrup, note, grade: endGrade, ...uu,"), src.includes("{ ...srMakeBatch(f, Date.now()), u: c.units === 'L' ? 'L' : 'GAL' }"), src.includes('srTagUnit(k, e, c.units)'),
   /srSnapshotLegacyUnits\(\);[^\n]*\n\s*ReactDOM\.createRoot/.test(src)], [true, true, true, true, true, true]);
-eq('log units: every reader converts (no screen reads sg_logs2 raw for volumes)', (src.slice(src.indexOf('// ─── Shared UI')).match(/ls\.get\('sg_logs2'/g) || []).length, 7);   // the 7 left are writers' read-modify-writes, the import dedupe and a date-only count
+eq('log units: every reader converts (no screen reads sg_logs2 raw for volumes)', (src.slice(src.indexOf('// ─── Shared UI')).match(/ls\.get\('sg_logs2'/g) || []).length, 8);   // fix pass 2 adds selProfile's RO entry count (a count, no volumes); the 7 left are writers' read-modify-writes, the import dedupe and a date-only count
 eq('log units: a restore without the legacy unit takes the backup\'s own', src.includes("if (!pending.entries.some(([k]) => k === 'sg_units_legacy'))"), true);
 eq('log units: the legacy key saves during an expired trial', /SR_LOCK_ALLOW = \[[^\]]*'sg_units_legacy'/.test(src), true);
 eq('log units: batch delete writes the stored list, not the converted view', src.includes("ls.set('sg_batches', raw.filter((_, j) => j !== i))"), true);

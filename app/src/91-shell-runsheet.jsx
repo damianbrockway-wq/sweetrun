@@ -12,8 +12,8 @@ function RsBanners({ c }) {
   if (c.writeFail) out.push(
     <div key="wf" className="rs-banner bad" role="alert">
       <span className="rs-bic"><RsIcon name="alert" size={26} sw={2.4} /></span>
-      <span className="rs-bt"><b>{rt(L,'bNotSavedT')}</b><span>{rt(L, c.writeFail === 'locked' ? 'bLockedP' : 'bQuotaP')}</span></span>
-      {c.writeFail === 'locked'
+      <span className="rs-bt"><b>{rt(L,'bNotSavedT')}</b><span>{rt(L, srFailKey(c.writeFail))}</span></span>
+      {c.writeFail !== 'quota'
         ? <button type="button" className="rs-bbtn" onClick={()=>c.setShowLicense(true)}>{rt(L,'bEnterKey')}</button>
         : <button type="button" className="rs-bbtn" onClick={()=>c.setShowBackup(true)}>{rt(L,'bBackup')}</button>}
       <button type="button" className="rs-bx" aria-label={rt(L,'dismiss')} onClick={()=>c.setWriteFail(null)}><RsIcon name="x" size={20} /></button>
@@ -23,6 +23,14 @@ function RsBanners({ c }) {
       <span className="rs-bic"><RsIcon name="lock" size={24} /></span>
       <span className="rs-bt"><b>{rt(L,'bExpiredT')}</b><span>{rt(L,'bExpiredP')}</span></span>
       <button type="button" className="rs-bbtn primary" onClick={()=>c.setShowLicense(true)}>{rt(L,'bGetPass')}</button>
+    </div>);
+  // Fix pass 2 (item 23): warned the day before the last free sap day, and on it.
+  const tr = c.lic.status === 'trial' ? c.lic.trial : null;
+  if (tr && (tr.warn || tr.lastFree || tr.lastDay)) out.push(
+    <div key="tw" className="rs-banner" role="status" id="rs-trial-warn">
+      <span className="rs-bic"><RsIcon name="lock" size={24} /></span>
+      <span className="rs-bt"><b>{rt(L, tr.lastDay ? 'bTrialLastDayT' : tr.lastFree ? 'bTrialLastT' : 'bTrialWarnT')}</b><span>{rt(L, tr.lastDay ? 'bTrialLastDayP' : tr.lastFree ? 'bTrialLastP' : 'bTrialWarnP')}</span></span>
+      <button type="button" className="rs-bbtn" onClick={()=>c.setShowLicense(true)}>{rt(L,'bGetPass')}</button>
     </div>);
   // A Season Pass key this browser cannot check is not taken on trust (fix pass 1): say why.
   if (c.lic.cantCheck) out.push(
@@ -50,8 +58,9 @@ function RsLicenseChip({ c }) {
   const s = c.lic.status;
   if (s === 'checking') return null;
   const L = c.lang;
+  // Fix pass 2 (item 23): the chip names the limit that will end the trial (days, or sap days).
   const label = s === 'licensed' ? rt(L,'chipPass') : s === 'expired' ? rt(L,'chipUnlock')
-    : c.lic.daysLeft === 1 ? rt(L,'chipTrial1') : rt(L,'chipTrial', { n:c.lic.daysLeft });
+    : rt(L, ...srTrialChipOf(c.lic.trial || { mode: 'days', daysLeft: c.lic.daysLeft }));
   return (
     <button type="button" className={`rs-lic${s === 'licensed' ? ' ok' : s === 'expired' ? ' bad' : ''}`}
       onClick={()=>c.setShowLicense(true)}>{label}</button>
@@ -87,7 +96,7 @@ function RsNotifPrompt({ c }) {
 // Bush, Pumps and Watch are built in 50-rs-bush.jsx, 51-rs-pumps.jsx and 52-rs-watch.jsx (Phases 7-8).
 
 function RsNotFound({ c, to }) {
-  useEffect(() => { rsGo(to || 'season'); }, []);
+  useEffect(() => { rsReplace(to || 'season'); }, []);   // a redirect replaces its entry (item 32)
   return null;
 }
 

@@ -404,7 +404,9 @@ function srParseSapCsv(text, kindLabels) {
       if (!kind || !(val > 0)) continue;
       const date = srCsvDate(r[dateIdx]); if (!date) { badDates++; continue; }
       const uw = unitIdx >= 0 ? srCsvWords(r[unitIdx]) : [];
-      entries.push({ kind, date, val, u: SR_VOL_KINDS.includes(kind) ? unitOfWords(uw) : null, note: noteIdx >= 0 ? String(r[noteIdx] || '') : '' });
+      // Fuel exported in litres or m³ (fix pass 2, litre mode) comes back in gallons or ccf.
+      const fv = kind === 'fuelUsed' && has(uw, ['l', 'litres', 'liters', 'litre', 'liter']) ? val / 3.785411784 : kind === 'fuelUsed' && has(uw, ['m³', 'm3']) ? val / 2.8316846592 : val;
+      entries.push({ kind, date, val: fv, u: SR_VOL_KINDS.includes(kind) ? unitOfWords(uw) : null, note: noteIdx >= 0 ? String(r[noteIdx] || '') : '' });
     }
   } else {
     const syrupIdx = col(w => has(w, ['syrup', 'sirop']));

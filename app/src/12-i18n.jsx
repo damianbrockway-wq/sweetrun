@@ -3,7 +3,16 @@
 // The shell sets SR_NUM_LOC while it renders (80-rs-core); input parsing (srParseNum)
 // reads both. The PDF report is English and formats in en-US.
 let SR_NUM_LOC = 'en-US';
-const fmt  = (n, d = 1) => isNaN(n) || !isFinite(n) ? '—' : Number(n).toLocaleString(SR_NUM_LOC, { minimumFractionDigits:d, maximumFractionDigits:d });
+// Fix pass 2 (P2 performance): one Intl.NumberFormat per language and decimals, made once. The
+// output is what Number#toLocaleString gives with the same options; building a formatter on every
+// call was the largest single cost of rendering Recap and Log history with a full season.
+const _srNf = new Map();
+const fmt  = (n, d = 1) => {
+  if (isNaN(n) || !isFinite(n)) return '—';
+  const k = SR_NUM_LOC + '|' + d; let f = _srNf.get(k);
+  if (!f) { f = new Intl.NumberFormat(SR_NUM_LOC, { minimumFractionDigits:d, maximumFractionDigits:d }); _srNf.set(k, f); }
+  return f.format(Number(n));
+};
 const DAY  = { en:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], fr:['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'] };
 const MON  = { en:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
                fr:['janv.','févr.','mars','avr.','mai','juin','juill.','août','sept.','oct.','nov.','déc.'] };   // fr-CA, as Intl writes them (srDateShort)

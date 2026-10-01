@@ -9,7 +9,8 @@ function RsRecapStage({ c }) {
   const m = useRsSeasonModel(c);
   const s = m.d.slog;
   const T_ = m.totals, G = m.totalsGal;
-  const pct = m.goalGal > 0 ? Math.min(100, G.syrupGal / m.goalGal * 100) : null;
+  // Fix pass 2 (P2): the ring's arc stops at full (RsRing clamps it); the number is the real share (227%).
+  const pct = m.goalGal > 0 ? srRingOf(G.syrupGal, m.goalGal).real : null;
   // The season's Brix (srBrixSource: sap-entry Brix by volume, plus tree readings) sets the
   // theory the score grades against, on this screen, Recap detail, Diagnose and the PDF.
   const avgBx = m.brix.seasonFrom !== 'setting' ? m.brix.season : null;

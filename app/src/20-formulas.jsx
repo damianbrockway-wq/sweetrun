@@ -234,7 +234,7 @@ function srSlogInUnit(slog, units, legacy) {
   SR_VOL_KINDS.forEach(k => {
     const arr = slog[k]; if (!Array.isArray(arr)) return;
     let changed = false;
-    const m = arr.map(e => { if (!e || typeof e !== 'object') return e; const from = srUnitOf(e.u, legacy); if (from === to) return e; changed = true; return { ...e, val: srVolIn(e.val, from, to), u: to }; });
+    const m = arr.map(e => { if (!e || typeof e !== 'object') return e; const from = srUnitOf(e.u, legacy); if (from === to) return e; changed = true; return { ...e, val: srVolIn(e.val, from, to), ...(e.conc != null && isFinite(parseFloat(e.conc)) ? { conc: srVolIn(parseFloat(e.conc), from, to) } : {}), u: to }; });   // conc: an RO entry's concentrate (fix pass 2)
     if (changed) { out = out || { ...slog }; out[k] = m; }
   });
   return out || slog;
@@ -323,10 +323,19 @@ function srDateMs(str) {
   const p = srDateParts(str);
   return p ? new Date(p.y, p.mo-1, p.d, 12).getTime() : NaN;  // local noon: no TZ day-slip
 }
+// Fix pass 2 (P2 performance): one formatter per language, and each date's text kept once made.
+const _srDsF = {}, _srDsC = new Map();
 function srDateShort(str, lang) {
+  const key = (lang === 'fr' ? 'f' : 'e') + String(str);
+  const hit = _srDsC.get(key); if (hit !== undefined) return hit;
   const p = srDateParts(str);
   if (!p) return String(str ?? '');
-  return new Date(p.y, p.mo-1, p.d, 12).toLocaleDateString(lang==='fr' ? 'fr-CA' : 'en-US', { month:'short', day:'numeric' });
+  const L = lang === 'fr' ? 'fr-CA' : 'en-US';
+  const f = _srDsF[L] || (_srDsF[L] = new Intl.DateTimeFormat(L, { month:'short', day:'numeric' }));
+  const out = f.format(new Date(p.y, p.mo-1, p.d, 12));
+  if (_srDsC.size > 20000) _srDsC.clear();
+  _srDsC.set(key, out);
+  return out;
 }
 // The season's actual sap:syrup ratio; null until syrup has been made.
 function actualRatio(sapT, syT) { return syT > 0 ? sapT / syT : null; }

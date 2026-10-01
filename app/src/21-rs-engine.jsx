@@ -247,12 +247,19 @@ function srJobs(f) {
     const lo = Math.round(w[tonightIso].lo);
     if (lo <= 28) {
       const night = f.minutes >= 17 * 60;
+      // Fix pass 2 (item 24): the advice fits the operation (srFreezeAdviceOf): buckets are
+      // collected before dark, gravity tubing drains its tank, an RO and pumps are drained.
+      const fa = srFreezeAdviceOf(f.profile);
       add({ id:'freeze', p: night ? 90 : 55, tone:'ice', icon:'snow', family:'ice',
-        title: night ? 'jFreezeNT' : 'jFreezeT', why:'jFreezeW', vars:{ lo },
-        btn:'jFreezeB', act:{ go:'stage/weather' }, alert:'jFreezeA', sub:'jFreezeS' });
+        title: night ? fa.night : 'jFreezeT', why: fa.why, vars:{ lo, items: fa.items },
+        btn:'jFreezeB', act:{ go:'stage/weather' }, alert:'jFreezeA', sub: fa.sub });
     }
   }
-  (f.tanks || []).forEach(t => {
+  // Fix pass 2 (item 25): an RO that is running is not told to start. It gets one quiet line instead.
+  const roOn = ((f.ops && f.ops.pumps) || []).filter(p => p.kind === 'ro' && p.status === 'running');
+  if (roOn.length) add({ id:'ro-running', p:35, icon:'ro', family:'collect', title:'jRoOnT', why:'jRoOnW',
+    vars:{ name: roOn[0].name, startMs: roOn[0].statusAt }, btn:'jRoOnB', act:{ go:'pumps/' + roOn[0].id }, alert:'jRoOnT', sub:'jRoOnS' });
+  if (!roOn.length) (f.tanks || []).forEach(t => {
     if (!(t.capGal > 0) || t.levelGal == null) return;
     // Sap stops below freezing: a tank's fill rate counts only while it is above 32°F (t.fillNow).
     const plan = srRoPlan({ levelGal:t.levelGal, capGal:t.capGal, fillGalH:t.fillGalH, roGph:f.roGph, ...(t.fullH !== undefined ? { fullH: t.fullH, paused: !!t.paused } : {}) });
@@ -274,7 +281,7 @@ function srJobs(f) {
     const good = next.find(x => srDayClass(x.d.hi, x.d.lo) === 'ideal');
     const early = f.stage === 'weather' || f.stage === 'tap' || f.stage === 'lines';
     if (good && early) {
-      const five = [1,2,3,4,5].filter(i => { const d = w[srIsoAdd(f.todayIso, i)]; return d && srDayClass(d.hi, d.lo) === 'ideal'; }).length;
+      const five = srRunDays(w, f.todayIso).n;   // one run-day count (fix pass 2): 7 days from today
       add({ id:'tap-weather', p:60, icon:'therm', family:'weather', title:'jTapWxT', why:'jTapWxW',
         vars:{ n: five, hi: Math.round(good.d.hi), lo: Math.round(good.d.lo) }, btn:'jTapWxB', act:{ go:'stage/tap' },
         alert:'jTapWxA', sub:'jTapWxS' });
@@ -302,7 +309,9 @@ function srJobs(f) {
   // Once freeze prep exists for his pumps it replaces the plain freeze job.
   if (f.ops) {
     const pj = srPumpJobs(f);
-    if (pj.some(j => j.id === 'freeze-prep')) { const i = J.findIndex(j => j.id === 'freeze'); if (i >= 0) J.splice(i, 1); }
+    // Fix pass 2 (item 24): freeze prep for tonight replaces the plain freeze job whether or not
+    // its jobs are done; finishing them used to bring the plain job back.
+    if (f.ops.freeze && f.ops.freeze.total > 0) { const i = J.findIndex(j => j.id === 'freeze'); if (i >= 0) J.splice(i, 1); }
     pj.forEach(add);
   }
   const lt = f.loggedToday || {};

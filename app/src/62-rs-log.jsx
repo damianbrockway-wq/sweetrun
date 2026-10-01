@@ -7,16 +7,18 @@
 
 // The six kinds, same order, units and decimals as LogTab's KINDS.
 // A kind's name inside a sentence: lower case, except acronyms ("RO" stays "RO").
-const srKindWord = K => /^[A-Z]{2,}$/.test(K.l) ? K.l : K.l.toLowerCase();
+// Fix pass 2: only a capital that starts a word in running text drops ("Sap through RO" -> "sap through RO").
+const srKindWord = K => /^[A-Z]{2,}$/.test(K.l) ? K.l : /^[A-Z][a-zà-ÿ]/.test(K.l) ? K.l[0].toLowerCase() + K.l.slice(1) : K.l;
 function srKinds(lang, units) {
   const u = srU(units);
-  const fuelF = FUELS.find(f => f.label === ls.get('sg_fuel', 'Firewood (cord)')) || FUELS[0], fuelU = lang === 'fr' ? fuelF.unitFr : fuelF.unit;
+  const fuelF = FUELS.find(f => f.label === ls.get('sg_fuel', 'Firewood (cord)')) || FUELS[0], fuelS = srFuelShow(fuelF, units, lang), fuelU = fuelS.u;
   return [
     { k:'sapCollected', l:rt(lang,'kSap'),   unit:u,     dp:0, steps:[-100,-10,10,100], icon:'pail' },
     { k:'syrupMade',    l:rt(lang,'kSyrup'), unit:u,     dp:1, steps:[-1,-0.1,0.1,1],   icon:'jug', grade:true },
-    { k:'sapRO',        l:rt(lang,'kRO'),    unit:u,     dp:0, steps:[-100,-10,10,100], icon:'ro' },
-    { k:'sapEvap',      l:rt(lang,'kEvap'),  unit:u,     dp:0, steps:[-100,-10,10,100], icon:'flame' },
-    { k:'fuelUsed',     l:rt(lang,'kFuel'),  unit:fuelU, dp:1, steps:[-1,-0.1,0.1,1],   icon:'fuel' },
+    // Fix pass 2 (item 31): the two RO-related kinds say exactly what they count.
+    { k:'sapRO',        l:rt(lang,'kRO2'),   unit:u,     dp:0, steps:[-100,-10,10,100], icon:'ro', hint:'kROHint' },
+    { k:'sapEvap',      l:rt(lang,'kEvap2'), unit:u,     dp:0, steps:[-100,-10,10,100], icon:'flame', hint:'kEvapHint' },
+    { k:'fuelUsed',     l:rt(lang,'kFuel'),  unit:fuelU, dp:1, steps:[-1,-0.1,0.1,1],   icon:'fuel', fk: fuelS.k },   // fk: shown per stored unit (item 33)
     { k:'boilHours',    l:rt(lang,'kHours'), unit:srUnitL('hr', lang),  dp:1, steps:[-1,-0.5,0.5,1],   icon:'clock' },
   ];
 }
@@ -30,7 +32,7 @@ function RsLogSheet({ c, kind: kind0, editing, onClose }) {
   const kinds = srKinds(L, c.units);
   const [kind, setKind] = useState(editing ? editing.kind : (kinds.find(k => k.k === kind0) ? kind0 : 'sapCollected'));
   const K = kinds.find(k => k.k === kind);
-  const [val, setVal] = useState(editing ? editing.val : '');
+  const [val, setVal] = useState(editing ? (editing.kind === 'fuelUsed' && K.fk !== 1 ? String(Math.round(editing.val * K.fk * 100) / 100) : editing.val) : '');
   const [note, setNote] = useState(editing ? (editing.note || '') : '');
   const [grade, setGrade] = useState(editing && editing.grade ? editing.grade : '—');
   const [brix, setBrix] = useState(editing && editing.brix != null ? editing.brix : '');
@@ -39,6 +41,11 @@ function RsLogSheet({ c, kind: kind0, editing, onClose }) {
     if (!editing) return ''; const p = srDateParts(editing.date); return p ? srIsoOf(new Date(p.y, p.mo - 1, p.d, 12)) : '';
   });
   const [fail, setFail] = useState(null);
+  // Fix pass 2 (item 28): a new entry can be back-dated: Today, Yesterday or a date in this season.
+  const [newDate, setNewDate] = useState(() => srToday());
+  // Fix pass 2 (item 31): an RO entry can carry what came out (concentrate volume and Brix).
+  const [conc, setConc] = useState(editing && editing.conc != null ? String(+(+editing.conc).toFixed(1)) : '');
+  const [cbrix, setCbrix] = useState(editing && editing.cbrix != null ? String(editing.cbrix) : '');
   const [armed, setArmed] = useState(false);
   useEffect(() => { if (!armed) return; const tm = setTimeout(() => setArmed(false), 3000); return () => clearTimeout(tm); }, [armed]);
   const cpoints = ls.get('sg_cpoints', []) || [];
@@ -51,7 +58,10 @@ function RsLogSheet({ c, kind: kind0, editing, onClose }) {
   // Fix pass 1. A new entry files into the season its date belongs to (srSeasonOf), not whatever
   // season is on screen. An edited entry stays in its own season, and its date must stay inside
   // that season's window (Jul 1 to Jun 30) and not after today: a 1999 or 2031 date is refused.
-  const fileSeason = srSeasonOf(srToday()) || c.season;
+  const fileSeason = srSeasonOf(editing ? srToday() : newDate) || c.season;
+  const isRo = kind === 'sapRO';
+  const roExtra = () => { const cv = parseFloat(conc), cb = parseFloat(cbrix);
+    return isRo ? { conc: cv > 0 ? cv : undefined, cbrix: cb > 0 ? cb : undefined } : {}; };
   const editSeason = editing ? (editing.season != null ? +editing.season : c.season) : null;
   const win = editing ? srSeasonWindow(editSeason) : null;
   const dateMax = win ? (win.end < srToday() ? win.end : srToday()) : null;
@@ -64,14 +74,16 @@ function RsLogSheet({ c, kind: kind0, editing, onClose }) {
   const save = () => {
     if (busy.current) return;
     if (srFormBlocked('rs-log-sheet')) return;
-    const n = parseFloat(val);
-    if (!(n > 0)) { const el = document.getElementById('rs-log-v'); if (el) el.focus(); return; }
+    const n0 = parseFloat(val);
+    if (!(n0 > 0)) { const el = document.getElementById('rs-log-v'); if (el) el.focus(); return; }
+    // Fuel typed in litres (or m³) is kept in the fuel's own unit, as every fuel entry is.
+    const n = K.fk && K.fk !== 1 ? Math.round(n0 / K.fk * 1000) / 1000 : n0;
     const all = ls.get('sg_logs2', {}) || {};
     if (editing) {
       if (dateISO && (dateISO < win.start || dateISO > dateMax)) { setDateErr(true); const el = document.getElementById('rs-log-date'); if (el) el.focus(); return; }
       const slog = all[editSeason] || SR_EMPTY_SLOG();
       // The value was shown and typed in the display unit, so it now carries that unit.
-      const changes = { val: n, note, grade: K.grade ? grade : undefined, brix: SR_KIND_FIELDS[kind].brix && brix !== '' ? parseFloat(brix) : undefined, ...(SR_VOL_KINDS.includes(kind) ? { u: c.units === 'L' ? 'L' : 'GAL' } : {}) };
+      const changes = { ...roExtra(), val: n, note, grade: K.grade ? grade : undefined, brix: SR_KIND_FIELDS[kind].brix && brix !== '' ? parseFloat(brix) : undefined, ...(SR_VOL_KINDS.includes(kind) ? { u: c.units === 'L' ? 'L' : 'GAL' } : {}) };
       if (dateISO) changes.date = dateISO;
       const list = slog[kind] || [], at = editIdx(list);
       const up = { ...all, [editSeason]: { ...slog, [kind]: list.map((x, i) => i === at ? { ...x, ...changes } : x) } };
@@ -79,16 +91,19 @@ function RsLogSheet({ c, kind: kind0, editing, onClose }) {
       if (!writeLogs(up)) { busy.current = false; return; }
       srDataChanged(); srToast(rt(L,'entryChanged')); onClose(); return;
     }
+    if (!srLogDateOk(newDate, srToday())) { const el = document.getElementById('rs-log-date-new'); if (el) el.focus(); return; }
     // A day of sap far past what the taps can give is asked about once before it is saved.
     if (isSap && !warn) {
-      const todayGal = toGal(selToday(srReadLogs(c.units)[fileSeason] || {}).sapVal + n, c.units);
+      const dayVal = ((srReadLogs(c.units)[fileSeason] || {}).sapCollected || []).filter(e => { const p = srDateParts(e.date); return p && srIsoOf(new Date(p.y, p.mo - 1, p.d, 12)) === newDate; }).reduce((t, e) => t + (parseFloat(e.val) || 0), 0);
+      const todayGal = toGal(dayVal + n, c.units);
       // Only against a tap count he gave (the setup plan or the mapped trees), never the default tree count.
       const ti = selTaps(c.trees);
       const chk = ti.src !== 'trees' ? srSapDayCheck(todayGal, ti.taps) : null;
       if (chk && chk.high) { setWarn({ per: fromGal(chk.per, c.units) }); return; }
     }
     busy.current = true;
-    const entry = srTagUnit(kind, srMakeEntry(kind, { val: n, note, grade, brix: brix === '' ? '' : String(brix), point }, srNewId(), srToday()), c.units);
+    const entry = srTagUnit(kind, srMakeEntry(kind, { val: n, note, grade, brix: brix === '' ? '' : String(brix), point }, srNewId(), newDate), c.units);
+    const ex = roExtra(); if (ex.conc) entry.conc = ex.conc; if (ex.cbrix) entry.cbrix = ex.cbrix;   // same unit as val (u)
     if (!writeLogs(srAppendEntry(all, fileSeason, kind, entry))) { busy.current = false; return; }
     ls.set('sg_log_last_kind', kind);
     if (isSap) {
@@ -98,7 +113,7 @@ function RsLogSheet({ c, kind: kind0, editing, onClose }) {
       if (up2) ls.set('sg_logs2', up2);
     }
     srDataChanged();
-    srToast(rt(L,'savedEntry', { v: fmt(n, srDpOf(val, K.dp)), u: K.unit, k: srKindWord(K) }));
+    srToast(rt(L,'savedEntry', { v: fmt(n0, srDpOf(val, K.dp)), u: K.unit, k: srKindWord(K) }));
     onClose();
   };
   const del = () => {
@@ -129,11 +144,20 @@ function RsLogSheet({ c, kind: kind0, editing, onClose }) {
           onChange={e => { setDateISO(e.target.value); setDateErr(false); }} />
         {dateErr && <p className="rs-errline" role="alert">{rt(L,'dateOutside', { y: editSeason, a: srDateShort(win.start, L) + ' ' + win.start.slice(0, 4), b: srDateShort(dateMax, L) + ' ' + dateMax.slice(0, 4) })}</p>}
       </>}
+      {K.hint && <p className="rs-note" id="rs-log-hint">{rt(L, K.hint)}</p>}
       <RsStepper id="rs-log-v" value={val} onChange={v => { setVal(v); setWarn(null); }} steps={K.steps} dp={Math.max(K.dp, 2)} unit={K.unit} label={rt(L,'amountIn', { k:K.l, u:K.unit })} />
+      {/* The amount first, then when, as on the tank sheet (fix pass 2, item 28). */}
+      {!editing && <RsWhenDate c={c} value={newDate} onChange={setNewDate} id="rs-log-date-new" />}
       {isSap && cpoints.length > 0 && <>
         <label className="rs-fl">{rt(L,'fromWhere')}</label>
         <RsChips label={rt(L,'fromWhere')} value={point} onChange={setPoint}
           options={[[null, rt(L,'allPoints')], ...cpoints.map(p => [p.id, p.name])]} />
+      </>}
+      {isRo && <>
+        <label className="rs-fl" htmlFor="rs-log-conc">{rt(L,'concOut', { u: K.unit })}</label>
+        <RsStepper id="rs-log-conc" value={conc} onChange={setConc} steps={[-10, -1, 1, 10]} dp={1} unit={K.unit} label={rt(L,'concOut', { u: K.unit })} min={0} max={1000000} big={false} />
+        <label className="rs-fl" htmlFor="rs-log-cbx">{rt(L,'concBrix')}</label>
+        <RsStepper id="rs-log-cbx" value={cbrix} onChange={setCbrix} steps={[-0.5, 0.5]} dp={1} unit="%" label={rt(L,'concBrix')} min={0} max={30} big={false} base={parseFloat(ls.get('sg_dx_robrix', 8)) || 8} />
       </>}
       {isSyrup && <>
         <label className="rs-fl">{rt(L,'grade')}</label>
@@ -156,7 +180,7 @@ function RsLogSheet({ c, kind: kind0, editing, onClose }) {
       {warn && <p className="rs-errline" role="alert" id="rs-log-warn">{rt(L,'sapDayHigh', { v: fmt(warn.per, 1), u: K.unit })}</p>}
       {fail && <div className="rs-banner bad rs-sheetfail" role="alert">
         <span className="rs-bic"><RsIcon name="alert" size={24} sw={2.4} /></span>
-        <span className="rs-bt"><b>{rt(L,'bNotSavedT')}</b><span>{rt(L, fail === 'quota' ? 'bQuotaP' : 'bLockedP')}</span></span>
+        <span className="rs-bt"><b>{rt(L,'bNotSavedT')}</b><span>{rt(L, srFailKey(fail))}</span></span>
         {fail !== 'quota' && <button type="button" className="rs-bbtn" onClick={() => { onClose(); c.setShowLicense(true); }}>{rt(L,'bEnterKey')}</button>}
       </div>}
         <RsBtn onClick={save} id="rs-log-save">{editing ? rt(L,'saveChange') : warn ? rt(L,'saveAnyway', { v: fmt(parseFloat(val), srDpOf(val, K.dp)), u: K.unit })
@@ -194,10 +218,14 @@ function RsLogHistory({ c, openLog }) {
   // CSV: LogTab.exportCSV, unchanged (all six kinds, a Unit column, RFC 4180 quoting).
   const exportCSV = () => {
     const esc = x => `"${String(x ?? '').replace(/"/g,'""')}"`;
-    const fuelUnit = (FUELS.find(f=>f.label===ls.get('sg_fuel','Firewood (cord)'))||FUELS[0]).unit;
-    const rows=[['Type','Date','Value','Unit','Note']];
-    [['sapCollected',u],['syrupMade',u],['sapRO',u],['sapEvap',u],['fuelUsed',fuelUnit],['boilHours','hr']].forEach(([k,unit])=>{
-      (slog[k]||[]).forEach(e=>rows.push([t(L,k),e.date,e.val,unit,e.note||'']));
+    // Fix pass 2 (item 33): headers and kinds in his language, values rounded (2 decimals at most,
+    // a point as the decimal mark so the file re-imports anywhere), the fuel and hour units his.
+    const fuelF = FUELS.find(f=>f.label===ls.get('sg_fuel','Firewood (cord)'))||FUELS[0];
+    const fuelS = srFuelShow(fuelF, c.units, L), fuelUnit = fuelS.u;
+    const rnd = x => { const n = parseFloat(x); return isFinite(n) ? String(Math.round(n * 100) / 100) : ''; };
+    const rows=[[rt(L,'csvType'),rt(L,'csvDate'),rt(L,'csvValue'),rt(L,'csvUnit'),rt(L,'csvNote')]];
+    [['sapCollected',u],['syrupMade',u],['sapRO',u],['sapEvap',u],['fuelUsed',fuelUnit],['boilHours',L === 'fr' ? 'h' : 'hr']].forEach(([k,unit])=>{
+      (slog[k]||[]).forEach(e=>rows.push([t(L,k),e.date,rnd(k === 'fuelUsed' ? e.val * fuelS.k : e.val),unit,e.note||'']));
     });
     const csv=rows.map(r=>r.map(esc).join(',')).join('\n');
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
@@ -253,12 +281,13 @@ function RsLogHistory({ c, openLog }) {
                 <div className="rs-dayhead tn">{g.k}</div>
                 <div className="rs-list">
                   {g.items.map(e => { const k = K(e.kind); const p = e.point ? cpoints.find(x => x.id === e.point) : null;
-                    const extra = [e.grade && e.grade !== '—' ? srGradeLabel(e.grade, L) : null, e.brix != null ? `${fmt(e.brix, 1)} Brix` : null, p ? p.name : null, e.note || null].filter(Boolean).join(' · ');
+                    const extra = [e.grade && e.grade !== '—' ? srGradeLabel(e.grade, L) : null, e.brix != null ? `${fmt(e.brix, 1)} Brix` : null,
+                      e.conc > 0 ? rt(L,'rdRoConc', { c: fmt(e.conc, 0), u }) + (e.cbrix > 0 ? ` · ${fmt(e.cbrix, 1)}%` : '') : null, p ? p.name : null, e.note || null].filter(Boolean).join(' · ');
                     return <button key={e.kind + e.id + ':' + e._i} type="button" className="rs-row rs-entry" onClick={() => setEdit(e)}
-                      aria-label={rt(L,'entryAria', { k:k.l, v:fmt(e.val, k.dp), u:k.unit, d:g.k })}>
+                      aria-label={rt(L,'entryAria', { k:k.l, v:fmt(e.val * (k.fk || 1), k.dp), u:k.unit, d:g.k })}>
                       <RsTile icon={k.icon} family={e.kind === 'syrupMade' || e.kind === 'sapEvap' || e.kind === 'boilHours' ? 'boil' : e.kind === 'fuelUsed' ? 'power' : 'collect'} size={36} />
                       <span className="rs-rt"><b>{k.l}</b>{extra && <span>{extra}</span>}</span>
-                      <span className="rs-amt tn">{fmt(e.val, k.dp)}<small>{k.unit}</small></span>
+                      <span className="rs-amt tn">{fmt(e.val * (k.fk || 1), k.dp)}<small>{k.unit}</small></span>
                     </button>; })}
                 </div>
               </div>

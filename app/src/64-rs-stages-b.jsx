@@ -5,8 +5,9 @@
 // math lifted verbatim). RULE_DIVISOR stays 86.4 (decision D1 open).
 
 // Temperatures follow the Boil Day rule: litres -> °C primary, stored in °F.
-const srTempU = units => units === 'L' ? '°C' : '°F';
-const srTempD = (f, units) => units === 'L' ? (f - 32) * 5 / 9 : f;
+// Fix pass 2 (item 33): temperatures follow the one metric setting (srMetric), not litres alone.
+const srTempU = units => srMetric() ? '°C' : '°F';
+const srTempD = (f, units) => srMetric() ? (f - 32) * 5 / 9 : f;
 
 function RsEntryRows({ c, entries }) {
   const L = c.lang, kinds = srKinds(L, c.units);
@@ -39,6 +40,11 @@ function RsCollectStage({ c, openLog }) {
     next = { title: rt(L,'roTodayT'), why: rt(L,'roTodayW', { v: fmt(m.today.sapVal, 0), u, b: fmt(sapBx, 1), c: fmt(conc, 0), tb: fmt(roB, 0), s: fmt(syr, 1) }),
       btn: rt(L,'openRoPlanner'), act: () => rsGo('stage/collect/ro') };
   } else next = { title: rt(L,'roNoSapT'), why: rt(L,'roNoSapW'), btn: rt(L,'logSap'), act: () => openLog('sapCollected') };
+  // Fix pass 2 (item 35): a producer with no RO gets the day's gathering, not an RO call.
+  const noRo = c.profile && !c.profile.showRo;
+  if (noRo) next = m.today.sapVal > 0
+    ? { title: rt(L,'collectBkT'), why: rt(L,'collectBkW', { v: fmt(m.today.sapVal, 0), u, b: fmt(sapBx, 1), s: fmt(syrupY(m.today.sapVal, sapBx), 1) }), btn: rt(L,'logSap'), act: () => openLog('sapCollected') }
+    : { title: rt(L,'collectBkT'), why: rt(L,'collectBkNone'), btn: rt(L,'logSap'), act: () => openLog('sapCollected') };
   // The Brix trend: one point a day from the same source as the card (srBrixSource), so Brix typed
   // on sap entries counts as much as a reading at the tree.
   const bl = m.brix.series;
@@ -51,7 +57,7 @@ function RsCollectStage({ c, openLog }) {
         <div className="rs-cols">
           <div>
             <RsTankCard c={c} tanks={m.d.tanks} tankPins={m.d.tankPins} big />
-            <div style={{ marginTop:12 }}><RsNextCard eyebrow={rt(L,'theRoCall')} icon="ro" title={next.title} why={next.why} btn={next.btn} onAct={next.act} /></div>
+            <div style={{ marginTop:12 }}><RsNextCard eyebrow={rt(L, noRo ? 'todayCard' : 'theRoCall')} icon={noRo ? 'pail' : 'ro'} title={next.title} why={next.why} btn={next.btn} onAct={next.act} /></div>
             <h2 className="rs-sec">{rt(L,'brixAtTree')}</h2>
             <div className="rs-card">
               <div className="rs-split">
@@ -75,13 +81,14 @@ function RsCollectStage({ c, openLog }) {
               <div className="rs-empty"><b>{rt(L,'nothingToday')}</b><p>{rt(L,'nothingTodayP')}</p></div>}
             <div className="rs-btnrow">
               <RsBtn kind="secondary" icon="pail" onClick={() => openLog('sapCollected')}>{rt(L,'logSap')}</RsBtn>
-              <RsBtn kind="secondary" icon="ro" onClick={() => openLog('sapRO')}>{rt(L,'logRo')}</RsBtn>
+              {noRo ? <RsBtn kind="secondary" icon="jug" onClick={() => openLog('syrupMade')}>{rt(L,'logSyrup')}</RsBtn>
+                : <RsBtn kind="secondary" icon="ro" onClick={() => openLog('sapRO')}>{rt(L,'logRo')}</RsBtn>}
             </div>
             <h2 className="rs-sec">{rt(L,'sapFresh')}</h2>
             <RsFreshCard c={c} />
             <h2 className="rs-sec">{rt(L,'toolsWord')}</h2>
             <div className="rs-list">
-              <RsRow icon="ro" family="collect" title={rt(L,'sc_ro')} sub={rt(L,'sc_ro_s')} href={rsHref('stage/collect/ro')} />
+              {!noRo && <RsRow icon="ro" family="collect" title={rt(L,'sc_ro')} sub={rt(L,'sc_ro_s')} href={rsHref('stage/collect/ro')} />}
               <RsRow icon="list" family="power" title={rt(L,'sc_log')} sub={rt(L,'sc_log_s')} href={rsHref('shack/log')} />
             </div>
           </div>
@@ -136,7 +143,7 @@ function RsFreshCard({ c }) {
       {h && <>
         <div className="rs-bar rs-freshbar" role="img" aria-label={rt(L,'freshAria', { n: fmt(h.currentHU, 0) })}><i style={{ width: h.pct + '%', background: h.level === 'fresh' ? T.ok : h.level === 'soon' ? T.acc : T.bad }} /></div>
         <RsKv rows={[[rt(L,'heatUnits'), `${fmt(h.currentHU, 0)} / ${SR_FRESH.CRITICAL_HU}`],
-          h.currentTemp != null ? [rt(L,'outdoor'), `${fmt(h.currentTemp, 0)}°F`] : null,
+          h.currentTemp != null ? [rt(L,'outdoor'), srTempTxt(h.currentTemp)] : null,
           h.critEta ? [rt(L,'boilBy'), eta(h.critEta)] : null,
           h.bestBoilStart ? [rt(L,'coolWindow'), srClock(h.bestBoilStart, L)] : null]} />
       </>}
@@ -163,7 +170,7 @@ function RsBrixSheet({ c, onClose }) {
       <label className="rs-fl" htmlFor="rs-bx-note">{rt(L,'noteOpt')}</label>
       <input id="rs-bx-note" className="rs-field" value={note} onChange={e => setNote(e.target.value)} placeholder={rt(L,'brixNotePh')} />
       <div className="rs-sheetfoot">
-      {fail && <p className="rs-errline" role="alert">{rt(L,'bNotSavedT')}. {rt(L,'bLockedP')}</p>}
+      {fail && <p className="rs-errline" role="alert">{rt(L,'bNotSavedT')}. {rt(L, srFailKey(SR_WRITE_FAIL))}</p>}
       <div><RsBtn onClick={save} id="rs-bx-save">{rt(L,'saveBrix')}</RsBtn></div></div>
     </RsSheet>
   );
@@ -184,7 +191,7 @@ function RsROPlanner({ c }) {
   const ok = tgt > sb && sb > 0;
   const conc = ok ? roConc(inSap || 0, sb, tgt) : 0, perm = ok ? (inSap || 0) - conc : 0;
   const rate = selEvap().rate;   // the one evaporator rate (setup pan, picked pan or typed rate)
-  const fuel = FUELS.find(f => f.label === c.fuelType) || FUELS[0];
+  const fuel = FUELS.find(f => f.label === c.fuelType) || FUELS[0], fS = srFuelShow(fuel, c.units, L);
   const sapG = toGal(inSap || 0, c.units), concG = toGal(conc, c.units);
   const saved = ok ? boilTime(sapG, sb, rate) - boilTime(concG, tgt, rate) : 0;
   const fSaved = rate > 0 ? (saved * rate) / fuel.spu : 0, mSaved = fSaved * (parseFloat(c.fuelCost) || 0);
@@ -218,10 +225,10 @@ function RsROPlanner({ c }) {
           <div className="rs-card">
             <RsKv big rows={[
               [rt(L,'boilSaved'), rate > 0 && ok ? srDur(saved, L) : rt(L,'setPanFirst')],
-              [rt(L,'fuelSavedW'), rate > 0 && ok ? `${fmt(fSaved, 1)} ${L === 'fr' ? fuel.unitFr : fuel.unit} ${fuelLabel(fuel, L).replace(/ \(.*\)/, '').toLowerCase()} · ${srMoney(mSaved, 0)}` : ''],
+              [rt(L,'fuelSavedW'), rate > 0 && ok ? `${fmt(fSaved * fS.k, 1)} ${fS.u} ${fuelLabel(fuel, L).replace(/ \(.*\)/, '').toLowerCase()} · ${srMoney(mSaved, 0)}` : ''],
               [rt(L,'evapRate'), rate > 0 ? `${fmt(fromGal(rate, c.units), 0)} ${u}/h` : ''],
             ]} />
-            <p className="rs-note">{rt(L,'roSavesNote', { c: fmt(parseFloat(c.fuelCost) || 0, 2), f: fuel.unit })}</p>
+            <p className="rs-note">{rt(L,'roSavesNote', { c: fmt((parseFloat(c.fuelCost) || 0) / fS.k, 2), f: fS.u })}</p>
           </div>
           <h2 className="rs-sec">{rt(L,'multiPass')}</h2>
           <div className="rs-list">
@@ -268,7 +275,7 @@ function RsBoilStage({ c }) {
   // Expected so far (srBoilExpected): from the sap he fed in when counted, else the pan's rate,
   // at the FEED's Brix: RO concentrate when he runs an RO, else this season's sap Brix.
   const usesRo = selUsesRo(m.d.slog);
-  const concBx = parseFloat(ls.get('sg_dx_robrix', 8)) || 8;
+  const concBx = srRoConcOf(m.d.slog.sapRO, m.brix.brix, ls.get('sg_dx_robrix', 8)).concBrix;   // logged concentrate Brix first (item 31)
   const hrs = active ? Math.max(0, (now - sess.start) / 3600000) : 0;
   const exp = srBoilExpected({ evapGph: m.d.panRate, hrs, sapInGal: active ? toGal(sess.sap || 0, c.units) : 0, sapBrix: m.brix.brix, concBrix: concBx, ro: usesRo });
   const rate = m.d.panRate > 0 ? exp.perHour : 0;
@@ -281,7 +288,7 @@ function RsBoilStage({ c }) {
   const seasonSy = m.totals.syT + drawn;
   const panLbl = m.d.panIdx === CUSTOM_PAN_IDX ? rt(L,'customPan') : (PAN_SIZES[m.d.panIdx] || PAN_SIZES[0]).label.replace(/ \(.*\)/, '').replace(/ ft$/, ' ' + srUnitL('ft', L));
   const start = () => persist({ start: Date.now(), sap: 0, syrup: 0, tempF: r1(c.waterBP), u: c.units === 'L' ? 'L' : 'GAL' });
-  const bumpT = dDisp => { const d = srTempD(sess.tempF, c.units) + dDisp; const f = c.units === 'L' ? d * 9 / 5 + 32 : d; persist({ ...sess, tempF: Math.round(f * 100) / 100 }); };
+  const bumpT = dDisp => { const d = srTempD(sess.tempF, c.units) + dDisp; const f = srMetric() ? d * 9 / 5 + 32 : d; persist({ ...sess, tempF: Math.round(f * 100) / 100 }); };
   const add = (k, n) => persist({ ...sess, [k]: r1((sess[k] || 0) + n) });
   const logBoil = () => {
     if (srFormBlocked('rs-boil-end')) return;
@@ -340,7 +347,7 @@ function RsBoilStage({ c }) {
               <div className="rs-split"><div className="rs-meta">{rt(L,'drawOffAt')}</div>
                 <span className="rs-fresh"><RsIcon name="therm" size={14} />{rt(L,'waterBoilsAtV', { v: fmt(srTempD(c.waterBP, c.units), 1), u: uT })}</span></div>
               <div className="rs-huge tn">{fmt(srTempD(finT, c.units), 1)}<small>{uT}</small></div>
-              <p className="rs-meta">{rt(L, c.units === 'L' ? 'drawOffPC' : 'drawOffP')}</p>
+              <p className="rs-meta">{rt(L, srMetric() ? 'drawOffPC' : 'drawOffP')}</p>
               <div className="rs-btnrow">
                 <RsBtn kind="secondary" href={rsHref('stage/boil/draw-off')}>{rt(L,'recheckWater')}</RsBtn>
                 <RsBtn kind="secondary" href={rsHref('stage/boil/draw-off')}>{rt(L,'hydroFix')}</RsBtn>
@@ -387,12 +394,25 @@ function RsBoilStage({ c }) {
     </>
   );
 }
-function RsCounter({ label, value, unit, steps, onAdd }) {
+// Fix pass 2 (item 30): beside the quick keys, a typed amount for big loads ("1450", Add).
+// A typed number is checked like every field (srCheckNum): refused, never clamped.
+function RsCounter({ label, value, unit, steps, onAdd, typeLabel, addWord, id }) {
+  const [typed, setTyped] = useState('');
+  const chk = typed === '' ? null : srCheckNum(typed, 0, 100000);
+  const bad = chk && chk.kind !== 'ok';
+  const add = () => { if (!chk || bad || !(chk.n > 0)) { const el = document.getElementById(id); if (el) el.focus(); return; } onAdd(chk.n); setTyped(''); };
+  const L = RS_LANG;
   return (
     <div className="rs-counter">
       <div className="rs-meta">{label}</div>
       <div className="rs-mid tn">{value}<small>{unit}</small></div>
       <div className="rs-keys sm">{steps.map(n => <button key={n} type="button" onClick={() => onAdd(n)} aria-label={`+${n} ${unit} ${label}`}>+{n}</button>)}</div>
+      {typeLabel && <div className="rs-ctype">
+        <input id={id} className="rs-field tn" inputMode="decimal" value={typed} aria-label={typeLabel} placeholder={typeLabel} aria-invalid={bad ? 'true' : undefined}
+          onChange={e => setTyped(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') add(); }} />
+        <button type="button" className="rs-btn2 sm" onClick={add} id={id ? id + '-add' : undefined}>{addWord}</button>
+      </div>}
+      {bad && <p className="rs-errline" role="alert">{chk.kind === 'high' ? rt(L, 'numHigh', { v: fmt(100000, 0) }) : rt(L, 'numBad')}</p>}
     </div>
   );
 }
@@ -452,7 +472,7 @@ function RsBoilLive({ c, sess, now, est, rate, state, stateWord, finT, onRead, o
               band={[66, 67]} bandL={rt(L,'syrupBandL')} unit={rt(L,'brixU')} lang={L}
               h={136} empty={rt(L,'chartEmptyB')} label={rt(L,'chartBrixAria', { n: S.brix.length })} />}
       </div>
-      <div className="rs-counters rs-blsap"><RsCounter label={rt(L,'sapIn')} value={fmt(sess.sap || 0, 0)} unit={u} steps={[1, 5, 10]} onAdd={onSap} /></div>
+      <div className="rs-counters rs-blsap"><RsCounter label={rt(L,'sapIn')} value={fmt(sess.sap || 0, 0)} unit={u} steps={[1, 5, 10]} onAdd={onSap} typeLabel={rt(L,'sapInType', { u })} addWord={rt(L,'sapInAdd')} id="rs-boil-sapin" /></div>
       {/* The jugs are the syrup actually drawn; the sentence says how that sits against the pan's pace. */}
       <RsJugs gal={drawn} label={rt(L,'jugsAria', { v: fmt(drawn, 1), u })} />
       <p className="rs-note rs-blest">{rate > 0 || (sess.sap || 0) > 0 ? rt(L, pace.kind === 'none' ? 'bpNone' : pace.kind === 'on' ? 'bpOn' : pace.kind === 'ahead' ? (firstBoil ? 'bpAheadFirst' : 'bpAhead') : 'bpBehind', { e: fmt(estD, 1), d: fmt(pace.d, 1), u }) + ' ' : ''}{rt(L, (sess.sap || 0) > 0 ? (feedRo ? 'estNoteSapRo' : 'estNoteSap') : (feedRo ? 'estNoteRo' : 'estNote'), { b: fmt(feedBrix || parseFloat(c.sapBrix) || 2, 1) })}</p>
@@ -516,7 +536,7 @@ function RsBoilReadSheet({ c, mode, sess, persist, onClose }) {
     const tv = parseFloat(temp);
     if (!isFinite(tv)) { const el = document.getElementById('rs-bl-temp'); if (el) el.focus(); return; }
     if (draw_ && !(parseFloat(draw) > 0)) { const el = document.getElementById('rs-bl-draw'); if (el) el.focus(); return; }
-    const tempF = c.units === 'L' ? tv * 9 / 5 + 32 : tv;
+    const tempF = srMetric() ? tv * 9 / 5 + 32 : tv;
     const next = srBoilAddReading(sess, { t: Date.now(), tempF, brix, draw: draw_ ? draw : null });
     if (!persist(next)) { setFail(true); return; }
     srToast(draw_ ? rt(L,'drawSaved', { v: fmt(parseFloat(draw), 1), u }) : rt(L,'readSaved', { v: fmt(tv, 1), u: uT }));
@@ -532,7 +552,7 @@ function RsBoilReadSheet({ c, mode, sess, persist, onClose }) {
       <RsStepper id="rs-bl-brix" value={brix} onChange={setBrix} steps={[-1, -0.1, 0.1, 1]} dp={1} unit={rt(L,'brixU')} min={0} max={80}  label={rt(L,'brixOpt')} big={false} />
       <p className="rs-note">{rt(L, draw_ ? 'drawNote' : 'readNote')}</p>
       <div className="rs-sheetfoot">
-        {fail && <p className="rs-errline" role="alert">{rt(L,'bNotSavedT')}. {rt(L,'bLockedP')}</p>}
+        {fail && <p className="rs-errline" role="alert">{rt(L,'bNotSavedT')}. {rt(L, srFailKey(SR_WRITE_FAIL))}</p>}
         <div><RsBtn onClick={save} id="rs-bl-save">{rt(L, draw_ ? 'saveDraw' : 'saveReading')}</RsBtn></div>
       </div>
     </RsSheet>
@@ -582,7 +602,7 @@ function RsBatchSheet({ c, onClose }) {
       <label className="rs-fl" htmlFor="rs-b-notes">{rt(L,'noteOpt')}</label>
       <input id="rs-b-notes" className="rs-field" value={f.notes} onChange={e => set('notes', e.target.value)} placeholder={rt(L,'addNote')} />
       <div className="rs-sheetfoot">
-      {fail && <p className="rs-errline" role="alert">{rt(L,'bNotSavedT')}. {rt(L,'bLockedP')}</p>}
+      {fail && <p className="rs-errline" role="alert">{rt(L,'bNotSavedT')}. {rt(L, srFailKey(SR_WRITE_FAIL))}</p>}
       <div><RsBtn onClick={save} id="rs-batch-save">{rt(L,'saveBatch')}</RsBtn></div></div>
     </RsSheet>
   );
@@ -649,7 +669,7 @@ function RsDrawOff({ c }) {
   // Fix pass 1 (item 12): in litre mode every temperature here is typed and shown in °C, and the
   // field's own range is in °C (93.3 to 101.7 for water), so a °C reading is never clamped to 200°F.
   // Stored in °F, as before (sg_bp); the draw-off rule is the same 7.1°F (3.9°C) above water.
-  const isC = c.units === 'L', uT = srTempU(c.units);
+  const isC = srMetric(), uT = srTempU(c.units);
   const tD = f => isC ? Math.round((f - 32) * 5 / 9 * 10) / 10 : f, tF = d => isC ? d * 9 / 5 + 32 : d;
   const bpShown = Math.round(tD(bp) * 10) / 10;
   return (
@@ -662,7 +682,7 @@ function RsDrawOff({ c }) {
           <div className="rs-card">
             <div className="rs-meta">{rt(L,'drawOffAt')}</div>
             <div className="rs-huge tn">{fmt(tD(fin), 1)}<small>{uT}</small></div>
-            <p className="rs-meta tn">{isC ? rt(L,'drawOffF', { f: fmt(fin, 1) }) : rt(L,'drawOffC', { c: fmt(toC(fin), 1) })}</p>
+            <p className="rs-meta tn">{isC ? fmt(fin, 1) + '°F' /* the °F twin on purpose: rt() would show it in °C again */ : rt(L,'drawOffC', { c: fmt(toC(fin), 1) })}</p>
             <p className="rs-meta">{rt(L, isC ? 'drawOffRuleC' : 'drawOffRuleF')}</p>
             <label className="rs-fl" htmlFor="rs-bp">{rt(L, isC ? 'waterBoilsAtLC' : 'waterBoilsAtL')}</label>
             <RsStepper id="rs-bp" value={bpShown} onChange={v => { if (v !== '') c.setWaterBP(Math.round(tF(v) * 100) / 100); }} steps={isC ? [-0.5, -0.1, 0.1, 0.5] : [-1, -0.1, 0.1, 1]} dp={1} unit={uT}
@@ -676,13 +696,15 @@ function RsDrawOff({ c }) {
               <RsBtn kind="secondary" onClick={find} disabled={busy}>{rt(L,'find')}</RsBtn>
             </div>
             <div style={{ marginTop:10 }}><RsBtn kind="secondary" icon="gps" onClick={gps} disabled={busy}>{rt(L,'useGps')}</RsBtn></div>
-            {place && <p className="rs-meta" style={{ marginTop:10 }}>{rt(L,'elevAt', { p: place, ft: fmt(parseFloat(alt) || 0, 0) })}</p>}
+            {place && <p className="rs-meta" style={{ marginTop:10 }}>{isC ? rt(L,'elevAtM', { p: place, m: fmt((parseFloat(alt) || 0) / 3.28084, 0) }) : rt(L,'elevAt', { p: place, ft: fmt(parseFloat(alt) || 0, 0) })}</p>}
             {err && <p className="rs-errline" role="alert">{err}</p>}
-            <label className="rs-fl" htmlFor="rs-alt">{rt(L,'altitudeFt')}</label>
-            <RsStepper id="rs-alt" value={alt} onChange={useAlt} steps={[-100, 100]} dp={0} unit="ft" label={rt(L,'altitudeFt')} min={0} max={15000} big={false} />
+            {/* Fix pass 2 (item 33): altitude in metres in metric (kept in feet for the formula). */}
+            <label className="rs-fl" htmlFor="rs-alt">{rt(L, isC ? 'altitudeM' : 'altitudeFt')}</label>
+            <RsStepper id="rs-alt" value={isC && alt !== '' ? String(Math.round(parseFloat(alt) / 3.28084)) : alt} onChange={v => useAlt(isC && v !== '' ? Math.round(parseFloat(v) * 3.28084) : v)}
+              steps={isC ? [-30, 30] : [-100, 100]} dp={0} unit={isC ? 'm' : 'ft'} label={rt(L, isC ? 'altitudeM' : 'altitudeFt')} min={0} max={isC ? 4572 : 15000} big={false} />
           </div>
           <div className="rs-list" style={{ marginTop:12 }}>
-            {ALT_REF.map(r => <RsRow key={r.alt} chev={false} title={(L === 'fr' ? r.alt.replace(/,/g, '\u00a0') : r.alt).replace(/ ft$/, ' ' + srUnitL('ft', L))} value={rt(L, isC ? 'altRowC' : 'altRow', { bp: fmt(tD(r.bp), 1), fin: fmt(tD(r.fin), 1) })} />)}
+            {ALT_REF.map(r => <RsRow key={r.alt} chev={false} title={isC ? fmt(Math.round(parseFloat(r.alt.replace(/,/g, '')) / 3.28084), 0) + ' m' : (L === 'fr' ? r.alt.replace(/,/g, '\u00a0') : r.alt).replace(/ ft$/, ' ' + srUnitL('ft', L))} value={rt(L, isC ? 'altRowC' : 'altRow', { bp: fmt(tD(r.bp), 1), fin: fmt(tD(r.fin), 1) })} />)}
           </div>
         </div>
         <div>
@@ -745,7 +767,7 @@ function RsDE({ c }) {
               <label className="rs-fl" htmlFor="rs-de-p">{rt(L,'dePlates')}</label>
               <RsStepper id="rs-de-p" value={plates} onChange={setPlates} steps={[-1, 1]} dp={0} unit="" label={rt(L,'dePlates')} min={1} max={50} big={false} />
               <label className="rs-fl">{rt(L,'dePlateSize')}</label>
-              <RsSeg label={rt(L,'dePlateSize')} value={ps} onChange={setPs} options={Object.keys(PLATE_CUPS).map(k => [k, k.replace(' plates', ' ' + srUnitL('in', L))])} />
+              <RsSeg label={rt(L,'dePlateSize')} value={ps} onChange={setPs} options={Object.keys(PLATE_CUPS).map(k => [k, srMetric() ? fmt(srInToCm(parseFloat(k)), 0) + ' cm' : k.replace(' plates', ' ' + srUnitL('in', L))])} />
             </>}
           </div>
         </div>

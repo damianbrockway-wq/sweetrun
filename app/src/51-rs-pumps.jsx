@@ -56,6 +56,8 @@ function RsPumps({ c, sub, openLog }) {
   if (s[0] === 'freeze') return <RsFreezeScreen c={c} />;
   if (s[0] === 'tank' && s[1]) return <RsTankScreen c={c} id={s[1]} />;
   if (s[0] && !['add', 'add-tank'].includes(s[0])) return <RsPumpScreen c={c} id={s[0]} />;
+  // Fix pass 2 (item 26): "Set it up" for a tank pin that already has a tank opens that tank.
+  if (s[0] === 'add-tank' && s[1]) { const t = srArr(ls.get('sg_tanks', [])).find(x => String(x.pinId) === String(s[1])); if (t) return <RsNotFound c={c} to={'pumps/tank/' + t.id} />; }
   return <RsPumpCenter c={c} addPin={s[0] === 'add' ? (s[1] || true) : null} addTankPin={s[0] === 'add-tank' ? (s[1] || true) : null} />;
 }
 
@@ -111,8 +113,14 @@ function RsPumpCenter({ c, addPin, addTankPin }) {
             <div className="rs-empty">
               <div className="rs-mk"><RsImpeller size={48} /></div>
               <b>{rt(L, 'pumpsEmptyT2')}</b><p>{rt(L, 'pumpsEmptyP2')}</p>
-              <div style={{ marginTop: 14 }}><RsBtn icon="plus" onClick={() => setAdd({})} id="rs-add-pump">{rt(L, 'addPump')}</RsBtn></div>
-              <div style={{ marginTop: 10 }}><RsBtn kind="secondary" icon="tank" onClick={() => setAddTank({})}>{rt(L, 'addTank')}</RsBtn></div>
+              {/* Item 35: with buckets or gravity and nothing pumped, the tank is the first thing to add. */}
+              {c.profile && c.profile.simple ? <>
+                <div style={{ marginTop: 14 }}><RsBtn icon="tank" onClick={() => setAddTank({})} id="rs-add-tank">{rt(L, 'addTank')}</RsBtn></div>
+                <div style={{ marginTop: 10 }}><RsBtn kind="secondary" icon="plus" onClick={() => setAdd({})} id="rs-add-pump">{rt(L, 'addPump')}</RsBtn></div>
+              </> : <>
+                <div style={{ marginTop: 14 }}><RsBtn icon="plus" onClick={() => setAdd({})} id="rs-add-pump">{rt(L, 'addPump')}</RsBtn></div>
+                <div style={{ marginTop: 10 }}><RsBtn kind="secondary" icon="tank" onClick={() => setAddTank({})}>{rt(L, 'addTank')}</RsBtn></div>
+              </>}
             </div>
             <p className="rs-note">{rt(L, 'pumpsHonest')}</p>
           </div>
@@ -127,14 +135,14 @@ function RsPumpCenter({ c, addPin, addTankPin }) {
             <h2 className="rs-sec">{rt(L, 'readouts')}</h2>
             {board}
           </div>
-          <div className="pg-vac">
+          {(!c.profile || c.profile.showVacuum) && <div className="pg-vac">
             <h2 className="rs-sec">{rt(L, 'vacAndLeaks')}<a className="rs-more" href={rsHref('pumps/vacuum')}>{rt(L, 'allLinesW')}<RsIcon name="chev" size={18} /></a></h2>
             <RsVacCard c={c} model={model} />
-          </div>
+          </div>}
           <div className="pg-more">
             <h2 className="rs-sec">{rt(L, 'byJob')}</h2>
             <div className="rs-list">
-              <RsRow icon="gauge" family="lines" title={rt(L, 'vacAndLeaks')} sub={model.leaks.length ? rt(L, 'leaksOnV', { n: model.leaks.map(x => x.name).join(', ') }) : rt(L, 'allHoldingOrNone')} href={rsHref('pumps/vacuum')} />
+              {(!c.profile || c.profile.showVacuum) && <RsRow icon="gauge" family="lines" title={rt(L, 'vacAndLeaks')} sub={model.leaks.length ? rt(L, 'leaksOnV', { n: model.leaks.map(x => x.name).join(', ') }) : rt(L, 'allHoldingOrNone')} href={rsHref('pumps/vacuum')} />}
               <RsRow icon="snow" family="ice" title={rt(L, 'freezePrep')} sub={!prep.items.length ? rt(L, 'freezeRowNone') : prep.freezing ? rt(L, 'freezeRowS', { d: prep.nDone, t: prep.items.length }) : prep.lo != null ? rt(L, 'freezeAbove', { v: prep.lo, f: model.prefs.freezeF }) : rt(L, 'freezeRowS', { d: prep.nDone, t: prep.items.length })} href={rsHref('pumps/freeze')} />
               <RsRow icon="calc" family="collect" title={rt(L, 'transferTime')} sub={rt(L, 'transferTimeS')} href={rsHref('shack/equipment')} />
             </div>
@@ -145,8 +153,8 @@ function RsPumpCenter({ c, addPin, addTankPin }) {
           </div>
         </>}
       </div>
-      {add && <RsPumpSheet c={c} model={model} pinId={add.pin || null} onClose={() => { setAdd(null); if (addPin) try { history.replaceState(null, '', '#/pumps'); } catch {} }} />}
-      {addTank && <RsTankSheet c={c} model={model} pinId={addTank.pin || null} onClose={() => { setAddTank(null); if (addTankPin) try { history.replaceState(null, '', '#/pumps'); } catch {} }} />}
+      {add && <RsPumpSheet c={c} model={model} pinId={add.pin || null} onClose={() => { setAdd(null); if (addPin) try { history.replaceState(history.state, '', '#/pumps'); } catch {} }} />}
+      {addTank && <RsTankSheet c={c} model={model} pinId={addTank.pin || null} onClose={() => { setAddTank(null); if (addTankPin) try { history.replaceState(history.state, '', '#/pumps'); } catch {} }} />}
       {selLine && <RsSheet title={selLine.label} onClose={() => setLine(null)} id="rs-line-sheet"><RsLineDetail c={c} model={model} line={selLine} onClose={() => setLine(null)} /></RsSheet>}
     </>
   );
@@ -203,7 +211,7 @@ function RsTimeChart({ series, from, to, yMin, yMax, yTicks, h = 160, label, lan
       </svg>
       {legend}
       <RsDataTable caption={label} head={[rt(lang,'mainlineWord'), rt(lang,'readWhen'), srUnitL('in', lang)]}
-        rows={series.flatMap(s => s.pts.map(p => [s.id, srClock(p.ms, lang), fmt(p.v, 1)]))}  toggle={tableToggle} />
+        rows={series.flatMap(s => s.pts.map(p => [s.id, `${srDayLabel(srIsoOf(new Date(p.ms)), lang)}, ${srClock(p.ms, lang)}`, fmt(p.v, 1)]))}  toggle={tableToggle} />
     </div>
   );
 }
@@ -231,7 +239,7 @@ function RsReadingSheet({ c, title, unit, dp, steps, min, max, base, sensor, onS
       <div className="rs-sheetfoot">
         {fail && <div className="rs-banner bad rs-sheetfail" role="alert">
           <span className="rs-bic"><RsIcon name="alert" size={24} sw={2.4} /></span>
-          <span className="rs-bt"><b>{rt(L, 'bNotSavedT')}</b><span>{rt(L, fail === 'quota' ? 'bQuotaP' : 'bLockedP')}</span></span>
+          <span className="rs-bt"><b>{rt(L, 'bNotSavedT')}</b><span>{rt(L, srFailKey(fail))}</span></span>
           {fail !== 'quota' && <button type="button" className="rs-bbtn" onClick={() => { onClose(); c.setShowLicense(true); }}>{rt(L, 'bEnterKey')}</button>}
         </div>}
         <RsBtn onClick={save} id="rs-read-save">{v !== '' && srFin(parseFloat(v)) ? rt(L, 'saveReadingV', { v: fmt(parseFloat(v), dp), u: srUnitL(unit, L) }) : rt(L, 'saveReading')}</RsBtn>
@@ -244,7 +252,7 @@ function RsSheetFail({ c, fail, onClose }) {
   if (!fail) return null;
   return <div className="rs-banner bad rs-sheetfail" role="alert">
     <span className="rs-bic"><RsIcon name="alert" size={24} sw={2.4} /></span>
-    <span className="rs-bt"><b>{rt(L, 'bNotSavedT')}</b><span>{rt(L, fail === 'quota' ? 'bQuotaP' : 'bLockedP')}</span></span>
+    <span className="rs-bt"><b>{rt(L, 'bNotSavedT')}</b><span>{rt(L, srFailKey(fail))}</span></span>
     {fail !== 'quota' && <button type="button" className="rs-bbtn" onClick={() => { onClose && onClose(); c.setShowLicense(true); }}>{rt(L, 'bEnterKey')}</button>}
   </div>;
 }
@@ -609,7 +617,7 @@ function RsFreezeScreen({ c }) {
           : wx.status === 'error' ? <div className="rs-err"><b>{rt(L, 'freezeErrT')}</b><p>{rt(L, 'freezeErrP')}</p><RsBtn kind="secondary" onClick={wx.retry}>{rt(L, 'tryAgain')}</RsBtn></div>
           : <div className={`rs-card rs-lowcard${prep.freezing ? ' ice' : ''}`}>
               <div className="rs-split"><div><div className="rs-meta">{rt(L, 'lowTonight')}</div>
-                <div className="rs-big tn">{prep.lo != null ? prep.lo : '·'}<small>°F</small></div></div>
+                <div className="rs-big tn">{prep.lo != null ? srTempShow(prep.lo) : '·'}<small>{srTempUnit()}</small></div></div>
                 <RsSt kind={prep.freezing ? 'ice' : 'ok'}>{prep.freezing ? rt(L, 'atOrUnder', { f: P.freezeF }) : rt(L, 'aboveF', { f: P.freezeF })}</RsSt></div>
               <p className="rs-note">{rt(L, 'freezeRule', { f: P.freezeF })}</p>
             </div>}
@@ -702,6 +710,12 @@ function RsTankScreen({ c, id }) {
             {hist.length ? <div className="rs-list">{hist.map((r, i) => <RsRow key={i} chev={false} title={`${srVol(r.v, c.units)} ${u}`}
               sub={`${srDayLabel(srIsoOf(new Date(r.ms)), L)}, ${srClock(r.ms, L)}`} />)}</div> : <p className="rs-meta">{rt(L, 'noLevelsP')}</p>}
             <div style={{ marginTop: 14 }}><RsBtn kind="secondary" icon="pen" onClick={() => setSheet('edit')}>{rt(L, 'changeTank')}</RsBtn></div>
+            {/* Fix pass 2 (item 27): delete, saying what goes with it. */}
+            {(() => { const nr = model.readings.filter(r => r && r.s === sid).length, feeders = model.pumps.filter(p => p.tankId === id).map(p => p.name);
+              return <RsDeleteBtn c={c} id="rs-tank-del" label={rt(L, 'deleteTank')}
+                consequence={[rt(L, nr ? 'tankDelWhat' : 'tankDelWhat0', { n: raw.name, r: nr }), feeders.length ? rt(L, 'tankDelPumps', { p: feeders.join(', ') }) : null].filter(Boolean).join(' ')}
+                onDelete={() => { if (!srDeleteTank(id)) { setSheet('fail'); return; } srToast(rt(L, 'tankDeleted', { n: raw.name })); rsGo('pumps'); }} />; })()}
+            {sheet === 'fail' && <RsSheetFail c={c} fail={SR_WRITE_FAIL || 'locked'} />}
           </div>
         </div>
       </div>

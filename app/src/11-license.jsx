@@ -22,27 +22,30 @@ async function verifyLicense(token) {
     try { sigBytes = b64uDec(sig); } catch { return null; }
     if (sigBytes.length !== 64) return null;
 
-    // Fix pass 1 (item 21): a key is accepted only when its signature is checked. A browser
-    // without Ed25519 in WebCrypto (Safari before 17) used to fall through and ACCEPT any key with
-    // a 64-byte signature, so a forged key worked on an older iPad. Now that browser asks the
-    // license Worker to check the key (POST /verify, when LICENSE_API is set), and with no Worker
-    // the key is refused with { unverifiable: true } so the screen can say why. Never accepted unchecked.
-    let verified = false, unsupported = false;
+    // Fix pass 1 (item 21) closed the hole where a browser without Ed25519 accepted any key.
+    // Fix pass 2 restores genuine keys there: when WebCrypto's Ed25519 import or verify THROWS
+    // (Safari before 17, iPads on iOS 16), the same check runs in the vendored pure-JS verifier
+    // (@noble/ed25519 2.3.0, strict RFC 8032, in the bundle so it works offline). A forged key
+    // fails either way. Only if that also throws (no SHA-512 at all, e.g. a non-HTTPS page) does
+    // the app ask the Worker, and with no Worker the key is refused as unverifiable.
+    const msg = new TextEncoder().encode(p);
+    let verified = false, threw = false;
     try {
       const key = await crypto.subtle.importKey('raw', b64uDec(LICENSE_PUBKEY), { name: 'Ed25519' }, false, ['verify']);
-      verified = await crypto.subtle.verify('Ed25519', key, sigBytes, new TextEncoder().encode(p));
-    } catch (e) {
-      // Only a browser that cannot do Ed25519 gets the server check; any other error rejects.
-      unsupported = !!(e && (e.name === 'NotSupportedError' || e.name === 'OperationError' || e.name === 'NotImplementedError' || e.name === 'TypeError'));
-      if (!unsupported) return null;
-    }
-    if (unsupported) {
-      if (!LICENSE_API) return { unverifiable: true };
-      try {
-        const r = await fetch(LICENSE_API + '/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: String(token).trim() }) });
-        const j = r.ok ? await r.json() : null;
-        verified = !!(j && j.ok === true);
-      } catch { return { unverifiable: true, offline: true }; }
+      verified = await crypto.subtle.verify('Ed25519', key, sigBytes, msg);
+    } catch { threw = true; }
+    if (threw) {
+      let localOk = null;
+      try { localOk = await SR_NOBLE.verifyAsync(sigBytes, msg, b64uDec(LICENSE_PUBKEY), { zip215: false }); } catch { localOk = null; }
+      if (localOk !== null) verified = localOk === true;
+      else {
+        if (!LICENSE_API) return { unverifiable: true };
+        try {
+          const r = await fetch(LICENSE_API + '/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: String(token).trim() }) });
+          const j = r.ok ? await r.json() : null;
+          verified = !!(j && j.ok === true);
+        } catch { return { unverifiable: true, offline: true }; }
+      }
     }
     if (!verified) return null;
     if (new Date(payload.x + 'T23:59:59') < new Date()) return { ...payload, expired: true };
@@ -50,24 +53,25 @@ async function verifyLicense(token) {
   } catch { return null; }
 }
 
-// Season Trial: 14 days — but never ends before Feb 28 for Oct–Jan activations,
-// and during Feb–Apr stays alive until you've logged 3 real sap days (hard cap May 1).
-function trialStatus() {
+// Season Trial: 14 days, but never ends before Feb 28 for Oct to Jan activations,
+// and during Feb to Apr stays alive until you've logged 3 real sap days (hard cap May 1).
+// The rule itself is srTrialOf (28-rs-truth2, tested). Fix pass 2: a sap day is a whole
+// calendar day, the status says which limit applies, and it is checked at every write.
+//   logsOverride: a sg_logs2 value about to be written (the write-time check)
+function trialStatus(logsOverride) {
   let start = ls.get('sg_trial_start', null);
-  if (!start) { start = new Date().toISOString().slice(0, 10); try { localStorage.setItem('sg_trial_start', JSON.stringify(start)); } catch {} }
-  const s = new Date(start + 'T00:00:00');
-  const now = new Date();
-  let end = s.getTime() + 14 * 86400000;
-  const m = s.getMonth();
-  if (m >= 9)      end = Math.max(end, new Date(s.getFullYear() + 1, 1, 28).getTime()); // Oct–Dec → next Feb 28
-  else if (m === 0) end = Math.max(end, new Date(s.getFullYear(), 1, 28).getTime());     // Jan → this Feb 28
-  if (now.getTime() > end && now.getMonth() >= 1 && now.getMonth() <= 3) {
-    const season = ls.get('sg_season', now.getFullYear());
-    const sapDays = new Set((((ls.get('sg_logs2', {}))[season] || {}).sapCollected || []).map(e => e.date)).size;
-    if (sapDays < 3) end = new Date(now.getFullYear(), 4, 1).getTime(); // alive until May 1
-  }
-  const daysLeft = Math.ceil((end - now.getTime()) / 86400000);
-  return { start, daysLeft, expired: daysLeft <= 0 };
+  if (!start) { start = srToday(); try { localStorage.setItem('sg_trial_start', JSON.stringify(start)); } catch {} }
+  const today = srToday();
+  const logs = logsOverride || ls.get('sg_logs2', {}) || {};
+  const season = srSeasonOf(today) || ls.get('sg_season', new Date().getFullYear());
+  return srTrialOf({ start, now: Date.now(), todayIso: today, sapDates: srSapDatesOf(logs[season]) });
+}
+// The write-time gate ls.set asks while a trial runs (set by the core once the trial is known).
+//   -> null (write it) | 'expired' (the trial is over now) | 'refuse' (this write would end it)
+function srTrialGate(k, v) {
+  if (trialStatus().expired) return 'expired';
+  if (k === 'sg_logs2' && v && typeof v === 'object' && trialStatus(v).expired) return 'refuse';
+  return null;
 }
 
 function pingEvent(type, email) {
